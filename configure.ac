@@ -162,11 +162,29 @@ AC_ARG_ENABLE(longlongint-lib,
 dnl Check for GMP library
 AC_MSG_CHECKING(whether to use GMP)
 AC_ARG_WITH(libgmp, 
-        [  --with-libgmp           DIR Location of the GMP Distribution], 
-	gmp_package=$withval, gmp_package=no)
+        [  --with-libgmp[=DIR]     Build a GMP polylib using the GMP library], 
+	gmp_package=$withval, gmp_package=notuserdefined)
 if test "x$gmp_package" = "xno"; then
-	AC_MSG_RESULT(no)
+	# user choice: don't use gmp
+	AC_MSG_RESULT([no])
+elif test "x$gmp_package" = "xnotuserdefined"; then
+	# check if we find gmp or not... Don't fail if not
+	AC_MSG_RESULT(system)
+	AC_CHECK_HEADER(gmp.h,
+		[AC_CHECK_LIB(gmp,main,
+		    [poly_cv_gmpfatal="no"],
+		    [poly_cv_gmpfatal="yes"])],
+		[poly_cv_gmpfatal="yes"])
+	if test "$poly_cv_gmpfatal" = "yes"; then
+		AC_MSG_RESULT([GMP not found])
+		gmp_package=no
+	else
+		AC_CHECK_DECLS(mp_get_memory_functions,[],[
+			AC_LIBOBJ(mp_get_memory_functions)
+		],[#include <gmp.h>])
+	fi
 else
+	# user choice: use gmp
 	AC_MSG_RESULT(yes)
 	if test "x$gmp_package" != "xyes"; then
 	    GMP_DIR=$gmp_package
@@ -196,27 +214,37 @@ else
 	ALL_BITS="$BITS $ALL_BITS"
 fi
 
+# no default libtype defined. Let's try to build all of them.
 if test "X$lib_type" = "X"; then
-    AC_MSG_CHECKING(what the LONG representation is)
-    if test "$ac_cv_sizeof_long_long_int" -gt "$ac_cv_sizeof_int"; then
-	AC_MSG_RESULT([long long int])
-	lib_type=longlongint
-	bits=`expr $ac_cv_sizeof_long_long_int \* 8`
-	polylibs="libpolylib$bits.la $polylibs"
-	ALL_BITS="$bits $ALL_BITS"
-    elif test "$ac_cv_sizeof_long_int" -gt "$ac_cv_sizeof_int"; then
-	AC_MSG_RESULT([long int])
-	lib_type=longint
-	bits=`expr $ac_cv_sizeof_long_int \* 8`
-	polylibs="libpolylib$bits.la $polylibs"
-	ALL_BITS="$bits $ALL_BITS"
-    else
-	AC_MSG_RESULT([NONE!])
-	lib_type=int
+	AC_MSG_RESULT(no default type given by user:)
 	bits=`expr $ac_cv_sizeof_int \* 8`
+	AC_MSG_RESULT([ Adding 'int' ($bits) representation])
+	lib_type=int
 	polylibs="libpolylib$bits.la $polylibs"
 	ALL_BITS="$bits $ALL_BITS"
-    fi
+
+	if test "$ac_cv_sizeof_long_int" -gt "$ac_cv_sizeof_int"; then
+		bits=`expr $ac_cv_sizeof_long_int \* 8`
+		AC_MSG_RESULT([Adding 'long int' ($bits)representation])
+		lib_type=longint
+		polylibs="libpolylib$bits.la $polylibs"
+		ALL_BITS="$ALL_BITS $bits"
+	fi
+	if test "$ac_cv_sizeof_long_long_int" -gt "$ac_cv_sizeof_long_int"; then
+		bits=`expr $ac_cv_sizeof_long_long_int \* 8`
+		AC_MSG_RESULT([ Adding 'long long int' ($bits) representation])
+		lib_type=longlongint
+		polylibs="libpolylib$bits.la $polylibs"
+		ALL_BITS="$ALL_BITS $bits"
+	fi
+	if test "x$gmp_package" != "xno"; then
+		AC_MSG_RESULT([ Adding 'gmp' representation])
+		lib_type=gmp
+		BITS=`expr gmp`
+		LIBS="-lgmp $LIBS"
+		polylibs="libpolylib$BITS.la $polylibs"
+		ALL_BITS="$ALL_BITS $BITS"
+	fi
 fi
 
 case "$lib_type" in
@@ -262,7 +290,7 @@ dnl AC_MSG_RESULT($DOXYGEN)
 dnl AC_CHECK_LIB(pthread, pthread_create)
 ACX_PTHREAD()
 AC_ARG_ENABLE(threadsafe,
-	[  --enable-threadsafe     threadsafe polylib (enabled by default if a threading library is found))],
+	[  --enable-threadsafe     threadsafe polylib (enabled by default if a threading library is found)],
 	[
 		if test "$enable_threadsafe" = "yes" -a "X$PTHREAD_CC" = "X"; then
 			AC_MSG_ERROR([pthread library not found])
@@ -310,7 +338,7 @@ AC_OUTPUT(Makefile
 
 
 echo "---------------------------------------------------"
-echo "Polylib will be built with " $ALL_BITS "integer size(s)"
+echo "Polylib will be built with" $ALL_BITS "integer size(s)"
 echo "You can proceed with:"
 echo "make               :to build the libs and the executables"
 echo "make tests         :to test the library"

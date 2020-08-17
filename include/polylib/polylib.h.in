@@ -2,8 +2,11 @@
  * polylib.h  V4.12
  */
 
-/* WARNING: you should not include directly this file, but use
-   polylib32.h or polylib64.h (for 32 or 64 bits integers).
+/* WARNING: you should not directly include this file,
+   but use one of those variants:
+   - polylib32.h (for 32 bits integers),
+   - polylib64.h (for 64 bits integers),
+   - polylibgmp.h (for gmp integers).
 */
 
 #if POLYLIB_BITS == 32
@@ -18,7 +21,7 @@
 	&& ! defined(LINEAR_VALUE_IS_CHARS) \
         && ! defined(GNUMP) \
         && ! defined(CLN)
-#error Please define LINEAR_VALUE_IS_* or #include polylib32.h or polylib64.h
+#error Please #include polylib32.h or polylib64.h or polylibgmp.h (NOT polylib.h)
 #endif
 
 #include <polylib/arithmetique.h>
