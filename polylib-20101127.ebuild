@@ -9,7 +9,7 @@ HOMEPAGE="http://icps.u-strasbg.fr/polylib/"
 SRC_URI=$HOMEPAGE/${P}.tar.lzma
 # there is no such file on the page. The file created by packing git contents
 
-LICENSE="GPL-2"
+LICENSE="MIT"
 SLOT="0"
 KEYWORDS="amd64"
 # don't know if it works for other arches
