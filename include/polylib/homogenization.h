@@ -1,6 +1,6 @@
 /** homogenization.h -- Bavo Nootaert **/
-#ifndef HOMOGENIZATION_H
-#define HOMOGENIZATTON_H
+#ifndef HOMOGENEIZATION_H
+#define HOMOGENEIZATION_H
 
 #include <polylib/polylib.h>
 
