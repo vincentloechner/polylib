@@ -20,16 +20,16 @@
   #define abs __abs
 #endif
 
-/* 
- * Compute n! 
+/*
+ * Compute n!
  */
 void Factorial(int n, Value *fact) {
-  
+
   int i;
   Value tmp;
-  
+
   value_init(tmp);
-  
+
   value_set_si(*fact,1);
   for (i=1;i<=n;i++) {
     value_set_si(tmp,i);
@@ -38,54 +38,54 @@ void Factorial(int n, Value *fact) {
   value_clear(tmp);
 } /* Factorial */
 
-/* 
- * Compute n!/(p!(n-p)!) 
+/*
+ * Compute n!/(p!(n-p)!)
  */
 void Binomial(int n, int p, Value *result) {
-  
+
   int i;
   Value tmp;
   Value f;
-  
+
   value_init(tmp);value_init(f);
-  
+
   if (n-p<p)
     p=n-p;
   if (p!=0) {
     value_set_si(*result,(n-p+1));
     for (i=n-p+2;i<=n;i++) {
-      value_set_si(tmp,i);    
+      value_set_si(tmp,i);
       value_multiply(*result,*result,tmp);
     }
     Factorial(p,&f);
     value_division(*result,*result,f);
   }
-  else 
+  else
     value_set_si(*result,1);
   value_clear(f);value_clear(tmp);
 } /* Binomial */
-  
+
 /*
- * Return the number of ways to choose 'b' items from 'a' items, that is, 
+ * Return the number of ways to choose 'b' items from 'a' items, that is,
  * return a!/(b!(a-b)!)
  */
 void CNP(int a,int b, Value *result) {
-  
+
   int i;
   Value tmp;
   value_init(tmp);
 
   value_set_si(*result,1);
-  
+
   /* If number of items is less than the number to be choosen, return 1 */
   if(a <= b) {
     value_clear(tmp);
     return;
-  }  
+  }
   for(i=a;i>b;--i) {
     value_set_si(tmp,i);
     value_multiply(*result,*result,tmp);
-  }  
+  }
   for(i=1;i<=(a-b);++i) {
     value_set_si(tmp,i);
     value_division(*result,*result,tmp);
@@ -93,8 +93,8 @@ void CNP(int a,int b, Value *result) {
   value_clear(tmp);
 } /* CNP */
 
-/* 
- * Compute GCD of 'a' and 'b' 
+/*
+ * Compute GCD of 'a' and 'b'
  */
 void Gcd(Value a,Value b,Value *result) {
 
@@ -104,24 +104,24 @@ void Gcd(Value a,Value b,Value *result) {
   value_init(bcopy);
   value_assign(acopy,a);
   value_assign(bcopy,b);
-  while(value_notzero_p(acopy)) { 
-    value_modulus(*result,bcopy,acopy);      
-    value_assign(bcopy,acopy);                     
-    value_assign(acopy,*result);                   
+  while(value_notzero_p(acopy)) {
+    value_modulus(*result,bcopy,acopy);
+    value_assign(bcopy,acopy);
+    value_assign(acopy,*result);
   }
   value_absolute(*result,bcopy);
   value_clear(acopy);
   value_clear(bcopy);
 } /* Gcd */
 
-/* 
- * Return the smallest component index in 'p' whose value is non-zero 
+/*
+ * Return the smallest component index in 'p' whose value is non-zero
  */
-int First_Non_Zero(Value *p,unsigned length) { 
-  
+int First_Non_Zero(Value *p,unsigned length) {
+
   Value *cp;
   int i;
-  
+
   cp = p;
   for (i=0;i<length;i++) {
     if (value_notzero_p(*cp))
@@ -131,14 +131,14 @@ int First_Non_Zero(Value *p,unsigned length) {
   return((i==length) ? -1 : i );
 } /* First_Non_Zero */
 
-/* 
- * Allocate memory space for Vector 
+/*
+ * Allocate memory space for Vector
  */
 Vector *Vector_Alloc(unsigned length) {
 
   int i;
   Vector *vector;
-  
+
   vector = (Vector *)malloc(sizeof(Vector));
   if (!vector) {
     errormsg1("Vector_Alloc", "outofmem", "out of memory space");
@@ -156,53 +156,53 @@ Vector *Vector_Alloc(unsigned length) {
   return vector;
 } /* Vector_Alloc */
 
-/* 
- * Free the memory space occupied by Vector 
+/*
+ * Free the memory space occupied by Vector
  */
 void Vector_Free(Vector *vector) {
-  
+
   int i;
 
   if (!vector) return;
-  for(i=0;i<vector->Size;i++) 
+  for(i=0;i<vector->Size;i++)
     value_clear(vector->p[i]);
   free(vector->p);
   free(vector);
 } /* Vector_Free */
 
-/* 
- * Print the contents of a Vector 
+/*
+ * Print the contents of a Vector
  */
 void Vector_Print(FILE *Dst, const char *Format, Vector *vector)
 {
   int i;
   Value *p;
   unsigned length;
-  
+
   fprintf(Dst, "%d\n", length=vector->Size);
   p = vector->p;
   for (i=0;i<length;i++) {
     if (Format) {
       value_print(Dst,Format,*p++);
-    }  
-    else {	
+    }
+    else {
       value_print(Dst,P_VALUE_FMT,*p++);
-    }  
+    }
   }
   fprintf(Dst, "\n");
 } /* Vector_Print */
 
-/* 
- * Read the contents of a Vector 
+/*
+ * Read the contents of a Vector
  */
 Vector *Vector_Read() {
-  
+
   Vector *vector;
   unsigned length;
   int i;
   char *s;
   Value *p;
-  
+
   scanf("%d", &length);
   vector = Vector_Alloc(length);
   if (!vector) {
@@ -220,19 +220,19 @@ Vector *Vector_Read() {
 		}
 		value_read(*(p++),s);
 		free(s);
-	}  
+	}
   return vector;
 } /* Vector_Read */
 
-/* 
- * Assign 'n' to each component of Vector 'p' 
+/*
+ * Assign 'n' to each component of Vector 'p'
  */
 void Vector_Set(Value *p,int n,unsigned length) {
-  
+
   Value *cp;
   int i;
-  
-  cp = p; 
+
+  cp = p;
   for (i=0;i<length;i++) {
     value_set_si(*cp,n);
     cp++;
@@ -246,15 +246,15 @@ void Vector_Set(Value *p,int n,unsigned length) {
 void Vector_Exchange(Value *p1, Value *p2, unsigned length) {
 
   int i;
-  
+
   for(i=0;i<length;i++) {
     value_swap(p1[i],p2[i]);
-  }  
+  }
   return;
 }
 
 /*
- * Copy Vector 'p1' to Vector 'p2' 
+ * Copy Vector 'p1' to Vector 'p2'
  */
 void Vector_Copy(Value *p1,Value *p2,unsigned length) {
 
@@ -263,96 +263,96 @@ void Vector_Copy(Value *p1,Value *p2,unsigned length) {
 
   cp1 = p1;
   cp2 = p2;
-  
-  for(i=0;i<length;i++) 
+
+  for(i=0;i<length;i++)
     value_assign(*cp2++,*cp1++);
-  
+
   return;
 }
-  
-/* 
- * Add two vectors 'p1' and 'p2' and store the result in 'p3' 
+
+/*
+ * Add two vectors 'p1' and 'p2' and store the result in 'p3'
  */
 void Vector_Add(Value *p1,Value *p2,Value *p3,unsigned length) {
 
   Value *cp1, *cp2, *cp3;
   int i;
-  
+
   cp1=p1;
   cp2=p2;
   cp3=p3;
   for (i=0;i<length;i++) {
-    
+
     /* *cp3++ = *cp1++ + *cp2++ */
     value_addto(*cp3,*cp1,*cp2);
     cp1++; cp2++; cp3++;
   }
 } /* Vector_Add */
 
-/* 
- * Subtract two vectors 'p1' and 'p2' and store the result in 'p3' 
+/*
+ * Subtract two vectors 'p1' and 'p2' and store the result in 'p3'
  */
 void Vector_Sub(Value *p1,Value *p2,Value *p3,unsigned length) {
 
-  Value *cp1, *cp2, *cp3;	
+  Value *cp1, *cp2, *cp3;
   int i;
-  
+
   cp1=p1;
   cp2=p2;
   cp3=p3;
   for (i=0;i<length;i++) {
-    
+
     /* *cp3++= *cp1++ - *cp2++ */
     value_subtract(*cp3,*cp1,*cp2);
     cp1++; cp2++; cp3++;
   }
 } /* Vector_Sub */
 
-/* 
- * Compute Bitwise OR of Vectors 'p1' and 'p2' and store in 'p3' 
+/*
+ * Compute Bitwise OR of Vectors 'p1' and 'p2' and store in 'p3'
  */
 void Vector_Or(Value *p1,Value *p2,Value *p3,unsigned length) {
 
   Value *cp1, *cp2, *cp3;
   int i;
-  
+
   cp1=p1;
   cp2=p2;
   cp3=p3;
   for (i=0;i<length;i++) {
-    
+
     /* *cp3++=*cp1++ | *cp2++ */
     value_orto(*cp3,*cp1,*cp2);
     cp1++; cp2++; cp3++;
   }
 } /* Vector_Or */
 
-/* 
- * Scale Vector 'p1' lambda times and store in 'p2' 
+/*
+ * Scale Vector 'p1' lambda times and store in 'p2'
  */
 void Vector_Scale(Value *p1,Value *p2,Value lambda,unsigned length) {
-  
+
   Value *cp1, *cp2;
   int i;
-  
+
   cp1=p1;
   cp2=p2;
   for (i=0;i<length;i++) {
-    
+
     /* *cp2++=*cp1++ * lambda */
     value_multiply(*cp2,*cp1,lambda);
     cp1++; cp2++;
   }
 } /* Vector_Scale */
 
-/* 
- * Antiscale Vector 'p1' by lambda and store in 'p2' 
+/*
+ * Antiscale Vector 'p1' by lambda and store in 'p2'
  * Assumes all elements of 'p1' are divisble by lambda.
  */
 void Vector_AntiScale(Value *p1, Value *p2, Value lambda, unsigned length)
 {
   int i;
-  
+
   for (i = 0; i < length; i++)
     value_divexact(p2[i], p1[i], lambda);
 } /* Vector_AntiScale */
@@ -368,8 +368,8 @@ void Vector_Oppose(Value *p1, Value *p2, unsigned len)
     value_oppose(p2[i], p1[i]);
 }
 
-/* 
- * Return the inner product of the two Vectors 'p1' and 'p2' 
+/*
+ * Return the inner product of the two Vectors 'p1' and 'p2'
  */
 void Inner_Product(Value *p1, Value *p2, unsigned length, Value *ip)
 {
@@ -383,11 +383,11 @@ void Inner_Product(Value *p1, Value *p2, unsigned length, Value *ip)
     value_addmul(*ip, p1[i], p2[i]);
 } /* Inner_Product */
 
-/* 
- * Return the maximum of the components of 'p' 
+/*
+ * Return the maximum of the components of 'p'
  */
 void Vector_Max(Value *p,unsigned length, Value *max) {
-  
+
   Value *cp;
   int i;
 
@@ -400,11 +400,11 @@ void Vector_Max(Value *p,unsigned length, Value *max) {
   }
 } /* Vector_Max */
 
-/* 
- * Return the minimum of the components of Vector 'p' 
+/*
+ * Return the minimum of the components of Vector 'p'
  */
 void Vector_Min(Value *p,unsigned length,Value *min) {
-  
+
   Value *cp;
   int i;
 
@@ -418,15 +418,15 @@ void Vector_Min(Value *p,unsigned length,Value *min) {
   return;
 } /* Vector_Min */
 
-/* 
- * Given Vectors 'p1' and 'p2', return Vector 'p3' = lambda * p1 + mu * p2. 
+/*
+ * Given Vectors 'p1' and 'p2', return Vector 'p3' = lambda * p1 + mu * p2.
  */
 void Vector_Combine(Value *p1, Value *p2, Value *p3, Value lambda, Value mu,
 		    unsigned length)
 {
   Value tmp;
   int i;
-  
+
   value_init(tmp);
   for (i = 0; i < length; i++) {
     value_multiply(tmp, lambda, p1[i]);
@@ -437,8 +437,8 @@ void Vector_Combine(Value *p1, Value *p2, Value *p3, Value lambda, Value mu,
   return;
 } /* Vector_Combine */
 
-/* 
- * Return 1 if 'Vec1' equals 'Vec2', otherwise return 0 
+/*
+ * Return 1 if 'Vec1' equals 'Vec2', otherwise return 0
  */
 int Vector_Equal(Value *Vec1, Value *Vec2, unsigned n)
 {
@@ -451,7 +451,7 @@ int Vector_Equal(Value *Vec1, Value *Vec2, unsigned n)
   return 1;
 } /* Vector_Equal */
 
-/* 
+/*
  * Return the component of 'p' with minimum non-zero absolute value. 'index'
  * points to the component index that has the minimum value. If no such value
  * and index is found, Value 1 is returned.
@@ -460,8 +460,8 @@ void Vector_Min_Not_Zero(Value *p,unsigned length,int *index,Value *min)
 {
   Value aux;
   int i;
-  
-  
+
+
   i = First_Non_Zero(p, length);
   if (i == -1) {
     value_set_si(*min,1);
@@ -477,69 +477,69 @@ void Vector_Min_Not_Zero(Value *p,unsigned length,int *index,Value *min)
     if (value_lt(aux,*min)) {
       value_assign(*min,aux);
       *index = i;
-    }  
+    }
   }
   value_clear(aux);
 } /* Vector_Min_Not_Zero */
 
-/* 
- * Return the GCD of components of Vector 'p' 
+/*
+ * Return the GCD of components of Vector 'p'
  */
 void Vector_Gcd(Value *p,unsigned length,Value *min) {
-  
+
   Value *q,*cq, *cp;
   int i, Not_Zero, Index_Min=0;
-  
+
   q  = (Value *)malloc(length*sizeof(Value));
 
   /* Initialize all the 'Value' variables */
   for(i=0;i<length;i++)
     value_init(q[i]);
-  
+
   /* 'cp' points to vector 'p' and cq points to vector 'q' that holds the */
   /* absolute value of elements of vector 'p'.                            */
   cp=p;
   for (cq = q,i=0;i<length;i++) {
-    value_absolute(*cq,*cp);    
+    value_absolute(*cq,*cp);
     cq++;
     cp++;
   }
-  do {   
+  do {
     Vector_Min_Not_Zero(q,length,&Index_Min,min);
-    
+
     /* if (*min != 1) */
     if (value_notone_p(*min)) {
-      
+
       cq=q;
       Not_Zero=0;
       for (i=0;i<length;i++,cq++)
         if (i!=Index_Min) {
-          
+
 	  /* Not_Zero |= (*cq %= *min) */
 	  value_modulus(*cq,*cq,*min);
           Not_Zero |= value_notzero_p(*cq);
         }
-    } 
-    else 
+    }
+    else
       break;
   } while (Not_Zero);
-  
+
   /* Clear all the 'Value' variables */
   for(i=0;i<length;i++)
     value_clear(q[i]);
   free(q);
 } /* Vector_Gcd */
 
-/* 
+/*
  * Given vectors 'p1', 'p2', and a pointer to a function returning 'Value type,
- * compute p3[i] = f(p1[i],p2[i]).  
- */ 
+ * compute p3[i] = f(p1[i],p2[i]).
+ */
 void Vector_Map(Value *p1,Value *p2,Value *p3,unsigned length,
 		Value *(*f)(Value,Value))
 {
   Value *cp1, *cp2, *cp3;
   int i;
-  
+
   cp1=p1;
   cp2=p2;
   cp3=p3;
@@ -550,35 +550,35 @@ void Vector_Map(Value *p1,Value *p2,Value *p3,unsigned length,
   return;
 } /* Vector_Map */
 
-/* 
- * Reduce a vector by dividing it by GCD. There is no restriction on 
+/*
+ * Reduce a vector by dividing it by GCD. There is no restriction on
  * components of Vector 'p'. Making the last element positive is *not* OK
- * for equalities. 
+ * for equalities.
  */
 void Vector_Normalize(Value *p,unsigned length) {
-  
+
   Value gcd;
   int i;
-  
+
   value_init(gcd);
 
   Vector_Gcd(p,length,&gcd);
-  
+
   if (value_notone_p(gcd))
     Vector_AntiScale(p, p, gcd, length);
 
   value_clear(gcd);
 } /* Vector_Normalize */
 
-/* 
- * Reduce a vector by dividing it by GCD and making sure its pos-th 
- * element is positive.    
+/*
+ * Reduce a vector by dividing it by GCD and making sure its pos-th
+ * element is positive.
  */
 void Vector_Normalize_Positive(Value *p,int length,int pos) {
-  
+
   Value gcd;
   int i;
-  
+
   value_init(gcd);
   Vector_Gcd(p,length,&gcd);
   if (value_neg_p(p[pos]))
@@ -588,14 +588,14 @@ void Vector_Normalize_Positive(Value *p,int length,int pos) {
   value_clear(gcd);
 } /* Vector_Normalize_Positive */
 
-/* 
- * Reduce 'p' by operating binary function on its components successively 
+/*
+ * Reduce 'p' by operating binary function on its components successively
  */
 void Vector_Reduce(Value *p,unsigned length,void(*f)(Value,Value *),Value *r) {
-  
+
   Value *cp;
   int i;
-  
+
   cp = p;
   value_assign(*r,*cp);
   for(i=1;i<length;i++) {
@@ -604,11 +604,11 @@ void Vector_Reduce(Value *p,unsigned length,void(*f)(Value,Value *),Value *r) {
   }
 } /* Vector_Reduce */
 
-/* 
- * Sort the components of a Vector 'vector' using Heap Sort. 
+/*
+ * Sort the components of a Vector 'vector' using Heap Sort.
  */
 void Vector_Sort(Value *vector,unsigned n) {
-  
+
   int i, j;
   Value temp;
   Value *current_node=(Value *)0;
@@ -616,12 +616,12 @@ void Vector_Sort(Value *vector,unsigned n) {
 
   value_init(temp);
 
-  for (i=(n-1)/2;i>=0;i--) { 
-    
+  for (i=(n-1)/2;i>=0;i--) {
+
     /* Phase 1 : build the heap */
     j=i;
     value_assign(temp,*(vector+i));
-    
+
     /* While not a leaf */
     while (j<=(n-1)/2) {
       current_node = vector+j;
@@ -636,8 +636,8 @@ void Vector_Sort(Value *vector,unsigned n) {
 	else
 	  break;
       }
-      else {  
-	
+      else {
+
 	/* If two sons */
 	right_son=left_son+1;
 	if (value_lt(*right_son,*left_son)) {
@@ -660,20 +660,20 @@ void Vector_Sort(Value *vector,unsigned n) {
     }
     value_assign(*current_node,temp);
   }
-  for(i=n-1;i>0;i--) { 
-    
+  for(i=n-1;i>0;i--) {
+
     /* Phase 2 : sort the heap */
     value_assign(temp, *(vector+i));
     value_assign(*(vector+i),*vector);
     j=0;
-    
+
     /* While not a leaf */
-    while (j<i/2) {     
+    while (j<i/2) {
       current_node=vector+j;
       left_son=vector+(j<<1)+1;
-      
+
       /* If only one son */
-      if ((j<<1)+2>=i) { 		
+      if ((j<<1)+2>=i) {
 	if (value_lt(temp,*left_son)) {
 	  value_assign(*current_node,*left_son);
 	  j=(j<<1)+1;
@@ -682,7 +682,7 @@ void Vector_Sort(Value *vector,unsigned n) {
 	  break;
       }
       else {
-	
+
 	/* If two sons */
 	right_son=left_son+1;
 	if (value_lt(*right_son,*left_son)) {
@@ -811,7 +811,7 @@ Value* value_alloc(int want, int *got)
         if (cache[i].size >= want) {
           Value *p = cache[i].p;
           *got = cache[i].size;
-          if (--cache_size != i) 
+          if (--cache_size != i)
             cache[i] = cache[cache_size];
           Vector_Set(p, 0, want);
           return p;
@@ -822,7 +822,7 @@ Value* value_alloc(int want, int *got)
 
       p = (Value *)realloc(cache[best].p, want * sizeof(Value));
       *got = cache[best].size;
-      if (--cache_size != best) 
+      if (--cache_size != best)
         cache[best] = cache[cache_size];
       Vector_Set(p, 0, *got);
     }
@@ -865,4 +865,3 @@ void value_free(Value *p, int size)
       value_clear(p[i]);
     free(p);
 }
-
