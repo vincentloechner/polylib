@@ -2,9 +2,12 @@
 
 # MacOS:
 #glibtoolize -c --force
-libtoolize -c --force
-aclocal -I m4
-autoheader
-automake -a -c --foreign
-autoconf
+
+#libtoolize -c --force
+#aclocal -I m4
+#autoheader
+#automake -a -c --foreign
+#autoconf
+
+autoreconf -i
 (cd cln; ./autogen.sh)
