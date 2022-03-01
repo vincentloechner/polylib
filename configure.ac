@@ -298,7 +298,7 @@ elif test "X$PTHREAD_CC" != "X" -a "$enable_threadsafe" = "yes"; then
 	CC="$PTHREAD_CC"
 	AC_MSG_NOTICE([Will build a threadsafe library])
 else
-  AC_MSG_NOTICE([Will NOT build a threadsafe library])
+  AC_MSG_NOTICE([Will NOT build a threadsafe library (as requested)])
 fi
 
 AC_SUBST(LIBS)
