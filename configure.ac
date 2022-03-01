@@ -5,26 +5,26 @@ dnl	Makefile in this directory.
 # Authors: Bart Kienhuis, Vincent Loechner, T. Risset
 # Copyright (c) 2000 The Regents of the University of California.
 # All rights reserved.
-# 
+#
 # Permission is hereby granted, without written agreement and without
 # license or royalty fees, to use, copy, modify, and distribute this
 # software and its documentation for any purpose, provided that the
 # above copyright notice and the following two paragraphs appear in all
 # copies of this software.
-# 
+#
 # IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY
 # FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
 # ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF
 # THE UNIVERSITY OF CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-# 
+#
 # THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
 # INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 # MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE SOFTWARE
 # PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF
 # CALIFORNIA HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 # ENHANCEMENTS, OR MODIFICATIONS.
-# 
+#
 # 						PT_COPYRIGHT_VERSION_2
 # 						COPYRIGHTENDKEY
 
@@ -125,14 +125,14 @@ AC_SUBST(polylibs)
 AC_SUBST(ALL_BITS)
 
 AC_ARG_ENABLE(int-lib,
-	[  --enable-int-lib        Build an int library], 
+	[  --enable-int-lib        Build an int library],
         [lib_type=int
 	 bits=`expr $ac_cv_sizeof_int \* 8`
 	 polylibs="libpolylib$bits.la $polylibs"
 	 ALL_BITS=" $bits $ALL_BITS"
 	])
 AC_ARG_ENABLE(longint-lib,
-	[  --enable-longint-lib    Build a long int library], 
+	[  --enable-longint-lib    Build a long int library],
         [lib_type=longint
 	 bits=`expr $ac_cv_sizeof_long_int \* 8`
 	 case "$ALL_BITS" in
@@ -142,7 +142,7 @@ AC_ARG_ENABLE(longint-lib,
 	 esac
 	])
 AC_ARG_ENABLE(longlongint-lib,
-	[  --enable-longlongint-lib Build a long long int library], 
+	[  --enable-longlongint-lib Build a long long int library],
         [lib_type=longlongint
 	 bits=`expr $ac_cv_sizeof_long_long_int \* 8`
 	 case "$ALL_BITS" in
@@ -154,8 +154,8 @@ AC_ARG_ENABLE(longlongint-lib,
 
 dnl Check for GMP library
 AC_MSG_CHECKING(whether to use GMP)
-AC_ARG_WITH(libgmp, 
-        [  --with-libgmp[=DIR]     Build a GMP polylib using the GMP library], 
+AC_ARG_WITH(libgmp,
+        [  --with-libgmp[=DIR]     Build a GMP polylib using the GMP library],
 	gmp_package=$withval, gmp_package=notuserdefined)
 if test "x$gmp_package" = "xno"; then
 	# user choice: don't use gmp
@@ -292,11 +292,13 @@ AC_ARG_ENABLE(threadsafe,
 
 if test "X$PTHREAD_CC" = "X" ; then
 	AC_MSG_WARN([No pthread library found, PolyLib will not be threadsafe])
-elif test "X$PTHREAD_CC" != "X" ; then
+elif test "X$PTHREAD_CC" != "X" -a "$enable_threadsafe" = "yes"; then
 	LIBS="$LIBS $PTHREAD_LIBS"
 	CFLAGS="$CFLAGS $PTHREAD_CFLAGS -DTHREAD_SAFE_POLYLIB"
 	CC="$PTHREAD_CC"
 	AC_MSG_NOTICE([Will build a threadsafe library])
+else
+  AC_MSG_NOTICE([Will NOT build a threadsafe library])
 fi
 
 AC_SUBST(LIBS)
