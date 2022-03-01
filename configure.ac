@@ -30,13 +30,13 @@ dnl	Makefile in this directory.
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(polylib, 5.22.6)
+AC_INIT([polylib],[5.22.6])
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE([gnu])
 AC_CONFIG_SRCDIR(include/polylib/polylib.h.in)
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_PREREQ(2.60)
+AC_PREREQ([2.71])
 
 AC_SUBST(versioninfo)
 versioninfo=9:0:1
@@ -58,14 +58,22 @@ AC_LANG(C)
 AC_PROG_CC
 AC_PROG_LN_S
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
+LT_INIT
 AM_PROG_CC_C_O
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 
 dnl Checks for header files.
-AC_HEADER_STDC
+m4_warn([obsolete],
+[The preprocessor macro `STDC_HEADERS' is obsolete.
+  Except in unusual embedded environments, you can safely include all
+  ISO C90 headers unconditionally.])dnl
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_CHECK_HEADERS(limits.h unistd.h)
 AC_CHECK_HEADERS(getopt.h)
 
@@ -174,7 +182,7 @@ else
 	if test "x$gmp_package" != "xyes"; then
 	    GMP_DIR=$gmp_package
 	    if test ! -d "$GMP_DIR"; then
-	    	AC_ERROR(Directory given for GMP Distribution is not a directory)
+	    	AC_MSG_ERROR(Directory given for GMP Distribution is not a directory)
 	    fi
 	    CPPFLAGS="-I$GMP_DIR/include $CPPFLAGS"
 	    LDFLAGS="-L$GMP_DIR/lib $LDFLAGS"
@@ -307,7 +315,7 @@ PACKAGE_NAME=polylib$BITS
 AX_CREATE_PKGCONFIG_INFO
 
 AC_CONFIG_HEADERS(config.h)
-AC_OUTPUT(Makefile
+AC_CONFIG_FILES([Makefile
 	  include/Makefile
 	  include/polylib/Makefile
 	  include/polylib/polylib.h
@@ -319,7 +327,8 @@ AC_OUTPUT(Makefile
 	  Test/general/Makefile
 	  Test/pp/Makefile
 	  polylib.doxygen
-	)
+	])
+AC_OUTPUT
 
 
 echo "---------------------------------------------------"
