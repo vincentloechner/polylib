@@ -73,7 +73,7 @@ Matrix * int_ker(Matrix * M) {
     show_matrix(H2);
     show_matrix(U); 
   }
-  H->NbRows==M->NbRows;
+  H->NbRows=M->NbRows;
   Matrix_Free(H);
   /* the Integer Kernel is made of the last n-rk columns of U */
   Matrix_subMatrix(U, 0, rk, U->NbRows, U->NbColumns, &K);
