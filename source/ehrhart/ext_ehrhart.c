@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <polylib/polylib.h>
-#define WS 200 
+#define WS 200
 
 /* #define UE_DEBUG */
 
 
-typedef struct _Polyhedron_union { 
+typedef struct _Polyhedron_union {
 	Enumeration *pt;
         struct _Polyhedron_union *next;} Polyhedron_union;
 
@@ -82,7 +82,7 @@ Matrix *CalcBase( Matrix *R )
 			if(value_zero_p( R->p[i][i]) )
 			  /* on a deux 0... un seul dans */
 			  /* ce vect util suffit */
-				value_set_si(B->p[u][i],0); 
+				value_set_si(B->p[u][i],0);
 			else
 			{
 				/* somme des coef deja calcules * coef dans la matrice */
@@ -90,7 +90,7 @@ Matrix *CalcBase( Matrix *R )
 				for( c=l ; c>i ; --c )
 				{
 				  value_addmul(som, R->p[i][c], B->p[u][c]);
-				  value_multiply(B->p[u][c] ,B->p[u][c] , R->p[i][i]);	
+				  value_multiply(B->p[u][c] ,B->p[u][c] , R->p[i][i]);
 				}
 				value_oppose(B->p[u][i] , som );
 			}
@@ -125,12 +125,12 @@ Matrix *CalcPolyhedronBase( Polyhedron *P )
   Matrix *R;
   Matrix *B;
   int n, lines;
-  
+
   if( emptyQ(P) )
     return( Matrix_Alloc( 0, P->Dimension ) ); */ /* pas de vect. gen */ /*
-  
+
   R = Matrix_Alloc( P->Dimension, P->Dimension );
-  
+
   */ /* recopie le 'lineality space' du polyedre dans la matrice R */ /*
   for( lines=0,n=0 ; n<P->NbConstraints ; ++n )
     {
@@ -145,10 +145,10 @@ Matrix *CalcPolyhedronBase( Polyhedron *P )
   */ /* remplit le reste de 0..0 */ /*
   for( ; lines<R->NbRows ; ++lines )
     memset( &R->p[lines][0], 0, sizeof(int)*P->Dimension );
-  
+
   B = CalcBase( R );
   Matrix_Free( R );
-  
+
   return( B );
 }*/
 
@@ -246,7 +246,7 @@ int pgcd1( int a, int b)
   return(abs(a) );
   do
   {
-    r= a % b; 
+    r= a % b;
     a= b;
    b = r;
    }
@@ -287,7 +287,7 @@ static void Soustraire_ligne(Matrix *R, int l1, int l2, int piv )
 		value_gcd(p, p, R->p[l2][i]);
 	}
 	/* Simplification par le pgcd de toute la ligne */
-	for( i=piv+1 ; i<R->NbColumns && p!=0 ; i++ )
+	for( i=piv+1 ; i<R->NbColumns && value_notzero_p(p) ; i++ )
 		value_divexact(R->p[l2][i], R->p[l2][i], p);
 
 	value_clear(a);
@@ -336,19 +336,19 @@ Value g,m1,m2;
                               new_eadd(e1, &res->x.p->arr[i]);
                           }
                           value_clear(g); value_clear(m1); value_clear(m2);
-			     
+
                           return ;
-                    } 
+                    }
                     else {
                             fprintf(stderr, "eadd: cannot add const with vector\n");
                             value_clear(g); value_clear(m1); value_clear(m2);
-                        
+
                             return;
                     }
      }
     /* ######### add polynomial or periodic to constant #############
        you have to exchange e1 and res, before doing addition */
-     
+
      else if (value_zero_p(e1->d) && value_notzero_p(res->d)) {
               enode *tmp;
 	      evalue x;
@@ -364,54 +364,54 @@ Value g,m1,m2;
      }
     else {   /* ((e1->d==0) && (res->d==0)) */
                  if ((e1->x.p->type != res->x.p->type) ) {
-		   /* ##### adding to evalues of different type. two cases are possible  #### 
-		      
+		   /* ##### adding to evalues of different type. two cases are possible  ####
+
 		   #### res is periodic and e1 is polynomial, you have to exchange
 		   e1 and res then to add e1 to the constant term of res  #### */
 		     if ((res->x.p->type == periodic)&&(e1->x.p->type == polynomial)) {
-	               
+
 		          evalue eval;
 		          value_set_si( eval.d, 0 );
 		          eval.x.p=ecopy(res->x.p);
 	                  res->x.p= ecopy(e1->x.p);
                           new_eadd(&eval,&res->x.p->arr[0]);
-			 		         	     
+
 	             }
                      else if ((res->x.p->type == polynomial)&&(e1->x.p->type == periodic)) {
 		       /* #### res is polynomial and e1 is periodic,
 		          add e1 to the constant term of res  #### */
-			 
+
 			  new_eadd(e1,&res->x.p->arr[0]);
 		     }
-	                	 
+
 	             value_clear(g); value_clear(m1); value_clear(m2);
 		     return;
 	         }
-	         else if (e1->x.p->pos  != res->x.p->pos ) { 
+	         else if (e1->x.p->pos  != res->x.p->pos ) {
 		   /* ### adding evalues of different position (i.e function of different unknowns
 		      to case are possible  ### */
-			   
+
 			 if (res->x.p->type == polynomial) {/*  ### res and e1 are polynomials
 								add e1 to the constant term of res */
-			       
+
 		               new_eadd(e1,&res->x.p->arr[0]);
 		               value_clear(g); value_clear(m1); value_clear(m2);
 		               return;
 		          }
 		          else {  /* ### res and e1 are pointers to periodic numbers
 				     add e1 to all elements of res */
-				   
+
 			          for (i=0;i<res->x.p->size;i++) {
 			               new_eadd(e1,&res->x.p->arr[i]);
 			          }
 			          value_clear(g); value_clear(m1); value_clear(m2);
 			          return;
 		          }
-                 
-				          
+
+
 	         }  /* ### */
-                 
-                
+
+
 		 /* same type , same pos  and same size */
                  if (e1->x.p->size == res->x.p->size) {
 		   /* add any element in e1 to the corresponding element in res */
@@ -421,7 +421,7 @@ Value g,m1,m2;
                       value_clear(g); value_clear(m1); value_clear(m2);
                       return ;
                 }
-                
+
 		/* Sizes are different */
                 if (res->x.p->type==polynomial) {
                     /* VIN100: if e1-size > res-size you have to copy e1 in a   */
@@ -436,33 +436,33 @@ Value g,m1,m2;
                               /*  free_evalue_refs(&res->x.p->arr[i]); */
                           }
                           res->x.p = tmp;
-    	  
+
                      }
                      else {
-	  	     
+
                         for (i=0; i<e1->x.p->size ; i++) {
                              new_eadd(&e1->x.p->arr[i], &res->x.p->arr[i]);
-                        } 
+                        }
                         value_clear(g); value_clear(m1); value_clear(m2);
-                      		   
+
                         return ;
-                     } 
+                     }
                 }
-                
+
 		/* ### add two periodics of the same pos (unknown) but whith different sizes (periods) ### */
                 else if (res->x.p->type==periodic) {
 		      /* you have to create a new evalue 'ne' in whitch size equals to the scm
 		       of the sizes of e1 and res, then to copy res periodicaly in ne, after
-		       to add periodicaly elements of e1 to elements of ne, and finaly to 
+		       to add periodicaly elements of e1 to elements of ne, and finaly to
 		       return ne. */
-		                                    
+
 	               x=e1->x.p->size;
 	               y= res->x.p->size;
 	               p=ppcm1(x,y);
-	               ne= (evalue *) malloc (sizeof(evalue)); 
+	               ne= (evalue *) malloc (sizeof(evalue));
 	               value_init(ne->d);
 	               value_set_si( ne->d,0);
-	    	           	    
+
 	               ne->x.p=new_enode(res->x.p->type,p, res->x.p->pos);
 	               for(i=0;i<p;i++)  {
 		              value_assign(ne->x.p->arr[i].d, res->x.p->arr[i%y].d);
@@ -470,16 +470,16 @@ Value g,m1,m2;
 			    value_init(ne->x.p->arr[i].x.n);
 			    value_assign(ne->x.p->arr[i].x.n, res->x.p->arr[i%y].x.n);
 		              }
-		              else { 
+		              else {
 			          ne->x.p->arr[i].x.p =ecopy(res->x.p->arr[i%y].x.p);
 		              }
 	               }
 	               for(i=0;i<p;i++)  {
 	                    new_eadd(&e1->x.p->arr[i%x], &ne->x.p->arr[i]);
 	               }
-      
+
 	               res=ne;
-	    	    
+
                         value_clear(g); value_clear(m1); value_clear(m2);
                         return ;
                 }
@@ -492,16 +492,16 @@ Value g,m1,m2;
      value_clear(g); value_clear(m1); value_clear(m2);
      return ;
  } /* new_eadd */
-   
+
 /* remove the last row and the last column of a matrix Mat */
 Matrix *Reduce_Matrix (Matrix *Mat) {
-	   int i; 
+	   int i;
 	   Value *p;
 	   p=*(Mat->p+(Mat->NbRows-1));
 	   for (i=0;i<Mat->NbColumns; i++)  {
 		   value_clear(*p++);
 	   }
-	   for (i=0; i<Mat->NbRows-1; i++)  { 
+	   for (i=0; i<Mat->NbRows-1; i++)  {
 		   p=*(Mat->p+i);
 		   value_clear(*(p+(Mat->NbColumns-1)));
 	   }
@@ -509,13 +509,13 @@ Matrix *Reduce_Matrix (Matrix *Mat) {
 	   Mat->NbColumns--;
 	   return Mat;
    } /* Reduce_Matrix */
-    
-  
-  /* Computes the scalar product (in euclidien space) of two vectors */ 
-  
+
+
+  /* Computes the scalar product (in euclidien space) of two vectors */
+
 void Scalar_product(Value *p1,Value *p2,unsigned length, Value *r) {
         Value *cp1, *cp2;
-	
+
         int i;
           cp1=p1;
        	  cp2=p2;
@@ -527,7 +527,7 @@ void Scalar_product(Value *p1,Value *p2,unsigned length, Value *r) {
   } /* Scalar_product */
 
     /* computes the scm of two integrals  */
-     
+
       int ppcm1 (int a, int b) {
 	   int t;
 	   t = (a*b)/ pgcd1(a,b);
@@ -548,7 +548,7 @@ Matrix *Orthogonal_Base(Matrix *Mat)  {
   OrthMat= Matrix_Alloc(Mat->NbRows,Mat->NbColumns);
   length=Mat->NbColumns;
   for(k=0; k<length; k++)  {
-    value_assign(OrthMat->p[0][k],Mat->p[0][k]);		
+    value_assign(OrthMat->p[0][k],Mat->p[0][k]);
   }
   f=Vector_Alloc(length);
   p=Vector_Alloc(length);
@@ -563,16 +563,16 @@ Matrix *Orthogonal_Base(Matrix *Mat)  {
       for(k=0;k<length;k++)  {
 	value_assign(p->p[k],OrthMat->p[j][k]);
       }
-      
+
       Scalar_product(p->p,f->p,length,&a);
-      Scalar_product(p->p,p->p,length,&b);	
+      Scalar_product(p->p,p->p,length,&b);
       value_gcd(c, a, b);
       value_divexact(a, a, c);
       value_divexact(b, b, c);
       for(k=0;k<length;k++) {
 	value_multiply(p->p[k],p->p[k],a);
       }
-      
+
       if(value_notone_p(d)|value_notone_p(b))  {
 	value_lcm(c, d, b);
 	value_divexact(a, c, b);
@@ -582,15 +582,15 @@ Matrix *Orthogonal_Base(Matrix *Mat)  {
 	  value_multiply(p->p[k],p->p[k],a);
 	  value_multiply(q->p[k],q->p[k],b);
 	}
-	
+
       }
-      
+
       for(k=0;k<length;k++) {
 	value_subtract(q->p[k],q->p[k],p->p[k]);
       }
-      
+
     }
-    Vector_Gcd(q->p,length,&c); 
+    Vector_Gcd(q->p,length,&c);
     Vector_AntiScale(q->p, OrthMat->p[i], c, length);
   }
   value_clear(a);
@@ -599,7 +599,7 @@ Matrix *Orthogonal_Base(Matrix *Mat)  {
   value_clear(d);
   return OrthMat;
 }  /* Orthogonal_Base  */
-     
+
 
 /* Remove an element of a list */
 void  Remove_Element(Enumeration *en,Enumeration **re, Enumeration *prev)  {
@@ -610,8 +610,8 @@ void  Remove_Element(Enumeration *en,Enumeration **re, Enumeration *prev)  {
     prev->next=en->next;
   }
 } /* Remove_Element */
-  
- /* Remove validite domains and correspending ehrhart polynomials whitch are redundant after 
+
+ /* Remove validite domains and correspending ehrhart polynomials whitch are redundant after
   the enumeration of a polyhedron */
 
  void Remove_RedundantDomains (Enumeration  **Ures)  {
@@ -621,13 +621,13 @@ void  Remove_Element(Enumeration *en,Enumeration **re, Enumeration *prev)  {
 		red=0;
 		for (ren2=*Ures; ren2; ren2=ren2->next)  {
 			if (ren1!=ren2)  {
-                        	  
+
 			    if (PolyhedronIncludes(ren2->ValidityDomain, ren1->ValidityDomain)) {
 					red= 1;
 					break;
-		
+
 				}
-				
+
 			}
 		}
 		if (red)  {
@@ -636,23 +636,23 @@ void  Remove_Element(Enumeration *en,Enumeration **re, Enumeration *prev)  {
 		previous=ren1;
 	}
  }/*Remove_RedendentDomains */
-						      
-				  
+
+
 int IncludeInRes (Polyhedron *p, Enumeration *e, unsigned MR) {
 	Enumeration *en;
 	   for (en=e; en; en=en->next)  {
-		  
-		if (PolyhedronIncludes(e->ValidityDomain,p)) 
+
+		if (PolyhedronIncludes(e->ValidityDomain,p))
 			 return 1;
 	   }
-	return 0; 	
+	return 0;
 }
 
 Polyhedron *DMUnion(Enumeration *en, unsigned MR)  {
 	Enumeration *e1;
 	Polyhedron *d;
 	e1=en;
-        d=e1->ValidityDomain; 
+        d=e1->ValidityDomain;
 	 for (e1=en->next; e1; e1=e1->next) {
 	   d= DomainUnion( d, e1->ValidityDomain, MR);
 	 }
@@ -672,12 +672,12 @@ void AffConstraints(Polyhedron *Poldisj)
 }
 int Degenerate (Enumeration *en) {
 	if(value_notzero_p(en->EP.d)) {
-		
+
            if(value_mone_p(en->EP.x.n )) {
-	       return 1;    
+	       return 1;
            }
 	}
-   return 0;	
+   return 0;
 }
 
 /* Enumeration of a domain D */
@@ -686,10 +686,10 @@ Enumeration *Domain_Enumerate(Polyhedron *D, Polyhedron *C, unsigned MAXRAYS,
 				const char **pn)
 {     Polyhedron_union *Polun,*pu;
       Polyhedron  *lp, *lp1, *lp1next;
-      Polyhedron *d1,*d2,*d;  
+      Polyhedron *d1,*d2,*d;
       Enumeration *e,*pr,*en,*en1, *en2,*tmp, *res, *sen;
       Polun=NULL;
-     
+
       for (d = D; d; d = d->next) {
 	  POL_ENSURE_FACETS(d);
 	  POL_ENSURE_VERTICES(d);
@@ -702,10 +702,10 @@ Enumeration *Domain_Enumerate(Polyhedron *D, Polyhedron *C, unsigned MAXRAYS,
 #ifdef UE_DEBUG
      printf("##############################################################\n");
      printf("\n###### DISJOINT UNION  ######\n\n");
-     AffConstraints(lp); 
+     AffConstraints(lp);
      printf("##############################################################\n");
 #endif
-     
+
 	for (lp1=lp ; lp1; lp1=lp1->next)
 	{
 		Enumeration *enext;
@@ -741,7 +741,7 @@ Enumeration *Domain_Enumerate(Polyhedron *D, Polyhedron *C, unsigned MAXRAYS,
 #endif
 		return ((Enumeration *) 0);
 	}
-      
+
 	while(Polun->next != NULL)  {
 		Enumeration *enext;
 		res=NULL;
@@ -798,14 +798,14 @@ Enumeration *Domain_Enumerate(Polyhedron *D, Polyhedron *C, unsigned MAXRAYS,
 		}
 		Domain_Free(d1);
 		Domain_Free(d2);
-	    
+
 		Polun->pt=res;
-	        		     
+
 		Polun->next= (Polun->next)->next;
 	}
 	res=Polun->pt;
-		
-	Remove_RedundantDomains(&res); 
+
+	Remove_RedundantDomains(&res);
 	return(res);
 }
 
@@ -830,7 +830,7 @@ Enumeration *Polyhedron_Image_Enumerate(Polyhedron *D,  Polyhedron *C, Matrix *T
 
    value_init(h);
     if(!D) {
-	 fprintf(stdout,"             Error: in reading input domain \n");   
+	 fprintf(stdout,"             Error: in reading input domain \n");
 	 value_clear(h);
 	   return ((Enumeration *) 0);
     }
@@ -846,12 +846,12 @@ Enumeration *Polyhedron_Image_Enumerate(Polyhedron *D,  Polyhedron *C, Matrix *T
           if(emptyQ(fpol)) {
 		  value_clear(h);
  		  return ((Enumeration *) 0);
-	  } 
+	  }
           ee = Domain_Enumerate(fpol,C,MAXRAYS,par_name);
 	  value_clear(h);
        return  (ee);
 #endif
- 
+
      TCopy= Matrix_Copy(T);
      Tred= Reduce_Matrix(TCopy);
      printf("\n ##################  INPUT REDUCED TRANSFORMATION MATRIX ##################\n" );
@@ -872,7 +872,7 @@ Enumeration *Polyhedron_Image_Enumerate(Polyhedron *D,  Polyhedron *C, Matrix *T
 	       d= (Matrix *) CalcBase(d1);
 	       Matrix_Free(Tred);
 	       Matrix_Free(d1);
-	 
+
          }
          else {
               d=(Matrix *) CalcBase(Tred);
@@ -884,16 +884,16 @@ Enumeration *Polyhedron_Image_Enumerate(Polyhedron *D,  Polyhedron *C, Matrix *T
 		return ((Enumeration *) 0);
 	}
 	else {
-	   printf( "        Ker(A)=0  implys directly Enumeration on input polyhedron\n\n");    	
+	   printf( "        Ker(A)=0  implys directly Enumeration on input polyhedron\n\n");
            ee=Domain_Enumerate(D,C,MAXRAYS,par_name);
 	   value_clear(h);
            return ee;
 	}
    }
-   
+
    d1=Transpose(d);
    Matrix_Free(d);
-   
+
    if(d1->NbRows!=D->Dimension) {
       fprintf(stdout,"      \n Error: incompatible dimension \n");
       value_clear(h);
@@ -903,34 +903,34 @@ Enumeration *Polyhedron_Image_Enumerate(Polyhedron *D,  Polyhedron *C, Matrix *T
  fprintf(stdout,"   \n Error: Can not compute integral points : More then vector in ker(A)! \n");
     value_clear(h);
     return ((Enumeration *) 0);
-	 
+
     }
    printf( "           \n Ker(A)=1  implys adding constraints befor Enumeration\n");
    v1=Vector_Alloc(d1->NbRows);
    v2=Vector_Alloc(d1->NbRows);
-   
-   	  polun=(Polyhedron *) NULL; 
+
+   	  polun=(Polyhedron *) NULL;
             for (k=0;k<d1->NbRows;k++) {
 	          value_assign(v1->p[k],d1->p[k][0]) ;
 	    }
 	  /* adding a new constraint for all constraints of D in which the scalar product of the*/
 	  /* normal whith vector v1 is greter then zero*/
-	    
+
 	  for (j=0;j<D->NbConstraints;j++)  {
                  for (k=0;k<=D->Dimension-1;k++) {
 			value_assign(v2->p[k],D->Constraint[j][k+1]) ;
 	          }
                   Scalar_product(v1->p,v2->p,D->Dimension,&h);
-		
+
 		  if(value_pos_p(h)&&!value_zero_p(D->Constraint[j][0])) {
 	               Vector *NCont;
 		       Value val;
 		       value_init( val );
 		       /* Create a new contraint whitch is added to the polyhedron*/
-		       
+
 		       NCont=Vector_Alloc(d1->NbRows+2);
 		       value_set_si( NCont->p[0],1); /* the constraint is an inequality */
-				       
+
 		       for (k=1;k<=D->Dimension;k++) {
 		            value_oppose( NCont->p[k], D->Constraint[j][k]);
 					}
@@ -962,17 +962,15 @@ Enumeration *Polyhedron_Image_Enumerate(Polyhedron *D,  Polyhedron *C, Matrix *T
          	      return ((Enumeration *) 0);
               }
               else {
-	printf("\n ##################################################################");       
-        printf("\n ****** THE RESULT OF ADDING CONSTRAINTS TO THE INPUT POLYHEDRON  ****** \n");  	 
+	printf("\n ##################################################################");
+        printf("\n ****** THE RESULT OF ADDING CONSTRAINTS TO THE INPUT POLYHEDRON  ****** \n");
 	       AffConstraints(polun);
        	       ee= Domain_Enumerate(polun,C,MAXRAYS,par_name);
 	       value_clear(h);
 	       return (ee );
 	      }
       }
-	      
 
-	return( NULL );	          
+
+	return( NULL );
 }
-
-
