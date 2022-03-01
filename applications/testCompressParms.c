@@ -16,7 +16,7 @@
 #endif
 #define dbg 1
 
-#define TEST(a) if (isOk = a) { \
+#define TEST(a) if ((isOk = (a))) { \
                   printf(#a" tested ok.\n"); \
                 } \
                 else { \
