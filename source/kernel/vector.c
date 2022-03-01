@@ -801,11 +801,11 @@ Value* value_alloc(int want, int *got)
 #ifdef THREAD_SAFE_POLYLIB
 	assert(pthread_once(&once_cache, init_value_caches) == 0);
 	cache_holder *cache;
-	if( (cache = pthread_getspecific( cache_key )) == NULL )
+	if( MAX_CACHE_SIZE>0 && (cache = pthread_getspecific( cache_key )) == NULL )
 		cache = allocate_local_cache();
 #endif // THREAD_SAFE_POLYLIB
 
-    if (cache_size) {
+    if (MAX_CACHE_SIZE>0 && cache_size) {
       int best=0;
       for (i = 0; i < cache_size; ++i) {
         if (cache[i].size >= want) {
@@ -851,10 +851,10 @@ void value_free(Value *p, int size)
 	cache_holder *cache;
 //	if( (cache = pthread_getspecific( cache_key )) == NULL )
 //		cache = allocate_local_cache();
-	assert( (cache = pthread_getspecific( cache_key )) != NULL );
+	assert( MAX_CACHE_SIZE==0 || (cache = pthread_getspecific( cache_key )) != NULL );
 #endif // THREAD_SAFE_POLYLIB
 
-    if (cache_size < MAX_CACHE_SIZE) {
+    if (MAX_CACHE_SIZE && cache_size < MAX_CACHE_SIZE) {
       cache[cache_size].p = p;
       cache[cache_size].size = size;
       ++cache_size;
