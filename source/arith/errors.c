@@ -86,7 +86,8 @@
 /* defined by configure script */
 /* #define THREAD_SAFE_POLYLIB */
 
-#include "arithmetique.h"
+//#include "arithmetique.h"
+#include <polylib/arithmetique.h>
 
 /* global constants to designate exceptions.
    to be put in the type field bellow.
@@ -148,7 +149,7 @@ static unsigned int linear_exception_verbose = 1 | 2 | 16 ;
 
 /* A structure for the exception stack.
  */
-typedef struct 
+typedef struct
 {
   /* exception type.
    */
@@ -163,7 +164,7 @@ typedef struct
   const char * function;
   const char * file;
   int    line;
-} 
+}
   linear_exception_holder;
 
 #define MAX_STACKED_CONTEXTS 64
@@ -215,7 +216,7 @@ static int exception_index = 0;
 static exception_callback_t push_callback = NULL;
 static exception_callback_t pop_callback = NULL;
 
-void set_exception_callbacks(exception_callback_t push, 
+void set_exception_callbacks(exception_callback_t push,
 			     exception_callback_t pop)
 {
   if (push_callback!=NULL || pop_callback!=NULL)
@@ -247,9 +248,9 @@ void dump_exception_stack_to_file(FILE * f)
   fprintf(f, "[dump_exception_stack_to_file] size=%d\n", exception_index);
   for (i=0; i<exception_index; i++)
   {
-    fprintf(f, 
+    fprintf(f,
 	    "%d: [%s:%d in %s (%d)]\n",
-	    i, 
+	    i,
 	    exception_stack[i].file,
 	    exception_stack[i].line,
 	    exception_stack[i].function,
@@ -265,14 +266,14 @@ void dump_exception_stack()
 
 #define exception_debug_message(type) 				  \
     fprintf(stderr, "%s[%s:%d %s (%s)/%d]\n", 			  \
-	    type, file, line, function, get_exception_name(what), exception_index) 
+	    type, file, line, function, get_exception_name(what), exception_index)
 
 #define exception_debug_trace(type) \
     if (linear_exception_debug_mode) { exception_debug_message(type); }
 
 /* push a what exception on stack.
  */
-jmp_buf * 
+jmp_buf *
 push_exception_on_stack(
     int what,
     const char * function,
@@ -322,7 +323,7 @@ pop_exception_from_stack(
     const char * function,
     const char * file,
     int line)
-{  
+{
 #ifdef THREAD_SAFE_POLYLIB
 	assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
 	linear_exception_holder *exception_stack;
@@ -350,7 +351,7 @@ pop_exception_from_stack(
       !same_string_p(exception_stack[exception_index].function, function))
   {
     exception_debug_message("pop");
-    fprintf(stderr, 
+    fprintf(stderr,
 	    "exception stack mismatch at depth=%d:\n"
 	    "   CATCH: %s:%d in %s (%d)\n"
 	    " UNCATCH: %s:%d in %s (%d)\n",
@@ -365,7 +366,7 @@ pop_exception_from_stack(
   }
 }
 
-/* throws an exception of a given type by searching for 
+/* throws an exception of a given type by searching for
    the specified 'what' in the current exception stack.
 */
 void throw_exception(
@@ -388,31 +389,31 @@ void throw_exception(
 
   for (i=exception_index-1; i>=0; i--)
   {
-    if (pop_callback) 
+    if (pop_callback)
       /* pop with push parameters! */
       pop_callback(exception_stack[i].file,
 		   exception_stack[i].function,
 		   exception_stack[i].line);
 
-    if (exception_stack[i].what & what) 
+    if (exception_stack[i].what & what)
     {
       exception_index = i;
       linear_number_of_exception_thrown++;
 
       if (linear_exception_debug_mode)
-	fprintf(stderr, "---->[%s:%d %s (%d)/%d]\n", 
+	fprintf(stderr, "---->[%s:%d %s (%d)/%d]\n",
 		exception_stack[i].file,
 		exception_stack[i].line,
 		exception_stack[i].function,
 		exception_stack[i].what,
 		i);
-  
+
       /* trace some exceptions... */
       if (linear_exception_verbose & what)
 	fprintf(stderr, "exception %d/%d: %s(%s:%d) -> %s(%s:%d)\n",
 		what, exception_stack[i].what,
 		function, file, line,
-		exception_stack[i].function, 
+		exception_stack[i].function,
 		exception_stack[i].file,
 		exception_stack[i].line);
 
@@ -431,7 +432,7 @@ void throw_exception(
 
 void linear_initialize_exception_stack(
   unsigned int verbose_exceptions,
-  exception_callback_t push, 
+  exception_callback_t push,
   exception_callback_t pop)
 {
   linear_exception_verbose = verbose_exceptions;

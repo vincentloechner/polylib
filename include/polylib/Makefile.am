@@ -28,10 +28,10 @@ polyinclude_HEADERS = \
 	types.h \
 	vector.h
 
-poly_arith = $(top_srcdir)/source/arith
-arithmetic_errors.h:$(poly_arith)/arithmetic_errors.h
-	rm -f $@
-	$(LN_S) $(poly_arith)/arithmetic_errors.h $@
-arithmetique.h:$(poly_arith)/arithmetique.h
-	rm -f $@
-	$(LN_S) $(poly_arith)/arithmetique.h $@
+# poly_arith = $(top_srcdir)/source/arith
+# arithmetic_errors.h:$(poly_arith)/arithmetic_errors.h
+# 	rm -f $@
+# 	$(LN_S) $(poly_arith)/arithmetic_errors.h $@
+# arithmetique.h:$(poly_arith)/arithmetique.h
+# 	rm -f $@
+# 	$(LN_S) $(poly_arith)/arithmetique.h $@
