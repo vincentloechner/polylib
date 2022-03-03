@@ -9,10 +9,10 @@
  * Francois Irigoin, mai 1989
  *
  * Modifications
- *  - rewrite of DIVIDE which was wrong (Remi Triolet, Francois Irigoin, 
+ *  - rewrite of DIVIDE which was wrong (Remi Triolet, Francois Irigoin,
  *    april 90)
  *  - simplification of POSITIVE_DIVIDE by suppressing one modulo
- *  - B.Meister : added addmul, operation existing in gmp and quite useful 
+ *  - B.Meister : added addmul, operation existing in gmp and quite useful
  *    (05-2005)
  */
 
@@ -21,7 +21,7 @@
  * be changed to "int" "long" or "long long". In an ideal world,
  * any source modification should be limited to this package.
  *
- * Indeed, we cannot switch easily to bignums that need constructors 
+ * Indeed, we cannot switch easily to bignums that need constructors
  * dans destructors... That would lead to too many modifications...
  * C++ would make things easier and cleaner...
  *
@@ -47,7 +47,7 @@ void mp_get_memory_functions(
 }
 #endif
 #endif
-#endif 
+#endif
 
 #ifdef CLN
 #include <sstream>
@@ -55,20 +55,20 @@ void mp_get_memory_functions(
 #include <cln/cln.h>
 #endif
 
-/* 
+/*
    #        ####   #    #   ####           #        ####   #    #   ####
    #       #    #  ##   #  #    #          #       #    #  ##   #  #    #
    #       #    #  # #  #  #               #       #    #  # #  #  #
    #       #    #  #  # #  #  ###          #       #    #  #  # #  #  ###
    #       #    #  #   ##  #    #          #       #    #  #   ##  #    #
    ######   ####   #    #   ####           ######   ####   #    #   ####
-   
+
 */
 
-/* 
+/*
  * Constants like LONG_LONG_MAX are not defined with ansi options, so they are
- * defined here. 
- */  
+ * defined here.
+ */
 
 #ifndef LONG_LONG_MAX
 
@@ -98,17 +98,17 @@ typedef long long int Value;
 #else
 #   define VALUE_FMT "%lld"
 #endif
-#define VALUE_CONST(val) (val##LL) 
+#define VALUE_CONST(val) (val##LL)
 
-/* 
+/*
  * CAUTION! 'VALUE_MIN' is defined as 'LONG_LONG_MIN +1' so as to preserve the
- * symmetry (-min==max) and to have a NAN value. FC 
- */ 
+ * symmetry (-min==max) and to have a NAN value. FC
+ */
 
 #define VALUE_NAN LONG_LONG_MIN
 #define VALUE_MIN (LONG_LONG_MIN+1LL)
 #define VALUE_MAX LONG_LONG_MAX
-#define VALUE_SQRT_MIN long_to_value(LONG_MIN) 
+#define VALUE_SQRT_MIN long_to_value(LONG_MIN)
 #define VALUE_SQRT_MAX long_to_value(LONG_MAX)
 #define VALUE_ZERO (0LL)
 #define VALUE_ONE  (1LL)
@@ -129,15 +129,15 @@ typedef long long int Value;
 
 /* end LINEAR_VALUE_IS_LONGLONG */
 
-/* 
- 
+/*
+
    #        ####   #    #   ####
    #       #    #  ##   #  #    #
    #       #    #  # #  #  #
    #       #    #  #  # #  #  ###
    #       #    #  #   ##  #    #
    ######   ####   #    #   ####
- 
+
 */
 
 #elif defined(LINEAR_VALUE_IS_LONG)
@@ -161,14 +161,14 @@ typedef long Value;
 
 /* end LINEAR_VALUE_IS_LONG */
 
-/* 
+/*
    ######  #        ####     ##     #####
    #       #       #    #   #  #      #
    #####   #       #    #  #    #     #
    #       #       #    #  ######     #
    #       #       #    #  #    #     #
    #       ######   ####   #    #     #
- 
+
 */
 
 /*
@@ -199,7 +199,7 @@ typedef float Value;
   #       #    #  ######  #####            # #
   #    #  #    #  #    #  #   #           #   #
    ####   #    #  #    #  #    #
-  
+
    */
 
 /* Char version is used to detect invalid assignments */
@@ -252,6 +252,15 @@ typedef int Value;
 
 /* end LINEAR_VALUE_IS_INT */
 
+/*
+     #####    #     #   ######
+    #     #   ##   ##   #     #
+    #         # # # #   #     #
+    #  ####   #  #  #   ######
+    #     #   #     #   #
+    #     #   #     #   #
+     #####    #     #   #
+*/
 #elif defined(GNUMP)
 
 #define LINEAR_VALUE_STRING "gmp"
@@ -267,6 +276,17 @@ typedef mpz_t Value;
 #define VALUE_TO_FLOAT(val) ((float)((int)mpz_get_si(val)))
 #define VALUE_TO_DOUBLE(val) (mpz_get_d(val))
 
+/* end GNUMP */
+
+/*
+     #####    #         #     #
+    #     #   #         ##    #
+    #         #         # #   #
+    #         #         #  #  #
+    #         #         #   # #
+    #     #   #         #    ##
+     #####    #######   #     #
+*/
 #elif defined(CLN)
 
 #define LINEAR_VALUE_STRING "cln"
@@ -276,15 +296,22 @@ typedef cln::cl_I Value;
 #define VALUE_TO_INT(val) (cln::cl_I_to_int(val))
 #define VALUE_TO_DOUBLE(val) (cln::double_approx(val))
 
-#endif 
+/* end CLN */
 
+#endif
+/* end LINEAR_VALUE_IS_* */
+
+
+/* ********************************************************************* */
 /* ***************** MACROS FOR MANIPULATING VALUES ******************** */
+/* ********************************************************************* */
 
+/* Starts with library-specific functions: CLN and GMP, and then defaults */
 #if defined(CLN)
 
 #define value_init(val)        	((val).word = ((cln::cl_uint)cl_FN_tag) << cl_tag_shift)
 #define value_assign(v1,v2)    	((v1) = (v2))
-#define value_set_si(val,i)    	((val) = (i))    
+#define value_set_si(val,i)    	((val) = (i))
 #define value_set_double(val,d)	((val) = cln::truncate1(cln::cl_R(d)))
 #define value_clear(val)       	((val) = 0)
 #define value_read(val,str)    	((val) = (str))
@@ -350,13 +377,14 @@ typedef cln::cl_I Value;
 #define value_notmone_p(val)     ((val) != -1)
 #define value_cmp_si(val, n)     (cln::compare(val,n))
 
+/* end #if defined(CLN) */
+/* ********************************************************************* */
 #elif defined(GNUMP)
 
 /* Basic macros */
-
 #define value_init(val)        (mpz_init((val)))
 #define value_assign(v1,v2)    (mpz_set((v1),(v2)))
-#define value_set_si(val,i)    (mpz_set_si((val),(i)))    
+#define value_set_si(val,i)    (mpz_set_si((val),(i)))
 #define value_set_double(val,d)(mpz_set_d((val),(d)))
 #define value_clear(val)       (mpz_clear((val)))
 #define value_read(val,str)    (mpz_set_str((val),(str),10))
@@ -369,9 +397,8 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 				(*gmp_free) (str, strlen(str)+1); \
                               }
 #define value_swap(val1,val2) (mpz_swap(val1, val2))
-                                             
-/* Boolean operators on 'Value' */
 
+/* Boolean operators on 'Value' */
 #define value_eq(v1,v2) (mpz_cmp((v1),(v2)) == 0)
 #define value_ne(v1,v2) (mpz_cmp((v1),(v2)) != 0)
 #define value_gt(v1,v2) (mpz_cmp((v1),(v2))  > 0)
@@ -387,12 +414,10 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #define value_abs_le(v1,v2) (mpz_cmpabs((v1),(v2)) <= 0)
 
 /* Trian operators on 'Value' */
-
 #define value_sign(val)      (mpz_sgn(val))
 #define value_cmp(v1,v2) (mpz_cmp((v1),(v2)))
 
 /* Binary operations on 'Value' */
-
 #define value_addto(ref,val1,val2)     (mpz_add((ref),(val1),(val2)))
 #define value_add_int(ref,val,vint)     (mpz_add_ui((ref),(val),(long)(vint)))
 #define value_addmul(ref, val1, val2)   (mpz_addmul((ref), (val1), (val2)))
@@ -410,17 +435,16 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #define value_absolute(ref,val)        (mpz_abs((ref),(val)))
 #define value_minimum(ref,val1,val2)   (value_le((val1),(val2)) ?  \
                                         mpz_set((ref),(val1)) :    \
-                                        mpz_set((ref),(val2)))  
+                                        mpz_set((ref),(val2)))
 #define value_maximum(ref,val1,val2)   (value_ge((val1),(val2)) ?  \
                                         mpz_set((ref),(val1)) :    \
-                                        mpz_set((ref),(val2)))  
+                                        mpz_set((ref),(val2)))
 #define value_gcd(ref,val1,val2)	(mpz_gcd(ref,val1,val2))
 #define value_lcm(ref,val1,val2)	(mpz_lcm(ref,val1,val2))
 #define value_orto(ref,val1,val2)      (mpz_ior((ref),(val1),(val2)))
 #define value_andto(ref,val1,val2)     (mpz_and((ref),(val1),(val2)))
 
 /* Conditional operations on 'Value' */
-
 #define value_pos_p(val)         (mpz_sgn(val) >  0)
 #define value_neg_p(val)         (mpz_sgn(val) <  0)
 #define value_posz_p(val)        (mpz_sgn(val) >= 0)
@@ -433,15 +457,16 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #define value_notmone_p(val)     (mpz_cmp_si(val,-1) !=0)
 #define value_cmp_si(val, n)     (mpz_cmp_si(val,n))
 
+/* end #if defined(GNUMP) */
 /* ************************************************************************* */
+#else
+/* 'Value' set to anything else: longlong|long|float|char *|int */
 
-#else /* 'Value' set to longlong|long|float|char *|int */                                     	
-/* Basic Macros */    				    
-
+/* Basic Macros */
 #define value_init(val)            ((val) = 0)
 #define value_assign(v1,v2)        ((v1)  = (v2))
-#define value_set_si(val,i)        ((val) = (Value)(i))   
-#define value_set_double(val,d)    ((val) = (Value)(d)) 
+#define value_set_si(val,i)        ((val) = (Value)(i))
+#define value_set_double(val,d)    ((val) = (Value)(d))
 #define value_clear(val)           ((val) = 0)
 #define value_read(val,str)        (sscanf((str),VALUE_FMT,&(val)))
 #define value_print(Dst,fmt,val)   (fprintf((Dst),(fmt),(val)))
@@ -449,14 +474,12 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
                                     v2 = v1; v1 = tmp;   \
                                    }
 /* Cast to 'Value' */
-
 #define int_to_value(i) ((Value)(i))
 #define long_to_value(l) ((Value)(l))
 #define float_to_value(f) ((Value)(f))
 #define double_to_value(d) ((Value)(d))
-   
-/* Boolean operators on 'Value' */
 
+/* Boolean operators on 'Value' */
 #define value_eq(v1,v2) ((v1)==(v2))
 #define value_ne(v1,v2) ((v1)!=(v2))
 #define value_gt(v1,v2) ((v1)>(v2))
@@ -472,12 +495,10 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #define value_abs_le(v1,v2) (value_abs(v1)<=value_abs(v2))
 
 /* Trian operators on 'Value' */
-
 #define value_sign(v) (value_eq(v,VALUE_ZERO)?0:value_lt(v,VALUE_ZERO)?-1:1)
 #define value_cmp(v1,v2) (value_eq(v1,v2)?0:value_lt(v1,v2)?-1:1)
 
 /* Binary operators on 'Value' */
-
 #define value_plus(v1,v2)  		((v1)+(v2))
 #define value_div(v1,v2)   		((v1)/(v2))
 #define value_mod(v1,v2)   		((v1)%(v2))
@@ -491,9 +512,8 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #define value_and(v1,v2)  		((v1)&(v2))
 #define value_lshift(v1,v2)     	((v1)<<(v2))
 #define value_rshift(v1,v2)  	        ((v1)>>(v2))
-				  
-/* Binary operations on 'Value' */ 
 
+/* Binary operations on 'Value' */
 #define value_addto(ref,val1,val2) 	((ref) = (val1)+(val2))
 #define value_add_int(ref,val,vint)     ((ref) = (val)+(Value)(vint))
 #define value_addmul(ref, val1, val2)   ((ref) += (val1)*(val2))
@@ -518,7 +538,6 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #define value_andto(ref,val1,val2)	((ref) = (val1)&(val2))
 
 /* Unary operators on 'Value' */
-
 #define value_uminus(val)  (-(val))
 #define value_not(val)	(~(val))
 #define value_abs(val) (value_posz_p(val)? \
@@ -528,7 +547,6 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
     (THROW (overflow_error), VALUE_NAN )))
 
 /* Conditional operations on 'Value' */
-
 #define value_pos_p(val)      value_gt(val,VALUE_ZERO)
 #define value_neg_p(val)      value_lt(val,VALUE_ZERO)
 #define value_posz_p(val)     value_ge(val,VALUE_ZERO)
@@ -549,7 +567,6 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 
 
 /* *********************** PROTECTED MULTIPLICATION ********************** */
-
 #include "arithmetic_errors.h"
 
 /* (|v| < MAX / |w|) => v*w is okay
@@ -579,7 +596,7 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #define value_protected_product(v,w)		\
     v=value_protected_mult(v,w)
 
-/* whether the default is protected or not 
+/* whether the default is protected or not
  * this define makes no sense any more... well, doesn't matter. FC.
  */
 #if defined(LINEAR_VALUE_PROTECT_MULTIPLY)
@@ -589,7 +606,7 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 
 /* I do enforce the protection whatever requested:-)
  * prints out a message and throws the exception, hoping
- * that some valid CATCH waits for it upwards. 
+ * that some valid CATCH waits for it upwards.
  */
 #define value_mult(v,w)							      \
   value_protected_multiply(v,w,						      \
@@ -663,7 +680,7 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #undef value_orto
 #define value_orto(ref,val) value_addto(v1,v2)
 #undef value_andto
-#define value_andto(ref,val) value_addto(v1,v2)	
+#define value_andto(ref,val) value_addto(v1,v2)
 #undef value_or
 #define value_or(v1,v2) value_fake_binary(v1,v2)
 #undef value_and
@@ -672,7 +689,7 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #define value_lshift(v1,v2) value_fake_binary(v1,v2)
 #undef value_rshift
 #define value_rshift(v1,v2) value_fake_binary(v1,v2)
-#endif 
+#endif
 
 /* for backward compatibility */
 #define value_substract(ref,val1,val2) (value_subtract((ref),(val1),(val2)))
@@ -683,8 +700,8 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #define ABS(x) (((x)>=0) ? (x) : -(x))
 #endif
 
-/* minimum et maximum 
- * if they are defined somewhere else, they are very likely 
+/* minimum et maximum
+ * if they are defined somewhere else, they are very likely
  * to be defined the same way. Thus the previous def is not overwritten.
  */
 #ifndef MIN
@@ -720,13 +737,13 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
  */
 #define POSITIVE_MODULO(x,y) ((x) > 0 ? (x)%(y) : \
 			      ((x)%(y) == 0 ? 0 : ((y)-(-(x))%(y))))
-			      
-/* errors.c */ 
+
+/* errors.c */
 extern unsigned int overflow_error;
 extern unsigned int simplex_arithmetic_error;
 extern unsigned int user_exception_error;
 extern unsigned int parser_exception_error;
-extern unsigned int any_exception_error; 
+extern unsigned int any_exception_error;
 extern unsigned int the_last_just_thrown_exception;
 extern void dump_exception_stack_to_file(FILE * /*f*/);
 extern void dump_exception_stack(void);
@@ -735,6 +752,3 @@ extern void pop_exception_from_stack(int /*what*/, const char * /*function*/, co
 extern void throw_exception(int /*what*/, const char * /*function*/, const char * /*file*/, int /*line*/);
 
 #endif /* arithmetique_header_included */
-
-
-
