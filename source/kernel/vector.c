@@ -745,10 +745,15 @@ int Vector_IsZero(Value * v, unsigned length) {
   }
 }
 
+// ***************************************************************************
+// VALUES CACHE HANDLING FUNCTIONS BELOW
 typedef struct {
   Value *p;
   int 	size;
 } cache_holder;
+
+// those number of arrays of Values memory allocations are kept in the cache
+// and reused when possible.
 #define MAX_CACHE_SIZE 20
 
 
@@ -864,4 +869,30 @@ void value_free(Value *p, int size)
     for (i=0; i < size; i++)
       value_clear(p[i]);
     free(p);
+}
+
+// Free all memory allocated in the cache, call it before exiting in a
+// memory checker environment like valgrind
+// Notice that, in a multithreaded execution, all threads have to call this
+// function
+void polylib_close()
+{
+  int c, i;
+  if(MAX_CACHE_SIZE==0)
+    return;
+  #ifdef THREAD_SAFE_POLYLIB
+    assert(pthread_once(&once_cache, init_value_caches) == 0);
+  	cache_holder *cache;
+  	if((cache = pthread_getspecific(cache_key)) == NULL )
+      return;
+  #endif // THREAD_SAFE_POLYLIB
+
+  for(c=0 ; c<cache_size ; c++)
+  {
+    for (i=0; i < cache[c].size ; i++)
+      value_clear(cache[c].p[i]);
+    free(cache[c].p);
+  }
+  // just in case someone calls polylib again after
+  cache_size = 0;
 }
