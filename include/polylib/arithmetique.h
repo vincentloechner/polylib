@@ -750,5 +750,6 @@ extern void dump_exception_stack(void);
 extern jmp_buf *push_exception_on_stack(int /*what*/, const char * /*function*/, const char * /*file*/, int /*line*/);
 extern void pop_exception_from_stack(int /*what*/, const char * /*function*/, const char * /*file*/, int /*line*/);
 extern void throw_exception(int /*what*/, const char * /*function*/, const char * /*file*/, int /*line*/);
+extern void free_exception_stack(void);
 
 #endif /* arithmetique_header_included */

@@ -211,6 +211,17 @@ static int exception_index = 0;
 
 #endif // THREAD_SAFE_POLYLIB
 
+void free_exception_stack()
+{
+#ifdef THREAD_SAFE_POLYLIB
+	assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
+	linear_exception_holder *exception_stack;
+	if( (exception_stack = pthread_getspecific( mt_key )) != NULL )
+		free_local_stack(exception_stack);
+#endif // THREAD_SAFE_POLYLIB
+  return;
+}
+
 /* callbacks...
  */
 static exception_callback_t push_callback = NULL;

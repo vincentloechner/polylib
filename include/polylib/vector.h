@@ -1,4 +1,4 @@
-#ifndef _vector_H_ 
+#ifndef _vector_H_
 #define _vector_H_
 
 #if defined(__cplusplus)
@@ -47,6 +47,7 @@ extern void Vector_Reduce(Value *p,unsigned length,
                   void(*f)(Value,Value *),Value *result);
 extern void Vector_Sort(Value *vector,unsigned n);
 extern int Vector_IsZero(Value * v, unsigned length);
+extern void free_value_cache(void);
 
 #if defined(__cplusplus)
 }

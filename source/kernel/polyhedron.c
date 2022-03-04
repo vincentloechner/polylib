@@ -4701,3 +4701,15 @@ Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays)
   Vector_Free(row);
   return R;
 }
+
+/*
+ * Free all cache allocated memory: call this function before exiting in a
+ * memory checker environment like valgrind
+ * Notice that, in a multithreaded environment, *all* your threads have to
+ * call this function
+ */
+void polylib_close()
+{
+  free_value_cache();
+  free_exception_stack();
+}

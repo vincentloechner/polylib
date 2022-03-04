@@ -785,7 +785,6 @@ static cache_holder *allocate_local_cache(void)
 static void free_local_cache(void *c)
 {
 	free(c);
-	assert( pthread_setspecific(cache_key, NULL) == 0 );
 }
 static void init_value_caches(void)
 {
@@ -871,11 +870,8 @@ void value_free(Value *p, int size)
     free(p);
 }
 
-// Free all memory allocated in the cache, call it before exiting in a
-// memory checker environment like valgrind
-// Notice that, in a multithreaded execution, all threads have to call this
-// function
-void polylib_close()
+// Free all memory allocated in the Values cache
+void free_value_cache()
 {
   int c, i;
   if(MAX_CACHE_SIZE==0)
@@ -885,6 +881,7 @@ void polylib_close()
   	cache_holder *cache;
   	if((cache = pthread_getspecific(cache_key)) == NULL )
       return;
+    pthread_key_delete(cache_key);
   #endif // THREAD_SAFE_POLYLIB
 
   for(c=0 ; c<cache_size ; c++)
@@ -893,6 +890,12 @@ void polylib_close()
       value_clear(cache[c].p[i]);
     free(cache[c].p);
   }
-  // just in case someone calls polylib again after
+  // just in case someone calls polylib again afterwards
   cache_size = 0;
+
+  #ifdef THREAD_SAFE_POLYLIB
+    // remove the key and free the cache holder array
+    pthread_key_delete(cache_key);
+    free(cache);
+  #endif // THREAD_SAFE_POLYLIB
 }
