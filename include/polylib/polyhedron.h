@@ -86,6 +86,7 @@ extern Polyhedron *Rays2Polyhedron(Matrix *Ray,unsigned NbMaxConstrs);
 extern Polyhedron *SubConstraint(Value *Con,Polyhedron *Pol,
 				 unsigned NbMaxRays, int Pass);
 extern Polyhedron *Universe_Polyhedron (unsigned Dimension);
+extern void polylib_close(void);
 
 #if defined(__cplusplus)
 }
