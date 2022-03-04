@@ -2466,7 +2466,7 @@ Polyhedron *AddPolyToDomain(Polyhedron *Pol,Polyhedron *PolDomain) {
 } /* AddPolyToDomain */
 
 /*
- * Given a polyhedra 'Pol' and a single constraint 'Con' and an integer 'Pass'
+ * Given a polyhedron 'Pol' and a single constraint 'Con' and an integer 'Pass'
  * whose value ranges from 0 to 3, add the inverse of constraint 'Con' to the
  * constraint set of 'Pol' and return the new polyhedron. 'NbMaxRays' is the
  * maximum allowed rays in the new generated polyhedron.
@@ -2570,10 +2570,12 @@ Polyhedron *SubConstraint(Value *Con,Polyhedron *Pol,unsigned NbMaxRays,int Pass
   return NewPol;
 } /* SubConstraint */
 
-/*
- * Return the intersection of two polyhedral domains 'Pol1' and 'Pol2'.
- * The maximum allowed rays in the new polyhedron generated is 'NbMaxRays'.
- */
+/**
+
+  Return the intersection of two polyhedral domains 'Pol1' and 'Pol2'.
+  The maximum allowed rays in the new polyhedron generated is 'NbMaxRays'.
+
+*/
 Polyhedron *DomainIntersection(Polyhedron *Pol1,Polyhedron *Pol2,unsigned NbMaxRays) {
 
   Polyhedron *p1, *p2, *p3, *d;
@@ -2603,9 +2605,11 @@ Polyhedron *DomainIntersection(Polyhedron *Pol1,Polyhedron *Pol2,unsigned NbMaxR
 
 } /* DomainIntersection */
 
-/*
- * Given a polyhedron 'Pol', return a matrix of rays.
- */
+/**
+
+  Given a polyhedron 'Pol', return a matrix of rays.
+
+*/
 Matrix *Polyhedron2Rays(Polyhedron *Pol) {
 
   Matrix     *Ray;
@@ -2624,10 +2628,12 @@ Matrix *Polyhedron2Rays(Polyhedron *Pol) {
   return Ray;
 } /* Polyhedron2Rays */
 
-/*
- * Add 'NbAddedRays' rays to polyhedron 'Pol'. Rays are pointed by 'AddedRays'
- * and the maximum allowed constraints in the new polyhedron is 'NbMaxConstrs'.
- */
+/**
+
+  Add 'NbAddedRays' rays to polyhedron 'Pol'. Rays are pointed by 'AddedRays'
+  and the maximum allowed constraints in the new polyhedron is 'NbMaxConstrs'.
+
+*/
 Polyhedron *AddRays(Value *AddedRays,unsigned NbAddedRays,Polyhedron *Pol,unsigned NbMaxConstrs) {
 
   Polyhedron *NewPol = NULL;
@@ -2712,11 +2718,13 @@ Polyhedron *AddRays(Value *AddedRays,unsigned NbAddedRays,Polyhedron *Pol,unsign
   return NewPol;
 } /* AddRays */
 
-/*
- * Add rays pointed by 'Ray' to each and every polyhedron in the polyhedral
- * domain 'Pol'. 'NbMaxConstrs' is maximum allowed constraints in the
- * constraint set of a polyhedron.
- */
+/**
+
+  Add rays pointed by 'Ray' to each and every polyhedron in the polyhedral
+  domain 'Pol'. 'NbMaxConstrs' is maximum allowed constraints in the
+  constraint set of a polyhedron.
+
+*/
 Polyhedron *DomainAddRays(Polyhedron *Pol,Matrix *Ray,unsigned NbMaxConstrs) {
 
   Polyhedron *PolA, *PolEndA, *p1, *p2, *p3;
@@ -4702,12 +4710,15 @@ Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays)
   return R;
 }
 
-/*
- * Free all cache allocated memory: call this function before exiting in a
- * memory checker environment like valgrind
- * Notice that, in a multithreaded environment, *all* your threads have to
- * call this function
- */
+/**
+
+  Free all cache allocated memory: call this function before exiting in a
+  memory checker environment like valgrind.
+  
+  Notice that, in a multithreaded environment, *all* your threads have to
+  call this function
+
+*/
 void polylib_close()
 {
   free_value_cache();

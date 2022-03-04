@@ -28,7 +28,7 @@ CFILES= \
 	source/kernel/Lattice.c \
 	source/kernel/Matop.c \
 	source/kernel/NormalForms.c \
-	source/kernel/Zpolyhedron.c		
+	source/kernel/Zpolyhedron.c
 
 sources = $(CFILES) \
 	$(poly_arith)/assert.h \
@@ -208,7 +208,7 @@ longtest: all
 
 # Make the 'javadoc' style documentation
 document:
-	-mkdir doc
+# -mkdir doc
 	$(DOXYGEN) polylib.doxygen
 
 dist-hook: document
