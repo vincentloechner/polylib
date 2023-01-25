@@ -10,7 +10,9 @@ extern void Matrix_Free(Matrix *Mat);
 extern void Matrix_Extend(Matrix *Mat, unsigned NbRows);
 extern void Matrix_Print(FILE * Dst, const char *Format, Matrix *Mat);
 extern Matrix *Matrix_Read_Input(Matrix *Mat);
+extern Matrix *Matrix_Read_InputFile(Matrix *Mat, FILE *fp);
 extern Matrix *Matrix_Read(void);
+extern Matrix *Matrix_ReadFile(FILE *fp);
 extern void right_hermite(Matrix *A,Matrix **Hp,Matrix **Up,Matrix
 			  **Qp);
 extern void left_hermite(Matrix *A,Matrix **Hp,Matrix **Qp,Matrix

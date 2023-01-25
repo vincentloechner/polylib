@@ -140,9 +140,16 @@ void Matrix_Print(FILE *Dst, const char *Format, Matrix *Mat)
 } /* Matrix_Print */
 
 /* 
- * Read the contents of the Matrix 'Mat' 
+ * Read the contents of the Matrix 'Mat' from standard input
  */
 Matrix *Matrix_Read_Input(Matrix *Mat) {
+  return Matrix_Read_InputFile(Mat, stdin);
+} /* Matrix_Read_Input */
+
+/* 
+ * Read the contents of the Matrix 'Mat' from file open in fp
+ */
+Matrix *Matrix_Read_InputFile(Matrix *Mat, FILE *fp) {
   
   Value *p;
   int i,j,n;
@@ -200,24 +207,30 @@ Matrix *Matrix_Read_Input(Matrix *Mat) {
     }
   }
   return( Mat );
-} /* Matrix_Read_Input */
-
+} /* Matrix_Read_InputFile */
 
 /* 
  * Read the contents of the matrix 'Mat' from standard input. 
  * a '#' is a comment (till EOL)
  */
 Matrix *Matrix_Read(void) {
-  
+  return Matrix_ReadFile(stdin);
+} /* Matrix_Read */
+
+/* 
+ * Read the contents of the matrix 'Mat' from file open in fp. 
+ * a '#' is a comment (till EOL)
+ */
+Matrix *Matrix_ReadFile(FILE *fp){
   Matrix *Mat;
   unsigned NbRows, NbColumns;
   char s[1024];
   
-  if (fgets(s, 1024, stdin) == NULL)
+  if (fgets(s, 1024, fp) == NULL)
     return NULL;
   while ((*s=='#' || *s=='\n') ||
 	 (sscanf(s, "%d %d", &NbRows, &NbColumns)<2)) {
-    if (fgets(s, 1024, stdin) == NULL)
+    if (fgets(s, 1024, fp) == NULL)
       return NULL;
   }
   Mat = Matrix_Alloc(NbRows,NbColumns);
@@ -231,7 +244,7 @@ Matrix *Matrix_Read(void) {
     Mat=NULL;
   }
   return Mat;
-} /* Matrix_Read */
+} /* Matrix_ReadFile */
 
 /* 
  * Basic hermite engine 
