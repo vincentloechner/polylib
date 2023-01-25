@@ -159,7 +159,7 @@ Matrix *Matrix_Read_InputFile(Matrix *Mat, FILE *fp) {
   for (i=0;i<Mat->NbRows;i++) {
     do
     {
-      c = fgets(s, 1024, stdin);
+      c = fgets(s, 1024, fp);
       if( !c )
         break;
       /* jump to the first non space char */
