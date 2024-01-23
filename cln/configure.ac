@@ -1,5 +1,5 @@
-AC_INIT(polylib, 5.22.6)
-AM_INIT_AUTOMAKE([gnu])
+AC_INIT(polylib, 5.22.7)
+AM_INIT_AUTOMAKE([gnu subdir-objects])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_PROG_CC
