@@ -32,8 +32,8 @@ CFILES= \
 
 sources = $(CFILES) \
 	$(poly_arith)/assert.h \
-	$(poly_arith)/arithmetique.h \
-	$(poly_arith)/arithmetic_errors.h
+	include/polylib/arithmetique.h \
+	include/polylib/arithmetic_errors.h
 
 EXTRA_DIST = doc source/oldpolytest.c INSTALL COPYING m4/acx_pthread.m4
 
