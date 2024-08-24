@@ -208,7 +208,7 @@ longtest: all
 
 # Make the 'javadoc' style documentation
 document:
-# -mkdir doc
+	-mkdir doc
 	$(DOXYGEN) polylib.doxygen
 
 dist-hook: document
