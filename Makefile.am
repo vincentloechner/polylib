@@ -218,6 +218,7 @@ clean-local:
 
 distclean-local:
 	rm -f polylib*.pc polylib*-uninstalled.pc polylib*-uninstalled.sh polylib*.pc.in
+	rm -rf doc/codeDoc
 
 install-data-local:
 	@test -z "$(pkgconfig_libdir)" || $(mkdir_p) "$(DESTDIR)$(pkgconfig_libdir)"
