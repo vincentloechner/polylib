@@ -33,7 +33,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT([polylib],[5.22.7])
 AC_CONFIG_AUX_DIR([.])
 # AM_INIT_AUTOMAKE([gnu])
-AM_INIT_AUTOMAKE([gnu subdir-objects])
+AM_INIT_AUTOMAKE([gnu])
 AC_CONFIG_SRCDIR(include/polylib/polylib.h.in)
 AC_CONFIG_MACRO_DIR([m4])
 
