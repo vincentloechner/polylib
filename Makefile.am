@@ -32,8 +32,8 @@ CFILES= \
 
 sources = $(CFILES) \
 	$(poly_arith)/assert.h \
-	$(poly_arith)/arithmetique.h \
-	$(poly_arith)/arithmetic_errors.h
+	include/polylib/arithmetique.h \
+	include/polylib/arithmetic_errors.h
 
 EXTRA_DIST = doc source/oldpolytest.c INSTALL COPYING m4/acx_pthread.m4
 
@@ -208,7 +208,7 @@ longtest: all
 
 # Make the 'javadoc' style documentation
 document:
-# -mkdir doc
+	-mkdir doc
 	$(DOXYGEN) polylib.doxygen
 
 dist-hook: document
@@ -218,6 +218,7 @@ clean-local:
 
 distclean-local:
 	rm -f polylib*.pc polylib*-uninstalled.pc polylib*-uninstalled.sh polylib*.pc.in
+	rm -rf doc/codeDoc
 
 install-data-local:
 	@test -z "$(pkgconfig_libdir)" || $(mkdir_p) "$(DESTDIR)$(pkgconfig_libdir)"
