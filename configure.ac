@@ -30,14 +30,13 @@ dnl	Makefile in this directory.
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([polylib],[5.22.7])
+AC_INIT([polylib],[5.22.8])
 AC_CONFIG_AUX_DIR([.])
-# AM_INIT_AUTOMAKE([gnu])
 AM_INIT_AUTOMAKE([gnu])
 AC_CONFIG_SRCDIR(include/polylib/polylib.h.in)
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_PREREQ([2.60])
+AC_PREREQ([2.71])
 
 AC_SUBST(versioninfo)
 versioninfo=10:0:2
@@ -65,13 +64,6 @@ AM_PROG_CC_C_O
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 
-dnl Checks for header files.
-m4_warn([obsolete],
-[The preprocessor macro `STDC_HEADERS' is obsolete.
-  Except in unusual embedded environments, you can safely include all
-  ISO C90 headers unconditionally.])dnl
-# Autoupdate added the next two lines to ensure that your configure
-# script's behavior did not change.  They are probably safe to remove.
 #AC_CHECK_INCLUDES_DEFAULT
 #AC_PROG_EGREP
 

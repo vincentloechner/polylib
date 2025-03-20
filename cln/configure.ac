@@ -1,10 +1,10 @@
-AC_INIT(polylib, 5.22.7)
+AC_INIT([polylib],[5.22.8])
 AM_INIT_AUTOMAKE([gnu subdir-objects])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_PROG_CC
 AC_PROG_CXX
-AC_PROG_LIBTOOL
+LT_INIT
 
 AC_LANG(C++)
 
@@ -14,4 +14,5 @@ AC_PATH_CLN(1.1.0, [
 ], AC_MSG_ERROR([No suitable installed version of CLN could be found.]))
 
 AC_CONFIG_HEADERS(config.h)
-AC_OUTPUT(Makefile polylib/Makefile)
+AC_CONFIG_FILES([Makefile polylib/Makefile])
+AC_OUTPUT

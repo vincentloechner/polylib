@@ -82,7 +82,7 @@ dnl match the version of the headers and the version built into the library, too
             CPPFLAGS="$CPPFLAGS $CLN_CPPFLAGS"
             LIBS="$LIBS $CLN_LIBS"
             rm -f conf.clntest
-            AC_TRY_RUN([
+            AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <string.h>
 #include <cln/version.h>
@@ -118,7 +118,7 @@ int main(void)
     }
     return 0;
 }
-],, no_cln=yes,[echo $ac_n "cross compiling; assumed OK... $ac_c"])
+]])],[],[no_cln=yes],[echo $ac_n "cross compiling; assumed OK... $ac_c"])
             CPPFLAGS="$ac_save_CPPFLAGS"
             LIBS="$ac_save_LIBS"
         fi
@@ -131,17 +131,15 @@ int main(void)
                 echo "*** Could not run CLN test program, checking why..."
                 CPPFLAGS="$CFLAGS $CLN_CPPFLAGS"
                 LIBS="$LIBS $CLN_LIBS"
-                AC_TRY_LINK([
+                AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <stdio.h>
 #include <cln/version.h>
-],              [ return 0; ],
-                [ echo "*** The test program compiled, but did not run. This usually means"
+]], [[ return 0; ]])],[ echo "*** The test program compiled, but did not run. This usually means"
                   echo "*** that the run-time linker is not finding CLN or finding the wrong"
                   echo "*** version of CLN. If it is not finding CLN, you'll need to set your"
                   echo "*** LD_LIBRARY_PATH environment variable, or edit /etc/ld.so.conf to point"
                   echo "*** to the installed location. Also, make sure you have run ldconfig if that"
-                  echo "*** is required on your system."],
-                [ echo "*** The test program failed to compile or link. See the file config.log for the"
+                  echo "*** is required on your system."],[ echo "*** The test program failed to compile or link. See the file config.log for the"
                   echo "*** exact error that occured. This usually means CLN was incorrectly installed"
                   echo "*** or that you have moved CLN since it was installed. In the latter case, you"
                   echo "*** may want to edit the cln-config script: $CLN_CONFIG." ])
