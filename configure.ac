@@ -148,7 +148,7 @@ AC_ARG_ENABLE(longlongint-lib,
 dnl Check for GMP library
 AC_MSG_CHECKING(whether to use GMP)
 AC_ARG_WITH(libgmp,
-        [  --with-libgmp[=DIR]     Build a GMP polylib using the GMP library],
+        [  --with-libgmp@<:@=DIR@:>@     Build a GMP polylib using the GMP library located in DIR],
 	gmp_package=$withval, gmp_package=notuserdefined)
 if test "x$gmp_package" = "xno"; then
 	# user choice: don't use gmp
@@ -266,7 +266,7 @@ AC_ARG_ENABLE(extra-suffix,
 
 dnl /********************************************************************/
 dnl Check for DOXYGEN package
-AC_ARG_WITH(doxygen, [  --with-doxygen          DIR Location of the Doxygen Distribution (http://www.doxygen.org)], doxygen_package=$withval)
+AC_ARG_WITH(doxygen, [  --with-doxygen@<:@=DIR@:>@    Location of the Doxygen Distribution (http://www.doxygen.org)], doxygen_package=$withval)
 
 dnl AC_MSG_CHECKING(for Doxygen program)
 AC_CHECK_PROG(DOXYGEN,doxygen,doxygen,test,[$PATH:$doxygen_package/bin:/usr/local/bin])
