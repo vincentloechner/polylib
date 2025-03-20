@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-extern double compute_evalue ( evalue *e, Value *list_args );
-extern Value *compute_poly (Enumeration *en, Value *list_args);
+extern double compute_evalue(evalue *e, Value *list_args);
+extern Value *compute_poly(Enumeration *en, Value *list_args);
 extern int in_domain(Polyhedron *P, Value *list_args);
 
 #if defined(__cplusplus)
@@ -14,6 +14,3 @@ extern int in_domain(Polyhedron *P, Value *list_args);
 #endif
 
 #endif /* _eval_ehrhart_H_ */
-
-
-

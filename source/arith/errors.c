@@ -86,7 +86,7 @@
 /* defined by configure script */
 /* #define THREAD_SAFE_POLYLIB */
 
-//#include "arithmetique.h"
+// #include "arithmetique.h"
 #include <polylib/arithmetique.h>
 
 /* global constants to designate exceptions.
@@ -102,7 +102,6 @@ unsigned int timeout_error = 16;
 /* catch all */
 unsigned int any_exception_error = ~0;
 
-
 /*
  * On a few systems, type boolean and/or its values FALSE, TRUE may appear
  * in standard header files.  Or you may have conflicts with application-
@@ -113,26 +112,25 @@ unsigned int any_exception_error = ~0;
 #ifndef HAVE_BOOLEAN
 typedef int boolean;
 #endif
-#ifndef FALSE                   /* in case these macros already exist */
-#define FALSE   0               /* values of boolean */
+#ifndef FALSE   /* in case these macros already exist */
+#define FALSE 0 /* values of boolean */
 #endif
 #ifndef TRUE
-#define TRUE    1
+#define TRUE 1
 #endif
 
-const char *get_exception_name(unsigned int exception)
-{
-  if (exception==overflow_error)
+const char *get_exception_name(unsigned int exception) {
+  if (exception == overflow_error)
     return "overflow_error exception";
-  if (exception==simplex_arithmetic_error)
+  if (exception == simplex_arithmetic_error)
     return "simplex_arithmetic_error exception";
-  if (exception==user_exception_error)
+  if (exception == user_exception_error)
     return "user_exception_error exception";
-  if (exception==parser_exception_error)
+  if (exception == parser_exception_error)
     return "parser_exception_error exception";
-  if (exception==timeout_error)
+  if (exception == timeout_error)
     return "timeout_error exception";
-  if (exception==any_exception_error)
+  if (exception == any_exception_error)
     return "all exceptions mask";
 
   return "unknown or mixed exception";
@@ -145,12 +143,11 @@ unsigned int the_last_just_thrown_exception = 0;
 /* whether to run in debug mode (that is to trace catch/uncatch/throw)
  */
 static int linear_exception_debug_mode = FALSE;
-static unsigned int linear_exception_verbose = 1 | 2 | 16 ;
+static unsigned int linear_exception_verbose = 1 | 2 | 16;
 
 /* A structure for the exception stack.
  */
-typedef struct
-{
+typedef struct {
   /* exception type.
    */
   int what;
@@ -161,44 +158,40 @@ typedef struct
 
   /* location of the CATCH to be matched against the UNCATCH.
    */
-  const char * function;
-  const char * file;
-  int    line;
-}
-  linear_exception_holder;
+  const char *function;
+  const char *file;
+  int line;
+} linear_exception_holder;
 
 #define MAX_STACKED_CONTEXTS 64
-
 
 /***************************************************/
 /** Vincent's patch to enable POSIX multithreading */
 /** Feb. 2012                                      */
 /***************************************************/
 #ifdef THREAD_SAFE_POLYLIB
-#include <pthread.h>
 #include <assert.h>
+#include <pthread.h>
 
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 static pthread_key_t mt_key;
 /* (int)exception_index is stored in the last+1 exception stack position */
 #define exception_index (exception_stack[MAX_STACKED_CONTEXTS].what)
-static linear_exception_holder *allocate_local_stack(void)
-{
-	linear_exception_holder *exception_stack;
-	exception_stack = malloc( sizeof(linear_exception_holder)*(MAX_STACKED_CONTEXTS+1) );
-	assert( exception_stack!=NULL );
-	exception_index = 0;
-	assert( pthread_setspecific( mt_key, exception_stack ) == 0 );
-	return( exception_stack );
+static linear_exception_holder *allocate_local_stack(void) {
+  linear_exception_holder *exception_stack;
+  exception_stack =
+      malloc(sizeof(linear_exception_holder) * (MAX_STACKED_CONTEXTS + 1));
+  assert(exception_stack != NULL);
+  exception_index = 0;
+  assert(pthread_setspecific(mt_key, exception_stack) == 0);
+  return (exception_stack);
 }
-static void free_local_stack(void *es)
-{
-	free(es);
-	assert( pthread_setspecific(mt_key, NULL) == 0 );
+static void free_local_stack(void *es) {
+  free(es);
+  assert(pthread_setspecific(mt_key, NULL) == 0);
 }
-static void init_multithreaded_stacks(void)
-{
-	pthread_key_create(&mt_key, free_local_stack);
+static void init_multithreaded_stacks(void) {
+  pthread_key_create(&mt_key, free_local_stack);
 }
 #else // NO THREAD_SAFE_POLYLIB
 
@@ -211,13 +204,12 @@ static int exception_index = 0;
 
 #endif // THREAD_SAFE_POLYLIB
 
-void free_exception_stack()
-{
+void free_exception_stack() {
 #ifdef THREAD_SAFE_POLYLIB
-	assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
-	linear_exception_holder *exception_stack;
-	if( (exception_stack = pthread_getspecific( mt_key )) != NULL )
-		free_local_stack(exception_stack);
+  assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
+  linear_exception_holder *exception_stack;
+  if ((exception_stack = pthread_getspecific(mt_key)) != NULL)
+    free_local_stack(exception_stack);
 #endif // THREAD_SAFE_POLYLIB
   return;
 }
@@ -228,12 +220,10 @@ static exception_callback_t push_callback = NULL;
 static exception_callback_t pop_callback = NULL;
 
 void set_exception_callbacks(exception_callback_t push,
-			     exception_callback_t pop)
-{
-  if (push_callback!=NULL || pop_callback!=NULL)
-  {
+                             exception_callback_t pop) {
+  if (push_callback != NULL || pop_callback != NULL) {
     fprintf(stderr, "exception callbacks already defined! (%p, %p)\n",
-	    push_callback, pop_callback);
+            push_callback, pop_callback);
     abort();
   }
 
@@ -247,69 +237,56 @@ int linear_number_of_exception_thrown = 0;
 
 /* dump stack
  */
-void dump_exception_stack_to_file(FILE * f)
-{
+void dump_exception_stack_to_file(FILE *f) {
   int i;
 #ifdef THREAD_SAFE_POLYLIB
-	linear_exception_holder *exception_stack;
-	if( (exception_stack = pthread_getspecific( mt_key )) == NULL )
-		exception_stack = allocate_local_stack();
+  linear_exception_holder *exception_stack;
+  if ((exception_stack = pthread_getspecific(mt_key)) == NULL)
+    exception_stack = allocate_local_stack();
 #endif // THREAD_SAFE_POLYLIB
 
   fprintf(f, "[dump_exception_stack_to_file] size=%d\n", exception_index);
-  for (i=0; i<exception_index; i++)
-  {
-    fprintf(f,
-	    "%d: [%s:%d in %s (%d)]\n",
-	    i,
-	    exception_stack[i].file,
-	    exception_stack[i].line,
-	    exception_stack[i].function,
-	    exception_stack[i].what);
+  for (i = 0; i < exception_index; i++) {
+    fprintf(f, "%d: [%s:%d in %s (%d)]\n", i, exception_stack[i].file,
+            exception_stack[i].line, exception_stack[i].function,
+            exception_stack[i].what);
   }
   fprintf(f, "\n");
 }
 
-void dump_exception_stack()
-{
-  dump_exception_stack_to_file(stderr);
-}
+void dump_exception_stack() { dump_exception_stack_to_file(stderr); }
 
-#define exception_debug_message(type) 				  \
-    fprintf(stderr, "%s[%s:%d %s (%s)/%d]\n", 			  \
-	    type, file, line, function, get_exception_name(what), exception_index)
+#define exception_debug_message(type)                                          \
+  fprintf(stderr, "%s[%s:%d %s (%s)/%d]\n", type, file, line, function,        \
+          get_exception_name(what), exception_index)
 
-#define exception_debug_trace(type) \
-    if (linear_exception_debug_mode) { exception_debug_message(type); }
+#define exception_debug_trace(type)                                            \
+  if (linear_exception_debug_mode) {                                           \
+    exception_debug_message(type);                                             \
+  }
 
 /* push a what exception on stack.
  */
-jmp_buf *
-push_exception_on_stack(
-    int what,
-    const char * function,
-    const char * file,
-    int line)
-{
+jmp_buf *push_exception_on_stack(int what, const char *function,
+                                 const char *file, int line) {
 #ifdef THREAD_SAFE_POLYLIB
-	assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
-	linear_exception_holder *exception_stack;
-	if( (exception_stack = pthread_getspecific( mt_key )) == NULL )
-		exception_stack = allocate_local_stack();
+  assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
+  linear_exception_holder *exception_stack;
+  if ((exception_stack = pthread_getspecific(mt_key)) == NULL)
+    exception_stack = allocate_local_stack();
 #endif // THREAD_SAFE_POLYLIB
 
   exception_debug_trace("PUSH ");
 
-
-  if (exception_index==MAX_STACKED_CONTEXTS)
-  {
+  if (exception_index == MAX_STACKED_CONTEXTS) {
     exception_debug_message("push");
     fprintf(stderr, "exception stack overflow\n");
     dump_exception_stack();
     abort();
   }
 
-  if (push_callback) push_callback(file, function, line);
+  if (push_callback)
+    push_callback(file, function, line);
 
   the_last_just_thrown_exception = 0;
 
@@ -318,60 +295,52 @@ push_exception_on_stack(
   exception_stack[exception_index].file = file;
   exception_stack[exception_index].line = line;
 
-  return & exception_stack[exception_index++].where;
+  return &exception_stack[exception_index++].where;
 }
 
 #if !defined(same_string_p)
-#define same_string_p(s1, s2) (strcmp((s1),(s2))==0)
+#define same_string_p(s1, s2) (strcmp((s1), (s2)) == 0)
 #endif
 
 /* pop a what exception.
    check for any mismatch!
  */
-void
-pop_exception_from_stack(
-    int what,
-    const char * function,
-    const char * file,
-    int line)
-{
+void pop_exception_from_stack(int what, const char *function, const char *file,
+                              int line) {
 #ifdef THREAD_SAFE_POLYLIB
-	assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
-	linear_exception_holder *exception_stack;
-	if( (exception_stack = pthread_getspecific( mt_key )) == NULL )
-		exception_stack = allocate_local_stack();
+  assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
+  linear_exception_holder *exception_stack;
+  if ((exception_stack = pthread_getspecific(mt_key)) == NULL)
+    exception_stack = allocate_local_stack();
 #endif // THREAD_SAFE_POLYLIB
 
   exception_debug_trace("POP  ");
 
-  if (exception_index==0)
-  {
+  if (exception_index == 0) {
     exception_debug_message("pop");
     fprintf(stderr, "exception stack underflow\n");
     dump_exception_stack();
     abort();
   }
 
-  if (pop_callback) pop_callback(file, function, line);
+  if (pop_callback)
+    pop_callback(file, function, line);
 
   exception_index--;
   the_last_just_thrown_exception = 0;
 
   if ((exception_stack[exception_index].what != what) ||
       !same_string_p(exception_stack[exception_index].file, file) ||
-      !same_string_p(exception_stack[exception_index].function, function))
-  {
+      !same_string_p(exception_stack[exception_index].function, function)) {
     exception_debug_message("pop");
     fprintf(stderr,
-	    "exception stack mismatch at depth=%d:\n"
-	    "   CATCH: %s:%d in %s (%d)\n"
-	    " UNCATCH: %s:%d in %s (%d)\n",
-	    exception_index,
-	    exception_stack[exception_index].file,
-	    exception_stack[exception_index].line,
-	    exception_stack[exception_index].function,
-	    exception_stack[exception_index].what,
-	    file, line, function, what);
+            "exception stack mismatch at depth=%d:\n"
+            "   CATCH: %s:%d in %s (%d)\n"
+            " UNCATCH: %s:%d in %s (%d)\n",
+            exception_index, exception_stack[exception_index].file,
+            exception_stack[exception_index].line,
+            exception_stack[exception_index].function,
+            exception_stack[exception_index].what, file, line, function, what);
     dump_exception_stack();
     abort();
   }
@@ -380,53 +349,41 @@ pop_exception_from_stack(
 /* throws an exception of a given type by searching for
    the specified 'what' in the current exception stack.
 */
-void throw_exception(
-    int what,
-    const char * function,
-    const char * file,
-    int line)
-{
+void throw_exception(int what, const char *function, const char *file,
+                     int line) {
   int i;
 #ifdef THREAD_SAFE_POLYLIB
-	assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
-	linear_exception_holder *exception_stack;
-	if( (exception_stack = pthread_getspecific( mt_key )) == NULL )
-		exception_stack = allocate_local_stack();
+  assert(pthread_once(&once_control, init_multithreaded_stacks) == 0);
+  linear_exception_holder *exception_stack;
+  if ((exception_stack = pthread_getspecific(mt_key)) == NULL)
+    exception_stack = allocate_local_stack();
 #endif // THREAD_SAFE_POLYLIB
 
   exception_debug_trace("THROW");
 
   the_last_just_thrown_exception = what; /* for rethrow */
 
-  for (i=exception_index-1; i>=0; i--)
-  {
+  for (i = exception_index - 1; i >= 0; i--) {
     if (pop_callback)
       /* pop with push parameters! */
-      pop_callback(exception_stack[i].file,
-		   exception_stack[i].function,
-		   exception_stack[i].line);
+      pop_callback(exception_stack[i].file, exception_stack[i].function,
+                   exception_stack[i].line);
 
-    if (exception_stack[i].what & what)
-    {
+    if (exception_stack[i].what & what) {
       exception_index = i;
       linear_number_of_exception_thrown++;
 
       if (linear_exception_debug_mode)
-	fprintf(stderr, "---->[%s:%d %s (%d)/%d]\n",
-		exception_stack[i].file,
-		exception_stack[i].line,
-		exception_stack[i].function,
-		exception_stack[i].what,
-		i);
+        fprintf(stderr, "---->[%s:%d %s (%d)/%d]\n", exception_stack[i].file,
+                exception_stack[i].line, exception_stack[i].function,
+                exception_stack[i].what, i);
 
       /* trace some exceptions... */
       if (linear_exception_verbose & what)
-	fprintf(stderr, "exception %d/%d: %s(%s:%d) -> %s(%s:%d)\n",
-		what, exception_stack[i].what,
-		function, file, line,
-		exception_stack[i].function,
-		exception_stack[i].file,
-		exception_stack[i].line);
+        fprintf(stderr, "exception %d/%d: %s(%s:%d) -> %s(%s:%d)\n", what,
+                exception_stack[i].what, function, file, line,
+                exception_stack[i].function, exception_stack[i].file,
+                exception_stack[i].line);
 
       longjmp(exception_stack[i].where, 0);
     }
@@ -434,18 +391,15 @@ void throw_exception(
 
   /* error. */
   exception_debug_message("throw");
-  fprintf(stderr,
-	  "exception not found in stack:\n"
-	  "an exception was THROWN without a proper matching CATCH\n");
+  fprintf(stderr, "exception not found in stack:\n"
+                  "an exception was THROWN without a proper matching CATCH\n");
   dump_exception_stack();
   abort();
 }
 
-void linear_initialize_exception_stack(
-  unsigned int verbose_exceptions,
-  exception_callback_t push,
-  exception_callback_t pop)
-{
+void linear_initialize_exception_stack(unsigned int verbose_exceptions,
+                                       exception_callback_t push,
+                                       exception_callback_t pop) {
   linear_exception_verbose = verbose_exceptions;
   set_exception_callbacks(push, pop);
 }

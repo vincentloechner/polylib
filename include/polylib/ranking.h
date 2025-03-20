@@ -1,6 +1,6 @@
 /**
  * Tools to compute the ranking function of an iteration J: the number of
- * integer points in P that are lexicographically inferior to J 
+ * integer points in P that are lexicographically inferior to J
  * @author B. Meister <meister@icps.u-strasbg.fr>
  * 6/2005
  * LSIIT-ICPS, UMR 7005 CNRS Universite Louis Pasteur
@@ -33,7 +33,7 @@
  * - the parameters
  */
 Polyhedron *LexSmaller(Polyhedron *P, Polyhedron *D, unsigned dim,
-			Polyhedron *C, unsigned MAXRAYS);
+                       Polyhedron *C, unsigned MAXRAYS);
 
 /*
  * Returns the number of points in P that are lexicographically
@@ -47,9 +47,9 @@ Polyhedron *LexSmaller(Polyhedron *P, Polyhedron *D, unsigned dim,
  * The variables in the Enumeration correspond to the first dim variables
  * in D followed by the parameters of D (the variables of C).
  */
-Enumeration *Polyhedron_LexSmallerEnumerate(Polyhedron *P, Polyhedron *D, 
-					    unsigned dim,
-					    Polyhedron *C, unsigned MAXRAYS);
+Enumeration *Polyhedron_LexSmallerEnumerate(Polyhedron *P, Polyhedron *D,
+                                            unsigned dim, Polyhedron *C,
+                                            unsigned MAXRAYS);
 
 /*
  * Returns a function that assigns a unique number to each point in the

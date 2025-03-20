@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-extern int SolveDiophantine ( Matrix *M, Matrix **U, Vector **X );
+extern int SolveDiophantine(Matrix *M, Matrix **U, Vector **X);
 
 #if defined(__cplusplus)
 }
