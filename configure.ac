@@ -274,7 +274,7 @@ dnl AC_MSG_RESULT($DOXYGEN)
 
 
 dnl AC_CHECK_LIB(pthread, pthread_create)
-ACX_PTHREAD()
+AX_PTHREAD()
 AC_ARG_ENABLE(threadsafe,
 	[  --enable-threadsafe     threadsafe polylib (enabled by default if a threading library is found)],
 	[
