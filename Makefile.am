@@ -35,7 +35,7 @@ sources = $(CFILES) \
 	include/polylib/arithmetique.h \
 	include/polylib/arithmetic_errors.h
 
-EXTRA_DIST = doc source/oldpolytest.c INSTALL COPYING m4/acx_pthread.m4
+EXTRA_DIST = doc source/oldpolytest.c INSTALL COPYING
 
 lib_LTLIBRARIES = @polylibs@
 libpolylib32_la_LDFLAGS = -rpath $(libdir) -version-info @versioninfo@
