@@ -213,7 +213,7 @@ typedef struct _enumeration {
 /*   -- it can be constructed recursively                                 */
 /*------------------------------------------------------------------------*/
 
-/* *********************** |Represnting Z-Polyhedron| ******************* */
+/* *********************** |Representing Z-Polyhedron| ******************* */
 
 typedef enum { False = 0, True = 1 } Bool;
 typedef Matrix Lattice;
@@ -222,6 +222,8 @@ typedef struct LatticeUnion {
   struct LatticeUnion *next;
 } LatticeUnion;
 
+// The ZPolyhedron structure represents a Z-polyhedron, which is the image
+// of an integer polyhedron by an affine function ('Lat'):
 typedef struct ZPolyhedron {
   Lattice *Lat;
   Polyhedron *P;
