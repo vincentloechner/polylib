@@ -5,7 +5,7 @@
 int main(void) {
     Matrix *ineqs, *lattice;
     Polyhedron *p;
-    ZPolyhedron *zp1, *zp2, *zp3, *res;
+    ZPolyhedron *zp1, *zp2, *zp3, *res, *res2;
 
     ineqs = Matrix_Alloc(2, 3);
     lattice = Matrix_Alloc(2, 2);
@@ -47,10 +47,14 @@ int main(void) {
     ZDomainPrint(stdout, " %d", zp3);
 
     // compute zp1 minus zp3
+    printf("\n----------- res = zp1 - zp3 (should be empty) -----------\n");
     res = ZDomainDifference(zp1, zp3);
-
-    printf("\nres = zp1 - zp3\n");
     ZDomainPrint(stdout, " %d", res);
+
+    // compute zp3 minus zp1
+    printf("\n----------- res2 = zp3 - zp1 (should be zp2) ------------\n");
+    res2 = ZDomainDifference(zp3, zp1);
+    ZDomainPrint(stdout, " %d", res2);
 
     return 0;
 }
