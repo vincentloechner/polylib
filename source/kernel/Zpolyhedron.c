@@ -409,9 +409,11 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
  *           Add temp to Result;
  *           return;
  */
-ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
+ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) { 
 
-  ZPolyhedron *Result = NULL, *tempA = NULL, *tempB = NULL;
+  // need to close the hole where when we have A < B we have as result the empty, already works for when A==B so take a look at that.
+
+  ZPolyhedron *Result = NULL, *tempA = NULL, *tempB = NULL, *test=NULL;
   ZPolyhedron *templist, *res, *i, *j;
 
 #ifdef DOMDEBUG
@@ -427,6 +429,13 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
     fprintf(stderr, "ZDomainDifference not performed\n");
     return NULL;
   }
+
+  test=ZPolyhedronIntersection(A,B);
+
+  if (isEmptyZPolyhedron(test)){
+    printf("There are no elements in common between the two polyhedrons");
+    return A;
+  }// checks only the first two polyhedrons of the domain, needs to check all ==> a helper needed?
 
   for (tempA = A; tempA != NULL; tempA = tempA->next) {
     ZPolyhedron *temp = NULL;
