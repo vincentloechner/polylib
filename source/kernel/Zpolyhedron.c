@@ -441,6 +441,7 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
 
       if ( !isEmptyZPolyhedron(test)){// if we find an intersection
         EmptyIntersection=False;//set the boolean to false 
+        test=NULL;
         break;//no need to test anymore
       }
     }
