@@ -430,12 +430,29 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
     return NULL;
   }
 
-  test=ZPolyhedronIntersection(A,B);
+  //the test to see if the Zdomains have an intersection or not
+  Bool EmptyIntersection = True;
 
-  if (isEmptyZPolyhedron(test)){
+  for (tempA = A; tempA != NULL; tempA = tempA->next) {//test all polyhedrons in A
+
+    for ( tempB = B; tempB != NULL; tempB = tempB->next){//test all polyhedrons in B
+
+      test=ZPolyhedronIntersection(tempA,tempB);//find their intersection
+
+      if ( !isEmptyZPolyhedron(test)){// if we find an intersection
+        EmptyIntersection=False;//set the boolean to false 
+        break;//no need to test anymore
+      }
+    }
+  }
+  
+  tempA=NULL; tempB=NULL;//reset A and B
+
+  if ( EmptyIntersection ){ //if there is an empty inteserction
     printf("There are no elements in common between the two polyhedrons");
-    return A;
-  }// checks only the first two polyhedrons of the domain, needs to check all ==> a helper needed?
+    Result=ZDomain_Copy(A);
+    return Result;//return A unchanged 
+  }
 
   for (tempA = A; tempA != NULL; tempA = tempA->next) {
     ZPolyhedron *temp = NULL;
@@ -591,13 +608,16 @@ static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron *A, ZPolyhedron *B) {
   fprintf(fp, "\nEntered ZPOLYHEDRONDIFFERENCE\n");
   fclose(fp);
 #endif
-
+  //basic tests
   if (isEmptyZPolyhedron(A))
     return NULL;
   if (isEmptyZPolyhedron(B)) {
     Result = ZDomain_Copy(A);
     return Result;
-  }
+  }//difference of latices
+
+
+  //placing A and B on another domain using their lattice
   ImageA = DomainImage(A->P, (Matrix *)A->Lat, MAXNOOFRAYS);
   ImageB = DomainImage(B->P, (Matrix *)B->Lat, MAXNOOFRAYS);
   DomDiff = DomainDifference(ImageA, ImageB, MAXNOOFRAYS);
