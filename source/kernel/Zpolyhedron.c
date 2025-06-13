@@ -462,7 +462,7 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
     res = ZPolyhedron_Copy(tempA);
     for (tempB = B; tempB != NULL; tempB = tempB->next) {
       ZPolyhedron *tmpres = res;
-      res = ZPolyhedronDifference(tmpres, tempB);
+      res = ZPolyhedronDifferenceGautam(tmpres, tempB);
       ZDomain_Free(tmpres);
     }
     // here: res = tempA - B
@@ -584,6 +584,46 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
 } /* ZPolyhedronIntersection */
 
 /*
+ * Return the difference of two Z-polyhedra A and B using the method Gautam
+ * describes in his thesis.
+*/
+static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
+  ZPolyhedron *Z1,*Z2,*Result =NULL;
+  LatticeUnion *LatDiff,*tmp;
+  Polyhedron *ap=NULL, *bp=NULL, *imA, *imB, *PolyInter, *PolyDiff, *temp;
+  Lattice *LatInter;
+
+  LatDiff= LatticeDifference(A->Lat,B->Lat); //can simplify here
+  LatInter= LatticeIntersection(A->Lat,B->Lat);
+  
+  imA= DomainImage(A->P,A->Lat,MAXNOOFRAYS);
+  imB= DomainImage(B->P,B->Lat,MAXNOOFRAYS);
+
+  PolyInter=DomainIntersection(imA,imB,MAXNOOFRAYS);
+  PolyDiff=DomainDifference(imA,imB,MAXNOOFRAYS);
+
+  for(tmp=LatDiff;tmp!=NULL;tmp=tmp->next){
+    bp=Polyhedron_Preimage(PolyInter,tmp,MAXNOOFRAYS);
+  }
+  tmp=NULL;
+
+  ap=DomainPreimage(temp,LatInter,MAXNOOFRAYS);
+
+  Z1->Lat=LatDiff;
+  Z1->P=bp;
+  Z1->next=NULL;
+
+  Z2->Lat=LatInter;
+  Z2->P=ap;
+  Z2->next=NULL;
+
+  Result=ZDomainIntersection(Z1,Z2);
+
+  return Result;
+}/*ZPolyhedronDifferenceGautam*/
+
+
+/*
  * Return the difference of the two Z-polyhedra 'A' and 'B'. Below is the
  * procedure to find the difference of 'A' and 'B' :-
  * Procedure:
@@ -611,7 +651,7 @@ static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron *A, ZPolyhedron *B) {
   if (isEmptyZPolyhedron(B)) {
     Result = ZDomain_Copy(A);
     return Result;
-  }//difference of latices
+  }
 
 
   //placing A and B on another domain using their lattice
