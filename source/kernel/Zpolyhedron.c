@@ -457,23 +457,23 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
 
   for (tempA = A; tempA != NULL; tempA = tempA->next) {
     ZPolyhedron *temp = NULL;
-    temp = ZPolyhedron_Copy(tempA);
+    // temp = ZPolyhedron_Copy(tempA);
 
     for (tempB = B; tempB != NULL; tempB = tempB->next) {
       templist = NULL;
       res = NULL;
-      for (i = temp; i != NULL; i = i->next) {
+      for (i = tempA; i != NULL; i = i->next) {
         res = ZPolyhedronDifference(i, tempB);
         for (j = res; j != NULL; j = j->next)
           templist = AddZPoly2ZDomain(j, templist);
         ZDomain_Free(res);
       }
-      ZDomain_Free(temp);
       temp = NULL;
       for (i = templist; i != NULL; i = i->next)
         temp = AddZPoly2ZDomain(i, temp);
       ZDomain_Free(templist);
     }
+    // ZDomain_Free(temp);
     for (i = temp; i != NULL; i = i->next)
       Result = AddZPolytoZDomain(i, Result);
     ZDomain_Free(temp);
