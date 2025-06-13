@@ -430,54 +430,50 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
     return NULL;
   }
 
-  //the test to see if the Zdomains have an intersection or not
-  Bool EmptyIntersection = True;
+  // //the test to see if the Zdomains have an intersection or not
+  // Bool EmptyIntersection = True;
 
-  for (tempA = A; tempA != NULL; tempA = tempA->next) {//test all polyhedrons in A
+  // for (tempA = A; tempA != NULL; tempA = tempA->next) {//test all polyhedrons in A
 
-    for ( tempB = B; tempB != NULL; tempB = tempB->next){//test all polyhedrons in B
+  //   for ( tempB = B; tempB != NULL; tempB = tempB->next){//test all polyhedrons in B
 
-      test=ZPolyhedronIntersection(tempA,tempB);//find their intersection
+  //     test=ZPolyhedronIntersection(tempA,tempB);//find their intersection
 
-      if ( !isEmptyZPolyhedron(test)){// if we find an intersection
-        EmptyIntersection=False;//set the boolean to false 
-        test=NULL;
-        break;//no need to test anymore
-      }
-    }
-  }
+  //     if ( !isEmptyZPolyhedron(test)){// if we find an intersection
+  //       EmptyIntersection=False;//set the boolean to false 
+  //       test=NULL;
+  //       break;//no need to test anymore
+  //     }
+  //   }
+  // }
   
-  tempA=NULL; tempB=NULL;//reset A and B
+  // tempA=NULL; tempB=NULL;//reset A and B
 
-  if ( EmptyIntersection ){ //if there is an empty inteserction
-    printf("There are no elements in common between the two polyhedrons");
-    Result=ZDomain_Copy(A);
-    return Result;//return A unchanged 
-  }
+  // if ( EmptyIntersection ){ //if there is an empty inteserction
+  //   printf("There are no elements in common between the two polyhedrons");
+  //   Result=ZDomain_Copy(A);
+  //   return Result;//return A unchanged 
+  // }
 
+  Result = NULL;
   for (tempA = A; tempA != NULL; tempA = tempA->next) {
     ZPolyhedron *temp = NULL;
-    // temp = ZPolyhedron_Copy(tempA);
 
+    res = ZPolyhedron_Copy(tempA);
     for (tempB = B; tempB != NULL; tempB = tempB->next) {
-      templist = NULL;
-      res = NULL;
-      for (i = tempA; i != NULL; i = i->next) {
-        res = ZPolyhedronDifference(i, tempB);
-        for (j = res; j != NULL; j = j->next)
-          templist = AddZPoly2ZDomain(j, templist);
-        ZDomain_Free(res);
-      }
-      temp = NULL;
-      for (i = templist; i != NULL; i = i->next)
-        temp = AddZPoly2ZDomain(i, temp);
-      ZDomain_Free(templist);
+      ZPolyhedron *tmpres = res;
+      res = ZPolyhedronDifference(tmpres, tempB);
+      ZDomain_Free(tmpres);
     }
-    // ZDomain_Free(temp);
-    for (i = temp; i != NULL; i = i->next)
+    // here: res = tempA - B
+
+    for(i=res ; i != NULL ; i = i->next) {
       Result = AddZPolytoZDomain(i, Result);
-    ZDomain_Free(temp);
+    }
+
+    ZDomain_Free(res);
   }
+ 
   if (Result == NULL)
     return (EmptyZPolyhedron(A->Lat->NbRows - 1));
   return Result;
