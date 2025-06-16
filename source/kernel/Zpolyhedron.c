@@ -256,8 +256,18 @@ ZPolyhedron *EmptyZPolyhedron(int dimension) {
   fclose(fp);
 #endif
 
-  E = EmptyLattice(dimension + 1);
+  // identity
+  E = Matrix_Alloc(dimension+1, dimension+1);
+  for(int i=0 ; i<=dimension; i++) {
+    for(int j=0 ; j<=dimension; j++) {
+      if(i == j)
+        value_set_si(E->p[i][j], 1);
+      else
+        value_set_si(E->p[i][j], 0);
+    }
+  }
   P = Empty_Polyhedron(dimension);
+
   Zpol = ZPolyhedron_Alloc(E, P);
   Matrix_Free((Matrix *)E);
   Domain_Free(P);
