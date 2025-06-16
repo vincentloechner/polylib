@@ -5,7 +5,7 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
 static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A);
 static void ZPolyhedron_Free(ZPolyhedron *Zpol);
 static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron *, ZPolyhedron *);
-static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron *, ZPolyhedron *);
+ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron *, ZPolyhedron *);
 static ZPolyhedron *ZPolyhedronImage(ZPolyhedron *, Matrix *);
 static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *, Matrix *);
 static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head);
@@ -588,14 +588,25 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
  * Return the difference of two Z-polyhedra A and B using the method Gautam
  * describes in his thesis.
 */
-static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
+ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
   ZPolyhedron *Z1=NULL,*Z2,*Result =NULL, *Ztmp;
   LatticeUnion *LatDiff,*tmp;
   Polyhedron *ap=NULL, *imA, *imB, *PolyInter, *PolyDiff, *temp;
   Lattice *LatInter;
 
   LatDiff= LatticeDifference(A->Lat,B->Lat); //can simplify here
+  printf("\n----------------- LatDiff: ----------------------\n");
+  PrintLatticeUnion(stdout," %d", LatDiff);
+
   LatInter= LatticeIntersection(A->Lat,B->Lat);
+  printf("\n----------------- LatInter: ----------------------\n");
+  if(LatInter==NULL)
+  {
+    printf("empty\n");
+  }
+  else
+    Matrix_Print(stdout," %d", LatInter);
+  printf("\n--------------------------------------------------\n");
   
   imA= DomainImage(A->P,A->Lat,MAXNOOFRAYS);
   imB= DomainImage(B->P,B->Lat,MAXNOOFRAYS);
@@ -606,14 +617,15 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
   for(tmp=LatDiff;tmp!=NULL;tmp=tmp->next){
     Ztmp=malloc(sizeof(*Ztmp));
     Ztmp->Lat=tmp->M;
-    printf("\n----------------- Adding lattice: ----------------------\n");
-    Matrix_Print(stdout," %d", tmp->M);
     Ztmp->P=Polyhedron_Preimage(PolyInter,tmp->M,MAXNOOFRAYS);
     Ztmp->next=Z1;
     Z1=Ztmp;
   }
 
   ap=DomainPreimage(PolyDiff,LatInter,MAXNOOFRAYS);
+
+  if(LatInter == NULL)
+    return Z1;
 
   Z2=malloc(sizeof(*Z2));
 

@@ -86,12 +86,13 @@ Lattice *EmptyLattice(int dimension) {
   fclose(fp);
 #endif
 
-  result = (Lattice *)Matrix_Alloc(dimension, dimension);
-  for (i = 0; i < dimension; i++)
-    for (j = 0; j < dimension; j++)
-      value_set_si(result->p[i][j], 0);
-  value_set_si(result->p[i - 1][i - 1], 1);
-  return result;
+  return NULL;
+  // result = (Lattice *)Matrix_Alloc(dimension, dimension);
+  // for (i = 0; i < dimension; i++)
+  //   for (j = 0; j < dimension; j++)
+  //     value_set_si(result->p[i][j], 0);
+  // value_set_si(result->p[i - 1][i - 1], 1);
+  // return result;
 } /* EmptyLattice */
 
 /*
@@ -108,15 +109,7 @@ Bool isEmptyLattice(Lattice *A) {
   fclose(fp);
 #endif
 
-  for (i = 0; i < A->NbRows - 1; i++)
-    for (j = 0; j < A->NbColumns - 1; j++)
-      if (value_notzero_p(A->p[i][j])) {
-        return False;
-      }
-  if (value_one_p(A->p[i][A->NbColumns - 1])) {
-    return True;
-  }
-  return False;
+  return A == NULL;
 } /* isEmptyLaattice */
 
 /*
@@ -601,7 +594,7 @@ LatticeUnion *SplitLattice(Matrix *, Matrix *, Matrix *);
  starting lattice Y.
  * Note1: If the intersection of X and Y lattices is empty the result is identic
  with the first argument (X) because no operation can be made. *Note2: The
- function is availabe only for simple Lattices and not for a union of Lattices.
+ function is available only for simple Lattices and not for a union of Lattices.
 
  *       Step 1:  Find Intersection = LatticeIntersection (A, B).
  *       Step 2:  Extract the Linear Parts of the Lattices A and Intersection.
@@ -672,8 +665,8 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
 
   Intersection = LatticeIntersection(X, Y);
   if (isEmptyLattice(Intersection) == True) {
-    fprintf(stderr, "\nIn Lattice2LatticeUnion : the input lattices X and Y do "
-                    "not have any common part\n");
+    // fprintf(stderr, "\nIn Lattice2LatticeUnion : the input lattices X and Y do "
+    //                 "not have any common part\n");
     return NULL;
   }
 
