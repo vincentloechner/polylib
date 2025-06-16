@@ -589,9 +589,9 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
  * describes in his thesis.
 */
 static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
-  ZPolyhedron *Z1,*Z2,*Result =NULL;
+  ZPolyhedron *Z1=NULL,*Z2,*Result =NULL, *Ztmp;
   LatticeUnion *LatDiff,*tmp;
-  Polyhedron *ap=NULL, *bp=NULL, *imA, *imB, *PolyInter, *PolyDiff, *temp;
+  Polyhedron *ap=NULL, *imA, *imB, *PolyInter, *PolyDiff, *temp;
   Lattice *LatInter;
 
   LatDiff= LatticeDifference(A->Lat,B->Lat); //can simplify here
@@ -604,23 +604,24 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
   PolyDiff=DomainDifference(imA,imB,MAXNOOFRAYS);
 
   for(tmp=LatDiff;tmp!=NULL;tmp=tmp->next){
-    bp=Polyhedron_Preimage(PolyInter,tmp,MAXNOOFRAYS);
+    Ztmp=malloc(sizeof(*Ztmp));
+    Ztmp->Lat=tmp->M;
+    printf("\n----------------- Adding lattice: ----------------------\n");
+    Matrix_Print(stdout," %d", tmp->M);
+    Ztmp->P=Polyhedron_Preimage(PolyInter,tmp->M,MAXNOOFRAYS);
+    Ztmp->next=Z1;
+    Z1=Ztmp;
   }
-  tmp=NULL;
 
-  ap=DomainPreimage(temp,LatInter,MAXNOOFRAYS);
+  ap=DomainPreimage(PolyDiff,LatInter,MAXNOOFRAYS);
 
-  Z1->Lat=LatDiff;
-  Z1->P=bp;
-  Z1->next=NULL;
+  Z2=malloc(sizeof(*Z2));
 
   Z2->Lat=LatInter;
   Z2->P=ap;
-  Z2->next=NULL;
+  Z2->next=Z1;
 
-  Result=ZDomainIntersection(Z1,Z2);
-
-  return Result;
+  return Z2;
 }/*ZPolyhedronDifferenceGautam*/
 
 
