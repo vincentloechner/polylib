@@ -5,12 +5,16 @@
 int main(void) {
     Matrix *lattice1, *lattice2;
 
-    lattice1 = Matrix_Alloc(1, 4);
+    lattice1 = Matrix_Alloc(2, 4);
 
     lattice1->p[0][0] = 1;
     lattice1->p[0][1] = -1;
     lattice1->p[0][2] = 0;
     lattice1->p[0][3] = 0;
+    lattice1->p[1][0] = 0;
+    lattice1->p[1][1] = 0;
+    lattice1->p[1][2] = 1;
+    lattice1->p[1][3] = -1;
 
     // lattice2->p[0][0] = 2;
     // lattice2->p[0][1] = 1;
@@ -26,4 +30,8 @@ int main(void) {
     return 0;
 }
 
+// rendre P full-dimensional :
 // ZP = {L, P}  ->  {L.ker, preimage(ker, P)}
+
+// normaliser L :
+// ZP = {L, P}  ->  { H, image(U, P)}  avec L = HU forme normale de Hermite de L.
