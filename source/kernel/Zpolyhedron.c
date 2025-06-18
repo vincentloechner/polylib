@@ -1121,3 +1121,138 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
 
   return Result;
 }
+
+/*
+* The function takes a polyhedron and returns 
+* it in the canonical form described by Gautam 
+*/
+void CanonicalZPGautam(ZPolyhedron* A) {
+
+  if (A->P->Dimension+1 != A->Lat->NbColumns) {
+    errormsg1("Polyhedron_Image", "dimincomp", "incompatible dimensions");
+  }
+
+  Matrix* U = NULL;
+  Matrix* H = NULL;
+
+  if (A->P->NbEq != 0) {
+    Matrix* Eq = Matrix_Alloc(A->P->NbEq, A->P->Dimension+1);
+    //remplit la matrice des egalites
+    for(int i=1; i<=A->P->NbEq; i++){
+      for(int j=0; j<Eq->NbColumns; j++){
+        Eq->p[i-1][j] = A->P->Constraint[i][j];
+      }
+    }
+    //calcule sa ker
+    Matrix* ker = Matrix_Alloc(A->P->Dimension+1, A->P->NbEq);
+    if (!ker){
+      printf("\nNot enough memory space!!\n");
+      return;
+    }
+    
+    ker = int_ker(Eq);
+    //produit entre L et ker
+    Matrix* prod = Matrix_Alloc(A->Lat->NbRows, ker->NbColumns);
+    if (!prod){
+      printf("\nNot enough memory space!!\n");
+      return;
+    }
+    Matrix_Product(A->Lat, ker, prod);
+    
+    Polyhedron* tmp = A->P;
+    //mettons a jour
+    A->P = Polyhedron_Preimage(A->P, ker, MAXNOOFRAYS);
+    A->Lat = prod;
+    
+    //free 
+    Matrix_Free(ker);
+    Matrix_Free(Eq);
+    Polyhedron_Free(tmp);
+  }
+
+  //test si lat est en hnf 
+    if(!isinHnf(A->Lat)) {
+
+    // diminuer la taille de A
+    A->Lat->NbColumns--;
+    A->Lat->NbRows--;
+
+
+    left_hermite(A->Lat, &H, &U, NULL);
+
+
+    // test:
+    printf("---- hermite before fomating:\n");
+    Matrix_Print(stdout, "%3d", H);
+    Matrix_Print(stdout, "%3d", U);
+    printf("----\n");
+
+
+    // remettre H en forme:
+    //  H   l
+    // 0..0 1
+    Matrix* NewH = Matrix_Alloc( H->NbRows+1, H->NbColumns+1);
+    if (!NewH){
+      printf("\nNot enough memory space!!\n");
+      return;
+    }
+    for(int i = 0; i < H->NbRows+1; i++){
+      for(int j=0; j < H->NbColumns+1; j++){
+        if( (0 <= i && i < H->NbRows) && (0 <=j  && j < H->NbColumns)){
+          NewH->p[i][j] = H->p[i][j];
+        }
+        if( j == H->NbColumns ){
+          NewH->p[i][j] = A->Lat->p[i][j];
+        }
+        if( i == H->NbRows && j != H->NbColumns ){
+          NewH->p[i][j] = 0;
+        }
+        if(i == H->NbRows && j == H->NbColumns){
+          NewH->p[i][j] = 1;
+        }
+      }
+    }
+
+
+    // remettre U en forme:
+    //  U   0
+    // 0..0 1
+    Matrix* NewU=Matrix_Alloc( U->NbRows+1, U->NbColumns+1);
+    if (!NewU){
+      printf("\nNot enough memory space!!\n");
+      return;
+    }
+    for(int i = 0; i < U->NbRows+1; i++){
+      for(int j = 0; j < U->NbColumns+1; j++){
+        if( 0 <= i && i<U->NbRows && 0 <= j && j<U->NbColumns ){
+          NewU->p[i][j] = U->p[i][j];
+        }
+        if( i == U->NbRows || j == U->NbColumns ){
+          NewU->p[i][j] = 0;
+        }
+      }
+    }
+    NewU->p[U->NbRows][U->NbColumns] = 1;
+
+    // test:
+    printf("---- hermite after formating:\n");
+    Matrix_Print(stdout, "%3d", NewH);
+    Matrix_Print(stdout, "%3d", NewU);
+    printf("----\n");
+
+    Matrix_Free(A->Lat);
+    A->Lat = NewH;
+    Polyhedron *tmp = A->P;
+    A->P = Polyhedron_Preimage(A->P, NewU, MAXNOOFRAYS);
+    Polyhedron_Free(tmp);
+    Matrix_Free(U);
+    Matrix_Free(NewU);
+    Matrix_Free(H);
+
+  }
+  
+  //test
+  printf("\n-----------------DIMENSION OF A-------------------\n");
+  printf(" Lines: %d\n Cols: %d\n",A->Lat->NbRows,A->Lat->NbColumns);
+  return;
+}
