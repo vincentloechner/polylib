@@ -24,7 +24,7 @@ Bool isEmptyZPolyhedron(ZPolyhedron *Zpol) {
 
   if (Zpol == NULL)
     return True;
-  if ((isEmptyLattice(Zpol->Lat)) || (emptyQ(Zpol->P)))
+  if (emptyQ(Zpol->P))
     return True;
   return False;
 } /* isEmptyZPolyhedron */
@@ -605,24 +605,18 @@ ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
   Lattice *LatInter;
 
   LatDiff= LatticeDifference(A->Lat,B->Lat); //can simplify here
-  printf("\n----------------- LatDiff: ----------------------\n");
-  PrintLatticeUnion(stdout," %d", LatDiff);
+  LatDiff=LatticeSimplify(LatDiff);
 
   LatInter= LatticeIntersection(A->Lat,B->Lat);
-  printf("\n----------------- LatInter: ----------------------\n");
-  if(LatInter==NULL)
-  {
-    printf("empty\n");
-  }
-  else
-    Matrix_Print(stdout," %d", LatInter);
-  printf("\n--------------------------------------------------\n");
   
   imA= DomainImage(A->P,A->Lat,MAXNOOFRAYS);
   imB= DomainImage(B->P,B->Lat,MAXNOOFRAYS);
 
   PolyInter=DomainIntersection(imA,imB,MAXNOOFRAYS);
   PolyDiff=DomainDifference(imA,imB,MAXNOOFRAYS);
+
+  Polyhedron_Free(imA);
+  Polyhedron_Free(imB);
 
   for(tmp=LatDiff;tmp!=NULL;tmp=tmp->next){
     Ztmp=malloc(sizeof(*Ztmp));
@@ -634,6 +628,9 @@ ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
 
   ap=DomainPreimage(PolyDiff,LatInter,MAXNOOFRAYS);
 
+  Polyhedron_Free(PolyInter);
+  Polyhedron_Free(PolyDiff);
+  
   if(LatInter == NULL)
     return Z1;
 
