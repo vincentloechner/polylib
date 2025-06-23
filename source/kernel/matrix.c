@@ -117,6 +117,12 @@ void Matrix_Print(FILE *Dst, const char *Format, Matrix *Mat) {
   int i, j;
   unsigned NbRows, NbColumns;
 
+  if (!Mat)
+  {
+    return;
+  }
+  
+
   fprintf(Dst, "%d %d\n", NbRows = Mat->NbRows, NbColumns = Mat->NbColumns);
   if (NbColumns == 0) {
     fprintf(Dst, "\n");
