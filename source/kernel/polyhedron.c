@@ -2445,6 +2445,7 @@ int PolyhedronIncludes(Polyhedron *Pol1, Polyhedron *Pol2) {
  * some polyhedron in the domain 'PolDomain', it is removed from the list.
  * On the other hand if some polyhedron in the domain covers polyhedron
  * 'Pol' then 'Pol' is not included in the domain.
+ * Consumes Pol (no need to free).
  */
 Polyhedron *AddPolyToDomain(Polyhedron *Pol, Polyhedron *PolDomain) {
 
@@ -3588,8 +3589,10 @@ Polyhedron *DomainUnion(Polyhedron *Pol1, Polyhedron *Pol2,
   Polyhedron *PolA, *PolEndA, *PolB, *PolEndB, *p1, *p2;
   int Redundant;
 
-  if (!Pol1 || !Pol2)
-    return (Polyhedron *)0;
+  if (!Pol1)
+    return Domain_Copy(Pol2);
+  if (!Pol2)
+    return Domain_Copy(Pol1);
   if (Pol1->Dimension != Pol2->Dimension) {
     errormsg1("DomainUnion", "diffdim", "operation on different dimensions");
     return (Polyhedron *)0;

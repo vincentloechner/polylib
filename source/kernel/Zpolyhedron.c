@@ -1,6 +1,10 @@
 #include <polylib/polylib.h>
 #include <stdlib.h>
 
+// debug the canonical normal form of Gautam:
+// #undef CANONICAL_DEBUG
+#define CANONICAL_DEBUG 1
+
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
 static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A);
 static void ZPolyhedron_Free(ZPolyhedron *Zpol);
@@ -10,6 +14,7 @@ static ZPolyhedron *ZPolyhedronImage(ZPolyhedron *, Matrix *);
 static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *, Matrix *);
 static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head);
 static void ZPolyhedronPrint(FILE *fp, const char *format, ZPolyhedron *A);
+static void CanonicalZPGautam(ZPolyhedron* A);
 
 typedef struct forsimplify {
   Polyhedron *Pol;
@@ -89,8 +94,10 @@ static void ZPolyhedron_Free(ZPolyhedron *Zpol) {
 
   if (Zpol == NULL)
     return;
-  Matrix_Free((Matrix *)Zpol->Lat);
-  Domain_Free(Zpol->P);
+  if(Zpol->Lat)
+    Matrix_Free((Matrix *)Zpol->Lat);
+  if(Zpol->P)
+    Domain_Free(Zpol->P);
   free(Zpol);
   return;
 } /* ZPolyhderon_Free */
@@ -167,39 +174,37 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
     Lattice *Lat;
 
     Added = False;
-    Image = Domain_Copy(i);
-    Domain_Free(Image->next);
-    Image->next = NULL;
-    Z1 = ZPolyhedron_Alloc(A->Lat, Image);
-    Domain_Free(Image);
-    CanonicalForm(Z1, &Z, &H);
-    ZDomain_Free(Z1);
-    Lat = (Lattice *)Matrix_Alloc(H->NbRows, Z->Lat->NbColumns);
-    Matrix_Product(H, Z->Lat, (Matrix *)Lat);
-    Matrix_Free(H);
-    AffineHermite(Lat, (Lattice **)&H, &U);
-    Image = DomainImage(Z->P, U, MAXNOOFRAYS);
-    ZDomain_Free(Z);
-
-    Zpol = ZPolyhedron_Alloc((Lattice *)H, Image);
-    Domain_Free(Image);
-    Matrix_Free((Matrix *)Lat);
-    Matrix_Free(H);
-    Matrix_Free(U);
+    // copy of ZP(Lat, i)
+    Polyhedron *tmp = i->next;
+    i->next = NULL;
+    Zpol = ZPolyhedron_Alloc(A->Lat, i);
+    i->next = tmp;
+    CanonicalZPGautam(Zpol);
+    // CanonicalForm(Z1, &Z, &H);
+    // ZDomain_Free(Z1);
+    // Lat = (Lattice *)Matrix_Alloc(H->NbRows, Z->Lat->NbColumns);
+    // Matrix_Product(H, Z->Lat, (Matrix *)Lat);
+    // Matrix_Free(H);
+    // AffineHermite(Lat, (Lattice **)&H, &U);
+    // Image = DomainImage(Z->P, U, MAXNOOFRAYS);
+    // ZDomain_Free(Z);
 
     if ((Head == NULL) || (isEmptyZPolyhedron(Head))) {
+      if(Head != NULL)
+        ZPolyhedron_Free(Head);
       Head = Zpol;
       continue;
     }
-    temp1 = temp = Head;
 
     /* Check if the curr pol is included in the zpol or vice versa. */
-    for (; temp != NULL; temp = temp->next) {
-      if (ZPolyhedronIncludes(Zpol, temp) == True) {
+    for (temp1 = temp = Head; temp != NULL; temp = temp->next) {
+      if (ZPolyhedronIncludes(Zpol, temp)) {
+        // already there, go to next
         ZPolyhedron_Free(Zpol);
         Added = True;
         break;
-      } else if (ZPolyhedronIncludes(temp, Zpol) == True) {
+      }
+      else if (ZPolyhedronIncludes(temp, Zpol)) {
         if (temp == Head) {
           Zpol->next = temp->next;
           Head = Zpol;
@@ -217,19 +222,16 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
     }
     if (Added == True)
       continue;
+
+    // check if the same lattice is already there, and add P to this one if it is
     for (temp = Head; temp != NULL; temp = temp->next) {
-      if (sameLattice(temp->Lat, Zpol->Lat) == True) {
+      if (sameLattice(temp->Lat, Zpol->Lat)) {
         Polyhedron *Union;
 
-        Union = DomainUnion(temp->P, Zpol->P, MAXNOOFRAYS);
-        if (!Union)
-          fprintf(stderr, "\n In AddZPolytoZDomain: Out of memory\n");
-        else {
-          Domain_Free(temp->P);
-          temp->P = Union;
-          Added = True;
-          ZPolyhedron_Free(Zpol);
-        }
+        // Add Zpol->P to temp->P
+        temp->P = AddPolyToDomain(Zpol->P, temp->P);
+        Zpol->P = NULL;
+        ZPolyhedron_Free(Zpol);
         break;
       }
       temp1 = temp;
@@ -1120,136 +1122,190 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
 }
 
 /*
-* The function takes a polyhedron and returns 
-* it in the canonical form described by Gautam 
+* The function takes a polyhedron and modifies it in place
+* to be in canonical form as described by Gautam
+* (A->Lat in HNF and no equalities in A->P)
 */
 void CanonicalZPGautam(ZPolyhedron* A) {
 
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "Entering CanonicalZPGautam\n");
+    fprintf(stderr, "--------- Input Lat: ");
+    Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+    fprintf(stderr, "--------- Input P: ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+  #endif
   if (A->P->Dimension+1 != A->Lat->NbColumns) {
     errormsg1("Polyhedron_Image", "dimincomp", "incompatible dimensions");
+    return;
   }
 
-  Matrix* U = NULL;
-  Matrix* H = NULL;
-
+  // Check if P contains equalities
   if (A->P->NbEq != 0) {
+    // remove equalities in P and change Lat to spread the original space
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "P has equalities\n");
+    #endif
     Matrix* Eq = Matrix_Alloc(A->P->NbEq, A->P->Dimension+1);
-    //remplit la matrice des egalites
-    for(int i=1; i<=A->P->NbEq; i++){
-      for(int j=0; j<Eq->NbColumns; j++){
-        Eq->p[i-1][j] = A->P->Constraint[i][j];
+    int eqnum = 0;
+    // get equalities
+    for(int i=0; i<=A->P->NbConstraints; i++){
+      if(A->P->Constraint[i][0] == 0) // Equality
+      {
+        for(int j=0; j<Eq->NbColumns; j++){
+          value_assign(Eq->p[eqnum][j], A->P->Constraint[i][j+1]);
+        }
+        if(++eqnum >= A->P->NbEq)
+          break;
       }
     }
-    //calcule sa ker
-    Matrix* ker = Matrix_Alloc(A->P->Dimension+1, A->P->NbEq);
-    if (!ker){
-      printf("\nNot enough memory space!!\n");
-      return;
-    }
-    
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "Equality matrix: ");
+      Matrix_Print(stderr, P_VALUE_FMT, Eq);
+    #endif
+
+    // compute Ker(Eq)
+    Matrix* ker;
     ker = int_ker(Eq);
-    //produit entre L et ker
+    // don't spread the constant part in any case:
+    // value_set_si(ker->p[ker->NbRows-1][ker->NbColumns-1], 1);
+    // prod = L . ker
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "Ker(Equality matrix): ");
+      Matrix_Print(stderr, P_VALUE_FMT, ker);
+    #endif
+
     Matrix* prod = Matrix_Alloc(A->Lat->NbRows, ker->NbColumns);
-    if (!prod){
-      printf("\nNot enough memory space!!\n");
+    if(!prod) {
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
       return;
     }
     Matrix_Product(A->Lat, ker, prod);
     
-    Polyhedron* tmp = A->P;
-    //mettons a jour
-    A->P = Polyhedron_Preimage(A->P, ker, MAXNOOFRAYS);
+    // update P
+    Polyhedron* NewP = Polyhedron_Preimage(A->P, ker, MAXNOOFRAYS);
+    Polyhedron_Free(A->P);
+    A->P = NewP;
+
+    // update Lat
+    Matrix_Free(A->Lat);
     A->Lat = prod;
     
-    //free 
+    // free temp
     Matrix_Free(ker);
     Matrix_Free(Eq);
-    Polyhedron_Free(tmp);
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "----------- New Lat: ");
+      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+      fprintf(stderr, "----------- New P: ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+      fprintf(stderr, "-----------\n");
+    #endif
+
+  } // P contains no equalities
+  else {
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "P has no equalities.\n");
+    #endif
   }
 
-  //test si lat est en hnf 
-    if(!isinHnf(A->Lat)) {
+  // check if A->Lat is in Hermite form
+  if(!isinHnf(A->Lat)) {
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "A is not HNF\n");
+    #endif
+    Matrix* U = NULL;
+    Matrix* H = NULL;
 
-    // diminuer la taille de A
+    // temporarily remove the homogeneous part of the matrix (dirty)
     A->Lat->NbColumns--;
     A->Lat->NbRows--;
-
-
+    // to compute HNF of the core matrix:
     left_hermite(A->Lat, &H, &U, NULL);
 
 
-    // test:
-    printf("---- hermite before fomating:\n");
-    Matrix_Print(stdout, "%3d", H);
-    Matrix_Print(stdout, "%3d", U);
-    printf("----\n");
-
-
-    // remettre H en forme:
-    //  H   l
-    // 0..0 1
-    Matrix* NewH = Matrix_Alloc( H->NbRows+1, H->NbColumns+1);
+    // set the new Lat matrix as:
+    //   H   Lat  <- this is the constant last vector of the original Lat
+    // 0...0  1
+    Matrix* NewH = Matrix_Alloc(H->NbRows+1, H->NbColumns+1);
     if (!NewH){
-      printf("\nNot enough memory space!!\n");
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
       return;
     }
-    for(int i = 0; i < H->NbRows+1; i++){
-      for(int j=0; j < H->NbColumns+1; j++){
-        if( (0 <= i && i < H->NbRows) && (0 <=j  && j < H->NbColumns)){
-          NewH->p[i][j] = H->p[i][j];
-        }
-        if( j == H->NbColumns ){
-          NewH->p[i][j] = A->Lat->p[i][j];
-        }
-        if( i == H->NbRows && j != H->NbColumns ){
-          NewH->p[i][j] = 0;
-        }
-        if(i == H->NbRows && j == H->NbColumns){
-          NewH->p[i][j] = 1;
-        }
+    for(int i=0; i < H->NbRows; i++){
+      for(int j=0; j < H->NbColumns; j++){
+          value_assign(NewH->p[i][j], H->p[i][j]);
       }
     }
-
-
-    // remettre U en forme:
-    //  U   0
-    // 0..0 1
-    Matrix* NewU=Matrix_Alloc( U->NbRows+1, U->NbColumns+1);
-    if (!NewU){
-      printf("\nNot enough memory space!!\n");
-      return;
+    // last row of 0's:
+    for(int j=0; j<NewH->NbColumns; j++) {
+      value_set_si(NewH->p[NewH->NbRows-1][j], 0);
     }
-    for(int i = 0; i < U->NbRows+1; i++){
-      for(int j = 0; j < U->NbColumns+1; j++){
-        if( 0 <= i && i<U->NbRows && 0 <= j && j<U->NbColumns ){
-          NewU->p[i][j] = U->p[i][j];
-        }
-        if( i == U->NbRows || j == U->NbColumns ){
-          NewU->p[i][j] = 0;
-        }
-      }
+    // last column copied from A->Lat:
+    for(int i=0; i < NewH->NbRows; i++){
+      value_assign(NewH->p[i][NewH->NbColumns-1], A->Lat->p[i][NewH->NbColumns-1]);
     }
-    NewU->p[U->NbRows][U->NbColumns] = 1;
 
-    // test:
-    printf("---- hermite after formating:\n");
-    Matrix_Print(stdout, "%3d", NewH);
-    Matrix_Print(stdout, "%3d", NewU);
-    printf("----\n");
-
+    // finish updating A->Lat:
     Matrix_Free(A->Lat);
     A->Lat = NewH;
-    Polyhedron *tmp = A->P;
-    A->P = Polyhedron_Preimage(A->P, NewU, MAXNOOFRAYS);
-    Polyhedron_Free(tmp);
-    Matrix_Free(U);
-    Matrix_Free(NewU);
     Matrix_Free(H);
 
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "New Lat (HNF): ");
+      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+    #endif
+
+    // Now prepare update of A->P.
+    // set newU as:
+    //      0
+    //  U   .
+    //      0
+    // 0..0 1
+    Matrix* NewU=Matrix_Alloc(U->NbRows+1, U->NbColumns+1);
+    if (!NewU){
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+      return;
+    }
+    for(int i = 0; i < U->NbRows; i++){
+      for(int j = 0; j < U->NbColumns; j++){
+          value_assign(NewU->p[i][j], U->p[i][j]);
+      }
+    }
+    // last column:
+    for(int i = 0; i < NewU->NbRows; i++){
+      value_set_si(NewU->p[i][NewU->NbColumns], 0);
+    }
+    // last row
+    for(int j = 0; j < NewU->NbColumns; j++){
+      value_set_si(NewU->p[NewU->NbRows-1][j], 0);
+    }
+    // 1 on bottom right corner
+    value_set_si(NewU->p[NewU->NbRows-1][NewU->NbColumns-1], 1);
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "NewU: ");
+      Matrix_Print(stderr, P_VALUE_FMT, NewU);
+    #endif
+
+    // compute the new P:
+    Polyhedron *NewP = Polyhedron_Preimage(A->P, NewU, MAXNOOFRAYS);
+    Polyhedron_Free(A->P);
+    A->P = NewP;
+    Matrix_Free(U);
+    Matrix_Free(NewU);
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "New P: ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+    #endif
+  } // A->Lat in Hermite form
+  else {
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "A is HNF.\n");
+    #endif
   }
   
-  //test
-  printf("\n-----------------DIMENSION OF A-------------------\n");
-  printf(" Lines: %d\n Cols: %d\n",A->Lat->NbRows,A->Lat->NbColumns);
   return;
 }
