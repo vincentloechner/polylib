@@ -69,6 +69,8 @@ Matrix *Matrix_Alloc(unsigned NbRows, unsigned NbColumns) {
  * Free the memory space occupied by Matrix 'Mat'
  */
 void Matrix_Free(Matrix *Mat) {
+  if(Mat==NULL)
+    return;
   if (Mat->p_Init)
     value_free(Mat->p_Init, Mat->p_Init_size);
 
