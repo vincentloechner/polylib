@@ -301,14 +301,15 @@ Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B) {
 
   Polyhedron *Diff = NULL;
   Bool retval = False;
-
+  ZPolyhedronPrint(stdout, " %d", A);
+  ZPolyhedronPrint(stdout, " %d", B);
 #ifdef DOMDEBUG
   FILE *fp;
   fp = fopen("_debug", "a");
   fprintf(fp, "\nEntered ZPOLYHEDRONINCLUDES\n");
   fclose(fp);
 #endif
-
+  
   if (LatticeIncludes(A->Lat, B->Lat) == True) {
     Polyhedron *ImageA, *ImageB;
 
@@ -1139,18 +1140,31 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     errormsg1("Polyhedron_Image", "dimincomp", "incompatible dimensions");
     return;
   }
-
+  // if(emptyQ(A->P)) {
+  //   //before return construct zpol empty with dim p=0 if dim a.p is not 0 we need to reallocate it and with a lattice = (0..0 1) do these manually
+  //   return;
+  // }
   // Check if P contains equalities
-  if (A->P->NbEq != 0) {
+  if (A->P->NbEq != 0) { 
+
     // remove equalities in P and change Lat to spread the original space
 
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "P has equalities\n");
+      fprintf(stderr, "Matrix of P: ");
+      Matrix_Print(stderr,P_VALUE_FMT, A->Lat);
     #endif
-    Matrix* Eq = Matrix_Alloc(A->P->NbEq, A->P->Dimension+1);
+
+    // Eq is the matrix of linear equations of P (without the constant)
+    Matrix* Eq = Matrix_Alloc(A->P->NbEq, A->P->Dimension);
+    if(!Eq){
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+      return;
+    }
+
     int eqnum = 0;
     // get equalities
-    for(int i=0; i<=A->P->NbConstraints; i++){
+    for(int i=0; i<=A->P->NbConstraints; i++) {
       if(A->P->Constraint[i][0] == 0) // Equality
       {
         for(int j=0; j<Eq->NbColumns; j++){
@@ -1162,40 +1176,109 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     }
 
     #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "Equality matrix: ");
+      fprintf(stderr, "Equality matrix (Linear part): ");
       Matrix_Print(stderr, P_VALUE_FMT, Eq);
     #endif
 
     // compute Ker(Eq)
     Matrix* ker;
     ker = int_ker(Eq);
-    // don't spread the constant part in any case:
-    // value_set_si(ker->p[ker->NbRows-1][ker->NbColumns-1], 1);
-    // prod = L . ker
+    Matrix_Free(Eq);
+
     #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "Ker(Equality matrix): ");
+      fprintf(stderr, "ker of eq: ");
       Matrix_Print(stderr, P_VALUE_FMT, ker);
     #endif
 
-    Matrix* prod = Matrix_Alloc(A->Lat->NbRows, ker->NbColumns);
-    if(!prod) {
+    //kerT= transpose ker
+    Matrix* kerT = Matrix_Alloc(ker->NbColumns,ker->NbRows);
+    if(!kerT){
       errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
       return;
     }
-    Matrix_Product(A->Lat, ker, prod);
+
+    for(int i =0; i<kerT->NbRows;i++) {
+      for(int j=0; j<kerT->NbColumns;j++) {
+        value_assign(kerT->p[i][j],ker->p[j][i]);
+      }
+    }
+    Matrix_Free(ker);
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "transpose of ker: ");
+      Matrix_Print(stderr, P_VALUE_FMT, kerT);
+    #endif
+    
+    //S = smith of kerT
+    Matrix *U, *V, *S; 
+
+    AffineSmith(kerT,&U,&S,&V);
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "Smith of kerT matrix: ");
+      Matrix_Print(stderr, P_VALUE_FMT, S);
+    #endif
+    // U and V are not used in calculations
+    Matrix_Free(U);
+    Matrix_Free(V);
+    Matrix_Free(kerT);
+
+    // ST = transpose s
+    // and the matrix we will use for the preimage and the new Lat is:
+    // T =
+    //  ST    Lat[cst]
+    //  0..0     1
+    
+    Matrix* T= Matrix_Alloc(S->NbColumns+1,S->NbRows+1);// size of transposed s + 1 for the constants
+    if(!T){
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+      return;
+    }
+
+
+    for(int i=0;i<T->NbRows-1;i++){
+      for(int j=0;j<T->NbColumns-1;j++){
+        value_assign(T->p[i][j],S->p[j][i]);
+      }
+    }
+    Matrix_Free(S);
+
+    for(int i=0; i<T->NbRows;i++){ //adding last column of the Latice
+      value_assign(T->p[i][T->NbColumns],A->Lat->p[i][A->Lat->NbColumns-1]);
+    }
+
+    for(int j=0; j<T->NbColumns;j++){
+      value_assign(T->p[T->NbRows-1][j],0);
+    }
+
+    value_assign(T->p[T->NbRows-1][T->NbColumns-1],1);
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "The final transformation matrix: ");
+      Matrix_Print(stderr, P_VALUE_FMT, T);
+    #endif
+
+
+    // NewL = L . T
+    Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, T->NbColumns);
+    if(!NewL) {
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+      return;
+    }
+    Matrix_Product(A->Lat, T, NewL);
     
     // update P
-    Polyhedron* NewP = Polyhedron_Preimage(A->P, ker, MAXNOOFRAYS);
+    Polyhedron* NewP = Polyhedron_Preimage(A->P, T, MAXNOOFRAYS);
     Polyhedron_Free(A->P);
     A->P = NewP;
 
     // update Lat
     Matrix_Free(A->Lat);
-    A->Lat = prod;
-    
-    // free temp
-    Matrix_Free(ker);
-    Matrix_Free(Eq);
+    A->Lat = NewL;
+  
+    // freeing 
+    Matrix_Free(T);
+
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "----------- New Lat: ");
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
@@ -1236,7 +1319,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     }
     for(int i=0; i < H->NbRows; i++){
       for(int j=0; j < H->NbColumns; j++){
-          value_assign(NewH->p[i][j], H->p[i][j]);
+        value_assign(NewH->p[i][j], H->p[i][j]);
       }
     }
     // last row of 0's:

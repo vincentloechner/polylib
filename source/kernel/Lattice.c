@@ -211,28 +211,27 @@ void AffineSmith(Lattice *A, Lattice **U, Lattice **V, Lattice **Diag) {
   value_init(quo);
   value_init(rem);
   temp = Homogenise(A, True);
-  Smith((Matrix *)temp, (Matrix **)U, (Matrix **)V, (Matrix **)Diag);
-  Matrix_Free((Matrix *)temp);
+  Smith(temp, U, V, Diag);
+  Matrix_Free(temp);
 
   temp = Homogenise(*U, False);
-  Matrix_Free((Matrix *)*U);
-  *U = (Lattice *)Matrix_Copy((Matrix *)temp);
-  Matrix_Free((Matrix *)temp);
+  Matrix_Free(*U);
+  *U = Matrix_Copy(temp);
+  Matrix_Free(temp);
 
   temp = Homogenise(*V, False);
-  Matrix_Free((Matrix *)*V);
-  *V = (Lattice *)Matrix_Copy((Matrix *)temp);
-  Matrix_Free((Matrix *)temp);
+  Matrix_Free(*V);
+  *V = temp;
 
   temp = Homogenise(*Diag, False);
-  Matrix_Free((Matrix *)*Diag);
-  *Diag = (Lattice *)Matrix_Copy((Matrix *)temp);
-  Matrix_Free((Matrix *)temp);
+  Matrix_Free(*Diag);
+  *Diag = temp;
+  
 
-  temp = (Lattice *)Matrix_Copy((Matrix *)*U);
-  Uinv = (Lattice *)Matrix_Alloc(U[0]->NbRows, U[0]->NbColumns);
-  Matrix_Inverse((Matrix *)temp, (Matrix *)Uinv);
-  Matrix_Free((Matrix *)temp);
+  temp = Matrix_Copy(*U);
+  Uinv = Matrix_Alloc(U[0]->NbRows, U[0]->NbColumns);
+  Matrix_Inverse(temp, Uinv);
+  Matrix_Free(temp);
 
   for (i = 0; i < U[0]->NbRows - 1; i++) {
     value_set_si(sum, 0);
@@ -241,7 +240,7 @@ void AffineSmith(Lattice *A, Lattice **U, Lattice **V, Lattice **Diag) {
     }
     value_assign(Diag[0]->p[i][j], sum);
   }
-  Matrix_Free((Matrix *)Uinv);
+  Matrix_Free(Uinv);
   for (i = 0; i < U[0]->NbRows - 1; i++)
     value_set_si(U[0]->p[i][U[0]->NbColumns - 1], 0);
   for (i = 0; i < Diag[0]->NbRows - 1; i++) {
@@ -249,22 +248,11 @@ void AffineSmith(Lattice *A, Lattice **U, Lattice **V, Lattice **Diag) {
                    Diag[0]->p[i][i]);
     value_modulus(rem, Diag[0]->p[i][Diag[0]->NbColumns - 1], Diag[0]->p[i][i]);
 
-    fprintf(stdout, " pourcent ");
-    value_print(stdout, VALUE_FMT, rem);
-    fprintf(stdout, " quotient ");
-    value_print(stdout, VALUE_FMT, quo);
-    fprintf(stdout, " \n");
-
     /* Apparently the % operator is strange when sign are different */
     if (value_neg_p(rem)) {
       value_addto(rem, rem, Diag[0]->p[i][i]);
       value_decrement(quo, quo);
     };
-    fprintf(stdout, "apres  pourcent ");
-    value_print(stdout, VALUE_FMT, rem);
-    fprintf(stdout, " quotient ");
-    value_print(stdout, VALUE_FMT, quo);
-    fprintf(stdout, " \n");
     value_assign(Diag[0]->p[i][Diag[0]->NbColumns - 1], rem);
     value_assign(V[0]->p[i][V[0]->NbColumns - 1], quo);
   }
@@ -298,13 +286,13 @@ Lattice *Homogenise(Lattice *A, Bool Forward) {
   fclose(fp);
 #endif
 
-  result = (Lattice *)Matrix_Copy(A);
+  result = Matrix_Copy(A);
   if (Forward == True) {
-    PutColumnFirst((Matrix *)result, A->NbColumns - 1);
-    PutRowFirst((Matrix *)result, result->NbRows - 1);
+    PutColumnFirst(result, A->NbColumns - 1);
+    PutRowFirst(result, result->NbRows - 1);
   } else {
-    PutColumnLast((Matrix *)result, 0);
-    PutRowLast((Matrix *)result, 0);
+    PutColumnLast(result, 0);
+    PutRowLast(result, 0);
   }
   return result;
 } /* Homogenise */
@@ -328,10 +316,12 @@ Bool LatticeIncludes(Lattice *A, Lattice *B) {
 
   AffineHermite(A, &HA, &UA);
   temp = LatticeIntersection(B, HA);
-  if (sameLattice(temp, HA) == True)
-    flag = True;
+  if(temp){
+    if (sameLattice(temp, HA))
+      flag = True;
+    Matrix_Free((Matrix *)temp);
+  }
 
-  Matrix_Free((Matrix *)temp);
   Matrix_Free((Matrix *)UA);
   Matrix_Free((Matrix *)HA);
   return flag;
