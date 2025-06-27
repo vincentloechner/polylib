@@ -1145,7 +1145,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
   //   return;
   // }
   // Check if P contains equalities
-  if (A->P->NbEq != 0) { 
+  if (A->P->NbEq != 0) {
 
     // remove equalities in P and change Lat to spread the original space
 
@@ -1164,7 +1164,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
 
     int eqnum = 0;
     // get equalities
-    for(int i=0; i<=A->P->NbConstraints; i++) {
+    for(int i=0; i<A->P->NbConstraints; i++) {
       if(A->P->Constraint[i][0] == 0) // Equality
       {
         for(int j=0; j<Eq->NbColumns; j++){
@@ -1224,7 +1224,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     Matrix_Free(kerT);
 
     // ST = S transpose
-    // and the transfomration matrix we will use to compute the preimage and the new Lat is:
+    // and the transformation matrix we will use to compute the preimage and the new Lat is:
     // T =
     //  ST    Lat[cst]
     //  0..0     1
@@ -1267,8 +1267,27 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     }
     Matrix_Product(A->Lat, T, NewL);
     
+    // lift the equalities in P
+    Matrix *Cons = Matrix_Alloc(A->P->NbConstraints - A->P->NbEq , A->P->Dimension+2);
+    if(!Cons){
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+      return;
+    }
+    int neqnum = 0;
+    // get the constraints that are not equalities
+    for(int i=0; i<A->P->NbConstraints; i++) {
+      if(A->P->Constraint[i][0] != 0) // not an equality
+      {
+        for(int j=0; j<Cons->NbColumns; j++){
+          value_assign(Cons->p[neqnum][j], A->P->Constraint[i][j]);
+        }
+      }
+    }
+    Polyhedron* P_noeq = Constraints2Polyhedron(Cons, MAXNOOFRAYS);
+    Matrix_Free(Cons);
     // update P
-    Polyhedron* NewP = Polyhedron_Preimage(A->P, T, MAXNOOFRAYS);
+    Polyhedron* NewP = Polyhedron_Preimage(P_noeq, T, MAXNOOFRAYS);
+    Polyhedron_Free(P_noeq);
     Polyhedron_Free(A->P);
     A->P = NewP;
 
