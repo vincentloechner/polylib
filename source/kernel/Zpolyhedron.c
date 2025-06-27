@@ -1212,7 +1212,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     //S = smith of kerT
     Matrix *U, *V, *S; 
 
-    AffineSmith(kerT,&U,&S,&V);
+    AffineSmith(kerT, &U, &V, &S);
 
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "Smith of kerT matrix: ");
@@ -1223,35 +1223,35 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     Matrix_Free(V);
     Matrix_Free(kerT);
 
-    // ST = transpose s
-    // and the matrix we will use for the preimage and the new Lat is:
+    // ST = S transpose
+    // and the transfomration matrix we will use to compute the preimage and the new Lat is:
     // T =
     //  ST    Lat[cst]
     //  0..0     1
     
-    Matrix* T= Matrix_Alloc(S->NbColumns+1,S->NbRows+1);// size of transposed s + 1 for the constants
+    // size of transposed s + 1 (homogeneous)
+    Matrix* T = Matrix_Alloc(S->NbColumns+1,S->NbRows+1);
     if(!T){
       errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
       return;
     }
 
-
     for(int i=0;i<T->NbRows-1;i++){
       for(int j=0;j<T->NbColumns-1;j++){
-        value_assign(T->p[i][j],S->p[j][i]);
+        value_assign(T->p[i][j], S->p[j][i]);
       }
     }
     Matrix_Free(S);
 
-    for(int i=0; i<T->NbRows;i++){ //adding last column of the Latice
-      value_assign(T->p[i][T->NbColumns],A->Lat->p[i][A->Lat->NbColumns-1]);
+    // adding last column of the Lattice (constant part)
+    for(int i=0; i<T->NbRows;i++){
+      value_assign(T->p[i][T->NbColumns-1], A->Lat->p[i][A->Lat->NbColumns-1]);
     }
 
     for(int j=0; j<T->NbColumns;j++){
-      value_assign(T->p[T->NbRows-1][j],0);
+      value_set_si(T->p[T->NbRows-1][j], 0);
     }
-
-    value_assign(T->p[T->NbRows-1][T->NbColumns-1],1);
+    value_set_si(T->p[T->NbRows-1][T->NbColumns-1], 1);
 
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "The final transformation matrix: ");
