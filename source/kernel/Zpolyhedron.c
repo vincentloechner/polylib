@@ -1267,27 +1267,28 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     }
     Matrix_Product(A->Lat, T, NewL);
     
-    // lift the equalities in P
-    Matrix *Cons = Matrix_Alloc(A->P->NbConstraints - A->P->NbEq , A->P->Dimension+2);
-    if(!Cons){
-      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
-      return;
-    }
-    int neqnum = 0;
-    // get the constraints that are not equalities
-    for(int i=0; i<A->P->NbConstraints; i++) {
-      if(A->P->Constraint[i][0] != 0) // not an equality
-      {
-        for(int j=0; j<Cons->NbColumns; j++){
-          value_assign(Cons->p[neqnum][j], A->P->Constraint[i][j]);
-        }
-      }
-    }
-    Polyhedron* P_noeq = Constraints2Polyhedron(Cons, MAXNOOFRAYS);
-    Matrix_Free(Cons);
-    // update P
-    Polyhedron* NewP = Polyhedron_Preimage(P_noeq, T, MAXNOOFRAYS);
-    Polyhedron_Free(P_noeq);
+    // // lift the equalities in P
+    // Matrix *Cons = Matrix_Alloc(A->P->NbConstraints - A->P->NbEq , A->P->Dimension+2);
+    // if(!Cons){
+    //   errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+    //   return;
+    // }
+    // int neqnum = 0;
+    // // get the constraints that are not equalities
+    // for(int i=0; i<A->P->NbConstraints; i++) {
+    //   if(A->P->Constraint[i][0] != 0) // not an equality
+    //   {
+    //     for(int j=0; j<Cons->NbColumns; j++){
+    //       value_assign(Cons->p[neqnum][j], A->P->Constraint[i][j]);
+    //     }
+    //   }
+    // }
+    // Polyhedron* P_noeq = Constraints2Polyhedron(Cons, MAXNOOFRAYS);
+    // Matrix_Free(Cons);
+    // // update P
+    Polyhedron* NewP = Polyhedron_Preimage(A->P, T, MAXNOOFRAYS);
+    // Polyhedron* NewP = Polyhedron_Preimage(P_noeq, T, MAXNOOFRAYS);
+    // Polyhedron_Free(P_noeq);
     Polyhedron_Free(A->P);
     A->P = NewP;
 
