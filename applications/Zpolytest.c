@@ -309,7 +309,6 @@ int main() {
     Matrix_Print(stdout,P_VALUE_FMT, b); 
     Matrix_Print(stdout,P_VALUE_FMT, c);
     Matrix_Print(stdout,P_VALUE_FMT, d);
-    Matrix_Free(d);
     break;
   
   case 22: /* SolveDiophantine */
@@ -339,6 +338,11 @@ int main() {
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
 
+  case 24: /* left_hermite */
+    left_hermite(a, &b, &c, NULL);
+    Matrix_Print(stdout,P_VALUE_FMT, b);
+    Matrix_Print(stdout,P_VALUE_FMT, c);
+    break;
 
   case 100: /* debug */
     

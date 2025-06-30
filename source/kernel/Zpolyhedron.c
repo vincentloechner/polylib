@@ -1233,7 +1233,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     // size of T
     Matrix* T = Matrix_Alloc(prod->NbColumns,prod->NbRows);
     if(!T){
-    errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
       return;
     }
 
@@ -1243,16 +1243,14 @@ void CanonicalZPGautam(ZPolyhedron* A) {
       }
     }
     
-    
     #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Matrix prod: ");
     Matrix_Print(stderr, P_VALUE_FMT, prod);
-    fprintf(stderr, "tasposed of prod: ");
+    fprintf(stderr, "transposed of prod: ");
     Matrix_Print(stderr, P_VALUE_FMT, T);
     fprintf(stderr, "lat of a: ");
     Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
-    
 
     Matrix_Free(prod);
 
@@ -1290,6 +1288,26 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     #endif
   }
 
+
+  // Check if the constant part (last column of Lat) is normal (simplified by its gcd)
+  // if not, divide it by the gcd, and compute the new polyhedron P' = image(T, P) with
+  // T = Id   0
+  //      0  gcd
+  Value gcd;
+  value_init(gcd);
+  // calul gcd sur la dernière colonne
+
+  // si gcd != 1 faire la simplification
+  if (value_notone_p(gcd)) {
+    // diviser la dernière colonne de A->Lat (en place)
+
+    // et construire T, puis faire l'image par T de A->P
+    Matrix *T = Identity(A->Dimension + 1); // ajouter la constante (gcd) en bas à droite
+    // libérer T et A->P.
+  }
+  value_clear(gcd);
+
+
   // check if A->Lat is in Hermite form
   if(!isinHnf(A->Lat)) {
     #ifdef CANONICAL_DEBUG
@@ -1297,16 +1315,39 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     #endif
     Matrix* U = NULL;
     Matrix* H = NULL;
-
     // temporarily remove the homogeneous part of the matrix (dirty)
+    A->Lat->NbColumns--;
+    A->Lat->NbRows--;
+    // to compute HNF of the core matrix:
     left_hermite(A->Lat, &H, &U, NULL);
 
 
+    // set the new Lat matrix as:
+    //   H    | Lat  <- this is the constant last vector of the original Lat
+    // 0...0  | 
+    Matrix* NewH = Matrix_Alloc(H->NbRows+1, H->NbColumns+1);
+    if (!NewH){
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+      return;
+    }
+    for(int i=0; i < H->NbRows; i++){
+      for(int j=0; j < H->NbColumns; j++){
+        value_assign(NewH->p[i][j], H->p[i][j]);
+      }
+    }
+    // last row of 0's:
+    for(int j=0; j<NewH->NbColumns; j++) {
+      value_set_si(NewH->p[NewH->NbRows-1][j], 0);
+    }
+    // last column copied from A->Lat:
+    for(int i=0; i < NewH->NbRows; i++){
+      value_assign(NewH->p[i][NewH->NbColumns-1], A->Lat->p[i][NewH->NbColumns-1]);
+    }
 
     // finish updating A->Lat:
     Matrix_Free(A->Lat);
-    A->Lat = H;
-
+    A->Lat = NewH;
+    Matrix_Free(H);
 
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New Lat (HNF): ");
@@ -1314,13 +1355,42 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     #endif
 
     // Now prepare update of A->P.
+    // set newU as:
+    //      0
+    //  U   .
+    //      0
+    // 0..0 1
+    Matrix* NewU=Matrix_Alloc(U->NbRows+1, U->NbColumns+1);
+    if (!NewU){
+      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+      return;
+    }
+    for(int i = 0; i < U->NbRows; i++){
+      for(int j = 0; j < U->NbColumns; j++){
+          value_assign(NewU->p[i][j], U->p[i][j]);
+      }
+    }
+    // last column:
+    for(int i = 0; i < NewU->NbRows; i++){
+      value_set_si(NewU->p[i][NewU->NbColumns], 0);
+    }
+    // last row
+    for(int j = 0; j < NewU->NbColumns; j++){
+      value_set_si(NewU->p[NewU->NbRows-1][j], 0);
+    }
+    // 1 on bottom right corner
+    value_set_si(NewU->p[NewU->NbRows-1][NewU->NbColumns-1], 1);
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "NewU: ");
+      Matrix_Print(stderr, P_VALUE_FMT, NewU);
+    #endif
 
     // compute the new P:
-    Polyhedron *NewP = Polyhedron_Preimage(A->P, U, MAXNOOFRAYS);
+    Polyhedron *NewP = Polyhedron_Preimage(A->P, NewU, MAXNOOFRAYS);
     Polyhedron_Free(A->P);
     A->P = NewP;
     Matrix_Free(U);
-
+    Matrix_Free(NewU);
 
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New P: ");
@@ -1332,6 +1402,6 @@ void CanonicalZPGautam(ZPolyhedron* A) {
       fprintf(stderr, "A is HNF.\n");
     #endif
   }
-  
+
   return;
 }
