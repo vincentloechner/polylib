@@ -2,8 +2,8 @@
 #include <stdlib.h>
 
 // debug the canonical normal form of Gautam:
-// #undef CANONICAL_DEBUG
 #define CANONICAL_DEBUG 1
+#undef CANONICAL_DEBUG
 
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
 static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A);
@@ -1296,14 +1296,36 @@ void CanonicalZPGautam(ZPolyhedron* A) {
   Value gcd;
   value_init(gcd);
   // calul gcd sur la dernière colonne
+  value_assign(gcd,A->Lat->p[0][A->Lat->NbColumns-1]);
+
+  for (int i = 1; i < A->Lat->NbRows; i++){
+    Gcd(gcd,A->Lat->p[i][A->Lat->NbColumns-1],&gcd);
+  }
 
   // si gcd != 1 faire la simplification
   if (value_notone_p(gcd)) {
     // diviser la dernière colonne de A->Lat (en place)
-
+    for (int i = 0; i < A->Lat->NbRows; i++)
+    {
+      value_assign(A->Lat->p[i][A->Lat->NbColumns-1],value_div(A->Lat->p[i][A->Lat->NbColumns-1],gcd));//tres moche faut la reecrire
+    }
     // et construire T, puis faire l'image par T de A->P
-    Matrix *T = Identity(A->Dimension + 1); // ajouter la constante (gcd) en bas à droite
-    // libérer T et A->P.
+    Matrix *T = Identity(A->P->Dimension + 1); // ajouter la constante (gcd) en bas à droite
+    for (int i = 0; i < T->NbColumns; i++){
+      for (int j = 0; j < T->NbColumns; j++){
+        if (i==j){
+          value_set_si(T->p[i][j],1);
+        }
+        else{
+          value_set_si(T->p[i][j],0);
+        } 
+      }  
+    }
+    value_assign(T->p[T->NbRows-1][T->NbColumns-1],gcd);
+    Polyhedron* tmp=Polyhedron_Image(A->P,T,MAXNOOFRAYS);
+    Matrix_Free(T);
+    Polyhedron_Free(A->P);
+    A->P=tmp;
   }
   value_clear(gcd);
 
