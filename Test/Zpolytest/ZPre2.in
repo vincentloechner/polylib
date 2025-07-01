@@ -19,3 +19,10 @@ F 11
 
 
 
+# ZP = { (2i,j) | (i,j) \in Z^2, 1 <= i,j <= 100 }
+#   (i is even between 2 and 200, and j is between 1 and 100)
+# T = (i->3i+1,7i)
+
+# compute the preimage(T, ZP)
+#   = all point y having a image in ZP, i.e. such that T y \in ZP
+# solution = all odd values between 1 and 13

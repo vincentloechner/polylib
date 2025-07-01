@@ -18,4 +18,9 @@ D 1
 F 11
 
 
+# ZP = { (2i,2i+j) | (i,j) \in Z^2, 1 <= i,j <= 100 }
+#   (i is even, and j is between i and i+100)
+# T = (i,j->3i+1,2i+5j)
 
+# compute the preimage(T, ZP)
+#   = all point y having a image in ZP, i.e. such that T y \in ZP
