@@ -513,7 +513,10 @@ ZPolyhedron *ZDomainImage(ZPolyhedron *A, Matrix *Func) {
   for (temp = A; temp != NULL; temp = temp->next) {
     ZPolyhedron *Zpol;
     Zpol = ZPolyhedronImage(temp, Func);
-    Result = AddZPolytoZDomain(Zpol, Result);
+    if(!(isEmptyZPolyhedron(Zpol)))
+    {
+      Result = AddZPolytoZDomain(Zpol, Result);
+    }
     ZPolyhedron_Free(Zpol);
   }
   if (Result == NULL)
@@ -1393,7 +1396,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     }
     // last column:
     for(int i = 0; i < NewU->NbRows; i++){
-      value_set_si(NewU->p[i][NewU->NbColumns], 0);
+      value_set_si(NewU->p[i][NewU->NbColumns-1], 0);
     }
     // last row
     for(int j = 0; j < NewU->NbColumns; j++){
