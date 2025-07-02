@@ -40,6 +40,7 @@ tests:
 	@failedtest=0; \
 	for x in $(ZPOLYTESTS) ; do \
 		echo "Verify file $$x" ; \
+		echo "$(OBJ_DIR)/Zpolytest$(TEST_BITS) \< $(srcdir)/$$x \> xyz;" \
 		$(OBJ_DIR)/Zpolytest$(TEST_BITS) < $(srcdir)/$$x > xyz;\
 		diff -w xyz $(srcdir)/`basename $$x .in`.out ; \
 		result=$$?; \

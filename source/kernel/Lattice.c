@@ -87,12 +87,11 @@ Lattice *EmptyLattice(int dimension) {
 #endif
 
   return NULL;
-  // result = (Lattice *)Matrix_Alloc(dimension, dimension);
-  // for (i = 0; i < dimension; i++)
-  //   for (j = 0; j < dimension; j++)
-  //     value_set_si(result->p[i][j], 0);
-  // value_set_si(result->p[i - 1][i - 1], 1);
-  // return result;
+  result = Matrix_Alloc(1, dimension);
+  for (j = 0; j < dimension; j++)
+    value_set_si(result->p[0][j], 0);
+  value_set_si(result->p[0][dimension-1], 1);
+  return result;
 } /* EmptyLattice */
 
 /*
@@ -101,6 +100,7 @@ Lattice *EmptyLattice(int dimension) {
 Bool isEmptyLattice(Lattice *A) {
 
   int i, j;
+  Bool a = True;
 
 #ifdef DOMDEBUG
   FILE *fp;
@@ -108,8 +108,20 @@ Bool isEmptyLattice(Lattice *A) {
   fprintf(fp, "\nEntered ISNULLATTICE \n");
   fclose(fp);
 #endif
-
-  return A == NULL;
+  if(A->NbColumns==1) { 
+    for ( j = 0; j < A->NbRows-2; j++) {
+      if (A->p[0][j]!=0) {
+        a=False;
+        return a;
+      }
+    }
+    a = (A->p[0][A->NbRows-1] == 1);
+    return a;
+  }
+  else{
+    return False;
+  }
+  
 } /* isEmptyLaattice */
 
 /*

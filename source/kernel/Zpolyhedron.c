@@ -47,13 +47,16 @@ ZPolyhedron *ZPolyhedron_Alloc(Lattice *Lat, Polyhedron *Poly) {
   POL_ENSURE_FACETS(Poly);
   POL_ENSURE_VERTICES(Poly);
 
-  if (Lat->NbRows != Poly->Dimension + 1) {
+  if (Lat->NbColumns != Poly->Dimension + 1) {
     fprintf(stderr, "\nInZPolyAlloc - The Lattice  and the Polyhedron");
     fprintf(stderr, " are not compatible to form a ZPolyhedra\n");
     return NULL;
   }
   if ((!(isEmptyLattice(Lat))) && (!isfulldim(Lat))) {
     fprintf(stderr, "\nZPolAlloc: Lattice not Full Dimensional\n");
+    fprintf(stderr, "\nZPolAlloc: is empty latice: %d \n",((isEmptyLattice(Lat))? 1: 0));
+    fprintf(stderr, "\nZPolAlloc: is fulldim latice: %d \n",((isfulldim(Lat))? 1: 0));
+    Matrix_Print(stderr,P_VALUE_FMT,Lat);
     return NULL;
   }
   A = (ZPolyhedron *)malloc(sizeof(ZPolyhedron));
@@ -275,17 +278,13 @@ ZPolyhedron *EmptyZPolyhedron(int dimension) {
   fclose(fp);
 #endif
 
-  // identity
-  E = Matrix_Alloc(dimension+1, dimension+1);
-  for(int i=0 ; i<=dimension; i++) {
+  E = Matrix_Alloc(1, dimension+1);
     for(int j=0 ; j<=dimension; j++) {
-      if(i == j)
-        value_set_si(E->p[i][j], 1);
-      else
-        value_set_si(E->p[i][j], 0);
+        value_set_si(E->p[0][j], 0);
     }
-  }
-  P = Empty_Polyhedron(dimension);
+  value_set_si(E->p[0][E->NbRows-1],0);
+
+  P = Empty_Polyhedron(0);
 
   Zpol = ZPolyhedron_Alloc(E, P);
   Matrix_Free((Matrix *)E);
