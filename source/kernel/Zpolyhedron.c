@@ -367,7 +367,7 @@ void ZDomainPrint(FILE *fp, const char *format, ZPolyhedron *A) {
 static void ZPolyhedronPrint(FILE *fp, const char *format, ZPolyhedron *A) {
   if (A == NULL)
     return;
-  fprintf(fp, "\nZPOLYHEDRON: Dimension %d \n", A->Lat->NbRows - 1);
+  fprintf(fp, "ZPOLYHEDRON: Dimension %d \n", A->Lat->NbRows - 1);
   fprintf(fp, "\nLATTICE: \n");
   Matrix_Print(fp, format, (Matrix *)A->Lat);
   Polyhedron_Print(fp, format, A->P);
