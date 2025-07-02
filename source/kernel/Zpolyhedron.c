@@ -3,6 +3,7 @@
 
 // debug the canonical normal form of Gautam:
 // #define CANONICAL_DEBUG 1
+// #define ADDZPTOZD_DEBUG 1
 
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
 static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A);
@@ -162,6 +163,9 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
   Polyhedron *i;
   Bool Added;
 
+  #ifdef ADDZPTOZD_DEBUG
+    fprintf(stderr, "----- ENTERING ADD ZP TO ZD -----\n");
+  #endif
   if ((A == NULL) || (isEmptyZPolyhedron(A)))
     return Head;
 
@@ -187,6 +191,12 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
     // AffineHermite(Lat, (Lattice **)&H, &U);
     // Image = DomainImage(Z->P, U, MAXNOOFRAYS);
     // ZDomain_Free(Z);
+    #ifdef ADDZPTOZD_DEBUG
+      fprintf(stderr, "Head =\n");
+      ZDomainPrint(stderr, P_VALUE_FMT, Head);
+      fprintf(stderr, "Adding Zpol:\n");
+      ZPolyhedronPrint(stderr, P_VALUE_FMT, Zpol);
+    #endif
 
     if ((Head == NULL) || (isEmptyZPolyhedron(Head))) {
       if(Head != NULL)
@@ -231,6 +241,7 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
         temp->P = AddPolyToDomain(Zpol->P, temp->P);
         Zpol->P = NULL;
         ZPolyhedron_Free(Zpol);
+        Added = True;
         break;
       }
       temp1 = temp;
@@ -238,6 +249,13 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
     if (Added == False)
       temp1->next = Zpol;
   }
+
+  #ifdef ADDZPTOZD_DEBUG
+    fprintf(stderr, "Final Head =\n");
+    ZDomainPrint(stderr, P_VALUE_FMT, Head);
+    fprintf(stderr, "----- EXIT ADD ZP TO ZD -----\n");
+  #endif
+
   return Head;
 } /* AddZPolytoZDomain */
 
@@ -300,8 +318,6 @@ Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B) {
 
   Polyhedron *Diff = NULL;
   Bool retval = False;
-  ZPolyhedronPrint(stdout, " %d", A);
-  ZPolyhedronPrint(stdout, " %d", B);
 #ifdef DOMDEBUG
   FILE *fp;
   fp = fopen("_debug", "a");
@@ -337,12 +353,12 @@ void ZDomainPrint(FILE *fp, const char *format, ZPolyhedron *A) {
   fclose(fp1);
 #endif
 
-  ZPolyhedronPrint(fp, format, A);
-  if (A->next != NULL) {
-    fprintf(fp, "\nUNIONED with\n");
-    ZDomainPrint(fp, format, A->next);
+  for( ; A; A=A->next)
+  {
+    ZPolyhedronPrint(fp, format, A);
+    if(A->next)
+      fprintf(fp, "\nUNION ");
   }
-  return;
 } /* ZDomainPrint */
 
 /*
