@@ -345,6 +345,17 @@ int main() {
     printf("Q = ");
     Matrix_Print(stdout,P_VALUE_FMT, c);
     break;
+  
+  case 25:/* move homogenous first*/
+    Matrix_Print(stdout,P_VALUE_FMT,a);
+    Matrix_Move_Homogeneous_Dim_First(a);
+    Matrix_Print(stdout,P_VALUE_FMT,a);
+    break;
+    
+    case 26:
+    Matrix_Print(stdout,P_VALUE_FMT,a);
+    Matrix_Move_Homogeneous_Dim_Last(a);
+    Matrix_Print(stdout,P_VALUE_FMT,a);
 
   case 100: /* debug */
     

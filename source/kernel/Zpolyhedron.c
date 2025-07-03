@@ -1142,8 +1142,7 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
  *  A =  A'  | c     ->    z | 0..0
  *      0..0 | z           c |  A'
  */
-static void Matrix_Move_Homogeneous_Dim_First(Matrix *A)
-{
+void Matrix_Move_Homogeneous_Dim_First(Matrix *A) {
   if(A->NbRows == 0 || A->NbColumns == 0)
     return;
 
@@ -1169,6 +1168,32 @@ static void Matrix_Move_Homogeneous_Dim_First(Matrix *A)
   value_clear(tmp);
 }
 
+void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
+  if(A->NbRows == 0 || A->NbColumns == 0)
+    return;
+
+  Value tmp;
+  value_init(tmp);
+  // puts the first col in the end
+  for (int i = 0; i < A->NbRows; i++) {
+    value_assign(tmp,A->p[i][0]); // tmp = first col value
+    for (int j = 0; j < A->NbColumns-1; j++) {
+      value_assign(A->p[i][j],A->p[i][j+1]); // [i] <- [i+1]
+    }
+    value_assign(A->p[i][A->NbColumns-1],tmp); //[last] <- tmp
+  }
+  printf("the matrix after the first transformation:\n");
+  Matrix_Print(stdout,P_VALUE_FMT,A);
+  printf("-------------------------");
+  for (int j = 0; j < A->NbColumns; j++) {
+    value_assign(tmp,A->p[0][j]); // tmp first row value
+    for (int i = 0; i < A->NbRows-1; i++) {
+      value_assign(A->p[i][j],A->p[i+1][j]);
+    }
+    value_assign(A->p[A->NbRows-1][j],tmp);
+  }
+  value_clear(tmp);
+}
 /*
 * The function takes a polyhedron and modifies it in place
 * to be in canonical form as described by Gautam
