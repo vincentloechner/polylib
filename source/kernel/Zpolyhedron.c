@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // debug the canonical normal form of Gautam:
-// #define CANONICAL_DEBUG 1
+#define CANONICAL_DEBUG 1
 // #define ADDZPTOZD_DEBUG 1
 
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
@@ -29,7 +29,7 @@ Bool isEmptyZPolyhedron(ZPolyhedron *Zpol) {
 
   if (Zpol == NULL)
     return True;
-  if (emptyQ(Zpol->P))
+  if (Zpol->P->Dimension == 0)
     return True;
   return False;
 } /* isEmptyZPolyhedron */
@@ -52,13 +52,13 @@ ZPolyhedron *ZPolyhedron_Alloc(Lattice *Lat, Polyhedron *Poly) {
     fprintf(stderr, " are not compatible to form a ZPolyhedra\n");
     return NULL;
   }
-  if ((!(isEmptyLattice(Lat))) && (!isfulldim(Lat))) {
-    fprintf(stderr, "\nZPolAlloc: Lattice not Full Dimensional\n");
-    fprintf(stderr, "\nZPolAlloc: is empty latice: %d \n",((isEmptyLattice(Lat))? 1: 0));
-    fprintf(stderr, "\nZPolAlloc: is fulldim latice: %d \n",((isfulldim(Lat))? 1: 0));
-    Matrix_Print(stderr,P_VALUE_FMT,Lat);
-    return NULL;
-  }
+  // if ((!(isEmptyLattice(Lat))) && (!isfulldim(Lat))) {
+  //   fprintf(stderr, "\nZPolAlloc: Lattice not Full Dimensional\n");
+  //   fprintf(stderr, "\nZPolAlloc: is empty latice: %d \n",((isEmptyLattice(Lat))? 1: 0));
+  //   fprintf(stderr, "\nZPolAlloc: is fulldim latice: %d \n",((isfulldim(Lat))? 1: 0));
+  //   Matrix_Print(stderr,P_VALUE_FMT,Lat);
+  //   return NULL;
+  // }
   A = (ZPolyhedron *)malloc(sizeof(ZPolyhedron));
   if (!A) {
     fprintf(stderr, "ZPolAlloc : Out of Memory\n");
@@ -68,13 +68,7 @@ ZPolyhedron *ZPolyhedron_Alloc(Lattice *Lat, Polyhedron *Poly) {
   A->P = Domain_Copy(Poly);
   A->Lat = Matrix_Copy(Lat);
 
-  if (IsLattice(Lat) == False) {
-    ZPolyhedron *Res;
-
-    Res = IntegraliseLattice(A);
-    ZPolyhedron_Free(A);
-    return Res;
-  }
+  CanonicalZPGautam(A);
   return A;
 } /* ZPolyhedron_Alloc */
 
@@ -1140,6 +1134,42 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
 }
 
 /*
+ * Moves the constant part (last line and last row) as first line and row
+ * of the matrix.
+ * This is useful to perform the HNF and keeping the affine part as top-left
+ * non-nul result. The same function can be called again to get the result
+ * of affine HNF.
+ *  A =  A'  | c     ->    z | 0..0
+ *      0..0 | z           c |  A'
+ */
+static void Matrix_Move_Homogeneous_Dim_First(Matrix *A)
+{
+  if(A->NbRows == 0 || A->NbColumns == 0)
+    return;
+
+  Value tmp;
+  value_init(tmp);
+  // puts the last column first:
+  for(int i=0; i<A->NbRows; i++) {
+    // on row i
+    value_assign(tmp, A->p[i][A->NbColumns-1]); // tmp = last col value
+    for(int j = A->NbColumns-1; j > 0; j--) {
+      value_assign(A->p[i][j], A->p[i][j-1]);  // [j] <- [j-1]
+    }
+    value_assign(A->p[i][0], tmp);  // [0]<- tmp
+  }
+  // then puts the last row first:
+  for(int j = 0; j < A->NbColumns; j++) {
+    value_assign(tmp, A->p[A->NbRows-1][j]); // tmp = last row value
+    for(int i = A->NbRows-1; i > 0; i--) {
+      value_assign(A->p[i][j], A->p[i-1][j]); // [i] <- [i-1]
+    }
+    value_assign(A->p[0][j], tmp); // [0]<- tmp
+  }
+  value_clear(tmp);
+}
+
+/*
 * The function takes a polyhedron and modifies it in place
 * to be in canonical form as described by Gautam
 * (A->Lat in HNF and no equalities in A->P)
@@ -1162,7 +1192,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
   //   return;
   // }
   // Check if P contains equalities
-  if (A->P->NbEq != 0) {
+  if (A->P->Dimension > 0 && A->P->NbEq != 0) {
 
     // remove equalities in P and change Lat to spread the original space
 
@@ -1229,7 +1259,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     //S = smith of kerT
     Matrix *U, *V, *S; 
 
-    AffineSmith(kerT, &U, &V, &S);
+    AffineSmith(kerT, &U, &V, &S);  // kerT = U . S . V
 
     #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Smith of kerT matrix: ");
@@ -1243,8 +1273,13 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     //prod = S . V
     Matrix* prod;
     prod=Matrix_Alloc(S->NbRows,V->NbColumns);
-    Matrix_Product(S,V,prod);
+    Matrix_Product(S,V,prod);   // prod = S . V
     Matrix_Free(V);
+
+
+    // ---------> prod is the right Hermite of kerT
+
+
 
     // T = transposed matrix of prod
     // size of T
@@ -1253,6 +1288,8 @@ void CanonicalZPGautam(ZPolyhedron* A) {
       errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
       return;
     }
+
+    // -----------> T is the left Hermite of ker !
 
     for(int i=0;i<T->NbRows;i++){
       for(int j=0;j<T->NbColumns;j++){
