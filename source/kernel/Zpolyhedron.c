@@ -1182,9 +1182,6 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
     }
     value_assign(A->p[i][A->NbColumns-1],tmp); //[last] <- tmp
   }
-  printf("the matrix after the first transformation:\n");
-  Matrix_Print(stdout,P_VALUE_FMT,A);
-  printf("-------------------------");
   for (int j = 0; j < A->NbColumns; j++) {
     value_assign(tmp,A->p[0][j]); // tmp first row value
     for (int i = 0; i < A->NbRows-1; i++) {
@@ -1263,52 +1260,60 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     #endif
 
     //kerT= transpose ker
-    Matrix* kerT = Matrix_Alloc(ker->NbColumns,ker->NbRows);
-    if(!kerT){
-      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
-      return;
-    }
+    // Matrix* kerT = Matrix_Alloc(ker->NbColumns,ker->NbRows);
+    // if(!kerT){
+    //   errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
+    //   return;
+    // }
 
-    for(int i =0; i<kerT->NbRows;i++) {
-      for(int j=0; j<kerT->NbColumns;j++) {
-        value_assign(kerT->p[i][j],ker->p[j][i]);
-      }
-    }
-    Matrix_Free(ker);
+    // for(int i =0; i<kerT->NbRows;i++) {
+    //   for(int j=0; j<kerT->NbColumns;j++) {
+    //     value_assign(kerT->p[i][j],ker->p[j][i]);
+    //   }
+    // }
+    // Matrix_Free(ker);
 
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "transpose of ker: ");
-      Matrix_Print(stderr, P_VALUE_FMT, kerT);
-    #endif
+    // #ifdef CANONICAL_DEBUG
+    //   fprintf(stderr, "transpose of ker: ");
+    //   Matrix_Print(stderr, P_VALUE_FMT, kerT);
+    // #endif
     
-    //S = smith of kerT
-    Matrix *U, *V, *S; 
+    // //S = smith of kerT
 
-    AffineSmith(kerT, &U, &V, &S);  // kerT = U . S . V
-
-    #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Smith of kerT matrix: ");
-    Matrix_Print(stderr, P_VALUE_FMT, S);
-    fprintf(stderr, "Matrix V: ");
-    Matrix_Print(stderr, P_VALUE_FMT, V);
-    #endif
-    // U is not used in calculations
-    Matrix_Free(U);
-    Matrix_Free(kerT);
-    //prod = S . V
-    Matrix* prod;
-    prod=Matrix_Alloc(S->NbRows,V->NbColumns);
-    Matrix_Product(S,V,prod);   // prod = S . V
-    Matrix_Free(V);
-
-
+    
+    Matrix *U, *V; 
+    
+    // AffineSmith(kerT, &U, &V, &S);  // kerT = U . S . V
+    
+    // #ifdef CANONICAL_DEBUG
+    // fprintf(stderr, "Smith of kerT matrix: ");
+    // Matrix_Print(stderr, P_VALUE_FMT, S);
+    // fprintf(stderr, "Matrix V: ");
+    // Matrix_Print(stderr, P_VALUE_FMT, V);
+    // #endif
+    // // U is not used in calculations
+    // Matrix_Free(U);
+    // Matrix_Free(kerT);
+    // //prod = S . V
+    // Matrix* prod;
+    // prod=Matrix_Alloc(S->NbRows,V->NbColumns);
+    // Matrix_Product(S,V,prod);   // prod = S . V
+    // Matrix_Free(V);
+    
+    
     // ---------> prod is the right Hermite of kerT
-
-
-
+    
+    
+    
     // T = transposed matrix of prod
     // size of T
-    Matrix* T = Matrix_Alloc(prod->NbColumns,prod->NbRows);
+    Matrix* T;
+    Matrix_Move_Homogeneous_Dim_First(ker);
+    left_hermite(ker,&T,&V,&U);
+    Matrix_Move_Homogeneous_Dim_Last(T);
+    Matrix_Free(ker);
+    Matrix_Free(V);
+    Matrix_Free(U);
     if(!T){
       errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
       return;
@@ -1316,22 +1321,22 @@ void CanonicalZPGautam(ZPolyhedron* A) {
 
     // -----------> T is the left Hermite of ker !
 
-    for(int i=0;i<T->NbRows;i++){
-      for(int j=0;j<T->NbColumns;j++){
-        value_assign(T->p[i][j], prod->p[j][i]);
-      }
-    }
+    // for(int i=0;i<T->NbRows;i++){
+    //   for(int j=0;j<T->NbColumns;j++){
+    //     value_assign(T->p[i][j], prod->p[j][i]);
+    //   }
+    // }
     
     #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Matrix prod: ");
-    Matrix_Print(stderr, P_VALUE_FMT, prod);
-    fprintf(stderr, "transposed of prod: ");
+    // fprintf(stderr, "Matrix prod: ");
+    // Matrix_Print(stderr, P_VALUE_FMT, prod);
+    fprintf(stderr, "Matrix T: ");
     Matrix_Print(stderr, P_VALUE_FMT, T);
     fprintf(stderr, "lat of a: ");
     Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
 
-    Matrix_Free(prod);
+    // Matrix_Free(prod);
 
     // NewL = L . T
     Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, T->NbColumns);
