@@ -340,7 +340,9 @@ int main() {
 
   case 24: /* left_hermite */
     left_hermite(a, &b, &c, NULL);
+    printf("A = H . Q\nH = ");
     Matrix_Print(stdout,P_VALUE_FMT, b);
+    printf("Q = ");
     Matrix_Print(stdout,P_VALUE_FMT, c);
     break;
 
