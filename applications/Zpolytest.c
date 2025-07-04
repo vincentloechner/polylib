@@ -180,6 +180,7 @@ int main() {
   case 6: /* isEmptyZPolyhedron */
     
     ZA=ZPolyhedron_Alloc(a,A);
+    ZDomainPrint(stdout,P_VALUE_FMT, ZA);
     fprintf(stdout,"is Empty? :%d \n", isEmptyZPolyhedron(ZA));
     ZDomain_Free(ZA);
     break;

@@ -115,7 +115,7 @@ Bool isEmptyLattice(Lattice *A) {
         return a;
       }
     }
-    a = (A->p[0][A->NbRows-1] == 1);
+    a = value_one_p(A->p[0][A->NbRows-1]);
     return a;
   }
   else{

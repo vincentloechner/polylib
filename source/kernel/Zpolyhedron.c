@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // debug the canonical normal form of Gautam:
-#define CANONICAL_DEBUG 1
+// #define CANONICAL_DEBUG 1
 // #define ADDZPTOZD_DEBUG 1
 
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
@@ -29,7 +29,7 @@ Bool isEmptyZPolyhedron(ZPolyhedron *Zpol) {
 
   if (Zpol == NULL)
     return True;
-  if (Zpol->P->Dimension == 0)
+  if (emptyQ(Zpol->P))
     return True;
   return False;
 } /* isEmptyZPolyhedron */
@@ -1197,22 +1197,44 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
 * (A->Lat in HNF and no equalities in A->P)
 */
 void CanonicalZPGautam(ZPolyhedron* A) {
-
+  
   #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Entering CanonicalZPGautam\n");
-    fprintf(stderr, "--------- Input Lat: ");
-    Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
-    fprintf(stderr, "--------- Input P: ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+  fprintf(stderr, "Entering CanonicalZPGautam\n");
+  fprintf(stderr, "--------- Input Lat: ");
+  Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+  fprintf(stderr, "--------- Input P: ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
   #endif
+  
   if (A->P->Dimension+1 != A->Lat->NbColumns) {
     errormsg1("Polyhedron_Image", "dimincomp", "incompatible dimensions");
     return;
   }
+
   // if(emptyQ(A->P)) {
   //   //before return construct zpol empty with dim p=0 if dim a.p is not 0 we need to reallocate it and with a lattice = (0..0 1) do these manually
   //   return;
   // }
+
+
+    if(!emptyQ(A->P)){
+      Polyhedron* tmp = Empty_Polyhedron(A->P->Dimension);
+      Polyhedron_Free(A->P);
+      A->P=tmp;
+    }
+    if(A->Lat->NbColumns>1){
+      Matrix_Free(A->Lat);
+      Lattice* L=Matrix_Alloc(A->P->Dimension,1);
+      A->Lat=L;
+    }
+    for (int i = 0; i < A->Lat->NbRows-2; i++) {
+      value_set_si(A->Lat->p[i][0],0);
+    }
+    value_set_si(A->Lat->p[A->Lat->NbRows-1][0],1);
+
+    return;
+  
+
   // Check if P contains equalities
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
 
@@ -1258,55 +1280,9 @@ void CanonicalZPGautam(ZPolyhedron* A) {
       fprintf(stderr, "ker of eq: ");
       Matrix_Print(stderr, P_VALUE_FMT, ker);
     #endif
-
-    //kerT= transpose ker
-    // Matrix* kerT = Matrix_Alloc(ker->NbColumns,ker->NbRows);
-    // if(!kerT){
-    //   errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
-    //   return;
-    // }
-
-    // for(int i =0; i<kerT->NbRows;i++) {
-    //   for(int j=0; j<kerT->NbColumns;j++) {
-    //     value_assign(kerT->p[i][j],ker->p[j][i]);
-    //   }
-    // }
-    // Matrix_Free(ker);
-
-    // #ifdef CANONICAL_DEBUG
-    //   fprintf(stderr, "transpose of ker: ");
-    //   Matrix_Print(stderr, P_VALUE_FMT, kerT);
-    // #endif
-    
-    // //S = smith of kerT
-
     
     Matrix *U, *V; 
     
-    // AffineSmith(kerT, &U, &V, &S);  // kerT = U . S . V
-    
-    // #ifdef CANONICAL_DEBUG
-    // fprintf(stderr, "Smith of kerT matrix: ");
-    // Matrix_Print(stderr, P_VALUE_FMT, S);
-    // fprintf(stderr, "Matrix V: ");
-    // Matrix_Print(stderr, P_VALUE_FMT, V);
-    // #endif
-    // // U is not used in calculations
-    // Matrix_Free(U);
-    // Matrix_Free(kerT);
-    // //prod = S . V
-    // Matrix* prod;
-    // prod=Matrix_Alloc(S->NbRows,V->NbColumns);
-    // Matrix_Product(S,V,prod);   // prod = S . V
-    // Matrix_Free(V);
-    
-    
-    // ---------> prod is the right Hermite of kerT
-    
-    
-    
-    // T = transposed matrix of prod
-    // size of T
     Matrix* T;
     Matrix_Move_Homogeneous_Dim_First(ker);
     left_hermite(ker,&T,&V,&U);
@@ -1319,24 +1295,12 @@ void CanonicalZPGautam(ZPolyhedron* A) {
       return;
     }
 
-    // -----------> T is the left Hermite of ker !
-
-    // for(int i=0;i<T->NbRows;i++){
-    //   for(int j=0;j<T->NbColumns;j++){
-    //     value_assign(T->p[i][j], prod->p[j][i]);
-    //   }
-    // }
-    
     #ifdef CANONICAL_DEBUG
-    // fprintf(stderr, "Matrix prod: ");
-    // Matrix_Print(stderr, P_VALUE_FMT, prod);
     fprintf(stderr, "Matrix T: ");
     Matrix_Print(stderr, P_VALUE_FMT, T);
     fprintf(stderr, "lat of a: ");
     Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
-
-    // Matrix_Free(prod);
 
     // NewL = L . T
     Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, T->NbColumns);
