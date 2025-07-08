@@ -3,6 +3,7 @@
 
 // debug the canonical normal form of Gautam:
 // #define CANONICAL_DEBUG 1
+#define NEWINTERSECTION_DEBUG 1
 // #define ADDZPTOZD_DEBUG 1
 
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
@@ -272,7 +273,7 @@ ZPolyhedron *EmptyZPolyhedron(int dimension) {
   fclose(fp);
 #endif
 
-  E = Matrix_Alloc(1, dimension+1);
+  E = Matrix_Alloc(dimension+1,1);
     for(int j=0 ; j<=dimension; j++) {
         value_set_si(E->p[0][j], 0);
     }
@@ -413,7 +414,7 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
       ZPolyhedron_Free(Zpol);
     }
   if (Result == NULL)
-    return EmptyZPolyhedron(A->Lat->NbRows - 1);
+    return EmptyZPolyhedron(A->Lat->NbColumns - 1);
   return Result;
 } /* ZDomainIntersection */
 
@@ -569,8 +570,11 @@ ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func) {
 
 /*
  * Return the Z-polyhedron intersection of the Z-polyhedra 'A' and 'B'.
- * Note: If Z1 = L1 (intersect) P1 and Z2 = L2 (intersect) P2, then
- *     Z1 (intersect) Z2 = (L1 (intersect) L2) (intersect) (P1 (intersect) P2)
+ * We are based on the intersection of the two lattices of the polyehdrons, named LInter.
+ * If LInter is empty(null), we return the empty Zpolyhedron.
+ * Otherwise, we caluclate the intersection of the Polyedrons on A and B, called PInter.
+ * We calculate the Preimage of PInter by LInter and finally we allocate the result,
+ * a Zpolyhedron in Gautam Canonical form. 
  */
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
 
@@ -586,8 +590,7 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
 #endif
 
   LInter = LatticeIntersection(A->Lat, B->Lat);
-  if (isEmptyLattice(LInter) == True) {
-    ZPolyhedron_Free(Result);
+  if (isEmptyLattice(LInter)) {
     Matrix_Free(LInter);
     return (EmptyZPolyhedron(A->Lat->NbRows - 1));
   }
@@ -1217,25 +1220,38 @@ void CanonicalZPGautam(ZPolyhedron* A) {
   // }
 
 
-    if(!emptyQ(A->P)){
+    if(emptyQ(A->P)){
+      #ifdef CANONICAL_DEBUG
+        printf("The polyhedron is empty\n");
+      #endif
       Polyhedron* tmp = Empty_Polyhedron(A->P->Dimension);
       Polyhedron_Free(A->P);
       A->P=tmp;
-    }
-    if(A->Lat->NbColumns>1){
-      Matrix_Free(A->Lat);
-      Lattice* L=Matrix_Alloc(A->P->Dimension,1);
-      A->Lat=L;
-    }
-    for (int i = 0; i < A->Lat->NbRows-2; i++) {
-      value_set_si(A->Lat->p[i][0],0);
-    }
-    value_set_si(A->Lat->p[A->Lat->NbRows-1][0],1);
+      if(A->Lat->NbColumns>1){
+        Matrix_Free(A->Lat);
+        Lattice* L=Matrix_Alloc(A->P->Dimension+1,1);
+        A->Lat=L;
+      }
+      for (int i = 0; i < A->Lat->NbRows-1; i++) {
+        value_set_si(A->Lat->p[i][0],0);
+      }
+      value_set_si(A->Lat->p[A->Lat->NbRows-1][0],1);
 
-    return;
+      #ifdef CANONICAL_DEBUG
+        printf("We return:\n");
+        ZPolyhedronPrint(stderr,P_VALUE_FMT,A);
+      #endif
+
+      return;
+    }
+      
   
 
   // Check if P contains equalities
+  #ifdef CANONICAL_DEBUG
+    printf("Checking for equalites in P\n");
+  #endif
+
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
 
     // remove equalities in P and change Lat to spread the original space
@@ -1474,4 +1490,145 @@ void CanonicalZPGautam(ZPolyhedron* A) {
   }
 
   return;
+}
+
+/*
+ * Takes into parameters two lattices A and B of the form:
+ *  A =   A' | a      B =   B' | b
+ *      0..0 | 1          0..0 | 1
+ * 
+ *  Copies them in a matrix (TMP), used to calculate the left hermite,
+ *  the Lattice of size A->Nbrows x B-> NbCols is the intersection of A and B.
+ * 
+ * 
+*/
+
+Lattice* NewLatticeIntersection(Lattice* A,Lattice* B) {
+  Lattice* Tmp, *H,*U,*V,*Res;
+  if(A->NbRows!=B->NbRows){
+    fprintf(stderr,"In NewLatticeIntersection -- The two lattices are incompatible.");
+    return NULL;
+  }
+  #ifdef NEWINTERSECTION_DEBUG
+  fprintf(stdout,"Matrix A:\n");
+  Matrix_Print(stdout, P_VALUE_FMT, A);
+  fprintf(stdout,"Matrix B:\n");
+  Matrix_Print(stdout, P_VALUE_FMT, B);
+  #endif
+
+  // Tmp will be in the form:
+  // 
+  //   1     0...0 |   1      0...0
+  //   a      A'   |   b       B'
+  // -------------------------------
+  //   1     0...0 |    0 ..    0
+  //   a      A'   |    0 ..    0
+  
+  Tmp=Matrix_Alloc(A->NbRows*2, A->NbColumns+B->NbColumns);
+
+  if (!Tmp) {
+    errormsg1("NewLatticeIntersection", "outofmem", "Not enough memory space!");
+    return NULL;
+  }
+  
+  
+  
+  //copying A in Tmp:
+  
+  // intitalising the 1
+  value_set_si(Tmp->p[0][0], 1);
+  value_set_si(Tmp->p[A->NbRows][0], 1);
+  
+  //copy of the constant
+  for(int i=1; i<A->NbRows-1;i++) {
+    value_assign(Tmp->p[i][0], A->p[i-1][A->NbColumns-1]);
+    value_assign(Tmp->p[i+A->NbRows][0], A->p[i-1][A->NbColumns-1]);
+  }
+  //copy of the main 
+  for (int i = 1 ; i < A->NbRows; i++) {
+    for (int j = 1; j < A->NbColumns; j++){
+      value_assign(Tmp->p[i][j], A->p[i-1][j-1]);
+      value_assign(Tmp->p[i+A->NbRows][j], A->p[i-1][j-1]);
+    }
+  }
+  
+  #ifdef NEWINTERSECTION_DEBUG
+    fprintf(stdout,"\n Tmp after having written A:\n");
+    Matrix_Print(stdout, P_VALUE_FMT, Tmp);
+  #endif
+
+
+  // copying B into tmp:
+  value_set_si( Tmp->p[0][A->NbColumns], 1);
+  
+  //the constant (last col of lattice )
+  for (int i = 1; i < B->NbRows-1; i++) {
+    value_assign(Tmp->p[i][A->NbColumns], B->p[i-1][B->NbColumns-1]);
+  }
+  
+  for (int i = 1; i < B->NbRows; i++){
+    for (int j = A->NbColumns; j < Tmp->NbColumns-1; j++) {
+      value_assign(Tmp->p[i][j+1], B->p[i-1][j-A->NbColumns]);
+    }
+  }
+  
+  #ifdef NEWINTERSECTION_DEBUG
+    fprintf(stdout,"\n Tmp after having written b:\n");
+    Matrix_Print(stdout,P_VALUE_FMT, Tmp);
+  #endif
+  
+
+  //hermite of the TMP
+  // H is the matrix that contains the solution. it is of the form:
+  // 
+  // H =   C  | 0..0
+  //     ------------
+  //       D  |  R
+  // 
+  // with R being our result
+
+  left_hermite(Tmp, &H, &U, &V);
+
+  // U and V are needed only for the calculation of the hermite form
+  Matrix_Free(U);
+  Matrix_Free(V);
+
+  #ifdef NEWINTERSECTION_DEBUG
+    fprintf(stdout,"\nThe input matrix:\n");
+    Matrix_Print(stdout,P_VALUE_FMT,Tmp);
+    fprintf(stdout,"\nH:\n");
+    Matrix_Print(stdout,P_VALUE_FMT,H);
+  #endif
+  Matrix_Free(Tmp);
+
+  // recuperating the result. if the value in 0,0 of R is not 1 then we have an empty solution.
+
+  if(value_notone_p(H->p[A->NbRows][A->NbColumns])) {
+    #ifdef NEWINTERSECTION_DEBUG
+      fprintf(stdout,"\n we have an empty intersection\n");
+    #endif
+    return NULL;
+  }
+
+  Res=Matrix_Alloc(A->NbRows,B->NbColumns);
+  if (!Res) {
+    errormsg1("NewLatticeIntersection", "outofmem", "Not enough memory space!");
+    return NULL;
+  }
+  
+
+  for (int i = A->NbRows; i < A->NbRows+B->NbRows; i++) {
+    for (int j = A->NbColumns; j < A->NbColumns+B->NbColumns; j++) {
+        value_assign(Res->p[i - A->NbRows][j - A->NbColumns],H->p[i][j]);
+    }
+  }
+  Matrix_Free(H);
+  // put Res in the proper affine form (didn't want to write a loop, had a pre-written function.)
+  Matrix_Move_Homogeneous_Dim_Last(Res);
+
+  #ifdef NEWINTERSECTION_DEBUG
+    Matrix_Print(stdout,P_VALUE_FMT,Res);
+  #endif
+
+  return Res;
 }

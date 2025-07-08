@@ -2629,7 +2629,7 @@ Polyhedron *SubConstraint(Value *Con, Polyhedron *Pol, unsigned NbMaxRays,
   return NewPol;
 } /* SubConstraint */
 
-/**
+/*
 
   Return the intersection of two polyhedral domains 'Pol1' and 'Pol2'.
   The maximum allowed rays in the new polyhedron generated is 'NbMaxRays'.

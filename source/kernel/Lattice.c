@@ -101,7 +101,8 @@ Bool isEmptyLattice(Lattice *A) {
 
   int i, j;
   Bool a = True;
-
+  if(A==NULL)
+    return True;
 #ifdef DOMDEBUG
   FILE *fp;
   fp = fopen("_debug", "a");

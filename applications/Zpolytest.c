@@ -352,12 +352,15 @@ int main() {
     Matrix_Print(stdout,P_VALUE_FMT,a);
     break;
     
-    case 26:
+  case 26:
     Matrix_Print(stdout,P_VALUE_FMT,a);
     Matrix_Move_Homogeneous_Dim_Last(a);
     Matrix_Print(stdout,P_VALUE_FMT,a);
     break;
-
+  
+  case 27:
+    NewLatticeIntersection(a,b);
+    break;
   case 100: /* debug */
     
     ZA=ZPolyhedron_Alloc(a,A);
