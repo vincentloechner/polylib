@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // debug this file:
-
+// #define DEBUG
 #ifdef DEBUG
   #define CANONICAL_DEBUG 1
   #define NEWINTERSECTION_DEBUG 1
@@ -573,9 +573,9 @@ ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func) {
 
 /*
  * Return the Z-polyhedron intersection of the Z-polyhedra 'A' and 'B'.
- * We are based on the intersection of the two lattices of the polyehdrons, named LInter.
+ * We are based on the intersection of the two lattices of the polyhedra, named LInter.
  * If LInter is empty(null), we return the empty Zpolyhedron.
- * Otherwise, we caluclate the intersection of the Polyedrons on A and B, called PInter.
+ * Otherwise, we calculate the intersection of the polyhedra on A and B, called PInter.
  * We calculate the Preimage of PInter by LInter and finally we allocate the result,
  * a Zpolyhedron in Gautam Canonical form. 
  */
@@ -592,7 +592,7 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
   fclose(fp);
 #endif
 
-  LInter = LatticeIntersection(A->Lat, B->Lat);
+  LInter = NewLatticeIntersection(A->Lat, B->Lat);
   if (isEmptyLattice(LInter)) {
     Matrix_Free(LInter);
     return (EmptyZPolyhedron(A->Lat->NbRows - 1));
@@ -603,7 +603,7 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
   if (emptyQ(PInter))
     Result = EmptyZPolyhedron(LInter->NbRows - 1);
   else {
-    PreImage = DomainPreimage(PInter, (Matrix *)LInter, MAXNOOFRAYS);
+    PreImage = DomainPreimage(PInter, LInter, MAXNOOFRAYS);
     Result = ZPolyhedron_Alloc(LInter, PreImage);
     Domain_Free(PreImage);
   }
@@ -1404,82 +1404,35 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     #endif
     Matrix* U = NULL;
     Matrix* H = NULL;
-    // temporarily remove the homogeneous part of the matrix (dirty)
-    A->Lat->NbColumns--;
-    A->Lat->NbRows--;
-    // to compute HNF of the core matrix:
-    left_hermite(A->Lat, &H, &U, NULL);
 
+    // // temporarily remove the homogeneous part of the matrix (dirty)
+    // A->Lat->NbColumns--;
+    // A->Lat->NbRows--;
 
-    // set the new Lat matrix as:
-    //   H    | Lat  <- this is the constant last vector of the original Lat
-    // 0...0  | 
-    Matrix* NewH = Matrix_Alloc(H->NbRows+1, H->NbColumns+1);
-    if (!NewH){
-      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
-      return;
-    }
-    for(int i=0; i < H->NbRows; i++){
-      for(int j=0; j < H->NbColumns; j++){
-        value_assign(NewH->p[i][j], H->p[i][j]);
-      }
-    }
-    // last row of 0's:
-    for(int j=0; j<NewH->NbColumns; j++) {
-      value_set_si(NewH->p[NewH->NbRows-1][j], 0);
-    }
-    // last column copied from A->Lat:
-    for(int i=0; i < NewH->NbRows; i++){
-      value_assign(NewH->p[i][NewH->NbColumns-1], A->Lat->p[i][NewH->NbColumns-1]);
-    }
-
-    // finish updating A->Lat:
+    // for left hermite to include the constant:
+    Matrix_Move_Homogeneous_Dim_First(A->Lat);
+    // to compute HNF of the lattice (constant part left-top)
+    // We will use U = Q^{-1}, such that LU = H.
+    left_hermite(A->Lat, &H, NULL, &U);
     Matrix_Free(A->Lat);
-    A->Lat = NewH;
-    Matrix_Free(H);
+
+    // Move the constant back to right-bottom
+    Matrix_Move_Homogeneous_Dim_Last(H);
+    Matrix_Move_Homogeneous_Dim_Last(U);
+
+    // set the new Lat matrix as H
+    A->Lat = H;
 
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New Lat (HNF): ");
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
 
-    // Now prepare update of A->P.
-    // set newU as:
-    //      0
-    //  U   .
-    //      0
-    // 0..0 1
-    Matrix* NewU=Matrix_Alloc(U->NbRows+1, U->NbColumns+1);
-    if (!NewU){
-      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
-      return;
-    }
-    for(int i = 0; i < U->NbRows; i++){
-      for(int j = 0; j < U->NbColumns; j++){
-          value_assign(NewU->p[i][j], U->p[i][j]);
-      }
-    }
-    // last column:
-    for(int i = 0; i < NewU->NbRows; i++){
-      value_set_si(NewU->p[i][NewU->NbColumns-1], 0);
-    }
-    // last row
-    for(int j = 0; j < NewU->NbColumns; j++){
-      value_set_si(NewU->p[NewU->NbRows-1][j], 0);
-    }
-    // 1 on bottom right corner
-    value_set_si(NewU->p[NewU->NbRows-1][NewU->NbColumns-1], 1);
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "NewU: ");
-      Matrix_Print(stderr, P_VALUE_FMT, NewU);
-    #endif
-
-    // compute the new P:
-    Polyhedron *NewP = Polyhedron_Preimage(A->P, NewU, MAXNOOFRAYS);
+    // Now update of A->P using the premimage by U.
+    Polyhedron *NewP = Polyhedron_Preimage(A->P, U, MAXNOOFRAYS);
     Polyhedron_Free(A->P);
     A->P = NewP;
     Matrix_Free(U);
-    Matrix_Free(NewU);
 
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New P: ");
