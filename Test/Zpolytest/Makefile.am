@@ -46,24 +46,23 @@ tests:
 	failedtestnames=""; \
 	for x in $(ZPOLYTESTS) ; do \
 		file=`basename $$x .in`; \
-		# echo "$(OBJ_DIR)/Zpolytest$(TEST_BITS) < $(srcdir)/$$x;" \
-		echo -n "Verify file $$file... " ; \
+		/bin/echo -n "Verify file $$file... " ; \
 		$(OBJ_DIR)/Zpolytest$(TEST_BITS) < $(srcdir)/$$x > xyz; \
 		diff -w xyz $(srcdir)/$$file.out ; \
 		result=$$?; \
 		if [ "$$result" -eq "0" ]; then \
-			echo "$$out passed"; \
+			/bin/echo "$$out passed"; \
 		else \
-			echo "Error: $$file.out is not the same"; \
+			/bin/echo "Error: $$file.out is not the same"; \
 			failedtest=`expr $$failedtest + 1`; \
 			failedtestnames="$$failedtestnames:$$file"; \
 	    fi; \
 	done ; \
 	if [ $$failedtest != 0 ]; then \
-		echo "$$failedtest tests failed"; \
-		echo "These tests failed: $$failedtestnames:"; \
+		/bin/echo "$$failedtest tests failed"; \
+		/bin/echo "These tests failed: $$failedtestnames:"; \
 	else \
-		echo "Test Zpolytest works correctly"; \
+		/bin/echo "Test Zpolytest works correctly"; \
 	fi
 
 CLEANFILES=xyz
