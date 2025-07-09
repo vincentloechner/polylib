@@ -178,9 +178,8 @@ int main() {
     break;
     
   case 6: /* isEmptyZPolyhedron */
-    
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZA);
+    ZA = ZPolyhedron_Alloc(a,A);
+    fprintf(stdout,"is Empty? :%d \n", isEmptyZPolyhedron(ZA));
     ZDomain_Free(ZA);
     break;
     
@@ -347,22 +346,23 @@ int main() {
     break;
   
   case 25:/* move homogenous first*/
-    Matrix_Print(stdout,P_VALUE_FMT,a);
+    Matrix_Print(stdout, P_VALUE_FMT, a);
     Matrix_Move_Homogeneous_Dim_First(a);
-    Matrix_Print(stdout,P_VALUE_FMT,a);
+    Matrix_Print(stdout, P_VALUE_FMT, a);
     break;
     
   case 26:
-    Matrix_Print(stdout,P_VALUE_FMT,a);
+    Matrix_Print(stdout, P_VALUE_FMT, a);
     Matrix_Move_Homogeneous_Dim_Last(a);
-    Matrix_Print(stdout,P_VALUE_FMT,a);
+    Matrix_Print(stdout, P_VALUE_FMT, a);
     break;
   
   case 27:
-    NewLatticeIntersection(a,b);
+    c = NewLatticeIntersection(a, b);
+    Matrix_Print(stdout, P_VALUE_FMT, c);
     break;
+
   case 100: /* debug */
-    
     ZA=ZPolyhedron_Alloc(a,A);
     ZDomainPrint(stdout,P_VALUE_FMT, ZA);
     ZDomain_Free(ZA);

@@ -1,4 +1,3 @@
-
 ZPOLYHEDRON: Dimension 2 
 
 LATTICE: 
@@ -19,9 +18,7 @@ Vertex: [   1    1  ]/1
 Vertex: [   1   10  ]/1
 Vertex: [  10   10  ]/1
 
-UNIONED with
-
-ZPOLYHEDRON: Dimension 2 
+UNION ZPOLYHEDRON: Dimension 2 
 
 LATTICE: 
 3 3
@@ -41,9 +38,7 @@ Vertex: [   1    1  ]/1
 Vertex: [   1   10  ]/1
 Vertex: [  10   10  ]/1
 
-UNIONED with
-
-ZPOLYHEDRON: Dimension 2 
+UNION ZPOLYHEDRON: Dimension 2 
 
 LATTICE: 
 3 3
@@ -63,9 +58,7 @@ Vertex: [   1    1  ]/1
 Vertex: [   1   10  ]/1
 Vertex: [  10   10  ]/1
 
-UNIONED with
-
-ZPOLYHEDRON: Dimension 2 
+UNION ZPOLYHEDRON: Dimension 2 
 
 LATTICE: 
 3 3
@@ -85,9 +78,7 @@ Vertex: [   1    1  ]/1
 Vertex: [   1   10  ]/1
 Vertex: [  10   10  ]/1
 
-UNIONED with
-
-ZPOLYHEDRON: Dimension 2 
+UNION ZPOLYHEDRON: Dimension 2 
 
 LATTICE: 
 3 3
@@ -107,9 +98,7 @@ Vertex: [   1    1  ]/1
 Vertex: [   1   10  ]/1
 Vertex: [  10   10  ]/1
 
-UNIONED with
-
-ZPOLYHEDRON: Dimension 2 
+UNION ZPOLYHEDRON: Dimension 2 
 
 LATTICE: 
 3 3
@@ -129,9 +118,7 @@ Vertex: [   1    1  ]/1
 Vertex: [   1   10  ]/1
 Vertex: [  10   10  ]/1
 
-UNIONED with
-
-ZPOLYHEDRON: Dimension 2 
+UNION ZPOLYHEDRON: Dimension 2 
 
 LATTICE: 
 3 3
@@ -151,9 +138,7 @@ Vertex: [   1    1  ]/1
 Vertex: [   1   10  ]/1
 Vertex: [  10   10  ]/1
 
-UNIONED with
-
-ZPOLYHEDRON: Dimension 2 
+UNION ZPOLYHEDRON: Dimension 2 
 
 LATTICE: 
 3 3
@@ -173,9 +158,7 @@ Vertex: [   1    1  ]/1
 Vertex: [   1   10  ]/1
 Vertex: [  10   10  ]/1
 
-UNIONED with
-
-ZPOLYHEDRON: Dimension 2 
+UNION ZPOLYHEDRON: Dimension 2 
 
 LATTICE: 
 3 3

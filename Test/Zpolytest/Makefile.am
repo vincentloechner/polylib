@@ -10,8 +10,13 @@ ZPOLYTESTS =  \
 	LatHNF3.in \
 	LatInter1.in \
 	LatInter2.in \
+	LatInter3.in \
+	LatInter4.in \
+	LatInter5.in \
 	LatInc1.in \
 	LatInc2.in \
+	LeftHermite1.in \
+	LeftHermite2.in \
 	ZEmpty1.in \
 	ZEmpty2.in \
 	ZInter1.in \
@@ -38,22 +43,27 @@ TEST=$(ZPOLYTESTS:%.in=%.tested)
 
 tests:
 	@failedtest=0; \
+	failedtestnames=""; \
 	for x in $(ZPOLYTESTS) ; do \
-		echo "Verify file $$x" ; \
-		echo "$(OBJ_DIR)/Zpolytest$(TEST_BITS) \< $(srcdir)/$$x \> xyz;" \
-		$(OBJ_DIR)/Zpolytest$(TEST_BITS) < $(srcdir)/$$x > xyz;\
-		diff -w xyz $(srcdir)/`basename $$x .in`.out ; \
+		file=`basename $$x .in`; \
+		# echo "$(OBJ_DIR)/Zpolytest$(TEST_BITS) < $(srcdir)/$$x;" \
+		echo -n "Verify file $$file... " ; \
+		$(OBJ_DIR)/Zpolytest$(TEST_BITS) < $(srcdir)/$$x > xyz; \
+		diff -w xyz $(srcdir)/$$file.out ; \
 		result=$$?; \
-		if [ "$$result" -eq "1" ]; then \
-			echo "Error: $$x is not the same"; \
-			failedtest=`expr $$failedtest + 1`; \
+		if [ "$$result" -eq "0" ]; then \
+			echo "$$out passed"; \
 		else \
-			echo "$$x passed"; \
-	        fi; \
+			echo "Error: $$file.out is not the same"; \
+			failedtest=`expr $$failedtest + 1`; \
+			failedtestnames="$$failedtestnames:$$file"; \
+	    fi; \
 	done ; \
-        if [ $$failedtest != 0 ]; then \
+	if [ $$failedtest != 0 ]; then \
 		echo "$$failedtest tests failed"; \
+		echo "These tests failed: $$failedtestnames:"; \
 	else \
-	        echo "Test Zpolytest works correctly"; \
-        fi
+		echo "Test Zpolytest works correctly"; \
+	fi
+
 CLEANFILES=xyz
