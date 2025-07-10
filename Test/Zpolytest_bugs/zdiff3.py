@@ -26,7 +26,14 @@ print("len(ZP3) =", len(ZP3))
 print("len(ZP4) =", len(ZP4))
 print("len(ZP) =", len(ZP))
 
-if ZP in diff:
-  print("ZP in diff")
-if diff in ZP:
-  print("diff in ZP")
+if len(ZP - diff) == 0:
+  print("ZP is in diff")
+else:
+  print("Points that should not be there:")
+  print(ZP - diff)
+
+if len(diff - ZP) == 0:
+  print("diff is in ZP")
+else:
+  print("Missing points:")
+  print(diff - ZP)
