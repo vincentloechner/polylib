@@ -328,7 +328,7 @@ Bool LatticeIncludes(Lattice *A, Lattice *B) {
 #endif
 
   AffineHermite(A, &HA, &UA);
-  temp = LatticeIntersection(B, HA);
+  temp = NewLatticeIntersection(B, HA);
   if(temp){
     if (sameLattice(temp, HA))
       flag = True;

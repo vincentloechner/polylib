@@ -455,32 +455,12 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
     fprintf(stderr, "ZDomainDifference not performed\n");
     return NULL;
   }
-
-  // //the test to see if the Zdomains have an intersection or not
-  // Bool EmptyIntersection = True;
-
-  // for (tempA = A; tempA != NULL; tempA = tempA->next) {//test all polyhedrons in A
-
-  //   for ( tempB = B; tempB != NULL; tempB = tempB->next){//test all polyhedrons in B
-
-  //     test=ZPolyhedronIntersection(tempA,tempB);//find their intersection
-
-  //     if ( !isEmptyZPolyhedron(test)){// if we find an intersection
-  //       EmptyIntersection=False;//set the boolean to false 
-  //       test=NULL;
-  //       break;//no need to test anymore
-  //     }
-  //   }
-  // }
+  fprintf(stdout,"\n Zpolyhedron A: \n");
+  ZDomainPrint(stdout,P_VALUE_FMT,A);
+  fprintf(stdout,"\n Zpolyhedron B: \n");
+  ZDomainPrint(stdout,P_VALUE_FMT,B);
+  fprintf(stdout,"\n Difference: \n");
   
-  // tempA=NULL; tempB=NULL;//reset A and B
-
-  // if ( EmptyIntersection ){ //if there is an empty inteserction
-  //   printf("There are no elements in common between the two polyhedrons");
-  //   Result=ZDomain_Copy(A);
-  //   return Result;//return A unchanged 
-  // }
-
   Result = NULL;
   for (tempA = A; tempA != NULL; tempA = tempA->next) {
     ZPolyhedron *temp = NULL;
@@ -626,8 +606,7 @@ ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
 
   LatDiff= LatticeDifference(A->Lat,B->Lat); //can simplify here
   LatDiff=LatticeSimplify(LatDiff);
-
-  LatInter= LatticeIntersection(A->Lat,B->Lat);
+  LatInter= NewLatticeIntersection(A->Lat,B->Lat);
   
   imA= DomainImage(A->P,A->Lat,MAXNOOFRAYS);
   imB= DomainImage(B->P,B->Lat,MAXNOOFRAYS);
@@ -1304,11 +1283,9 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     
     Matrix* T;
     Matrix_Move_Homogeneous_Dim_First(ker);
-    left_hermite(ker,&T,&V,&U);
+    left_hermite(ker,&T,NULL,NULL);
     Matrix_Move_Homogeneous_Dim_Last(T);
     Matrix_Free(ker);
-    Matrix_Free(V);
-    Matrix_Free(U);
     if(!T){
       errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
       return;
