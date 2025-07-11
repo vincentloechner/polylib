@@ -455,11 +455,11 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
     fprintf(stderr, "ZDomainDifference not performed\n");
     return NULL;
   }
-  fprintf(stdout,"\n Zpolyhedron A: \n");
-  ZDomainPrint(stdout,P_VALUE_FMT,A);
-  fprintf(stdout,"\n Zpolyhedron B: \n");
-  ZDomainPrint(stdout,P_VALUE_FMT,B);
-  fprintf(stdout,"\n Difference: \n");
+  // fprintf(stdout,"\n Zpolyhedron A: \n");
+  // ZDomainPrint(stdout,P_VALUE_FMT,A);
+  // fprintf(stdout,"\n Zpolyhedron B: \n");
+  // ZDomainPrint(stdout,P_VALUE_FMT,B);
+  // fprintf(stdout,"\n Difference: \n");
   
   Result = NULL;
   for (tempA = A; tempA != NULL; tempA = tempA->next) {
