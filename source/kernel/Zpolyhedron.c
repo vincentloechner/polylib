@@ -598,49 +598,60 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
  * Return the difference of two Z-polyhedra A and B using the method Gautam
  * describes in his thesis.
 */
-ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B){
-  ZPolyhedron *Z1=NULL,*Z2,*Result =NULL, *Ztmp;
-  LatticeUnion *LatDiff,*tmp;
-  Polyhedron *ap=NULL, *imA, *imB, *PolyInter, *PolyDiff, *temp;
+ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B)
+{
+  ZPolyhedron *Z1=NULL, *Z2, *Result=NULL, *Ztmp;
+  LatticeUnion *LatDiff;
+  Polyhedron *ap=NULL, *imA, *imB, *PolyDiff, *temp;
   Lattice *LatInter;
 
-  LatDiff= LatticeDifference(A->Lat,B->Lat); //can simplify here
-  LatDiff=LatticeSimplify(LatDiff);
-  LatInter= NewLatticeIntersection(A->Lat,B->Lat);
+  // LatDiff (list of lattices) is the difference : (A->Lat) - (B->Lat)
+  LatDiff = LatticeDifference(A->Lat, B->Lat); //can simplify this
+  LatDiff = LatticeSimplify(LatDiff);
   
-  imA= DomainImage(A->P,A->Lat,MAXNOOFRAYS);
-  imB= DomainImage(B->P,B->Lat,MAXNOOFRAYS);
+  // LatInter (single lattice) is the intersection: (A->Lat) . (B->Lat)
+  LatInter = NewLatticeIntersection(A->Lat,B->Lat);
 
-  PolyInter=DomainIntersection(imA,imB,MAXNOOFRAYS);
-  PolyDiff=DomainDifference(imA,imB,MAXNOOFRAYS);
+  // compute the original convex polyhedral images imA and imB
+  imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
+  imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
 
+  // STEP 1:
+  // Add all Z-polyhedra applying the (list of) lattice difference on imA
+  for(LatticeUnion *tmp = LatDiff; tmp != NULL; tmp = tmp->next) {
+    Ztmp = malloc(sizeof(*Ztmp));
+    Ztmp->Lat = tmp->M;
+    Ztmp->P = Polyhedron_Preimage(imA, tmp->M, MAXNOOFRAYS);
+    Ztmp->next = Z1;
+    Z1 = Ztmp;
+  }
+
+  // free remaining LatticeUnion memory
+  while(LatDiff)
+  {
+    LatticeUnion *tmp = LatDiff->next;
+    free(LatDiff);
+    LatDiff = tmp;
+  }
+
+  PolyDiff = DomainDifference(imA, imB, MAXNOOFRAYS);
   Polyhedron_Free(imA);
   Polyhedron_Free(imB);
 
-  for(tmp=LatDiff;tmp!=NULL;tmp=tmp->next){
-    Ztmp=malloc(sizeof(*Ztmp));
-    Ztmp->Lat=tmp->M;
-    Ztmp->P=Polyhedron_Preimage(PolyInter,tmp->M,MAXNOOFRAYS);
-    Ztmp->next=Z1;
-    Z1=Ztmp;
-  }
-
-  ap=DomainPreimage(PolyDiff,LatInter,MAXNOOFRAYS);
-
-  Polyhedron_Free(PolyInter);
-  Polyhedron_Free(PolyDiff);
-  
+  // STEP 2: Add the rest
+  // the Z-polyhedron of the lattice intersection on the region (imA-imB)
   if(LatInter == NULL)
     return Z1;
+  // TODO: est-ce que PolyDiff peut être vide ? -> test et return aussi.
+    
+  Z2 = malloc(sizeof(*Z2));
+  Z2->Lat = LatInter;
+  Z2->P = DomainPreimage(PolyDiff, LatInter, MAXNOOFRAYS);;
+  Z2->next = Z1;
 
-  Z2=malloc(sizeof(*Z2));
-
-  Z2->Lat=LatInter;
-  Z2->P=ap;
-  Z2->next=Z1;
-
+  Polyhedron_Free(PolyDiff);
   return Z2;
-}/*ZPolyhedronDifferenceGautam*/
+} /* ZPolyhedronDifferenceGautam */
 
 
 /*
