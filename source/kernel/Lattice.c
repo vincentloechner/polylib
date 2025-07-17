@@ -706,13 +706,32 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   // printf("M2 = ");
   // Matrix_Print(stdout, P_VALUE_FMT, M2);
 
-  M1Inverse = Matrix_Alloc(M1->NbRows, M1->NbColumns);
-  temp = Matrix_Copy(M1);
+  // compute left(!) inverse of M1 using a dirty patch
+  M1Inverse = Matrix_Alloc(M1->NbColumns, M1->NbColumns);
+  // temp = Matrix_Copy(M1);
+  temp = Matrix_Alloc(M1->NbColumns, M1->NbColumns);
+  for (i = 0; i < M1->NbRows; i++)
+    for (int j = 0; j < M1->NbColumns; j++)
+      value_assign(temp->p[i][j], M1->p[i][j]);
+  // complete temp with Id to make it square
+  for( ; i < temp->NbColumns ; i++ )
+    for (int j = 0; j < M1->NbColumns; j++)
+      value_set_si(temp->p[i][j], (i==j));
+
   Matrix_Inverse(temp, M1Inverse);
-  // printf("inverse1: ok\n");
   Matrix_Free(temp);
 
-  MtProduct = Matrix_Alloc(M1->NbRows, M1->NbColumns);
+  // get the right result: the rightmost columns of M1Inverse are just ignored :)
+  M1Inverse->NbColumns = M1->NbRows;
+  temp = Matrix_Copy(M1Inverse);
+  Matrix_Free(M1Inverse);
+  M1Inverse = temp;
+
+  // printf("M1Inverse = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, M1Inverse);
+  // printf("inverse1: ok\n");
+
+  MtProduct = Matrix_Alloc(M1Inverse->NbRows, M2->NbColumns);
   Matrix_Product(M1Inverse, M2, MtProduct);
   Smith(MtProduct, &U, &Vinv, &DiagMatrix);
   V = Matrix_Alloc(Vinv->NbRows, Vinv->NbColumns);
@@ -728,13 +747,47 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   value_division(k, DiagMatrix->p[0][0], k);
   for (i = 0; i < DiagMatrix->NbRows; i++)
     value_division(DiagMatrix->p[i][i], DiagMatrix->p[i][i], k);
-  newB1 = ChangeLatticeDimension(B1, B1->NbRows + 1);
-  Matrix_Free(B1);
-  newB2 = ChangeLatticeDimension(B2, B2->NbRows + 1);
-  Matrix_Free(B2);
+
+  // printf("B1 = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, B1);
+  // printf("B2 = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, B2);
+
+  // previous method, supposed that B1 and B2 are square matrices:
+  // newB1 = ChangeLatticeDimension(B1, B1->NbRows + 1);
+  // Matrix_Free(B1);
+  // newB2 = ChangeLatticeDimension(B2, B2->NbRows + 1);
+  // Matrix_Free(B2);
+
+  // New method: add a row and a column to B1 and B2:
+  newB1 = Matrix_Alloc(B1->NbRows+1, B1->NbColumns+1);
+  newB2 = Matrix_Alloc(B2->NbRows+1, B2->NbColumns+1);
+  // copy the core of the matrix:
+  for(i=0 ; i<B1->NbRows; i++) {
+    for(int j=0 ; j<B1->NbColumns; j++) {
+      value_assign(newB1->p[i][j], B1->p[i][j]);
+      value_assign(newB2->p[i][j], B2->p[i][j]);
+    }
+  }
+  // complete the last row with zeroes:
+  for(int j=0 ; j<B1->NbColumns; j++) {
+    value_set_si(newB1->p[B1->NbRows][j], 0);
+    value_set_si(newB2->p[B1->NbRows][j], 0);
+  }
+  // complete last column (empty for B1, Intersection for B2):
   for (i = 0; i < newB2->NbRows; i++)
+  {
+    value_set_si(newB1->p[i][newB2->NbColumns - 1], (i==newB2->NbColumns - 1));
     value_assign(newB2->p[i][newB2->NbColumns - 1],
                  Intersection->p[i][Intersection->NbColumns - 1]);
+  }
+
+
+  // printf("newB2 = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, newB2);
+  // printf("Diag = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, DiagMatrix);
+
   Head = SplitLattice(newB1, newB2, DiagMatrix);
   Matrix_Free(newB1);
   Matrix_Free(DiagMatrix);
@@ -946,6 +999,7 @@ static void AddLattice(LatticeUnion *Head, Matrix *B1, Matrix *B2,
   int j;
   Value i;
 
+  // printf("Apply " P_VALUE_FMT "to column %d\n", NumofTimes, Colnumber);
   value_init(i);
   tail = Head;
   while (tail->next != NULL)

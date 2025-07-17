@@ -193,6 +193,8 @@ int main() {
     
     ZA=ZPolyhedron_Alloc(a,A);
     ZB=ZPolyhedron_Alloc(b,B);
+    // ZDomainPrint(stdout,P_VALUE_FMT, ZA);
+    // ZDomainPrint(stdout,P_VALUE_FMT, ZB);
     ZC = ZDomainDifference(ZA,ZB);
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
