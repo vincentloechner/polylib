@@ -1496,11 +1496,11 @@ static int AffinePartCompare(const void *A, const void *B) {
 
   for (i = 0; i < L1[0]->NbRows; i++) {
     if (value_gt(L1[0]->p[i][L1[0]->NbColumns - 1],
-                 L2[0]->p[i][L1[0]->NbColumns - 1]))
+                 L2[0]->p[i][L2[0]->NbColumns - 1]))
       return 1;
 
     if (value_lt(L1[0]->p[i][L1[0]->NbColumns - 1],
-                 L2[0]->p[i][L1[0]->NbColumns - 1]))
+                 L2[0]->p[i][L2[0]->NbColumns - 1]))
       return -1;
   }
   return 0;
@@ -1707,7 +1707,7 @@ static factor allfactors(int num) {
         list[0] = i;
         noofelmts = 1;
       } else {
-        newlist = (int *)malloc(sizeof(int) * 2 * noofelmts + 1);
+        newlist = (int *)malloc(sizeof(int) * 2 * (noofelmts + 1));
         for (j = 0; j < noofelmts; j++)
           newlist[j] = list[j];
         newlist[j] = i;
@@ -1723,7 +1723,7 @@ static factor allfactors(int num) {
   }
 
   if ((tmp != 0) && (tmp != num)) {
-    newlist = (int *)malloc(sizeof(int) * 2 * noofelmts + 1);
+    newlist = (int *)malloc(sizeof(int) * 2 * (noofelmts + 1));
     for (j = 0; j < noofelmts; j++)
       newlist[j] = list[j];
     newlist[j] = tmp;
