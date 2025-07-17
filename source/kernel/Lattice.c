@@ -589,7 +589,7 @@ static Matrix *MakeDioEqforInter(Lattice *A, Lattice *B) {
   return Dio;
 } /* MakeDioEqforInter */
 
-static void AddLattice(LatticeUnion *, Matrix *, Matrix *, int, int);
+static void AddLattice(LatticeUnion *, Matrix *, Matrix *, Value, int);
 LatticeUnion *SplitLattice(Matrix *, Matrix *, Matrix *);
 
 /*
@@ -666,7 +666,7 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   int i;
   Value k;
 
-  Intersection = LatticeIntersection(X, Y);
+  Intersection = NewLatticeIntersection(X, Y);
   if (isEmptyLattice(Intersection) == True) {
     // fprintf(stderr, "\nIn Lattice2LatticeUnion : the input lattices X and Y do "
     //                 "not have any common part\n");
@@ -703,8 +703,8 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   newB2 = ChangeLatticeDimension(B2, B2->NbRows + 1);
   Matrix_Free(B2);
   for (i = 0; i < newB1->NbRows - 1; i++)
-    value_assign(newB2->p[i][newB1->NbRows - 1],
-                 Intersection->p[i][X->NbRows - 1]);
+    value_assign(newB2->p[i][newB1->NbColumns - 1],
+                 Intersection->p[i][Intersection->NbColumns - 1]);
   Head = SplitLattice(newB1, newB2, DiagMatrix);
   Matrix_Free(newB1);
   Matrix_Free(DiagMatrix);
@@ -808,17 +808,17 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   fclose(fp);
 #endif
 
-  if (A->NbRows != A->NbColumns) {
-    fprintf(stderr, "\nIn LatticeDifference : The Input Matrix A is not a "
-                    "proper Lattice \n");
-    return NULL;
-  }
+  // if (A->NbRows != A->NbColumns) {
+  //   fprintf(stderr, "\nIn LatticeDifference : The Input Matrix A is not a "
+  //                   "proper Lattice \n");
+  //   return NULL;
+  // }
 
-  if (B->NbRows != B->NbColumns) {
-    fprintf(stderr, "\nIn LatticeDifference : The Input Matrix B is not a "
-                    "proper Lattice \n");
-    return NULL;
-  }
+  // if (B->NbRows != B->NbColumns) {
+  //   fprintf(stderr, "\nIn LatticeDifference : The Input Matrix B is not a "
+  //                   "proper Lattice \n");
+  //   return NULL;
+  // }
 
   if (A->NbRows != B->NbRows) {
     fprintf(stderr,
@@ -891,7 +891,7 @@ LatticeUnion *SplitLattice(Lattice *B1, Lattice *B2, Matrix *C) {
   Head->M = (Lattice *)B2;
   Head->next = NULL;
   for (i = 0; i < C->NbRows; i++)
-    AddLattice(Head, B1, B2, VALUE_TO_INT(C->p[i][i]), i);
+    AddLattice(Head, B1, B2, C->p[i][i], i);
   return Head;
 } /* SplitLattice */
 
@@ -910,26 +910,25 @@ LatticeUnion *SplitLattice(Lattice *B1, Lattice *B2, Matrix *C) {
  *           list.
  */
 static void AddLattice(LatticeUnion *Head, Matrix *B1, Matrix *B2,
-                       int NumofTimes, int Colnumber) {
+                       Value NumofTimes, int Colnumber) {
 
   LatticeUnion *temp, *tail, *marker;
-  int i, j;
-  Value tmp;
+  int j;
+  Value i;
 
-  value_init(tmp);
+  value_init(i);
   tail = Head;
   while (tail->next != NULL)
     tail = tail->next;
   marker = tail;
 
   for (temp = Head; temp != NULL; temp = temp->next) {
-    for (i = 1; i < NumofTimes; i++) {
+    for (value_set_si(i, 1); value_lt(i, NumofTimes); value_increment(i, i)) {
       Lattice *tempMatrix, *H, *U;
 
       tempMatrix = (Lattice *)Matrix_Copy(temp->M);
       for (j = 0; j < B2->NbRows; j++) {
-        value_set_si(tmp, i);
-        value_addmul(tempMatrix->p[j][B2->NbColumns - 1], tmp,
+        value_addmul(tempMatrix->p[j][B2->NbColumns - 1], i,
                      B1->p[j][Colnumber]);
       }
       tail->next = (LatticeUnion *)malloc(sizeof(LatticeUnion));
@@ -943,7 +942,7 @@ static void AddLattice(LatticeUnion *Head, Matrix *B1, Matrix *B2,
     if (temp == marker)
       break;
   }
-  value_clear(tmp);
+  value_clear(i);
   return;
 } /* AddLattice */
 
