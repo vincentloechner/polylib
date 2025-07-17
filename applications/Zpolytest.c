@@ -132,6 +132,7 @@ int main() {
     break;
     
   case 3: /* LatticeIntersection */
+  case 27:
     
     c = LatticeIntersection(a,b);
     Matrix_Print(stdout,P_VALUE_FMT, c);
@@ -148,8 +149,6 @@ int main() {
     
     l1=LatticeDifference(a,b);
     l2=LatticeDifference(b,a);
-    l3=LatticeDifference(c,a);
-    l4=LatticeDifference(b,c);
     fprintf(stdout,"L1 - L2 :\n");
     temp=l1;
     while (temp!=NULL) {
@@ -157,20 +156,8 @@ int main() {
       Matrix_Print(stdout,P_VALUE_FMT,temp->M);
       temp=temp->next; 
     };
-    fprintf(stdout,"Diff2:\n");
+    fprintf(stdout,"L2 - L1:\n");
     temp=l2;
-    while (temp!=NULL) {
-      Matrix_Print(stdout,P_VALUE_FMT, temp->M);
-      temp=temp->next; 
-    };
-    fprintf(stdout,"Diff3:\n");
-    temp=l3;
-    while (temp!=NULL) {
-      Matrix_Print(stdout,P_VALUE_FMT, temp->M);
-      temp=temp->next; 
-    };
-    fprintf(stdout,"Diff4:\n");
-    temp=l4;
     while (temp!=NULL) {
       Matrix_Print(stdout,P_VALUE_FMT, temp->M);
       temp=temp->next; 
@@ -305,9 +292,10 @@ int main() {
   case 21: /* AffineSmith */
   
     AffineSmith(a,&b,&c, &d);
+    printf("A = U . Diag . V\n");
     Matrix_Print(stdout,P_VALUE_FMT, b); 
-    Matrix_Print(stdout,P_VALUE_FMT, c);
     Matrix_Print(stdout,P_VALUE_FMT, d);
+    Matrix_Print(stdout,P_VALUE_FMT, c);
     break;
   
   case 22: /* SolveDiophantine */
@@ -332,7 +320,7 @@ int main() {
 
   case 23: /* SplitZPolyhedron */
         
-    ZA=ZPolyhedron_Alloc(a,A);
+    ZA = ZPolyhedron_Alloc(a,A);
     ZC = SplitZpolyhedron(ZA,b);
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
@@ -357,11 +345,21 @@ int main() {
     Matrix_Print(stdout, P_VALUE_FMT, a);
     break;
   
-  case 27:
-    c = NewLatticeIntersection(a, b);
-    Matrix_Print(stdout, P_VALUE_FMT, c);
+  case 28:
+    b = int_ker(a);
+    Matrix_Print(stdout, P_VALUE_FMT, b);
     break;
 
+  case 29: // split lattice a according to a list of pieces to intersect or not b (used in difference)
+    // Matrix *d, *e, *f;
+    // AffineSmith(a, NULL, NULL, &c);
+    // AffineSmith(b, NULL, NULL, &d);
+    // Matrix *e = Matrix_Product(c, d);
+    // LatticeUnion *LU;
+    c = Matrix_Alloc(a->NbRows, b->NbColumns);
+    Matrix_Product(a, b, c);
+    Matrix_Print(stdout, P_VALUE_FMT, c);
+    break;
   case 100: /* debug */
     ZA=ZPolyhedron_Alloc(a,A);
     ZDomainPrint(stdout,P_VALUE_FMT, ZA);

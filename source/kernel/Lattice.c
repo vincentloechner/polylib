@@ -151,7 +151,7 @@ Bool isLinear(Lattice *A) {
 /*
  * Return the affine Hermite normal form of the affine lattice 'A'. The unique
  * affine Hermite form if a lattice is stored in 'H' and the unimodular matrix
- * corresponding to 'A = H*U' is stored in the matrix 'U'.
+ * corresponding to 'A = H . U' is stored in the matrix 'U'.
  * Algorithm :
  *            1) Check if the Lattice is Linear or not.
  *            2) If it is not Linear, then Homogenise the Lattice.
@@ -163,35 +163,55 @@ Bool isLinear(Lattice *A) {
  */
 void AffineHermite(Lattice *A, Lattice **H, Matrix **U) {
 
+  // DEBUG
+  // printf("Entering AffineHermite: A= ");
+  // Matrix_Print(stdout, P_VALUE_FMT, A);
+
+// // for left hermite to include the constant, move it on top-left:
+//   Matrix_Move_Homogeneous_Dim_First(A);
+//   left_hermite(A, H, U, NULL);
+//   Matrix_Move_Homogeneous_Dim_Last(*H);
+//   Matrix_Move_Homogeneous_Dim_Last(*U);
+//   Matrix_Move_Homogeneous_Dim_Last(A); // restore A as it was
+
+  // OLD VERSION, working fine on square matrices, but not on non-square ones...
   Lattice *temp;
   Bool flag = True;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered AFFINEHERMITE \n");
-  fclose(fp);
-#endif
+  #ifdef DOMDEBUG
+    FILE *fp;
+    fp = fopen("_debug", "a");
+    fprintf(fp, "\nEntered AFFINEHERMITE \n");
+    fclose(fp);
+  #endif
 
   if (isLinear(A) == False)
     temp = Homogenise(A, True);
   else {
     flag = False;
-    temp = (Lattice *)Matrix_Copy(A);
+    temp = Matrix_Copy(A);
   }
-  Hermite((Matrix *)temp, (Matrix **)H, U);
+  Hermite(temp, H, U);
   if (flag == True) {
-    Matrix_Free((Matrix *)temp);
+    Matrix_Free(temp);
     temp = Homogenise(H[0], False);
-    Matrix_Free((Matrix *)H[0]);
-    H[0] = (Lattice *)Matrix_Copy(temp);
-    Matrix_Free((Matrix *)temp);
+    Matrix_Free(H[0]);
+    H[0] = Matrix_Copy(temp);
+    Matrix_Free(temp);
     temp = Homogenise(U[0], False);
-    Matrix_Free((Matrix *)U[0]);
-    U[0] = (Matrix *)Matrix_Copy(temp);
+    Matrix_Free(U[0]);
+    U[0] = Matrix_Copy(temp);
   }
-  Matrix_Free((Matrix *)temp);
-  return;
+  Matrix_Free(temp);
+
+
+  // DEBUG
+  // printf("Exit AffineHermite: H = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, *H);
+  // printf("                    U = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, *U);
+
+return;
 } /* AffineHermite */
 
 /*
@@ -328,7 +348,7 @@ Bool LatticeIncludes(Lattice *A, Lattice *B) {
 #endif
 
   AffineHermite(A, &HA, &UA);
-  temp = NewLatticeIntersection(B, HA);
+  temp = LatticeIntersection(B, HA);
   if(temp){
     if (sameLattice(temp, HA))
       flag = True;
@@ -452,7 +472,7 @@ static Matrix *MakeDioEqforInter(Matrix *A, Matrix *B);
  *           (5) If the lattices have different affine parts and they were
  *               homogenised, the result is dehomogenised.
  */
-Lattice *LatticeIntersection(Lattice *X, Lattice *Y) {
+Lattice *OldLatticeIntersection(Lattice *X, Lattice *Y) {
 
   int i, j, exist;
   Lattice *result = NULL, *U = NULL;
@@ -666,7 +686,7 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   int i;
   Value k;
 
-  Intersection = NewLatticeIntersection(X, Y);
+  Intersection = LatticeIntersection(X, Y);
   if (isEmptyLattice(Intersection) == True) {
     // fprintf(stderr, "\nIn Lattice2LatticeUnion : the input lattices X and Y do "
     //                 "not have any common part\n");
@@ -702,8 +722,8 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   Matrix_Free(B1);
   newB2 = ChangeLatticeDimension(B2, B2->NbRows + 1);
   Matrix_Free(B2);
-  for (i = 0; i < newB1->NbRows - 1; i++)
-    value_assign(newB2->p[i][newB1->NbColumns - 1],
+  for (i = 0; i < newB2->NbRows; i++)
+    value_assign(newB2->p[i][newB2->NbColumns - 1],
                  Intersection->p[i][Intersection->NbColumns - 1]);
   Head = SplitLattice(newB1, newB2, DiagMatrix);
   Matrix_Free(newB1);
@@ -751,7 +771,7 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
  *                We know that B1  * Delta = B2.
  *                i.e. M1 * U1 * Delta = M2 * U2
  *                or U1*Delta*U2Inverse = M1Inverse * M2.
- *                and Delta is the Diagonal Matrix which satisifies the
+ *                and Delta is the Diagonal Matrix which satisfies the
  *                above properties (in the Theorem).
  *                So Delta is nothing but the Smith Normal Form of
  *                M1Inverse * M2.
@@ -887,8 +907,8 @@ LatticeUnion *SplitLattice(Lattice *B1, Lattice *B2, Matrix *C) {
   int i;
 
   LatticeUnion *Head = NULL;
-  Head = (LatticeUnion *)malloc(sizeof(LatticeUnion));
-  Head->M = (Lattice *)B2;
+  Head = malloc(sizeof(LatticeUnion));
+  Head->M = B2;
   Head->next = NULL;
   for (i = 0; i < C->NbRows; i++)
     AddLattice(Head, B1, B2, C->p[i][i], i);
@@ -926,14 +946,14 @@ static void AddLattice(LatticeUnion *Head, Matrix *B1, Matrix *B2,
     for (value_set_si(i, 1); value_lt(i, NumofTimes); value_increment(i, i)) {
       Lattice *tempMatrix, *H, *U;
 
-      tempMatrix = (Lattice *)Matrix_Copy(temp->M);
+      tempMatrix = Matrix_Copy(temp->M);
       for (j = 0; j < B2->NbRows; j++) {
         value_addmul(tempMatrix->p[j][B2->NbColumns - 1], i,
                      B1->p[j][Colnumber]);
       }
-      tail->next = (LatticeUnion *)malloc(sizeof(LatticeUnion));
+      tail->next = malloc(sizeof(LatticeUnion));
       AffineHermite(tempMatrix, &H, &U);
-      Matrix_Free((Matrix *)tempMatrix);
+      Matrix_Free(tempMatrix);
       Matrix_Free(U);
       tail->next->M = H;
       tail->next->next = NULL;
@@ -1762,3 +1782,138 @@ static int polylib_sqrt(int i) {
   }
   return (j - 1);
 } /* polylib_sqrt */
+
+/*
+ * Takes into parameters two lattices A and B of the form:
+ *  A =   A' | a      B =   B' | b
+ *      0..0 | 1          0..0 | 1
+ * 
+ *  Copies them in a matrix (Tmp), used to calculate the left hermite,
+ *  the Lattice of size A->Nbrows x min(A->NbCols, B->NbCols) is the
+ *  intersection of A and B.
+ * 
+ */
+Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
+  Lattice *Tmp, *H, *Res;
+  if(A->NbRows != B->NbRows){
+    errormsg1("LatticeIntersection", "dimincomp", "incompatible dimensions!");
+    return NULL;
+  }
+  #ifdef NEWINTERSECTION_DEBUG
+  fprintf(stderr,"Matrix A:\n");
+  Matrix_Print(stderr, P_VALUE_FMT, A);
+  fprintf(stderr,"Matrix B:\n");
+  Matrix_Print(stderr, P_VALUE_FMT, B);
+  #endif
+
+  // Tmp will be in the form:
+  // 
+  //   1     0...0 |   1      0...0
+  //   a      A'   |   b       B'
+  // -------------------------------
+  //   1     0...0 |    0 ..    0
+  //   a      A'   |    0 ..    0
+  
+  Tmp = Matrix_Alloc(A->NbRows*2, A->NbColumns+B->NbColumns);
+
+  if (!Tmp) {
+    errormsg1("LatticeIntersection", "outofmem", "Not enough memory space!");
+    return NULL;
+  }
+  
+  //copying A in Tmp:
+  
+  // initalizing the top-left 1
+  value_assign(Tmp->p[0][0], A->p[A->NbRows-1][A->NbColumns-1]);
+  value_assign(Tmp->p[A->NbRows][0], A->p[A->NbRows-1][A->NbColumns-1]);
+  
+  //copy of the constant vector a
+  for(int i=1; i<A->NbRows; i++) {
+    value_assign(Tmp->p[i][0], A->p[i-1][A->NbColumns-1]);
+    value_assign(Tmp->p[i+A->NbRows][0], A->p[i-1][A->NbColumns-1]);
+  }
+  //copy of the matrix kernel A'
+  for(int i = 1 ; i < A->NbRows; i++) {
+    for(int j = 1; j < A->NbColumns; j++){
+      value_assign(Tmp->p[i][j], A->p[i-1][j-1]);
+      value_assign(Tmp->p[i+A->NbRows][j], A->p[i-1][j-1]);
+    }
+  }
+
+  // copying B into tmp:
+  value_assign(Tmp->p[0][A->NbColumns], B->p[B->NbRows-1][B->NbColumns-1]);
+  
+  //the constant b (last col of lattice)
+  for (int i = 1; i < B->NbRows; i++) {
+    value_assign(Tmp->p[i][A->NbColumns], B->p[i-1][B->NbColumns-1]);
+  }
+  
+  for (int i = 1; i < B->NbRows; i++){
+    for (int j = 1; j < B->NbColumns; j++) {
+      value_assign(Tmp->p[i][j+A->NbColumns], B->p[i-1][j-1]);
+    }
+  }
+  
+  #ifdef NEWINTERSECTION_DEBUG
+    fprintf(stderr,"\n Tmp init:\n");
+    Matrix_Print(stderr,P_VALUE_FMT, Tmp);
+  #endif
+  
+
+  // left_hermite of the TMP
+  // H is the matrix that contains the solution. it is of the form:
+  // 
+  // H =   D  |   0          D is a square matrix
+  //     ------------
+  //       X  | 1 0.0
+  //          | r  R
+  // 
+  // with  R    r
+  //      0..0  1   being our result
+  // if the number above r is not 1 then the intersection is not integer
+  // (no solution to the intersection)
+
+  left_hermite(Tmp, &H, NULL, NULL);
+
+
+  #ifdef NEWINTERSECTION_DEBUG
+    fprintf(stderr,"\nH:\n");
+    Matrix_Print(stderr,P_VALUE_FMT,H);
+  #endif
+  Matrix_Free(Tmp);
+
+  // recuperating the result. if the top-left value of R is not 1 then we have an empty solution.
+
+  if(value_notone_p(H->p[A->NbRows][A->NbRows])) {
+    #ifdef NEWINTERSECTION_DEBUG
+      fprintf(stderr,"\n Empty intersection\n");
+    #endif
+    Matrix_Free(H);
+    return NULL;
+  }
+
+  int nbcol = (A->NbColumns<B->NbColumns)?A->NbColumns:B->NbColumns;
+
+  Res=Matrix_Alloc(A->NbRows, nbcol);
+  if (!Res) {
+    errormsg1("LatticeIntersection", "outofmem", "Not enough memory space!");
+    return NULL;
+  }
+  
+
+  for (int i = 0; i < A->NbRows; i++) {
+    for (int j = 0; j < nbcol; j++) {
+        value_assign(Res->p[i][j], H->p[i + A->NbRows][j + A->NbRows]);
+    }
+  }
+  Matrix_Free(H);
+  // put Res in the proper affine form (didn't want to write a loop, had a pre-written function.)
+  Matrix_Move_Homogeneous_Dim_Last(Res);
+
+  #ifdef NEWINTERSECTION_DEBUG
+    fprintf(stderr, "\n NewLaticceIntersection result: ");
+    Matrix_Print(stderr, P_VALUE_FMT, Res);
+  #endif
+
+  return Res;
+}
