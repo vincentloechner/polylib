@@ -220,13 +220,13 @@ return;
 } /* AffineHermite */
 
 /*
- * Given a Polylib matrix 'A' that rerepresents an affine function, return the
+ * Given a Polylib matrix 'A' that represents an affine function, return the
  * affine Smith normal form 'Delta' of 'A' and unimodular matrices 'U' and 'V'
  * such that 'A = U*Delta*V'.
  * Algorithm:
- *           (1) Homogenise the Lattice.
+ *           (1) Homogenize the Lattice.
  *           (2) Call Smith
- *           (3) The Smith Normal Form Delta must be Dehomogenised and also
+ *           (3) The Smith Normal Form Delta must be Dehomogenized and also
  *               corresponding changes must be made to the Unimodular Matrices
  *               U and V.
  *           4) Bring Delta into AffineSmith Form.
@@ -627,7 +627,7 @@ LatticeUnion *SplitLattice(Matrix *, Matrix *, Matrix *);
  *       Step 1:  Find Intersection = LatticeIntersection (A, B).
  *       Step 2:  Extract the Linear Parts of the Lattices A and Intersection.
  *                (while dealing with Basis we only deal with the Linear Parts)
- *       Step 3:  Let M1 = Basis of A and M2 = Basis of B.
+ *       Step 3:  Let M1 = linear basis of A and M2 = linear basis of B.
  *                Let B1 and B2 be the Basis of A and B respectively,
  *                corresponding to the above Theorem.
  *                Then we Have B1 = M1 * U1 {a unimodular Matrix }
@@ -637,7 +637,7 @@ LatticeUnion *SplitLattice(Matrix *, Matrix *, Matrix *);
  *                We know that B1  * Delta = B2.
  *                i.e. M1 * U1 * Delta = M2 * U2
  *                or U1*Delta*U2Inverse = M1Inverse * M2.
- *                and Delta is the Diagonal Matrix which satisifies the
+ *                and Delta is the Diagonal Matrix which satisfies the
  *                above properties (in the Theorem).
  *                So Delta is nothing but the Smith Normal Form of
  *                M1Inverse * M2.
@@ -701,10 +701,15 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   value_init(k);
   M1 = (Matrix *)ExtractLinearPart(X);
   M2 = (Matrix *)ExtractLinearPart(Intersection);
+  // printf("M1 = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, M1);
+  // printf("M2 = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, M2);
 
   M1Inverse = Matrix_Alloc(M1->NbRows, M1->NbColumns);
   temp = Matrix_Copy(M1);
   Matrix_Inverse(temp, M1Inverse);
+  // printf("inverse1: ok\n");
   Matrix_Free(temp);
 
   MtProduct = Matrix_Alloc(M1->NbRows, M1->NbColumns);
