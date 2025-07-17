@@ -1,0 +1,25 @@
+# Difference of these two linear lattices
+M 2
+
+4 4
+1 0 0 0
+0 1 0 0
+0 0 1 0
+0 0 0 1
+
+4 4
+3 0 0 1
+0 1 0 0
+0 0 1 0
+0 0 0 1
+
+D 0
+
+F 5
+
+# result should be
+4 4
+2    0    0    0 
+5   15    0    0 
+13   15   66    0 
+0    0    0    1 

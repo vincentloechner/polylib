@@ -152,7 +152,7 @@ Bool isLinear(Lattice *A) {
  * Return the affine Hermite normal form of the affine lattice 'A'. The unique
  * affine Hermite form if a lattice is stored in 'H' and the unimodular matrix
  * corresponding to 'A = H . U' is stored in the matrix 'U'.
- * Algorithm :
+ * OLD Algorithm :
  *            1) Check if the Lattice is Linear or not.
  *            2) If it is not Linear, then Homogenise the Lattice.
  *            3) Call Hermite.
@@ -160,6 +160,11 @@ Bool isLinear(Lattice *A) {
  *               Dehomogenised and also corresponding changes must
  *               be made to the Unimodular Matrix U.
  *            5) Return.
+ * NEW algorithm:
+ *     1) move the homogeneous dimensions first (on top-left)
+ *     2) compute left_hermite
+ *     3) move back the homogeneous dimensions (bottom-right)
+ * -> works also on non square matrices (lattices having less row than columns)
  */
 void AffineHermite(Lattice *A, Lattice **H, Matrix **U) {
 
@@ -167,42 +172,42 @@ void AffineHermite(Lattice *A, Lattice **H, Matrix **U) {
   // printf("Entering AffineHermite: A= ");
   // Matrix_Print(stdout, P_VALUE_FMT, A);
 
-// // for left hermite to include the constant, move it on top-left:
-//   Matrix_Move_Homogeneous_Dim_First(A);
-//   left_hermite(A, H, U, NULL);
-//   Matrix_Move_Homogeneous_Dim_Last(*H);
-//   Matrix_Move_Homogeneous_Dim_Last(*U);
-//   Matrix_Move_Homogeneous_Dim_Last(A); // restore A as it was
+  // for left hermite to include the constant, move it on top-left:
+  Matrix_Move_Homogeneous_Dim_First(A);
+  left_hermite(A, H, U, NULL);
+  Matrix_Move_Homogeneous_Dim_Last(*H);
+  Matrix_Move_Homogeneous_Dim_Last(*U);
+  Matrix_Move_Homogeneous_Dim_Last(A); // restore A as it was
 
   // OLD VERSION, working fine on square matrices, but not on non-square ones...
-  Lattice *temp;
-  Bool flag = True;
+  // Lattice *temp;
+  // Bool flag = True;
 
-  #ifdef DOMDEBUG
-    FILE *fp;
-    fp = fopen("_debug", "a");
-    fprintf(fp, "\nEntered AFFINEHERMITE \n");
-    fclose(fp);
-  #endif
+  // #ifdef DOMDEBUG
+  //   FILE *fp;
+  //   fp = fopen("_debug", "a");
+  //   fprintf(fp, "\nEntered AFFINEHERMITE \n");
+  //   fclose(fp);
+  // #endif
 
-  if (isLinear(A) == False)
-    temp = Homogenise(A, True);
-  else {
-    flag = False;
-    temp = Matrix_Copy(A);
-  }
-  Hermite(temp, H, U);
-  if (flag == True) {
-    Matrix_Free(temp);
-    temp = Homogenise(H[0], False);
-    Matrix_Free(H[0]);
-    H[0] = Matrix_Copy(temp);
-    Matrix_Free(temp);
-    temp = Homogenise(U[0], False);
-    Matrix_Free(U[0]);
-    U[0] = Matrix_Copy(temp);
-  }
-  Matrix_Free(temp);
+  // if (isLinear(A) == False)
+  //   temp = Homogenise(A, True);
+  // else {
+  //   flag = False;
+  //   temp = Matrix_Copy(A);
+  // }
+  // Hermite(temp, H, U);
+  // if (flag == True) {
+  //   Matrix_Free(temp);
+  //   temp = Homogenise(H[0], False);
+  //   Matrix_Free(H[0]);
+  //   H[0] = Matrix_Copy(temp);
+  //   Matrix_Free(temp);
+  //   temp = Homogenise(U[0], False);
+  //   Matrix_Free(U[0]);
+  //   U[0] = Matrix_Copy(temp);
+  // }
+  // Matrix_Free(temp);
 
 
   // DEBUG

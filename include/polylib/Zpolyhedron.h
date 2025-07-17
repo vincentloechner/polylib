@@ -25,7 +25,6 @@ extern ZPolyhedron *ZPolyhedron_Alloc(Lattice *Lat, Polyhedron *Poly);
 extern ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B);
 extern void Matrix_Move_Homogeneous_Dim_First(Matrix* A);
 extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
-extern Lattice* NewLatticeIntersection(Lattice* A,Lattice* B);
 
 #if defined(__cplusplus)
 }

@@ -5,6 +5,9 @@
 OBJ_DIR = $(top_builddir)
 
 ZPOLYTESTS =  \
+	LatDiff1.in \
+	LatDiff2.in \
+	LatDiff4.in \
 	LatHNF1.in \
 	LatHNF2.in \
 	LatHNF3.in \
