@@ -387,5 +387,8 @@ int main() {
   if (C)
     Domain_Free(C);
   
+  // free all memory (sanitizer):
+  polylib_close();
+
   return 0;
 } /* main */

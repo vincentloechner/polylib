@@ -1283,7 +1283,7 @@ void CanonicalZPGautam(ZPolyhedron* A) {
     int eqnum = 0;
     // get equalities
     for(int i=0; i<A->P->NbConstraints; i++) {
-      if(A->P->Constraint[i][0] == 0) // Equality
+      if(value_zero_p(A->P->Constraint[i][0])) // Equality
       {
         for(int j=0; j<Eq->NbColumns; j++){
           value_assign(Eq->p[eqnum][j], A->P->Constraint[i][j+1]);
