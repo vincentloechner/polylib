@@ -1781,83 +1781,138 @@ int intcompare(const void *a, const void *b) {
   return 0;
 } /* intcompare */
 
-static int polylib_sqrt(int i);
-static factor allfactors(int num) {
-
-  int i, j, tmp;
-  int noofelmts = 1;
-  int *list, *newlist;
-  int count;
+// compute the prime factors of n, including n itself if it is prime.
+static factor prime_factors(int n)
+{
+  int tabsize = 10;
+  int div = 2;
+  int rest = n;
   factor result;
-  printf("%d\n",num);
 
-  list = (int *)malloc(sizeof(int));
-  list[0] = 1;
+  // result init
+  result.count = 0;
+  result.fac = malloc(tabsize * sizeof(int));
 
-  tmp = num;
-  for (i = 2; i <= polylib_sqrt(tmp); i++) {
-    if ((tmp % i) == 0) {
-      newlist = (int *)malloc(sizeof(int) * 2 * (noofelmts + 1));
-      for (j = 0; j < noofelmts; j++)
-        newlist[j] = list[j];
-      newlist[j] = i;
-      for (j = 0; j < noofelmts; j++)
-        newlist[j + noofelmts + 1] = i * list[j];
-      free(list);
-      list = newlist;
-      noofelmts = 2 * noofelmts + 1;
-      tmp = tmp / i;
-      i = 1;
+  while(div*div <= rest)
+  {
+    if(rest % div == 0)
+    {
+      // double the size of the array if necessary
+      if(result.count == tabsize)
+      {
+        tabsize *= 2;
+        result.fac = realloc(result.fac, tabsize * sizeof(int));
+      }
+      // add div to the result
+      result.fac[result.count++] = div;
+      rest /= div;
+    }
+    else
+      div += (1 + (1&div)); // 2, 3, 5, 7, 9, ...
+  }
+  if(rest != 1)
+  {
+    // add rest
+    if(result.count == tabsize)
+      {
+        tabsize += 1;
+        result.fac = realloc(result.fac, tabsize * sizeof(int));
+      }
+      result.fac[result.count++] = rest;
+  }
+  return result;
+}
+
+
+static factor allfactors(int n)
+{
+  // compute the prime decomposition (including n if it is prime)
+  factor primes = prime_factors(n);
+  factor result;
+
+  int size = (1<<(primes.count));   // max size of result = 2^(prime.count)
+  result.count = 1;
+  result.fac = malloc(size * sizeof(int));
+  result.fac[0] = 1;
+
+  for(int mask=1; mask < size; mask++) {
+    // multiply the prime factors for the bits that are 1 in the mask :)
+    int val = 1;
+    for(int bits=0, rest=mask; rest ; bits++, rest>>=1) {
+      if((rest & 1))
+        val *= primes.fac[bits];
+    }
+    // add val to res.fac only if it is not already there
+    // (this will suppress duplicates, in case a prime factor is there several times)
+    if(val > result.fac[result.count-1]) {
+      result.fac[result.count++] = val;
     }
   }
+  // always remove the last one, that is n.
+  result.count--;
 
-  if ((tmp != 0) && (tmp != num)) {
-    newlist = (int *)malloc(sizeof(int) * 2 * (noofelmts + 1));
-    for (j = 0; j < noofelmts; j++)
-      newlist[j] = list[j];
-    newlist[j] = tmp;
-    for (j = 0; j < noofelmts; j++)
-      newlist[j + noofelmts + 1] = tmp * list[j];
-    free(list);
-    list = newlist;
-    noofelmts = 2 * noofelmts + 1;
-  }
-  for(i=0; i < noofelmts; i++)
-    printf("%2d ", list[i]);
-  printf("\n");
-  qsort(list, noofelmts, sizeof(int), intcompare);
-  count = 1;
-  for (i = 1; i < noofelmts; i++)
-    if (list[i] != list[i - 1])
-      list[count++] = list[i];
-  if (list[count - 1] == num)
-    count--;
-
-  result.fac = (int *)malloc(sizeof(int) * count);
-  result.count = count;
-  for (i = 0; i < count; i++)
-    result.fac[i] = list[i];
-  free(list);
-  for(i=0; i < result.count; i++)
-    printf("%2d ", result.fac[i]);
-  printf("\n");
+  free(primes.fac);
   return result;
-} /* allfactors */
+}
 
-static int polylib_sqrt(int i) {
 
-  int j;
-  j = 0;
-  i = i > 0 ? i : -i;
 
-  while (1) {
-    if ((j * j) > i)
-      break;
-    else
-      j++;
-  }
-  return (j - 1);
-} /* polylib_sqrt */
+// static factor allfactors(int num) {
+
+//   int i, j, tmp;
+//   int noofelmts = 1;
+//   int *list, *newlist;
+//   int count;
+//   factor result;
+//   printf("%d\n",num);
+
+//   list = (int *)malloc(sizeof(int));
+//   list[0] = 1;
+
+//   tmp = num;
+//   for (i = 2; i <= polylib_sqrt(tmp); i++) {
+//     if ((tmp % i) == 0) {
+//       newlist = (int *)malloc(sizeof(int) * 2 * (noofelmts + 1));
+//       for (j = 0; j < noofelmts; j++)
+//         newlist[j] = list[j];
+//       newlist[j] = i;
+//       for (j = 0; j < noofelmts; j++)
+//         newlist[j + noofelmts + 1] = i * list[j];
+//       free(list);
+//       list = newlist;
+//       noofelmts = 2 * noofelmts + 1;
+//       tmp = tmp / i;
+//       i = 1;
+//     }
+//   }
+
+//   if ((tmp != 0) && (tmp != num)) {
+//     newlist = (int *)malloc(sizeof(int) * 2 * (noofelmts + 1));
+//     for (j = 0; j < noofelmts; j++)
+//       newlist[j] = list[j];
+//     newlist[j] = tmp;
+//     for (j = 0; j < noofelmts; j++)
+//       newlist[j + noofelmts + 1] = tmp * list[j];
+//     free(list);
+//     list = newlist;
+//     noofelmts = 2 * noofelmts + 1;
+//   }
+//   qsort(list, noofelmts, sizeof(int), intcompare);
+//   count = 1;
+//   for (i = 1; i < noofelmts; i++)
+//     if (list[i] != list[i - 1])
+//       list[count++] = list[i];
+//   if (list[count - 1] == num)
+//     count--;
+
+//   result.fac = (int *)malloc(sizeof(int) * count);
+//   result.count = count;
+//   for (i = 0; i < count; i++)
+//     result.fac[i] = list[i];
+//   free(list);
+//   return result;
+// } /* allfactors */
+
 
 /*
  * Takes into parameters two lattices A and B of the form:
