@@ -1610,7 +1610,7 @@ static void AffinePartSort(LatticeUnion *List) {
   for (tmp = List; tmp != NULL; tmp = tmp->next)
     cnt++;
 
-  LatList = (Lattice **)malloc(sizeof(Lattice *) * cnt);
+  LatList = malloc(sizeof(Lattice *) * cnt);
 
   cnt = 0;
   for (tmp = List; tmp != NULL; tmp = tmp->next)
@@ -1621,6 +1621,7 @@ static void AffinePartSort(LatticeUnion *List) {
   cnt = 0;
   for (tmp = List; tmp != NULL; tmp = tmp->next)
     tmp->M = LatList[cnt++];
+  free(LatList);
   return;
 } /* AffinePartSort */
 
