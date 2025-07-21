@@ -1424,6 +1424,7 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
     value_clear(num);
     value_clear(tmp);
     value_clear(foobar);
+    free(allfac.fac);
     return False;
   }
   for (; i < allfac.count; i++) {
@@ -1438,6 +1439,7 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
       value_clear(num);
       value_clear(tmp);
       value_clear(foobar);
+      free(allfac.fac);
       return retval;
     }
     value_set_si(foobar, allfac.fac[i]);
@@ -1504,6 +1506,7 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
       value_increment(k, k);
     }
   }
+  free(allfac.fac);
   value_clear(cnt);
   value_clear(aux);
   value_clear(k);
@@ -1786,6 +1789,7 @@ static factor allfactors(int num) {
   int *list, *newlist;
   int count;
   factor result;
+  printf("%d\n",num);
 
   list = (int *)malloc(sizeof(int));
   list[0] = 1;
@@ -1793,21 +1797,15 @@ static factor allfactors(int num) {
   tmp = num;
   for (i = 2; i <= polylib_sqrt(tmp); i++) {
     if ((tmp % i) == 0) {
-      if (noofelmts == 0) {
-        list = (int *)malloc(sizeof(int));
-        list[0] = i;
-        noofelmts = 1;
-      } else {
-        newlist = (int *)malloc(sizeof(int) * 2 * (noofelmts + 1));
-        for (j = 0; j < noofelmts; j++)
-          newlist[j] = list[j];
-        newlist[j] = i;
-        for (j = 0; j < noofelmts; j++)
-          newlist[j + noofelmts + 1] = i * list[j];
-        free(list);
-        list = newlist;
-        noofelmts = 2 * noofelmts + 1;
-      }
+      newlist = (int *)malloc(sizeof(int) * 2 * (noofelmts + 1));
+      for (j = 0; j < noofelmts; j++)
+        newlist[j] = list[j];
+      newlist[j] = i;
+      for (j = 0; j < noofelmts; j++)
+        newlist[j + noofelmts + 1] = i * list[j];
+      free(list);
+      list = newlist;
+      noofelmts = 2 * noofelmts + 1;
       tmp = tmp / i;
       i = 1;
     }
@@ -1824,6 +1822,9 @@ static factor allfactors(int num) {
     list = newlist;
     noofelmts = 2 * noofelmts + 1;
   }
+  for(i=0; i < noofelmts; i++)
+    printf("%2d ", list[i]);
+  printf("\n");
   qsort(list, noofelmts, sizeof(int), intcompare);
   count = 1;
   for (i = 1; i < noofelmts; i++)
@@ -1837,6 +1838,9 @@ static factor allfactors(int num) {
   for (i = 0; i < count; i++)
     result.fac[i] = list[i];
   free(list);
+  for(i=0; i < result.count; i++)
+    printf("%2d ", result.fac[i]);
+  printf("\n");
   return result;
 } /* allfactors */
 
