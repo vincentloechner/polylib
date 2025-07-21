@@ -790,7 +790,12 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
 
   Head = SplitLattice(newB1, newB2, DiagMatrix);
   Matrix_Free(newB1);
+  Matrix_Free(B1);
+  Matrix_Free(B2);
   Matrix_Free(DiagMatrix);
+  Matrix_Free(U);
+  Matrix_Free(V);
+  Matrix_Free(Intersection);
   value_clear(k);
   return Head;
 }
