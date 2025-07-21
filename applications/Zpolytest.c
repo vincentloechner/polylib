@@ -14,7 +14,7 @@ int main() {
   Matrix *a=NULL, *b=NULL, *c=NULL, *d, *e, *g;
   LatticeUnion *l1,*l2,*l3,*l4,*temp;
   Polyhedron *A=NULL, *B=NULL, *C=NULL, *D;
-  ZPolyhedron *ZA, *ZB, *ZC, *ZD, *Zlast;
+  ZPolyhedron *ZA=NULL, *ZB=NULL, *ZC=NULL, *ZD=NULL;
   int  nbPol, nbMat, func, rank ;
   Vector *v=NULL;
     
@@ -167,7 +167,6 @@ int main() {
   case 6: /* isEmptyZPolyhedron */
     ZA = ZPolyhedron_Alloc(a,A);
     fprintf(stdout,"is Empty? :%d \n", isEmptyZPolyhedron(ZA));
-    ZDomain_Free(ZA);
     break;
     
   case 7: /* ZDomainIntersection */
@@ -176,9 +175,6 @@ int main() {
     ZB=ZPolyhedron_Alloc(b,B);
     ZC = ZDomainIntersection(ZA,ZB);
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    ZDomain_Free(ZA);
-    ZDomain_Free(ZB);
-    ZDomain_Free(ZC);
     break;
     
   case 8: /* ZDomainUnion */
@@ -217,9 +213,9 @@ int main() {
     ZA=ZPolyhedron_Alloc(a,A);
     ZC = ZDomainPreimage(ZA,b); 
     ZD = ZDomainImage(ZC,b); 
-    Zlast=ZDomainDifference(ZD,ZC);
+    ZB=ZDomainDifference(ZD,ZC);
     fprintf(stdout,"the Two zpol are equal? :%d\n",
-	    isEmptyZPolyhedron(Zlast));
+	    isEmptyZPolyhedron(ZB));
     break;
   
   case 13:  /* ZDomainSimplify */
@@ -235,7 +231,6 @@ int main() {
         
     ZA=EmptyZPolyhedron(3);
     fprintf(stdout,"is Empty? :%d \n", isEmptyZPolyhedron(ZA));
-    ZDomain_Free(ZA);
     break;
     
   case 15:  /* ZDomainInclude */
@@ -365,7 +360,6 @@ int main() {
   case 100: /* debug */
     ZA=ZPolyhedron_Alloc(a,A);
     ZDomainPrint(stdout,P_VALUE_FMT, ZA);
-    ZDomain_Free(ZA);
     break;
     
   default:
@@ -386,6 +380,15 @@ int main() {
     Domain_Free(B);
   if (C)
     Domain_Free(C);
+
+  if (ZA)
+    ZDomain_Free(ZA);
+  if (ZB)
+    ZDomain_Free(ZB);
+  if (ZC)
+    ZDomain_Free(ZC);
+  if (ZD)
+    ZDomain_Free(ZD);
   
   // free all memory (sanitizer):
   polylib_close();
