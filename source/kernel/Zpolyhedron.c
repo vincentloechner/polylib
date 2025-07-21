@@ -1128,21 +1128,20 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
   if (Head == NULL) {
     Matrix_Free(X);
     Matrix_Free(Y);
-    return ZPol;
+    return ZPolyhedron_Copy(ZPol);
   }
 
   Result = NULL;
 
-  if (Head)
-    while (Head) {
-      tempHead = Head;
-      Head = Head->next;
-      zpnew = ZPolyhedron_Alloc(tempHead->M, ZPol->P);
-      Result = AddZPoly2ZDomain(zpnew, Result);
-      ZPolyhedron_Free(zpnew);
-      tempHead->next = NULL;
-      free(tempHead);
-    }
+  while (Head) {
+    tempHead = Head;
+    Head = Head->next;
+    zpnew = ZPolyhedron_Alloc(tempHead->M, ZPol->P);
+    Result = AddZPoly2ZDomain(zpnew, Result);
+    ZPolyhedron_Free(zpnew);
+    tempHead->next = NULL;
+    free(tempHead);
+  }
 
   return Result;
 }
