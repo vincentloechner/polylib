@@ -162,6 +162,8 @@ int main() {
       Matrix_Print(stdout,P_VALUE_FMT, temp->M);
       temp=temp->next; 
     };
+    LatticeUnion_Free(l1);
+    LatticeUnion_Free(l2);
     break;
     
   case 6: /* isEmptyZPolyhedron */
