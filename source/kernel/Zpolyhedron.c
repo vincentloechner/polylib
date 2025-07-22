@@ -1141,6 +1141,7 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
     Result = AddZPoly2ZDomain(zpnew, Result);
     ZPolyhedron_Free(zpnew);
     tempHead->next = NULL;
+    Matrix_Free(tempHead->M);
     free(tempHead);
   }
   Matrix_Free(X);
