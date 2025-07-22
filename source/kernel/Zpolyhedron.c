@@ -843,6 +843,7 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Zpol, Matrix *G) {
       Qprime = DomainPreimage(Polpreim, Latpreim, MAXNOOFRAYS);
       Result = ZPolyhedron_Alloc(Latpreim, Qprime);
       Domain_Free(Qprime);
+      Polyhedron_Free(Polpreim);
     }
     Matrix_Free(Latpreim);
   }
