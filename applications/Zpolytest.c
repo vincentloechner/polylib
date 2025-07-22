@@ -11,7 +11,7 @@ char s[128];
 
 int main() {
   
-  Matrix *a=NULL, *b=NULL, *c=NULL, *d, *e, *g;
+  Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *e, *g;
   LatticeUnion *l1,*l2,*l3,*l4,*temp;
   Polyhedron *A=NULL, *B=NULL, *C=NULL, *D;
   ZPolyhedron *ZA=NULL, *ZB=NULL, *ZC=NULL, *ZD=NULL;
@@ -120,7 +120,6 @@ int main() {
     D = DomainConvex(C, 200);
     d = Polyhedron2Constraints(D);
     Matrix_Print(stdout,P_VALUE_FMT, d);
-    Matrix_Free(d);
     Domain_Free(D);
     break;
     
@@ -375,6 +374,8 @@ int main() {
     Matrix_Free(b);
   if (c)
     Matrix_Free(c);
+  if(d)
+    Matrix_Free(d);
 
   if (A)
     Domain_Free(A);
