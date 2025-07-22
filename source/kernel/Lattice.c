@@ -259,12 +259,13 @@ void AffineSmith(Lattice *A, Lattice **U, Lattice **V, Lattice **Diag) {
 
   temp = Homogenise(*V, False);
   Matrix_Free(*V);
-  *V = temp;
+  *V = Matrix_Copy(temp);
+  Matrix_Free(temp);
 
   temp = Homogenise(*Diag, False);
   Matrix_Free(*Diag);
-  *Diag = temp;
-  
+  *Diag = Matrix_Copy(temp);
+  Matrix_Free(temp);
 
   temp = Matrix_Copy(*U);
   Uinv = Matrix_Alloc(U[0]->NbRows, U[0]->NbColumns);
