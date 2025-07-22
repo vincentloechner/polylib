@@ -693,6 +693,7 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   if (isEmptyLattice(Intersection) == True) {
     // fprintf(stderr, "\nIn Lattice2LatticeUnion : the input lattices X and Y do "
     //                 "not have any common part\n");
+    Matrix_Free(Intersection);
     return NULL;
   }
 
