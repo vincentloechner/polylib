@@ -1,4 +1,4 @@
-# Difference of Zpol intersecting with a lattice included in the other
+# Difference of Zpol, lattices of different dimensions (columns)
 M 2
 
 3 3
@@ -19,11 +19,10 @@ D 2
     1 0 1 -1
     1 -1 0 10
     1 0 -1 10
-4 4
+3 4
 	  1 1 0 -1
     1 0 1 -1
-    1 -1 0 20
-    1 0 -1 20
+    0 -1 0 20 # j = 20 !
 
 # ZP diff
 F 9

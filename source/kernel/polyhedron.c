@@ -3692,7 +3692,7 @@ Polyhedron *DomainConvex(Polyhedron *Pol, unsigned NbMaxConstrs) {
 
 /*
  * Given polyhedral domains 'Pol1' and 'Pol2', create a new polyhedral
- * domain which is mathematically the differnce of the two domains.
+ * domain which is mathematically the difference Pol1 - Pol2
  */
 Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
                              unsigned NbMaxRays) {

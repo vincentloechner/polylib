@@ -139,15 +139,15 @@ int main() {
     
   case 4: /* LatticeDifference */
         
-    fprintf(stdout," 2 in 1 : %d\n",LatticeIncludes(b,a));
-    fprintf(stdout," 1 in 3 : %d\n",LatticeIncludes(c,a));
-    fprintf(stdout," 1 in 2 : %d\n",LatticeIncludes(a,b));
+    fprintf(stdout," 2 in 1 : %d\n", LatticeIncludes(b,a));
+    fprintf(stdout," 1 in 3 : %d\n", LatticeIncludes(c,a));
+    fprintf(stdout," 1 in 2 : %d\n", LatticeIncludes(a,b));
     break;
   
   case 5: /* LatticeDifference */
     
-    l1=LatticeDifference(a,b);
-    l2=LatticeDifference(b,a);
+    l1 = LatticeDifference(a,b);
+    l2 = LatticeDifference(b,a);
     fprintf(stdout,"L1 - L2 :\n");
     temp=l1;
     while (temp!=NULL) {
@@ -166,30 +166,30 @@ int main() {
     break;
     
   case 6: /* isEmptyZPolyhedron */
-    ZA = ZPolyhedron_Alloc(a,A);
+    ZA = ZDomainAlloc(a,A);
     fprintf(stdout,"is Empty? :%d \n", isEmptyZPolyhedron(ZA));
     break;
     
   case 7: /* ZDomainIntersection */
         
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(b,B);
+    ZA=ZDomainAlloc(a,A);
+    ZB=ZDomainAlloc(b,B);
     ZC = ZDomainIntersection(ZA,ZB);
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
     
   case 8: /* ZDomainUnion */
     
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(b,B);
+    ZA=ZDomainAlloc(a,A);
+    ZB=ZDomainAlloc(b,B);
     ZC = ZDomainUnion(ZA,ZB);
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
     
   case 9: /* ZDomainDifference */
     
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(b,B);
+    ZA=ZDomainAlloc(a,A);
+    ZB=ZDomainAlloc(b,B);
     // ZDomainPrint(stdout,P_VALUE_FMT, ZA);
     // ZDomainPrint(stdout,P_VALUE_FMT, ZB);
     ZC = ZDomainDifference(ZA,ZB);
@@ -198,20 +198,20 @@ int main() {
     
   case 10: /* ZDomainImage */
     
-    ZA=ZPolyhedron_Alloc(a,A);
+    ZA=ZDomainAlloc(a,A);
     ZC = ZDomainImage(ZA,b); 
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
     
   case 11: /* ZDomainPreimage */
     
-    ZA=ZPolyhedron_Alloc(a,A);
+    ZA=ZDomainAlloc(a,A);
     ZC = ZDomainPreimage(ZA,b); 
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
     
   case 12: /* ZDomainDifference */
-    ZA=ZPolyhedron_Alloc(a,A);
+    ZA=ZDomainAlloc(a,A);
     ZC = ZDomainPreimage(ZA,b); 
     ZD = ZDomainImage(ZC,b); 
     ZB=ZDomainDifference(ZD,ZC);
@@ -221,8 +221,8 @@ int main() {
   
   case 13:  /* ZDomainSimplify */
     
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZA->next = ZPolyhedron_Alloc(b,B);
+    ZA=ZDomainAlloc(a,A);
+    ZA->next = ZDomainAlloc(b,B);
     ZDomainPrint(stdout,P_VALUE_FMT, ZA);
     ZD = ZDomainSimplify(ZA);
     ZDomainPrint(stdout,P_VALUE_FMT, ZD);
@@ -236,8 +236,8 @@ int main() {
     
   case 15:  /* ZDomainInclude */
   
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(b,B);
+    ZA=ZDomainAlloc(a,A);
+    ZB=ZDomainAlloc(b,B);
     fprintf(stdout,"A in B  :%d \nB in A  :%d \n", 
 	    ZPolyhedronIncludes(ZA,ZB),
 	    ZPolyhedronIncludes(ZB,ZA));
@@ -267,8 +267,8 @@ int main() {
   
   case 19:  /* CanonicalForm */
      
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(a,B);
+    ZA=ZDomainAlloc(a,A);
+    ZB=ZDomainAlloc(a,B);
     CanonicalForm(ZA,&ZC,&c);
     CanonicalForm(ZB,&ZD,&d);
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
@@ -318,7 +318,7 @@ int main() {
 
   case 23: /* SplitZPolyhedron */
         
-    ZA = ZPolyhedron_Alloc(a,A);
+    ZA = ZDomainAlloc(a,A);
     ZC = SplitZpolyhedron(ZA,b);
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
@@ -359,7 +359,7 @@ int main() {
     Matrix_Print(stdout, P_VALUE_FMT, c);
     break;
   case 100: /* debug */
-    ZA=ZPolyhedron_Alloc(a,A);
+    ZA=ZDomainAlloc(a,A);
     ZDomainPrint(stdout,P_VALUE_FMT, ZA);
     break;
     

@@ -20,7 +20,7 @@ int main () {
   a = Matrix_Read ();
   b = Matrix_Read ();
   P = Constraints2Polyhedron (b, 200);
-  Z1 = ZPolyhedron_Alloc (a, P);
+  Z1 = ZDomainAlloc (a, P);
   
   Matrix_Free (a);
   Matrix_Free (b);
@@ -29,7 +29,7 @@ int main () {
   a = Matrix_Read ();
   b = Matrix_Read ();
   P = Constraints2Polyhedron (b, 200);
-  Z2 = ZPolyhedron_Alloc (a, P);
+  Z2 = ZDomainAlloc (a, P);
   
   Matrix_Free (a); 
   Matrix_Free (b); 

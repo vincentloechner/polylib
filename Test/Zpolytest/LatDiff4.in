@@ -1,4 +1,5 @@
-# diff of these two linear lattices
+# diff of these two linear lattices of different dimensions
+# this should fail since the difference can be a non-finite union in general
 M 2
 
 4 3

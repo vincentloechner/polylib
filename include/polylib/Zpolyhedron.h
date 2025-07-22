@@ -21,10 +21,11 @@ extern ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B);
 extern ZPolyhedron *ZDomain_Copy(ZPolyhedron *Head);
 extern void ZDomain_Free(ZPolyhedron *Head);
 extern Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B);
-extern ZPolyhedron *ZPolyhedron_Alloc(Lattice *Lat, Polyhedron *Poly);
+extern ZPolyhedron *ZDomainAlloc(Lattice *Lat, Polyhedron *Poly);
 extern ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B);
 extern void Matrix_Move_Homogeneous_Dim_First(Matrix* A);
 extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
+extern ZPolyhedron *Canonical_ZDomain_Gautam(ZPolyhedron* A);
 
 #if defined(__cplusplus)
 }

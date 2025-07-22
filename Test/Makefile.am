@@ -5,7 +5,7 @@ tests:
 	@for BITS in $(ALL_BITS); do \
 	    echo "Performing $$BITS tests"; \
 	    for d in $(SUBDIRS); do \
-		(cd $$d; $(MAKE) TEST_BITS=$$BITS tests) \
+				(cd $$d; $(MAKE) TEST_BITS=$$BITS tests) \
 	    done \
 	done
 

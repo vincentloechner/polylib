@@ -1,8 +1,8 @@
-# Difference of Zpol intersecting with a lattice included in the other
+# Difference of Zpol, lattices of different dimensions (columns)
 M 2
 
 3 3
-2 0 0 
+2 0 0
 0 1 0
 0 0 1
 
@@ -14,11 +14,10 @@ M 2
 #readDom["{i,j| 1<= i,j<=10}"]
 #readDom["{i,j| 20<= i,j<=30}"]
 D 2
-4 4
+3 4
 	  1 1 0 -1
     1 0 1 -1
-    1 -1 0 10
-    1 0 -1 10
+    0 -1 0 10  # here, j=10, so the dimension is reduced !
 4 4
 	  1 1 0 -1
     1 0 1 -1

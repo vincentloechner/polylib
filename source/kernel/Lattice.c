@@ -176,7 +176,8 @@ void AffineHermite(Lattice *A, Lattice **H, Matrix **U) {
   Matrix_Move_Homogeneous_Dim_First(A);
   left_hermite(A, H, U, NULL);
   Matrix_Move_Homogeneous_Dim_Last(*H);
-  Matrix_Move_Homogeneous_Dim_Last(*U);
+  if(U)
+    Matrix_Move_Homogeneous_Dim_Last(*U);
   Matrix_Move_Homogeneous_Dim_Last(A); // restore A as it was
 
   // OLD VERSION, working fine on square matrices, but not on non-square ones...
@@ -340,7 +341,7 @@ Lattice *Homogenise(Lattice *A, Bool Forward) {
  */
 Bool LatticeIncludes(Lattice *A, Lattice *B) {
 
-  Lattice *temp, *UA, *HA;
+  Lattice *temp, *HA;
   Bool flag = False;
 
 #ifdef DOMDEBUG
@@ -350,16 +351,15 @@ Bool LatticeIncludes(Lattice *A, Lattice *B) {
   fclose(fp);
 #endif
 
-  AffineHermite(A, &HA, &UA);
+  AffineHermite(A, &HA, NULL);
   temp = LatticeIntersection(B, HA);
-  if(temp){
-    if (sameLattice(temp, HA))
+  if(temp) {
+    if(sameLattice(temp, HA))
       flag = True;
-    Matrix_Free((Matrix *)temp);
+    Matrix_Free(temp);
   }
 
-  Matrix_Free((Matrix *)UA);
-  Matrix_Free((Matrix *)HA);
+  Matrix_Free(HA);
   return flag;
 } /* LatticeIncludes */
 
@@ -373,7 +373,7 @@ Bool LatticeIncludes(Lattice *A, Lattice *B) {
  */
 Bool sameLattice(Lattice *A, Lattice *B) {
 
-  Lattice *HA, *HB, *UA, *UB;
+  Lattice *HA, *HB;
   int i, j;
   Bool result = True;
 
@@ -384,8 +384,11 @@ Bool sameLattice(Lattice *A, Lattice *B) {
   fclose(fp);
 #endif
 
-  AffineHermite(A, &HA, &UA);
-  AffineHermite(B, &HB, &UB);
+  if(A->NbRows != B->NbRows || A->NbColumns != B->NbColumns)
+    return (False);
+
+  AffineHermite(A, &HA, NULL);
+  AffineHermite(B, &HB, NULL);
 
   for (i = 0; i < A->NbRows; i++)
     for (j = 0; j < A->NbColumns; j++)
@@ -394,10 +397,8 @@ Bool sameLattice(Lattice *A, Lattice *B) {
         break;
       }
 
-  Matrix_Free((Matrix *)HA);
-  Matrix_Free((Matrix *)HB);
-  Matrix_Free((Matrix *)UA);
-  Matrix_Free((Matrix *)UB);
+  Matrix_Free(HA);
+  Matrix_Free(HB);
 
   return result;
 } /* sameLattice */
@@ -912,7 +913,13 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   if (A->NbRows != B->NbRows) {
     fprintf(stderr,
             "\nIn Lattice Difference : The Input Lattices A and B have ");
-    fprintf(stderr, "incompatible dimensions \n");
+    fprintf(stderr, "incompatible dimensions\n");
+    return NULL;
+  }
+  if (A->NbColumns != B->NbColumns) {
+    fprintf(stderr,
+            "\nIn Lattice Difference : The Input Lattices A and B have ");
+    fprintf(stderr, "incompatible dimensions (columns)\n");
     return NULL;
   }
 
@@ -1744,7 +1751,7 @@ LatticeUnion *LatticeSimplify(LatticeUnion *latlist) {
 
   LatticeUnion *curlist, *nextlist;
   LatticeUnion *curr, *next;
-  Bool change = True, chng;
+  Bool change = True;
 
   curlist = latlist;
   while (change == True) {
@@ -1756,8 +1763,7 @@ LatticeUnion *LatticeSimplify(LatticeUnion *latlist) {
       next = curr->next;
       if (!SameLinearPart(curr, next)) {
         curr->next = NULL;
-        chng = AffinePartSimplify(curlist, &nextlist);
-        change = (Bool)(change | chng);
+        change |= AffinePartSimplify(curlist, &nextlist);
         curlist = next;
       }
       curr = next;
