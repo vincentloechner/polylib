@@ -59,8 +59,8 @@ Matrix *Matrix_Alloc(unsigned NbRows, unsigned NbColumns) {
       p += NbColumns;
     }
   }
-  free(q);
-  free(p);
+  p = NULL;
+  q = NULL;
 
   return Mat;
 } /* Matrix_Alloc */
