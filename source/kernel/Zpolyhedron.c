@@ -1593,7 +1593,7 @@ ZPolyhedron *Canonical_ZDomain_Gautam(ZPolyhedron *A) {
       // if it is, add this polyhedron to the existing one
       if((ZZ = FindLattice(Ztmp->Lat, Result)))
       {
-        AddPolyToDomain(Ztmp->P, ZZ->P);
+        ZZ->P = AddPolyToDomain(Ztmp->P, ZZ->P);
         // Polyhedron_Free(Ztmp->P); // consumed by AddPolyToDomain
         Matrix_Free(Ztmp->Lat);
         // keep Ztmp for next step
