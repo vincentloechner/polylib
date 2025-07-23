@@ -410,9 +410,9 @@ ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B) {
   fclose(fp);
 #endif
 
-  for (temp = A; temp != NULL; temp = temp->next)
+  for (temp = ZDomain_Copy(A); temp != NULL; temp = temp->next)
     Result = AddZPolytoZDomain(temp, Result);
-  for (temp = B; temp != NULL; temp = temp->next)
+  for (temp = ZDomain_Copy(B); temp != NULL; temp = temp->next)
     Result = AddZPolytoZDomain(temp, Result);
   return Result;
 } /* ZDomainUnion */
@@ -437,6 +437,7 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
       ZPolyhedron *Zpol;
       Zpol = ZPolyhedronIntersection(tempA, tempB);
       Result = AddZPolytoZDomain(Zpol, Result);
+      ZPolyhedron_Free(Zpol);
     }
   if (Result == NULL)
     return EmptyZPolyhedron(A->Lat->NbColumns - 1);
@@ -496,8 +497,6 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
     for(i=res ; i != NULL ; i = i->next) {
       Result = AddZPolytoZDomain(i, Result);
     }
-
-    ZDomain_Free(res);
   }
  
   if (Result == NULL)
@@ -530,7 +529,6 @@ ZPolyhedron *ZDomainImage(ZPolyhedron *A, Matrix *Func) {
     {
       Result = AddZPolytoZDomain(Zpol, Result);
     }
-    ZPolyhedron_Free(Zpol);
   }
   if (Result == NULL)
     return EmptyZPolyhedron(A->Lat->NbRows - 1);
@@ -564,7 +562,6 @@ ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func) {
     ZPolyhedron *Zpol;
     Zpol = ZPolyhedronPreimage(temp, Func);
     Result = AddZPolytoZDomain(Zpol, Result);
-    ZPolyhedron_Free(Zpol);
   }
   if (Result == NULL)
     return (EmptyZPolyhedron(Func->NbColumns - 1));
