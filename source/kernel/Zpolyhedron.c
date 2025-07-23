@@ -186,8 +186,6 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
   #endif
   if ((A == NULL) || (isEmptyZPolyhedron(A)))
   {
-    if(A)
-      ZDomain_Free(A);
     return Head;
   }
 
