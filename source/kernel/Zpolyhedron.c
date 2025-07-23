@@ -622,10 +622,10 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B)
   }
   ZPolyhedron_Free(ZI);
 
-  printf("A = ");
-  ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
-  printf("B = ");
-  ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
+  // printf("A = ");
+  // ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
+  // printf("B = ");
+  // ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
 
   // [STEP 0, includes Gautam's Step 2]
   // Separate the computation in two phases:
@@ -657,8 +657,8 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B)
   imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
   temp = DomainIntersection(imA, imB, MAXNOOFRAYS);
-  printf("temp = ");
-  Polyhedron_Print(stdout, P_VALUE_FMT, temp);
+  // printf("temp = ");
+  // Polyhedron_Print(stdout, P_VALUE_FMT, temp);
   preimA = DomainPreimage(temp, A->Lat, MAXNOOFRAYS);
   A = ZDomainAlloc(A->Lat, preimA); // this A intersects B in the image space
   preimB = DomainPreimage(temp, B->Lat, MAXNOOFRAYS);
@@ -672,10 +672,10 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B)
   // // now A and B have same lattices and polyhedra dimensions
 
 
-  printf("[STEP 1] A = ");
-  ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
-  printf("[STEP 1] B = ");
-  ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
+  // printf("[STEP 1] A = ");
+  // ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
+  // printf("[STEP 1] B = ");
+  // ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
 
   // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of same dimensions
   LatDiff  = LatticeDifference(A->Lat, B->Lat); //can simplify this
@@ -689,8 +689,8 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B)
   // [STEP 1 of Gautam]:
   // Add all Z-polyhedra applying the (list of) lattice difference on imA
   for(LatticeUnion *tmp = LatDiff; tmp != NULL; tmp = tmp->next) {
-    printf("considering lattice: ");
-    Matrix_Print(stdout, P_VALUE_FMT, tmp->M);
+    // printf("considering lattice: ");
+    // Matrix_Print(stdout, P_VALUE_FMT, tmp->M);
     Ztmp = malloc(sizeof(*Ztmp));
     Ztmp->Lat = tmp->M;
     Ztmp->P = DomainPreimage(imA, tmp->M, MAXNOOFRAYS);
