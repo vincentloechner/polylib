@@ -619,7 +619,6 @@ static Matrix *ConvertDarMattoPolMat(Value *A, int NbRows, int NbCols) {
 ***         the Smith Normal Form
 **/
 void Smith(Matrix *A, Matrix **U, Matrix **V, Matrix **Product) {
-  int i;
   Matrix *u, *v;
 
   u = Identity(A->NbRows);
