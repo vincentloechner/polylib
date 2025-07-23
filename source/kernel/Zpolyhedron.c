@@ -4,6 +4,7 @@
 // debug this file:
 // #define DEBUG
 #ifdef DEBUG
+  #define LAT_TEST 1
   #define CANONICAL_DEBUG 1
   #define NEWINTERSECTION_DEBUG 1
   #define ADDZPTOZD_DEBUG 1
@@ -1537,7 +1538,7 @@ ZPolyhedron *Canonical_ZDomain_Gautam(ZPolyhedron *A) {
 
       // check if Ztmp->Lat is already present in Result, and
       // if it is, add this polyhedron to the existing one
-      if(ZZ = FindLattice(Ztmp->Lat, Result))
+      if((ZZ = FindLattice(Ztmp->Lat, Result)))
       {
         AddPolyToDomain(Ztmp->P, ZZ->P);
         // Polyhedron_Free(Ztmp->P); // consumed by AddPolyToDomain
@@ -1565,5 +1566,38 @@ ZPolyhedron *Canonical_ZDomain_Gautam(ZPolyhedron *A) {
  */
 static ZPolyhedron *FindLattice(Lattice *L, ZPolyhedron *A)
 {
+
+  #ifdef LAT_TEST
+    fprintf(stdout, "Entering FindLattice: \n");
+  #endif
+
+  ZPolyhedron* tmp;
+  
+  #ifdef LAT_TEST
+    fprintf(stdout, "The lattice we are looking for: \n");
+    Matrix_Print(stdout, P_VALUE_FMT, L);
+  #endif
+
+  for(tmp = A; tmp; tmp=tmp->next){
+  
+    #ifdef LAT_TEST
+      fprintf(stdout, "The current lattice: \n");
+      Matrix_Print(stdout, P_VALUE_FMT, tmp->Lat);
+    #endif
+
+    if(sameLattice(L,tmp->Lat)){
+        
+      #ifdef LAT_TEST
+        fprintf(stdout, "Lattice found, returning corresponding ZP \n");
+      #endif
+
+      return (tmp);
+    }
+  }
+
+  #ifdef LAT_TEST
+    fprintf(stdout, "Lattice not found \n");
+  #endif
+
   return (NULL);
 }
