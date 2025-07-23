@@ -5,6 +5,14 @@
 extern "C" {
 #endif
 
+// DEFINITIONS USED IN THOSE FUNCTIONS:
+//
+// - a ZPolyhedron is a single lattice associated to a polyhedral domain
+//   (a polyhedral domain can be a union of polyhedra)
+//
+// - a ZDomain is a chained list of ZPolyhedra (with possibly multiple lattices;
+//   using the ->next structure element).
+
 extern void CanonicalForm(ZPolyhedron *Zpol, ZPolyhedron **Result,
                           Matrix **Basis);
 extern ZPolyhedron *EmptyZPolyhedron(int dimension);
@@ -20,8 +28,7 @@ extern ZPolyhedron *ZDomainSimplify(ZPolyhedron *ZDom);
 extern ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B);
 extern ZPolyhedron *ZDomain_Copy(ZPolyhedron *Head);
 extern void ZDomain_Free(ZPolyhedron *Head);
-extern Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B);
-extern ZPolyhedron *ZDomainAlloc(Lattice *Lat, Polyhedron *Poly);
+extern ZPolyhedron *ZPolyhedronAlloc(Lattice *Lat, Polyhedron *Poly);
 extern ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B);
 extern void Matrix_Move_Homogeneous_Dim_First(Matrix* A);
 extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);

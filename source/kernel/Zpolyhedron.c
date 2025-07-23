@@ -1,6 +1,15 @@
 #include <polylib/polylib.h>
 #include <stdlib.h>
 
+// DEFINITIONS USED IN ALL COMMENTS BELOW:
+//
+// - a ZPolyhedron is a single lattice associated to a polyhedral domain
+//   (a polyhedral domain can be a union of polyhedra)
+//
+// - a ZDomain is a chained list of ZPolyhedra (with possibly multiple lattices;
+//   using the ->next structure element).
+
+
 // debug this file:
 // #define DEBUG
 #ifdef DEBUG
@@ -21,6 +30,8 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head);
 static void ZPolyhedronPrint(FILE *fp, const char *format, ZPolyhedron *A);
 static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A);
 static ZPolyhedron *FindLattice(Lattice *L, ZPolyhedron *A);
+static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B);
+static Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B);
 
 typedef struct forsimplify {
   Polyhedron *Pol;
@@ -30,22 +41,25 @@ typedef struct forsimplify {
 
 /*
  * Returns True if 'Zpol' is empty, otherwise returns False
+ * ZPol can be a non-simplified empty ZDomain (list of empty polyhedra)
  */
 Bool isEmptyZPolyhedron(ZPolyhedron *Zpol) {
 
   if (Zpol == NULL)
     return True;
-  if (emptyQ(Zpol->P))
-    return True;
+  if (emptyQ(Zpol->P)) {
+    // check the emptiness of next
+    return(isEmptyZPolyhedron(Zpol->next));
+  }
   return False;
 } /* isEmptyZPolyhedron */
 
 /*
  * Given Lattice 'Lat' and a Domain 'Domain', allocate space, and return the
  * Z-polyhedron corresponding to the image of the integer points of 'Poly'
- * by the lattice 'Lat', in canonical form
+ * by the lattice 'Lat', in canonical form (HNF, no equalities)
  */
-ZPolyhedron *ZDomainAlloc(Lattice *Lat, Polyhedron *Domain) {
+ZPolyhedron *ZPolyhedronAlloc(Lattice *Lat, Polyhedron *Domain) {
 
   ZPolyhedron *A, *tmp;
 
@@ -66,7 +80,7 @@ ZPolyhedron *ZDomainAlloc(Lattice *Lat, Polyhedron *Domain) {
   // }
   A = malloc(sizeof(ZPolyhedron));
   if (!A) {
-    fprintf(stderr, "ZPolAlloc : Out of Memory\n");
+    errormsg1("ZPolyhedronAlloc", "outofmem", "Out of Memory");
     return NULL;
   }
   A->next = NULL;
@@ -76,7 +90,7 @@ ZPolyhedron *ZDomainAlloc(Lattice *Lat, Polyhedron *Domain) {
   tmp = Canonical_ZDomain_Gautam(A);
   ZDomain_Free(A);
   return tmp;
-} /* ZDomainAlloc */
+} /* ZPolyhedronAlloc */
 
 /*
  * Free the memory used by the Z-domain 'Head'
@@ -85,8 +99,7 @@ void ZDomain_Free(ZPolyhedron *Head) {
 
   if (Head == NULL)
     return;
-  if (Head->next != NULL)
-    ZDomain_Free(Head->next);
+  ZDomain_Free(Head->next);
   ZPolyhedron_Free(Head);
 } /* ZDomain_Free */
 
@@ -98,7 +111,7 @@ static void ZPolyhedron_Free(ZPolyhedron *Zpol) {
   if (Zpol == NULL)
     return;
   if(Zpol->Lat)
-    Matrix_Free((Matrix *)Zpol->Lat);
+    Matrix_Free(Zpol->Lat);
   if(Zpol->P)
     Domain_Free(Zpol->P);
   free(Zpol);
@@ -119,36 +132,37 @@ ZPolyhedron *ZDomain_Copy(ZPolyhedron *Head) {
 } /* ZDomain_Copy */
 
 /*
- * Return a copy of the Z-polyhderon 'A'
+ * Return a copy of the Z-polyhedron 'A'
  */
 static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A) {
 
   ZPolyhedron *Zpol;
 
-  Zpol = ZDomainAlloc(A->Lat, A->P);
+  Zpol = ZPolyhedronAlloc(A->Lat, A->P);
   return Zpol;
-} /* ZPolyhderon_Copy */
+} /* ZPolyhedron_Copy */
 
 /*
- * Add the ZPolyhedron 'Zpol' to the Z-domain 'Result' and return a pointer
- * to the new Z-domain.
+ * Add the ZPolyhedron 'Zpol' as first list element to the Z-domain 'Result'
+ * and return a pointer to the new Z-domain.
+ * Consumes the memory of Result and of Zpol (no need to free) to build the
+ * resulting ZDomain.
  */
-static ZPolyhedron *AddZPoly2ZDomain(ZPolyhedron *Zpol, ZPolyhedron *Result) {
-
-  ZPolyhedron *A;
+static ZPolyhedron *AddZPolList(ZPolyhedron *Zpol, ZPolyhedron *Result) {
 
   if (isEmptyZPolyhedron(Zpol))
+  {
+    ZPolyhedron_Free(Zpol);
     return Result;
-  A = ZPolyhedron_Copy(Zpol);
-  A->next = NULL;
-
+  }
   if (isEmptyZPolyhedron(Result)) {
     ZDomain_Free(Result);
-    return A;
+    return Zpol;
   }
-  A->next = Result;
-  return A;
-} /* AddZPoly2ZDomain */
+
+  Zpol->next = Result;
+  return Zpol;
+} /* AddZPolList */
 
 /*
  * Given a Z-polyhedron 'A' and a Z-domain 'Head', return a new Z-domain with
@@ -156,9 +170,10 @@ static ZPolyhedron *AddZPoly2ZDomain(ZPolyhedron *Zpol, ZPolyhedron *Result) {
  * Z-domain 'Head', it is not added in the list. Otherwise, the function checks
  * if the new Z-polyhedron 'A' to be added to the Z-domain 'Head' has a common
  * lattice with some other Z-polyhedron already present in the Z-domain. If it
- * is so, it takes the union of the underlying polyhedra; domains and returns.
- * The function tries to make sure that the added Z-polyhedron 'A' is in the
- * canonical form.
+ * is so, it takes the union of the underlying polyhedral domains and returns.
+ * 
+ * All lattices are in normal form (homogeneous HNF).
+ * *** Consumes the memory of the Zpolyhedron A and of Head to build the result ***
  */
 static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
 
@@ -170,7 +185,11 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
     fprintf(stderr, "----- ENTERING ADD ZP TO ZD -----\n");
   #endif
   if ((A == NULL) || (isEmptyZPolyhedron(A)))
+  {
+    if(A)
+      ZDomain_Free(A);
     return Head;
+  }
 
   /* For each "underlying" Pol, find the Cnf and add Zpol in Cnf*/
   for (i = A->P; i != NULL; i = i->next) {
@@ -183,17 +202,9 @@ static ZPolyhedron *AddZPolytoZDomain(ZPolyhedron *A, ZPolyhedron *Head) {
     // copy of ZP(Lat, i)
     Polyhedron *tmp = i->next;
     i->next = NULL;
-    Zpol = ZDomainAlloc(A->Lat, i);
+    Zpol = ZPolyhedronAlloc(A->Lat, i); // domain alloc sets Zpol in canonical form
     i->next = tmp;
-    // CanonicalZPGautam(Zpol);
-    // CanonicalForm(Z1, &Z, &H);
-    // ZDomain_Free(Z1);
-    // Lat = (Lattice *)Matrix_Alloc(H->NbRows, Z->Lat->NbColumns);
-    // Matrix_Product(H, Z->Lat, (Matrix *)Lat);
-    // Matrix_Free(H);
-    // AffineHermite(Lat, (Lattice **)&H, &U);
-    // Image = DomainImage(Z->P, U, MAXNOOFRAYS);
-    // ZDomain_Free(Z);
+
     #ifdef ADDZPTOZD_DEBUG
       fprintf(stderr, "Head =\n");
       ZDomainPrint(stderr, P_VALUE_FMT, Head);
@@ -286,7 +297,7 @@ ZPolyhedron *EmptyZPolyhedron(int dimension) {
 
   P = Empty_Polyhedron(0);
 
-  Zpol = ZDomainAlloc(E, P);
+  Zpol = ZPolyhedronAlloc(E, P);
   Matrix_Free((Matrix *)E);
   Domain_Free(P);
   return Zpol;
@@ -298,22 +309,32 @@ ZPolyhedron *EmptyZPolyhedron(int dimension) {
  */
 Bool ZDomainIncludes(ZPolyhedron *A, ZPolyhedron *B) {
 
-  ZPolyhedron *Diff;
+  ZPolyhedron *Rest;
   Bool ret = False;
 
-  Diff = ZDomainDifference(A, B);
-  if (isEmptyZPolyhedron(Diff))
+  // old version:
+  // Diff = ZDomainDifference(A, B);
+
+  // new version: compute the rest of the A - each ZPolyhedron of B
+  for(ZPolyhedron *BZ = B; BZ; BZ = BZ->next) {
+    ZPolyhedron *tmp;
+    tmp = ZD_ZP_Difference(Rest, BZ);
+    ZPolyhedron_Free(Rest);
+    Rest = tmp;
+  }
+
+  if (isEmptyZPolyhedron(Rest))
     ret = True;
 
-  ZDomain_Free(Diff);
+  ZDomain_Free(Rest);
   return ret;
 } /* ZDomainIncludes */
 
 /*
- * Given Z-polyhedra 'A' and 'B', return True if 'A' is included in 'B',
+ * Given Z-polyhedra 'A' and 'B', return True if 'A' is directly present in 'B',
  * otherwise return False
  */
-Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B) {
+static Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B) {
 
   Polyhedron *Diff = NULL;
   Bool retval = False;
@@ -426,16 +447,16 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
 /*
  * Return the Z-domain difference of the domains 'A' and 'B'. The dimensions of
  * the Z-domains 'A' and 'B' must be equal. Note that the difference of two
- * Z-polyhedra is a Union of Z-polyhedra. The algorithms is as given below :-
+ * Z-polyhedra is a Union of Z-polyhedra. The algorithms is as given below :
  * Algorithm: (Given Z-domains A and B)
  *           Result <-- NULL
- *           for every Z-polyhderon Zpoly of A {
+ *           for every Z-polyhedron Zpoly of A {
  *               temp <-- Zpoly;
- *               for every Z-polyhderon Z1 of B
+ *               for every Z-polyhedron Z1 of B
  *                  temp = temp - Z1;
- *               }
- *           Add temp to Result;
- *           return;
+ *               Add temp to Result;
+ *           }
+ *           return Result;
  */
 ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) { 
 
@@ -452,9 +473,7 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
 #endif
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
-    fprintf(stderr, "In ZDomainDifference : the input ZDomains ");
-    fprintf(stderr, "do not have compatible dimensions\n");
-    fprintf(stderr, "ZDomainDifference not performed\n");
+    errormsg1("ZDomainDifference", "dimincomp", "incompatible dimensions between domains");
     return NULL;
   }
   // fprintf(stdout,"\n Zpolyhedron A: \n");
@@ -469,8 +488,8 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
 
     res = ZPolyhedron_Copy(tempA);
     for (tempB = B; tempB != NULL; tempB = tempB->next) {
-      ZPolyhedron *tmpres = res;
-      res = ZPolyhedronDifferenceGautam(tmpres, tempB);
+      ZPolyhedron *tmpres = res; // careful here! tmpres can be a ZDomain.
+      res = ZD_ZP_Difference(tmpres, tempB);
       ZDomain_Free(tmpres);
     }
     // here: res = tempA - B
@@ -559,7 +578,9 @@ ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func) {
  * If LInter is empty(null), we return the empty Zpolyhedron.
  * Otherwise, we calculate the intersection of the polyhedra on A and B, called PInter.
  * We calculate the Preimage of PInter by LInter and finally we allocate the result,
- * a Zpolyhedron in Gautam Canonical form. 
+ * a Zpolyhedron in Gautam Canonical form.
+ *
+ *  /!\ USAGE: A and B contain a single Lattice, but can contain a polyhedral domain.
  */
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
 
@@ -586,7 +607,7 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
     Result = EmptyZPolyhedron(LInter->NbRows - 1);
   else {
     PreImage = DomainPreimage(PInter, LInter, MAXNOOFRAYS);
-    Result = ZDomainAlloc(LInter, PreImage);
+    Result = ZPolyhedronAlloc(LInter, PreImage);
     Domain_Free(PreImage);
   }
   Matrix_Free(LInter);
@@ -596,10 +617,48 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
   return Result;
 } /* ZPolyhedronIntersection */
 
+
+/*
+ * Return the difference between a ZDomain A and a ZPolyhedron B.
+ * A can contain a list of lattices, B has a single lattice.
+ *
+ * /!\ USAGE: only the first lattice of B is considered (no list/Zdomains),
+ * Creates a new allocated ZDomain, not necessarily in canonical form
+ */
+
+static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B)
+{
+  ZPolyhedron *Result = NULL;
+
+  for(ZPolyhedron *zp = A; A; A=A->next) {
+    ZPolyhedron *diff;
+
+    diff = ZPolyhedronDifferenceGautam(zp, B);
+    if(isEmptyZPolyhedron(diff)) {
+      ZDomain_Free(diff);
+    }
+    else {
+      // add diff to result: Result = concat(diff, Result)
+      ZPolyhedron *last_diff = diff;
+      while(last_diff->next)
+        last_diff = last_diff->next;
+      last_diff->next = Result;
+      Result = diff;
+    }
+  }
+
+  // Result contains every piece of the solution,
+  // but it is not necessarily in canonical form.
+  return Result;
+}
+
 /*
  * Return the difference of two Z-polyhedra A and B using the method Gautam
  * describes in his thesis.
-*/
+ * /!\ USAGE: only the first lattice of A and B is considered (no list/Zdomains),
+ *            but A and B can contain a polyhedral domain (in ->Pol).
+ * Creates a new allocated ZDomain
+ */
 
 static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B)
 {
@@ -617,6 +676,7 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B)
   ZI = ZPolyhedronIntersection(A, B);
   if(! ZPolyhedronIncludes(ZI, A))
   {
+    // if B does not intersect A, return A.
     ZPolyhedron_Free(ZI);
     return(ZPolyhedron_Copy(A));
   }
@@ -644,7 +704,7 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B)
     RedPolyDiff = DomainPreimage(ImTemp, A->Lat, MAXNOOFRAYS);
     // printf("imtemp = ");
     // Polyhedron_Print(stdout, P_VALUE_FMT, RedPolyDiff);
-    Result = ZDomainAlloc(A->Lat, RedPolyDiff);
+    Result = ZPolyhedronAlloc(A->Lat, RedPolyDiff);
     // printf("[step 0] Adding ");
     // ZPolyhedronPrint(stdout, P_VALUE_FMT, Result);
     Domain_Free(RedPolyDiff);
@@ -660,9 +720,9 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B)
   // printf("temp = ");
   // Polyhedron_Print(stdout, P_VALUE_FMT, temp);
   preimA = DomainPreimage(temp, A->Lat, MAXNOOFRAYS);
-  A = ZDomainAlloc(A->Lat, preimA); // this A intersects B in the image space
+  A = ZPolyhedronAlloc(A->Lat, preimA); // this A intersects B in the image space
   preimB = DomainPreimage(temp, B->Lat, MAXNOOFRAYS);
-  B = ZDomainAlloc(B->Lat, preimB); // this B intersects A in the image space
+  B = ZPolyhedronAlloc(B->Lat, preimB); // this B intersects A in the image space
 
   Domain_Free(preimA);
   Domain_Free(preimB);
@@ -771,7 +831,7 @@ static ZPolyhedron *ZPolyhedronDifferenceOld(ZPolyhedron *A, ZPolyhedron *B) {
   else {
     ZPolyhedron *Z;
     PreImage = DomainPreimage(DomDiff, A->Lat, MAXNOOFRAYS);
-    Z = ZDomainAlloc(A->Lat, PreImage);
+    Z = ZPolyhedronAlloc(A->Lat, PreImage);
     Result = AddZPolytoZDomain(Z, Result);
   }
   if (flag == True) /* DomDiff = NULL; DomInter = A */
@@ -794,10 +854,9 @@ static ZPolyhedron *ZPolyhedronDifferenceOld(ZPolyhedron *A, ZPolyhedron *B) {
     ZPolyhedron *tempZ = NULL;
 
     PreImage = DomainPreimage(DomInter, LatDiff->M, MAXNOOFRAYS);
-    tempZ = ZDomainAlloc(LatDiff->M, PreImage);
+    tempZ = ZPolyhedronAlloc(LatDiff->M, PreImage);
     Domain_Free(PreImage);
-    Result = AddZPoly2ZDomain(tempZ, Result);
-    ZPolyhedron_Free(tempZ);
+    Result = AddZPolList(tempZ, Result);
     temp = LatDiff;
     LatDiff = LatDiff->next;
     Matrix_Free((Matrix *)temp->M);
@@ -853,7 +912,7 @@ static ZPolyhedron *ZPolyhedronImage(ZPolyhedron *ZPol, Matrix *Func) {
     return NULL;
   }
   Pol = DomainPreimage(PolImage, LatIm, MAXNOOFRAYS);
-  Result = ZDomainAlloc(LatIm, Pol);
+  Result = ZPolyhedronAlloc(LatIm, Pol);
   Domain_Free(Pol);
   Domain_Free(PolImage);
   Matrix_Free(LatIm);
@@ -900,7 +959,7 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Zpol, Matrix *G) {
       Result = NULL;
     else {
       Qprime = DomainPreimage(Polpreim, Latpreim, MAXNOOFRAYS);
-      Result = ZDomainAlloc(Latpreim, Qprime);
+      Result = ZPolyhedronAlloc(Latpreim, Qprime);
       Domain_Free(Qprime);
       Polyhedron_Free(Polpreim);
     }
@@ -988,7 +1047,7 @@ void CanonicalForm(ZPolyhedron *Zpol, ZPolyhedron **Result, Matrix **Basis) {
   Matrix_Free(B2inv);
   Image = DomainImage(ImageP, Uprime, MAXNOOFRAYS);
   Domain_Free(ImageP);
-  Result[0] = ZDomainAlloc(Hprime, Image);
+  Result[0] = ZPolyhedronAlloc(Hprime, Image);
   Basis[0] = Matrix_Copy(B2);
 
   /* Free the variables */
@@ -1030,7 +1089,7 @@ ZPolyhedron *IntegraliseLattice(ZPolyhedron *A) {
     Result = EmptyZPolyhedron(A->Lat->NbRows - 1);
   else {
     Preim = DomainPreimage(Im, M, MAXNOOFRAYS);
-    Result = ZDomainAlloc(M, Preim);
+    Result = ZPolyhedronAlloc(M, Preim);
   }
   Matrix_Free(M);
   Domain_Free(Im);
@@ -1110,7 +1169,7 @@ ZPolyhedron *ZDomainSimplify(ZPolyhedron *ZDom) {
       ZPolyhedron *Zpol;
 
       Preim = DomainPreimage(Curr->Pol, L->M, MAXNOOFRAYS);
-      Zpol = ZDomainAlloc(L->M, Preim);
+      Zpol = ZPolyhedronAlloc(L->M, Preim);
       Zpol->next = Result;
       Result = Zpol;
       Domain_Free(Preim);
@@ -1196,9 +1255,8 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
   while (Head) {
     tempHead = Head;
     Head = Head->next;
-    zpnew = ZDomainAlloc(tempHead->M, ZPol->P);
-    Result = AddZPoly2ZDomain(zpnew, Result);
-    ZPolyhedron_Free(zpnew);
+    zpnew = ZPolyhedronAlloc(tempHead->M, ZPol->P);
+    Result = AddZPolList(zpnew, Result);
     tempHead->next = NULL;
     Matrix_Free(tempHead->M);
     free(tempHead);
