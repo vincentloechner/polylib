@@ -437,7 +437,6 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
       ZPolyhedron *Zpol;
       Zpol = ZPolyhedronIntersection(tempA, tempB);
       Result = AddZPolytoZDomain(Zpol, Result);
-      ZPolyhedron_Free(Zpol);
     }
   if (Result == NULL)
     return EmptyZPolyhedron(A->Lat->NbColumns - 1);
