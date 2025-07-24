@@ -523,11 +523,12 @@ ZPolyhedron *ZDomainImage(ZPolyhedron *A, Matrix *Func) {
     Zpol = ZPolyhedronImage(temp, Func);
     if(!(isEmptyZPolyhedron(Zpol)))
     {
-      Result = AddZPolytoZDomain(Zpol, Result);
+      Result = ZPconcat(Zpol, Result);
     }
   }
   if (Result == NULL)
     return EmptyZPolyhedron(A->Lat->NbRows - 1);
+  Canonical_ZDomain(Result);
   return Result;
 } /* ZDomainImage */
 
@@ -557,10 +558,11 @@ ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func) {
   for (temp = A; temp != NULL; temp = temp->next) {
     ZPolyhedron *Zpol;
     Zpol = ZPolyhedronPreimage(temp, Func);
-    Result = AddZPolytoZDomain(Zpol, Result);
+    Result = ZPconcat(Zpol, Result);
   }
   if (Result == NULL)
     return (EmptyZPolyhedron(Func->NbColumns - 1));
+  Canonical_ZDomain(Result);
   return Result;
 } /* ZDomainPreimage */
 
