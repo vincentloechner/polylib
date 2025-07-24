@@ -1572,6 +1572,8 @@ ZPolyhedron *Canonical_ZDomain_Gautam(ZPolyhedron *A) {
         // keep Ztmp for next step
       }
       else {
+        // Question: can we use ZPconcat?
+
         // else, add Ztmp to the result
         Ztmp->next = Result;
         Result = Ztmp;
