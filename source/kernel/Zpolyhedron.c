@@ -409,6 +409,8 @@ ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B) {
   fclose(fp);
 #endif
 
+  // copy A and B, concatenate, Canonicalize, and return :)
+
   for (temp = ZDomain_Copy(A); temp != NULL; temp = temp->next)
     Result = AddZPolytoZDomain(temp, Result);
   for (temp = ZDomain_Copy(B); temp != NULL; temp = temp->next)
@@ -1307,10 +1309,119 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
 }
 
 /*
+ * get the matrix of equalities from a polyhedron
+ * (without the first columns of 0's)
+ */
+static Matrix *get_equalities(Polyhedron *P)
+{
+  // Eq is the matrix of linear equations of P (including the constant)
+  Matrix* Eq = Matrix_Alloc(P->NbEq, P->Dimension+1);
+  // get equalities (first rows of P->Constraint)
+  for(int i=0; i<P->NbEq; i++) {
+    for(int j=0; j<Eq->NbColumns; j++){
+      value_assign(Eq->p[i][j], P->Constraint[i][j+1]);
+    }
+  }
+  return (Eq);
+}
+
+/*
+ * compare a matrix of equalities to the one of a polyhedron P
+ */
+static Bool *same_equalities(Matrix *Eq, Polyhedron *P)
+{
+  if(P->NbEq != Eq->NbRows)
+    return (False);
+
+  for(int i=0; i<P->NbEq && i<Eq->NbRows; i++) {
+    for(int j=0; j<Eq->NbColumns; j++){
+      if(value_ne(Eq->p[eqnum][j], P->Constraint[i][j+1]))
+        return (False);
+    }
+  }
+  return (True);
+}
+
+/*
+ * Remove the equalities from (A->Lat, A->P).
+ * In place.
+ */
+static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
+{
+  // if A->P has equalities, remove them and spread the lattice
+  if (A->P->Dimension > 0 && A->P->NbEq != 0) {
+
+    // remove equalities in domain P and change Lat to spread the original space
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "P has equalities\n");
+    #endif
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "Equality matrix (including constants): ");
+      Matrix_Print(stderr, P_VALUE_FMT, Equalities);
+    #endif
+
+    // compute Ker(Eq)
+    Matrix* ker;
+    ker = int_ker(Equalities);
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "ker of eq: ");
+      Matrix_Print(stderr, P_VALUE_FMT, ker);
+    #endif
+    
+    Matrix *T = NULL;
+    Matrix_Move_Homogeneous_Dim_First(ker);
+    left_hermite(ker, &T, NULL, NULL);
+    Matrix_Move_Homogeneous_Dim_Last(T);
+    Matrix_Free(ker);
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "Matrix T: ");
+      Matrix_Print(stderr, P_VALUE_FMT, T);
+      fprintf(stderr, "Lattice of A: ");
+      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+    #endif
+
+    // NewL = L . T
+    Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, T->NbColumns);
+    Matrix_Product(A->Lat, T, NewL);
+    // NewP = T^{-1} . P
+    Polyhedron* NewP = Polyhedron_Preimage(A->P, T, MAXNOOFRAYS);
+
+    // update A
+    Polyhedron_Free(A->P);
+    Matrix_Free(A->Lat);
+    A->P = NewP;
+    A->Lat = NewL;
+  
+    Matrix_Free(T);
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "New Lat: ");
+      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+      fprintf(stderr, "New P: ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+    #endif
+
+  }
+  else { // P contains no equalities
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "P has no equalities.\n");
+    #endif
+  }
+}
+
+/*
  * The function takes a Zpolyhedron 
- * --- containing a single polyhedron (no domain), and a single lattice ---
+ * --- containing a domain (list of polyhedra), and a single lattice ---
  * and modifies it in place to be in canonical form as described by Gautam
  * (A->Lat in HNF and no equalities in A->P)
+ * IN PLACE: modifies A itself
+ * 
+ * WARNING: this function transforms a Zpolyhedron into a Zdomain: it may
+ * add new ZPolyhedra to the ZDomain (list of ZPolyhedra) just after A
  */
 static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
   
@@ -1327,12 +1438,36 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     return;
   }
 
-  // if the polyhedron is empty, build an empty canonical ZPolyhedron and return.
+  // if the polyhedron is empty
   if(emptyQ(A->P)) {
     #ifdef CANONICAL_DEBUG
-      printf("The polyhedron is empty\n");
+      fprintf(stderr, "The polyhedron is empty\n");
     #endif
 
+    if(A->next) {
+      #ifdef CANONICAL_DEBUG
+        fprintf(stderr, "... But the next one is not\n");
+      #endif
+      // if there is something else after an empty ZP, need to replace the
+      // current ZP with the next ZP.
+      // Replace A with next and free A->next
+      ZPolyhedron *remove;
+      remove = A->next;
+      Domain_Free(A->P);
+      Matrix_Free(A->Lat);
+      A->P = remove->P;
+      A->Lat = remove->Lat;
+      A->next = remove->next;
+      free(remove);
+
+      // now, canonicalize the (new) current ZP itself:
+      Canonical_ZPolyhedron_Gautam(A);
+
+      return;
+    }
+
+    // A is empty.
+    // Verify that it is canonical and return.
     int dimension = A->Lat->NbRows;
     if(A->P->Dimension > 0)
     {
@@ -1350,111 +1485,57 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     }
 
     #ifdef CANONICAL_DEBUG
-      printf("We return:\n");
-      ZPolyhedronPrint(stderr,P_VALUE_FMT,A);
+      fprintf(stderr, "We return the empty ZPolyhedron: ");
+      ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
     #endif
-
     return;
   }
-      
-  
 
-  // Check if P contains equalities
+
   #ifdef CANONICAL_DEBUG
-    printf("Checking for equalites in P\n");
+    fprintf(stderr, "Checking for equalites in P\n");
   #endif
 
-  if (A->P->Dimension > 0 && A->P->NbEq != 0) {
+  // change P such that all polyhedra in this list have the same set of equalities,
+  // that is, the equalities of the first one.
+  // all the other ones are added to a new ZPolyhedron, linked to (ZDomain) A.
+  ZPolyhedron *new = NULL;
+  Matrix * Equalities = get_equalities(A->P);
+  Polyhedron *nextpp, *prevpp = A->P;
 
-    // remove equalities in P and change Lat to spread the original space
-
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "P has equalities\n");
-      fprintf(stderr, "Matrix of P: ");
-      Matrix_Print(stderr,P_VALUE_FMT, A->Lat);
-    #endif
-
-    // Eq is the matrix of linear equations of P (including the constant)
-    Matrix* Eq = Matrix_Alloc(A->P->NbEq, A->P->Dimension+1);
-    int eqnum = 0;
-    // get equalities
-    for(int i=0; i<A->P->NbConstraints; i++) {
-      if(value_zero_p(A->P->Constraint[i][0])) // Equality
-      {
-        for(int j=0; j<Eq->NbColumns; j++){
-          value_assign(Eq->p[eqnum][j], A->P->Constraint[i][j+1]);
-        }
-        if(++eqnum >= A->P->NbEq)
-          break;
+  for(Polyhedron *pp = A->P->next; pp; prevpp = pp, pp = nextpp) {
+    // check that the equalities of pp->Constraints are the same as the ones of matrix Equalities.
+    if(! same_equalities(Equalities, pp)) {
+      // here, get pp out.
+      if(!new) {
+        new = malloc(sizeof(*new));
+        new->P = NULL;
+        new->Lat = Matrix_Copy(A->Lat);
       }
+      // remove pp from the list A->P, and get the right next iteration
+      nextpp = prevpp->next = pp->next;
+      // add pp to new->P
+      pp->next = new->P;
+      new->P = pp;
     }
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "Equality matrix (including constants): ");
-      Matrix_Print(stderr, P_VALUE_FMT, Eq);
-    #endif
-
-    // compute Ker(Eq)
-    Matrix* ker;
-    ker = int_ker(Eq);
-    Matrix_Free(Eq);
-
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "ker of eq: ");
-      Matrix_Print(stderr, P_VALUE_FMT, ker);
-    #endif
-    
-    Matrix *T;
-    Matrix_Move_Homogeneous_Dim_First(ker);
-    left_hermite(ker, &T, NULL, NULL);
-    Matrix_Move_Homogeneous_Dim_Last(T);
-    Matrix_Free(ker);
-    if(!T){
-      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
-      return;
+    else {
+      nextpp = pp->next; // next polyhedron of the domain
     }
-
-    #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Matrix T: ");
-    Matrix_Print(stderr, P_VALUE_FMT, T);
-    fprintf(stderr, "lat of a: ");
-    Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
-    #endif
-
-    // NewL = L . T
-    Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, T->NbColumns);
-    if(!NewL) {
-      errormsg1("CanonicalZPGautam", "outofmem", "Not enough memory space!");
-      return;
-    }
-    Matrix_Product(A->Lat, T, NewL);
-
-    Polyhedron* NewP = Polyhedron_Preimage(A->P, T, MAXNOOFRAYS);
-    Polyhedron_Free(A->P);
-    A->P = NewP;
-
-    // update Lat
-    Matrix_Free(A->Lat);
-    A->Lat = NewL;
-  
-    // freeing 
-    Matrix_Free(T);
-
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "----------- New Lat: ");
-      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
-      fprintf(stderr, "----------- New P: ");
-      Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
-      fprintf(stderr, "-----------\n");
-    #endif
-
-  } // P contains no equalities
-  else {
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "P has no equalities.\n");
-    #endif
   }
+  if(new) {
+    // include new in the ZDomain list A
+    new->next = A->next;
+    A->next = new;
+  }
+    
+  Remove_Equalities(A, Equalities);
+  Matrix_Free(Equalities);
 
 
+  // this was useful if for some reason the homogeneous dimension spread
+  // to something different than 1... (bottom right value of Lat matrix)
+  // seems impossible with Hermite(homogeneous_dim_first(Ker(Eq)))
+#ifdef I_THINK_THAT_THIS_IS_NOT_NECESSARY
   // Check if the constant part (last column of Lat) is normal (simplified by its gcd)
   // if not, divide it by the gcd, and compute the new polyhedron P' = image(T, P) with
   // T = Id   0
@@ -1494,7 +1575,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     A->P=tmp;
   }
   value_clear(gcd);
-
+#endif
 
   // check if A->Lat is in Hermite form
   if(!isinHnf(A->Lat)) {
@@ -1546,86 +1627,57 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
 /*
  * The function takes a ZDomain
  * (single or multiple lattices and single or multiple polyhedra)
- * and returns a canonical form of the ZDomain as described by Gautam:
- * all lattices in HNF and no equalities in all polyhedral domains.
- * Allocates a new ZPolyhedron structure, does not free A.
+ * and transforms it into a canonical form of the ZDomain as described
+ * by Gautam:
+ *  - all lattices in HNF, and
+ *  -  no equalities in all polyhedral domains.
+ * Performs the operation IN PLACE (modifies A)
  */
-ZPolyhedron *Canonical_ZDomain_Gautam(ZPolyhedron *A) {
-  ZPolyhedron *Result = NULL, *Ztmp = NULL;
+void Canonical_ZDomain(ZPolyhedron *A) {
 
   for(ZPolyhedron *zp = A; zp; zp = zp->next) {
-    for(Polyhedron *pol = zp->P; pol; pol = pol->next) {
-      ZPolyhedron *ZZ;
-      if(!Ztmp)
-        Ztmp = malloc(sizeof(*Ztmp));
-      Ztmp->Lat = Matrix_Copy(zp->Lat);
-      Ztmp->P = Polyhedron_Copy(pol);
-      Canonical_ZPolyhedron_Gautam(Ztmp);
-
-      // check if Ztmp->Lat is already present in Result, and
-      // if it is, add this polyhedron to the existing one
-      if((ZZ = FindLattice(Ztmp->Lat, Result)))
-      {
-        ZZ->P = AddPolyToDomain(Ztmp->P, ZZ->P);
-        // Polyhedron_Free(Ztmp->P); // consumed by AddPolyToDomain
-        Matrix_Free(Ztmp->Lat);
-        // keep Ztmp for next step
-      }
-      else {
-        // Question: can we use ZPconcat?
-
-        // else, add Ztmp to the result
-        Ztmp->next = Result;
-        Result = Ztmp;
-        Ztmp = NULL; // will be realloc'ed at next step
-      }
-    }
+    // here, just transform every ZPolyhedron individually
+    // careful, this may add a new ZPolyhedron to the list A itself
+    Canonical_ZPolyhedron_Gautam(zp);
   }
 
-  if(Ztmp)
-    free(Ztmp);
-
-  return (Result);
+  for(ZPolyhedron *zp = A; zp; zp = zp->next) {
+      ZPolyhedron *ZZ;
+    // check if Ztmp->Lat is present twice in Result, and
+    // if it is, add this polyhedron to the existing one
+    // and remove the second reference
+    if((ZZ = FindLattice(zp->Lat, zp)))
+    {
+      ZPolyhedron *remove;
+      // add all polyhedra of the domain ZZ->next to zp (that is, A)
+      Polyhedron *nextpp;
+      for(Polyhedron *pp = ZZ->next->P; pp; pp = nextpp) {
+        nextpp = pp->next;
+        pp->next = NULL;
+        zp->P = AddPolyToDomain(pp, zp->P); // this consumes pp, so need to get next before
+      }
+      // remove ZZ->next
+      remove = ZZ->next;
+      ZZ->next = ZZ->next->next;
+      Matrix_Free(remove->Lat);
+      free(remove);
+    }
+  }
 }
 
 /*
  * Find if a given lattice is present in a zpolyhedron.
- * Returns the address of the zpolyhedron, NULL if not found
+ * Returns the address of the ***previous*** zpolyhedron (such that ZZ->next->Lat == L),
+ * NULL if not found
  */
 static ZPolyhedron *FindLattice(Lattice *L, ZPolyhedron *A)
 {
-
-  #ifdef LAT_TEST
-    fprintf(stdout, "Entering FindLattice: \n");
-  #endif
-
   ZPolyhedron* tmp;
-  
-  #ifdef LAT_TEST
-    fprintf(stdout, "The lattice we are looking for: \n");
-    Matrix_Print(stdout, P_VALUE_FMT, L);
-  #endif
 
   for(tmp = A; tmp; tmp=tmp->next){
-  
-    #ifdef LAT_TEST
-      fprintf(stdout, "The current lattice: \n");
-      Matrix_Print(stdout, P_VALUE_FMT, tmp->Lat);
-    #endif
-
-    if(sameLattice(L,tmp->Lat)){
-        
-      #ifdef LAT_TEST
-        fprintf(stdout, "Lattice found, returning corresponding ZP \n");
-      #endif
-
+    if(sameLattice(L, tmp->next->Lat)){
       return (tmp);
     }
   }
-
-  #ifdef LAT_TEST
-    fprintf(stdout, "Lattice not found \n");
-  #endif
-
   return (NULL);
 }
