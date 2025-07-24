@@ -148,8 +148,7 @@ static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A) {
  * Consumes the memory of Result and of Zpol (no need to free) to build the
  * resulting ZDomain.
  */
-static ZPolyhedron *AddZPolList(ZPolyhedron *Zpol, ZPolyhedron *Result) {
-// ZPconcat
+static ZPolyhedron *ZPconcat(ZPolyhedron *Zpol, ZPolyhedron *Result) {
 
   if (isEmptyZPolyhedron(Zpol))
   {
@@ -161,11 +160,15 @@ static ZPolyhedron *AddZPolList(ZPolyhedron *Zpol, ZPolyhedron *Result) {
     return Zpol;
   }
 
-  // TODO: go to end and concatenate
-
-  Zpol->next = Result;
-  return Zpol;
-} /* AddZPolList */
+  // go to end and concatenate
+  ZPolyhedron* tmp = Zpol;
+  while(tmp->next)
+    tmp = tmp->next;
+  tmp->next = Result;
+  Result = Zpol;
+  
+  return Result;
+} /* ZPconcat */
 
 /*
  * Given a Z-polyhedron 'A' and a Z-domain 'Head', return a new Z-domain with
@@ -432,7 +435,7 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
     for (tempB = B; tempB != NULL; tempB = tempB->next) {
       ZPolyhedron *Zpol;
       Zpol = ZPolyhedronIntersection(tempA, tempB);
-      Result = AddZPolList(Zpol, Result);
+      Result = ZPconcat(Zpol, Result);
     }
   if (Result == NULL)
     return EmptyZPolyhedron(A->Lat->NbColumns - 1);
@@ -488,17 +491,7 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
     // here: res = tempA - B
 
     // concat res to Result
-
-    // TODO:
-    // Result = ZPconcat(res, Result);
-    if(res)
-    {
-      ZPolyhedron *last = res;
-      while(last->next)
-        last = last->next;
-      last->next = Result;
-      Result = res;
-    }
+    Result = ZPconcat(res, Result);
   }
  
   if (Result == NULL)
@@ -638,12 +631,8 @@ static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B)
       ZDomain_Free(diff);
     }
     else {
-      // add diff to result: Result = concat(diff, Result)
-      ZPolyhedron *last_diff = diff;
-      while(last_diff->next)
-        last_diff = last_diff->next;
-      last_diff->next = Result;
-      Result = diff;
+      // add diff to result: 
+      Result = ZPconcat(diff, Result);
     }
   }
 
@@ -855,7 +844,7 @@ static ZPolyhedron *ZPolyhedronDifferenceOld(ZPolyhedron *A, ZPolyhedron *B) {
     PreImage = DomainPreimage(DomInter, LatDiff->M, MAXNOOFRAYS);
     tempZ = ZPolyhedronAlloc(LatDiff->M, PreImage);
     Domain_Free(PreImage);
-    Result = AddZPolList(tempZ, Result);
+    Result = ZPconcat(tempZ, Result);
     temp = LatDiff;
     LatDiff = LatDiff->next;
     Matrix_Free((Matrix *)temp->M);
@@ -1248,7 +1237,7 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
     tempHead = Head;
     Head = Head->next;
     zpnew = ZPolyhedronAlloc(tempHead->M, ZPol->P);
-    Result = AddZPolList(zpnew, Result);
+    Result = ZPconcat(zpnew, Result);
     tempHead->next = NULL;
     Matrix_Free(tempHead->M);
     free(tempHead);
