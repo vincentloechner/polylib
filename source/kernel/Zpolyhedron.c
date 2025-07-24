@@ -61,7 +61,7 @@ Bool isEmptyZPolyhedron(ZPolyhedron *Zpol) {
  */
 ZPolyhedron *ZPolyhedronAlloc(Lattice *Lat, Polyhedron *Domain) {
 
-  ZPolyhedron *A, *tmp;
+  ZPolyhedron *A;
 
   POL_ENSURE_FACETS(Domain);
   POL_ENSURE_VERTICES(Domain);
@@ -424,7 +424,7 @@ ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B) {
  */
 ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
 
-  ZPolyhedron *Result = NULL, *tempA = NULL, *tempB = NULL, *tmp;
+  ZPolyhedron *Result = NULL, *tempA = NULL, *tempB = NULL;
 
 #ifdef DOMDEBUG
   FILE *fp;
@@ -462,7 +462,7 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
  */
 ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) { 
 
-  ZPolyhedron *Result = NULL, *tempA, *tempB, *tmp;
+  ZPolyhedron *Result = NULL, *tempA, *tempB;
 
 #ifdef DOMDEBUG
   FILE *fp;
