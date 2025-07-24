@@ -1340,7 +1340,7 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
 
 /*
  * Remove the equalities from (A->Lat, A->P).
- * In place.
+ * In place. A->P is a domain.
  */
 static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
 {
@@ -1384,10 +1384,10 @@ static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
     Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, T->NbColumns);
     Matrix_Product(A->Lat, T, NewL);
     // NewP = T^{-1} . P
-    Polyhedron* NewP = Polyhedron_Preimage(A->P, T, MAXNOOFRAYS);
+    Polyhedron* NewP = DomainPreimage(A->P, T, MAXNOOFRAYS);
 
     // update A
-    Polyhedron_Free(A->P);
+    Domain_Free(A->P);
     Matrix_Free(A->Lat);
     A->P = NewP;
     A->Lat = NewL;
@@ -1496,7 +1496,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
   // that is, the equalities of the first one.
   // all the other ones are added to a new ZPolyhedron, linked to (ZDomain) A.
   ZPolyhedron *new = NULL;
-  Matrix * Equalities = get_equalities(A->P);
+  Matrix * Equalities = get_equalities(A->P); // get eq from the first one
   Polyhedron *nextpp, *prevpp = A->P;
 
   for(Polyhedron *pp = A->P->next; pp; prevpp = pp, pp = nextpp) {
@@ -1512,7 +1512,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
       nextpp = prevpp->next = pp->next;
       // add pp to new->P
       pp->next = new->P;
-      new->P = pp;
+      new->P = AddPolyToDomain(pp, new->P);
     }
     else {
       nextpp = pp->next; // next polyhedron of the domain
@@ -1601,8 +1601,8 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     #endif
 
     // Now update of A->P using the premimage by U.
-    Polyhedron *NewP = Polyhedron_Preimage(A->P, U, MAXNOOFRAYS);
-    Polyhedron_Free(A->P);
+    Polyhedron *NewP = DomainPreimage(A->P, U, MAXNOOFRAYS);
+    Domain_Free(A->P);
     A->P = NewP;
     Matrix_Free(U);
 
