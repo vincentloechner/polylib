@@ -87,7 +87,7 @@ ZPolyhedron *ZPolyhedronAlloc(Lattice *Lat, Polyhedron *Domain) {
   A->P = Domain_Copy(Domain);
   A->Lat = Matrix_Copy(Lat);
 
-  tmp = Canonical_ZDomain_Gautam(A);
+  Canonical_ZDomain(A);
   ZDomain_Free(A);
   return tmp;
 } /* ZPolyhedronAlloc */
@@ -400,7 +400,7 @@ static void ZPolyhedronPrint(FILE *fp, const char *format, ZPolyhedron *A) {
  */
 ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B) {
 
-  ZPolyhedron *Result = NULL, *temp;
+  ZPolyhedron *Result = NULL, *tempA , * tempB;
 
 #ifdef DOMDEBUG
   FILE *fp;
@@ -411,10 +411,11 @@ ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B) {
 
   // copy A and B, concatenate, Canonicalize, and return :)
 
-  for (temp = ZDomain_Copy(A); temp != NULL; temp = temp->next)
-    Result = AddZPolytoZDomain(temp, Result);
-  for (temp = ZDomain_Copy(B); temp != NULL; temp = temp->next)
-    Result = AddZPolytoZDomain(temp, Result);
+  tempA = ZDomain_Copy(A); 
+  tempB = ZDomain_Copy(B);
+
+  Result = ZPconcat(tempA, tempB);
+  Canonical_ZDomain(Result);
   return Result;
 } /* ZDomainUnion */
 
@@ -442,9 +443,8 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
   if (Result == NULL)
     return EmptyZPolyhedron(A->Lat->NbColumns - 1);
 
-  tmp = Canonical_ZDomain_Gautam(Result);
-  ZDomain_Free(Result);
-  return tmp;
+  Canonical_ZDomain(Result);
+  return (Result);
 } /* ZDomainIntersection */
 
 /*
@@ -462,8 +462,6 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
  *           return Result;
  */
 ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) { 
-
-  // need to close the hole where when we have A < B we have as result the empty, already works for when A==B so take a look at that.
 
   ZPolyhedron *Result = NULL, *tempA, *tempB, *tmp;
 
@@ -499,9 +497,8 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
   if (Result == NULL)
     return (EmptyZPolyhedron(A->Lat->NbRows - 1));
 
-  tmp = Canonical_ZDomain_Gautam(Result);
-  ZDomain_Free(Result);
-  return tmp;
+  Canonical_ZDomain(Result);
+  return (Result);
 } /* ZDomainDifference */
 
 /*
@@ -1328,14 +1325,14 @@ static Matrix *get_equalities(Polyhedron *P)
 /*
  * compare a matrix of equalities to the one of a polyhedron P
  */
-static Bool *same_equalities(Matrix *Eq, Polyhedron *P)
+static Bool same_equalities(Matrix *Eq, Polyhedron *P)
 {
   if(P->NbEq != Eq->NbRows)
     return (False);
 
   for(int i=0; i<P->NbEq && i<Eq->NbRows; i++) {
     for(int j=0; j<Eq->NbColumns; j++){
-      if(value_ne(Eq->p[eqnum][j], P->Constraint[i][j+1]))
+      if(value_ne(Eq->p[i][j], P->Constraint[i][j+1]))
         return (False);
     }
   }
