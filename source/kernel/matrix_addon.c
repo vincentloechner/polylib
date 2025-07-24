@@ -317,8 +317,8 @@ unsigned int mpolyhedron_eliminate_first_variables(Matrix *Eqs, Matrix *Ineqs) {
  * @param M the input matrix
  * @param sr the index of the starting row
  * @param sc the index of the starting column
- * @param er the index ofthe ending row (excluded)
- * @param ec the ined of the ending colummn (excluded)
+ * @param er the index of the ending row (excluded)
+ * @param ec the index of the ending column (excluded)
  * @param sub (returned), the submatrix. Allocated if set to NULL, assumed to
  * be already allocated else.
  */
