@@ -88,8 +88,7 @@ ZPolyhedron *ZPolyhedronAlloc(Lattice *Lat, Polyhedron *Domain) {
   A->Lat = Matrix_Copy(Lat);
 
   Canonical_ZDomain(A);
-  ZDomain_Free(A);
-  return tmp;
+  return A;
 } /* ZPolyhedronAlloc */
 
 /*
@@ -1671,7 +1670,7 @@ static ZPolyhedron *FindLattice(Lattice *L, ZPolyhedron *A)
 {
   ZPolyhedron* tmp;
 
-  for(tmp = A; tmp; tmp=tmp->next){
+  for(tmp = A; tmp->next; tmp=tmp->next){
     if(sameLattice(L, tmp->next->Lat)){
       return (tmp);
     }
