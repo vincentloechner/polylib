@@ -404,7 +404,7 @@ ZPolyhedron *ZDomainImage(ZPolyhedron *A, Matrix *Func) {
   fclose(fp);
 #endif
 
-  for (temp = A; temp != NULL; temp = temp->next) {
+  for (temp = A; temp; temp = temp->next) {
     ZPolyhedron *Zpol;
     Zpol = ZPolyhedronImage(temp, Func);
     if(!(isEmptyZPolyhedron(Zpol))) {
@@ -434,14 +434,7 @@ ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func) {
   fclose(fp);
 #endif
 
-  if (A->Lat->NbRows != Func->NbRows) {
-    fprintf(stderr, "\nError : In ZDomainPreimage, ");
-    fprintf(stderr, "Incompatible dimensions of ZPolyhedron ");
-    fprintf(stderr, "and the Function \n");
-    return (EmptyZPolyhedron(Func->NbColumns - 1));
-  }
-
-  for (temp = A; temp != NULL; temp = temp->next) {
+  for (temp = A; temp; temp = temp->next) {
     ZPolyhedron *Zpol;
     Zpol = ZPolyhedronPreimage(temp, Func);
     Result = ZPconcat(Zpol, Result);
