@@ -726,40 +726,50 @@ static ZPolyhedron *ZPolyhedronImage(ZPolyhedron *ZPol, Matrix *Func) {
  */
 static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Zpol, Matrix *G) {
 
-  Lattice *Latpreim;
-  Polyhedron *Qprime, *Q, *Polpreim;
-  ZPolyhedron *Result;
+  // OLD VERSION
+  // Lattice *Latpreim;
+  // Polyhedron *Qprime, *Q, *Polpreim;
+  // ZPolyhedron *Result;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered ZPOLYHEDRONPREIMAGE\n");
-  fclose(fp);
-#endif
+  // #ifdef DOMDEBUG
+  //   FILE *fp;
+  //   fp = fopen("_debug", "a");
+  //   fprintf(fp, "\nEntered ZPOLYHEDRONPREIMAGE\n");
+  //   fclose(fp);
+  // #endif
 
-  if (G->NbRows != Zpol->Lat->NbRows) {
-    fprintf(stderr, "\nIn ZPolyhedronPreimage: Error, The dimensions of the ");
-    fprintf(stderr, "function are not compatible with that of the Zpolyhedron");
-    return EmptyZPolyhedron(G->NbColumns - 1);
-  }
-  Q = DomainImage(Zpol->P, Zpol->Lat, MAXNOOFRAYS);
-  Polpreim = DomainPreimage(Q, G, MAXNOOFRAYS);
-  if (emptyQ(Polpreim))
-    Result = NULL;
-  else {
-    Latpreim = LatticePreimage(Zpol->Lat, G);
-    if (isEmptyLattice(Latpreim))
-      Result = NULL;
-    else {
-      Qprime = DomainPreimage(Polpreim, Latpreim, MAXNOOFRAYS);
-      Result = ZPolyhedronAlloc(Latpreim, Qprime);
-      Domain_Free(Qprime);
-      Polyhedron_Free(Polpreim);
-    }
-    Matrix_Free(Latpreim);
-  }
-  Domain_Free(Q);
-  return Result;
+  // if (G->NbRows != Zpol->Lat->NbRows) {
+  //   fprintf(stderr, "\nIn ZPolyhedronPreimage: Error, The dimensions of the ");
+  //   fprintf(stderr, "function are not compatible with that of the Zpolyhedron");
+  //   return EmptyZPolyhedron(G->NbColumns - 1);
+  // }
+  // Q = DomainImage(Zpol->P, Zpol->Lat, MAXNOOFRAYS);
+  // Polpreim = DomainPreimage(Q, G, MAXNOOFRAYS);
+  // if (emptyQ(Polpreim))
+  //   Result = NULL;
+  // else {
+  //   Latpreim = LatticePreimage(Zpol->Lat, G);
+  //   if (isEmptyLattice(Latpreim))
+  //     Result = NULL;
+  //   else {
+  //     Qprime = DomainPreimage(Polpreim, Latpreim, MAXNOOFRAYS);
+  //     Result = ZPolyhedronAlloc(Latpreim, Qprime);
+  //     Domain_Free(Qprime);
+  //     Polyhedron_Free(Polpreim);
+  //   }
+  //   Matrix_Free(Latpreim);
+  // }
+  // Domain_Free(Q);
+  // return Result;
+
+  Polyhedron *P;
+  ZPolyhedron *result;
+
+  P = DomainImage(Zpol->P, Zpol->Lat, MAXNOOFRAYS);
+  result = ZPolyhedronAlloc(G, P);
+  Domain_Free(P);
+
+  return(result);
 } /* ZPolyhedronPreimage */
 
 /*
