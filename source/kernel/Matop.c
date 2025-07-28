@@ -134,33 +134,59 @@ Bool isIntegral(Matrix *A) {
 } /* isIntegral */
 
 /*
- * Check if the matrix 'A' is in Hermite normal form or not.
+ * Check if the matrix 'A' is in Hermite normal form and has no zero columns, or not.
  */
 Bool isinHnf(Matrix *A) {
 
-  Matrix *temp;
-  unsigned i, j;
+// matrix in HNF:
+// - first element of column (= pivot) greater than zero
+// - all elements left of pivot lower than pivot.
+//
+// Example:
+//    + 0 0 0
+//    * 0 0 0
+//    < + 0 0
+//    < < + 0
+//    * * * 0
+// all < of a line are lower than the +
+// * is anything.
+// a column of zero is valid by the definition of HNF, but for the sake of uniqueness,
+// we don't want to store such lattices.
+// the function return False when there is a column of zeroes.
+
+int j, nnl, previous_nnl = -1;
   Value rem;
 
+  Matrix_Move_Homogeneous_Dim_First(A);
+
   value_init(rem);
-  temp = Homogenise(A, True);
-  for (i = 0; i < temp->NbRows; i++) {
-    value_assign(rem, temp->p[i][i]);
-    for (j = 0; j < i; j++)
-      if (value_ge(temp->p[i][j], rem)) {
-        Matrix_Free(temp);
-        value_clear(rem);
+
+  for (j = 0; j < A->NbColumns; j++) {
+    // consider column j
+
+    // find the line number of the first non-null element
+    for(nnl = 0; nnl<A->NbRows; nnl++) {
+      if(value_zero_p(A->p[nnl][j]))
+        break;
+    }
+
+    if(nnl <= previous_nnl || nnl == A->NbRows)
+    {
+      // there is a non-zero value higher than expected, or a zero column
+      Matrix_Move_Homogeneous_Dim_Last(A);
+      return(False);
+    }
+    previous_nnl = nnl;
+
+    for(int i = 0; i < j; i++) {
+      // check that the values left of pivot are lower than the pivot
+      if (value_ge(A->p[nnl][i], A->p[nnl][j])) {
+        Matrix_Move_Homogeneous_Dim_Last(A);
         return False;
       }
-    for (j = i + 1; j < temp->NbColumns; j++)
-      if (value_notzero_p(temp->p[i][j])) {
-        Matrix_Free(temp);
-        value_clear(rem);
-        return False;
-      }
+    }
   }
-  Matrix_Free(temp);
-  value_clear(rem);
+  Matrix_Move_Homogeneous_Dim_Last(A);
   return True;
 } /* isinHnf */
 
