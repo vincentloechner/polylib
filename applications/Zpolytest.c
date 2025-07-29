@@ -215,11 +215,14 @@ int main() {
     
   case 12: /* difference between image of preimage and original*/
     ZA = ZPolyhedronAlloc(a, A);
-    ZC = ZDomainPreimage(ZA, b); 
-    ZD = ZDomainImage(ZC, b); 
-    ZB = ZDomainDifference(ZD, ZC);
-    fprintf(stdout,"The image of the preimage is the original? %s\n",
-	    isEmptyZPolyhedron(ZB)?"True":"False");
+    ZC = ZDomainPreimage(ZA, b);
+    ZD = ZDomainImage(ZC, b);
+    // ZD should be included in ZA
+    fprintf(stdout,"The image of the preimage is included in the original Z-polyhedron? %d\n",
+	    ZDomainIncludes(ZD, ZA));
+    ZB = ZDomainDifference(ZA, ZD);
+    fprintf(stdout,"The image of the preimage is exactly the original Z-polyhedron? %d\n",
+	    isEmptyZPolyhedron(ZB));
     break;
   
   case 13:  /* ZDomainSimplify */

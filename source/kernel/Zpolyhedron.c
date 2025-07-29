@@ -193,24 +193,42 @@ ZPolyhedron *EmptyZPolyhedron(int dimension) {
 } /* EmptyZPolyhedron */
 
 /*
- * Given Z-domains 'A' and 'B', return True if A is included in 'B', otherwise
- * return False.
+ * Given Z-domains A and B, return True if A is included in B,
+ * otherwise return False.
  */
 Bool ZDomainIncludes(ZPolyhedron *A, ZPolyhedron *B) {
 
-  ZPolyhedron *Rest;
+  ZPolyhedron *Rest = ZPolyhedron_Copy(A);
   Bool ret = False;
 
-  // compute the rest of the A - each ZPolyhedron of B
+  printf("entering Includes. Checking that A =");
+  ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
+  printf("is included in B = ");
+  ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
+
+
+  ZPolyhedron *diff;
+  diff = ZDomainDifference(A, B);
+  if(isEmptyZPolyhedron(diff)) {
+    ret = True;
+  }
+  printf("diff = ");
+  ZDomainPrint(stdout, P_VALUE_FMT, diff);
+  ZDomain_Free(diff);
+  return ret;
+
+  // compute the rest of the ZDomain A - each ZPolyhedron of B
   for(ZPolyhedron *BZ = B; BZ; BZ = BZ->next) {
     ZPolyhedron *tmp;
     tmp = ZD_ZP_Difference(Rest, BZ);
     ZPolyhedron_Free(Rest);
     Rest = tmp;
+    Canonical_ZDomain(Rest);
+    if (isEmptyZPolyhedron(Rest)) {
+      ret = True;
+      break;
+    }
   }
-
-  if (isEmptyZPolyhedron(Rest))
-    ret = True;
 
   ZDomain_Free(Rest);
   return ret;
@@ -334,18 +352,11 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
 } /* ZDomainIntersection */
 
 /*
- * Return the Z-domain difference of the domains 'A' and 'B' in canonical form. The dimensions of
- * the Z-domains 'A' and 'B' must be equal. Note that the difference of two
- * Z-polyhedra is a Union of Z-polyhedra. The algorithms is as given below :
- * Algorithm: (Given Z-domains A and B)
- *           Result <-- NULL
- *           for every Z-polyhedron Zpoly of A {
- *               temp <-- Zpoly;
- *               for every Z-polyhedron Z1 of B
- *                  temp = temp - Z1;
- *               Add temp to Result;
- *           }
- *           return Result;
+ * Return the Z-domain difference of the domains (A - B) in canonical form.
+ * The dimensions of the Z-domains A and B must be equal. Note that the
+ * difference of two Z-polyhedra is a Union of Z-polyhedra.
+ * Algorithm: 
+ * 
  */
 ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) { 
 
@@ -379,11 +390,11 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
     // concat res to Result
     Result = ZPconcat(res, Result);
   }
- 
+
   if (Result == NULL)
     return (EmptyZPolyhedron(A->Lat->NbRows - 1));
-
   Canonical_ZDomain(Result);
+
   return (Result);
 } /* ZDomainDifference */
 
@@ -522,7 +533,7 @@ static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B) {
   }
 
   // Result contains every piece of the solution,
-  // but it is not necessarily in canonical form.
+  // but it is not necessarily in canonical form (will be done be callee)
   return Result;
 }
 
@@ -563,7 +574,6 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
   ImTemp = DomainDifference(imA, imB, MAXNOOFRAYS);
 
-
   if (!emptyQ(ImTemp)) {
     Polyhedron *RedPolyDiff;
     RedPolyDiff = DomainPreimage(ImTemp, A->Lat, MAXNOOFRAYS);
@@ -578,7 +588,6 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   // compute the new A and B on the (image) intersection
   imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
-
   temp = DomainIntersection(imA, imB, MAXNOOFRAYS);
   
   preimA = DomainPreimage(temp, A->Lat, MAXNOOFRAYS);

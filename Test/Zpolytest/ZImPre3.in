@@ -1,3 +1,5 @@
+# this fails because the bottom right coefficient of the result is not 1!
+
 M 2
 # Lattice
 3 3
@@ -6,7 +8,7 @@ M 2
   0 0 1
 # Function
 3 3
-  2 0 0
+  2 0 1
   0 2 0
   0 0 1
 
