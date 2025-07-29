@@ -725,12 +725,12 @@ static ZPolyhedron *ZPolyhedronImage(ZPolyhedron *ZPol, Matrix *Func) {
  *            4) Z1 = L1(Inverse(L1)*Q1);
  *            5) Return Z1
  */
-static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Zpol, Matrix *G) {
+static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 
+  ZPolyhedron *Result;
   // OLD VERSION
   // Lattice *Latpreim;
   // Polyhedron *Qprime, *Q, *Polpreim;
-  // ZPolyhedron *Result;
 
   // #ifdef DOMDEBUG
   //   FILE *fp;
@@ -763,14 +763,67 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Zpol, Matrix *G) {
   // Domain_Free(Q);
   // return Result;
 
-  Polyhedron *P;
-  ZPolyhedron *result;
+  if(G->NbRows != Z->Lat->NbRows) {
+    // G z' = L z
+    errormsg1("ZPolyhedronPreimage", "dimincomp", "incompatible dimensions");
+    return(NULL);
+  }
 
-  P = DomainImage(Zpol->P, Zpol->Lat, MAXNOOFRAYS);
-  result = ZPolyhedronAlloc(G, P);
+  // d is the dimension of Z. d' is the number of columns of G = the dimension of the result
+  // build the Z-polyhedron = { z' | with P in dimension d + d'
+  // such that L z = G z' }
+  // then eliminate z by simplifying the result
+
+  // the lattice is spreading z'
+  // homogeneous d and d', homogeneous sum is d+d'-1
+  int d = Z->Lat->NbRows;
+  int dp = G->NbColumns;
+  Matrix *newL = Matrix_Alloc(dp, d+dp-1);
+  for(int i = 0; i < newL->NbRows; i++) {
+    for(int j = 0; j < newL->NbColumns; j++) {
+      if(j == i && i != newL->NbRows-1) { // left diagonal
+        value_set_si(newL->p[i][j], 1);
+      }
+      else {
+        value_set_si(newL->p[i][j], 0);
+      }
+    }
+  }
+  value_set_si(newL->p[newL->NbRows-1][newL->NbColumns-1], 1);
+
+  Polyhedron *P, *newP = align_context(Z->P, d+dp-2, MAXNOOFRAYS);
+
+  // build the extra constraint to be added to newP: G z' = L z
+  // newP =    0 |     |    |
+  //           . |  G  | -L | (g-l)
+  //           0 |     |    |
+
+  Matrix *Con = Matrix_Alloc(d-1, d+dp-1+1);
+  for(int i = 0; i < Con->NbRows; i++) {
+    value_set_si(Con->p[i][0], 0); // equality
+    for(int j = 0; j < dp-1; j++) {
+      value_assign(Con->p[i][j+1], G->p[i][j]);
+    }
+    // constant
+    value_assign(Con->p[i][Con->NbColumns-1], G->p[i][G->NbColumns-1]);
+  }
+  // NEGATIVE!
+  for(int i = 0; i < Con->NbRows; i++) {
+    for(int j = 0; j < d-1; j++) {
+      value_oppose(Con->p[i][j+dp-1+1], Z->Lat->p[i][j]);
+    }
+    value_substract(Con->p[i][Con->NbColumns-1], Con->p[i][Con->NbColumns-1], Z->Lat->p[i][Z->Lat->NbColumns-1]);
+  }
+
+  P = DomainAddConstraints(newP, Con, MAXNOOFRAYS);
+  Matrix_Free(Con);
+  Domain_Free(newP);
+
+  Result = ZPolyhedronAlloc(newL, P);
   Domain_Free(P);
+  Matrix_Free(newL);
 
-  return(result);
+  return(Result);
 } /* ZPolyhedronPreimage */
 
 /*

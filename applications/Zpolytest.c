@@ -213,13 +213,13 @@ int main() {
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
     
-  case 12: /* ZDomainDifference */
-    ZA=ZPolyhedronAlloc(a,A);
-    ZC = ZDomainPreimage(ZA,b); 
-    ZD = ZDomainImage(ZC,b); 
-    ZB=ZDomainDifference(ZD,ZC);
-    fprintf(stdout,"the Two zpol are equal? :%d\n",
-	    isEmptyZPolyhedron(ZB));
+  case 12: /* difference between image of preimage and original*/
+    ZA = ZPolyhedronAlloc(a, A);
+    ZC = ZDomainPreimage(ZA, b); 
+    ZD = ZDomainImage(ZC, b); 
+    ZB = ZDomainDifference(ZD, ZC);
+    fprintf(stdout,"The image of the preimage is the original? %s\n",
+	    isEmptyZPolyhedron(ZB)?"True":"False");
     break;
   
   case 13:  /* ZDomainSimplify */
