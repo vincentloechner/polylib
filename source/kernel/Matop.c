@@ -136,7 +136,7 @@ Bool isIntegral(Matrix *A) {
 /*
  * Check if the matrix 'A' is in Hermite normal form and has no zero columns, or not.
  */
-Bool isinHnf(Matrix *A) {
+Bool isNormalLattice(Matrix *A) {
 
 // matrix in HNF:
 // - first element of column (= pivot) greater than zero
@@ -188,7 +188,7 @@ int j, nnl, previous_nnl = -1;
   }
   Matrix_Move_Homogeneous_Dim_Last(A);
   return True;
-} /* isinHnf */
+} /* isNormalLattice */
 
 /*
  * Remove the row 'Rownumber' and place it at the end of the matrix 'X'

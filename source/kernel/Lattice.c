@@ -509,7 +509,7 @@ Lattice *OldLatticeIntersection(Lattice *X, Lattice *Y) {
     return EmptyLattice(X->NbRows);
   }
 
-  if (isinHnf(X))
+  if (isNormalLattice(X))
     A = (Lattice *)Matrix_Copy(X);
   else {
     AffineHermite(X, &H, &U);
@@ -518,7 +518,7 @@ Lattice *OldLatticeIntersection(Lattice *X, Lattice *Y) {
     Matrix_Free((Matrix *)U);
   }
 
-  if (isinHnf(Y))
+  if (isNormalLattice(Y))
     B = (Lattice *)Matrix_Copy(Y);
   else {
     AffineHermite(Y, &H, &U);
@@ -913,7 +913,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   if (A->NbRows != B->NbRows) {
     fprintf(stderr,
             "\nIn Lattice Difference : The Input Lattices A and B have ");
-    fprintf(stderr, "incompatible dimensions\n");
+    fprintf(stderr, "incompatible dimensions (rows)\n");
     return NULL;
   }
   if (A->NbColumns != B->NbColumns) {
@@ -923,7 +923,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     return NULL;
   }
 
-  if (isinHnf(A) != True) {
+  if (! isNormalLattice(A)) {
     AffineHermite(A, &H, &U1);
     X = Matrix_Copy(H);
     Matrix_Free(U1);
@@ -931,7 +931,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   } else
     X = Matrix_Copy(A);
 
-  if (isinHnf(B) != True) {
+  if (! isNormalLattice(B)) {
     AffineHermite(B, &H, &U1);
     Y = Matrix_Copy(H);
     Matrix_Free(H);
