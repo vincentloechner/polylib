@@ -944,15 +944,16 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
   Head = Lattice2LatticeUnion(X, Y);
 
-  /* If the spliting operation can't be done the result is X. */
+  /* If the spliting operation can't be done the result is X. */ /*********** NO, IT IS EMPTY! --Vincent ***********/
 
   if (Head == NULL) {
-    Head = (LatticeUnion *)malloc(sizeof(LatticeUnion));
-    Head->M = Matrix_Copy(X);
-    Head->next = NULL;
+    // Head = (LatticeUnion *)malloc(sizeof(LatticeUnion));
+    // Head->M = Matrix_Copy(X);
+    // Head->next = NULL;
     Matrix_Free(X);
     Matrix_Free(Y);
-    return Head;
+    // return Head;
+    return(NULL);
   }
 
   tempHead = Head;

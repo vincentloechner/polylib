@@ -16,7 +16,7 @@
   #define LAT_TEST 1
   #define CANONICAL_DEBUG 1
   #define NEWINTERSECTION_DEBUG 1
-  #define ADDZPTOZD_DEBUG 1
+  #define DIFF_DEBUG 1
 #endif
 
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
@@ -156,9 +156,8 @@ static ZPolyhedron *ZPconcat(ZPolyhedron *Zpol, ZPolyhedron *Result) {
   while(tmp->next)
     tmp = tmp->next;
   tmp->next = Result;
-  Result = Zpol;
   
-  return Result;
+  return Zpol;
 } /* ZPconcat */
 
 
@@ -201,19 +200,22 @@ Bool ZDomainIncludes(ZPolyhedron *A, ZPolyhedron *B) {
   ZPolyhedron *Rest = ZPolyhedron_Copy(A);
   Bool ret = False;
 
-  printf("entering Includes. Checking that A =");
-  ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
-  printf("is included in B = ");
-  ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
-
+  #ifdef DIFF_DEBUG
+    printf("entering Includes. Checking that A =");
+    ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
+    printf("is included in B = ");
+    ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
+  #endif
 
   ZPolyhedron *diff;
   diff = ZDomainDifference(A, B);
   if(isEmptyZPolyhedron(diff)) {
     ret = True;
   }
-  printf("diff = ");
-  ZDomainPrint(stdout, P_VALUE_FMT, diff);
+  #ifdef DIFF_DEBUG
+    printf("diff = ");
+    ZDomainPrint(stdout, P_VALUE_FMT, diff);
+  #endif
   ZDomain_Free(diff);
   return ret;
 
@@ -360,7 +362,8 @@ ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
  */
 ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) { 
 
-  ZPolyhedron *Result = NULL, *tempA, *tempB;
+  ZPolyhedron *tempB;
+  ZPolyhedron *res;
 
 #ifdef DOMDEBUG
   FILE *fp;
@@ -371,31 +374,23 @@ ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) {
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
     errormsg1("ZDomainDifference", "dimincomp", "incompatible dimensions between domains");
-    return NULL;
+    return (NULL);
   }
   
-  for (tempA = A; tempA; tempA = tempA->next) {
-    ZPolyhedron *res;
-
-    res = ZPolyhedron_Copy(tempA); // single lattice ZPolyhedron
-
-    for (tempB = B; tempB != NULL; tempB = tempB->next) {
-      ZPolyhedron *tmp; // careful here! res can be a ZDomain.
-      tmp = ZD_ZP_Difference(res, tempB);
-      ZDomain_Free(res);
-      res = tmp;
-    }
-    // here: res = tempA - B
-
-    // concat res to Result
-    Result = ZPconcat(res, Result);
+  res = ZPolyhedron_Copy(A);
+  // remove all Z-polyhedra of B from Z-domain A:
+  for (tempB = B; tempB; tempB = tempB->next) {
+    ZPolyhedron *tmp; // careful here! res can be a ZDomain.
+    tmp = ZD_ZP_Difference(res, tempB);
+    ZDomain_Free(res);
+    res = tmp;
   }
 
-  if (Result == NULL)
+  if (res == NULL)
     return (EmptyZPolyhedron(A->Lat->NbRows - 1));
-  Canonical_ZDomain(Result);
+  Canonical_ZDomain(res);
 
-  return (Result);
+  return (res);
 } /* ZDomainDifference */
 
 /*
@@ -510,8 +505,9 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
 
 
 /*
- * Return the difference between a ZDomain A and a ZPolyhedron B.
+ * Return the difference A - B, between a ZDomain A and a ZPolyhedron B.
  * A can contain a list of lattices, B has a single lattice.
+ * Algo: remove B from each part of A, and build a list of the result.
  *
  * /!\ USAGE: only the first lattice of B is considered (no list/Zdomains),
  * Creates a new allocated ZDomain, not necessarily in canonical form
@@ -519,7 +515,7 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
 static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B) {
   ZPolyhedron *Result = NULL;
 
-  for(ZPolyhedron *zp = A; A; A=A->next) {
+  for(ZPolyhedron *zp = A; zp; zp=zp->next) {
     ZPolyhedron *diff;
 
     diff = ZPolyhedronDifferenceGautam(zp, B);
@@ -527,7 +523,7 @@ static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B) {
       ZDomain_Free(diff);
     }
     else {
-      // add diff to result: 
+      // add diff to result, not canonical
       Result = ZPconcat(diff, Result);
     }
   }
@@ -556,13 +552,24 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
     return(NULL);
   }
 
-  ZI = ZPolyhedronIntersection(A, B);
-  if(! ZPolyhedronIncludes(ZI, A)) {
-    // if B does not intersect A, return A.
-    ZPolyhedron_Free(ZI);
-    return(ZPolyhedron_Copy(A));
-  }
-  ZPolyhedron_Free(ZI);
+  #ifdef DIFF_DEBUG
+    printf("entering DifferenceGautam. A = ");
+    ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
+    printf("and B = ");
+    ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
+  #endif
+
+  // TODO: this can be removed I think.
+  // ZI = ZPolyhedronIntersection(A, B);
+  // if(! ZPolyhedronIncludes(ZI, A)) {
+  //   #ifdef DIFF_DEBUG
+  //     printf("ZI=(A inter B) is not included in A, so B does not intersect A, we return A\n");
+  //   #endif
+  //   // if B does not intersect A, return A.
+  //   ZPolyhedron_Free(ZI);
+  //   return(ZPolyhedron_Copy(A));
+  // }
+  // ZPolyhedron_Free(ZI);
 
 
   // [STEP 0, includes Gautam's Step 2]
@@ -574,21 +581,35 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
   ImTemp = DomainDifference(imA, imB, MAXNOOFRAYS);
 
+  #ifdef DIFF_DEBUG
+    printf("ImTemp (hull of A that does not cover B)= ");
+    Polyhedron_Print(stdout, P_VALUE_FMT, ImTemp);
+  #endif
+
   if (!emptyQ(ImTemp)) {
     Polyhedron *RedPolyDiff;
     RedPolyDiff = DomainPreimage(ImTemp, A->Lat, MAXNOOFRAYS);
     Result = ZPolyhedronAlloc(A->Lat, RedPolyDiff);
+    #ifdef DIFF_DEBUG
+      printf("Adding this to the temporary result: ");
+      ZDomainPrint(stdout, P_VALUE_FMT, Result);
+    #endif
     Domain_Free(RedPolyDiff);
   }
 
   Domain_Free(ImTemp);
-  Domain_Free(imA);
-  Domain_Free(imB);
+  // Domain_Free(imA);
+  // Domain_Free(imB);
 
-  // compute the new A and B on the (image) intersection
-  imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
-  imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
+  // // compute the new A and B on the (image) intersection
+  // imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
+  // imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
   temp = DomainIntersection(imA, imB, MAXNOOFRAYS);
+
+  #ifdef DIFF_DEBUG
+    printf("temp (hull of A inter B) = ");
+    Polyhedron_Print(stdout, P_VALUE_FMT, temp);
+  #endif
   
   preimA = DomainPreimage(temp, A->Lat, MAXNOOFRAYS);
   A = ZPolyhedronAlloc(A->Lat, preimA); // this A intersects B in the image space
@@ -597,14 +618,19 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
 
   Domain_Free(preimA);
   Domain_Free(preimB);
-
   Domain_Free(imA);
   Domain_Free(imB);
   // now A and B have same lattices and polyhedra dimensions
 
+  #ifdef DIFF_DEBUG
+    printf("-- now we compute the intersection on same lattice dimensions (new) A = ");
+    ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
+    printf("-- and (new) B = ");
+    ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
+  #endif
+
   // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of same dimensions
-  LatDiff  = LatticeDifference(A->Lat, B->Lat); 
-  LatDiff = LatticeSimplify(LatDiff);
+  LatDiff = LatticeDifference(A->Lat, B->Lat); 
 
   // compute the original convex polyhedral images imA and imB
   imA = temp;
@@ -613,6 +639,10 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   // [STEP 1 of Gautam]:
   // Add all Z-polyhedra applying the (list of) lattice difference on imA
   for(LatticeUnion *tmp = LatDiff; tmp != NULL; tmp = tmp->next) {
+    #ifdef DIFF_DEBUG
+      printf("Considering Lat diff: ");
+      Matrix_Print(stdout, P_VALUE_FMT, tmp->M);
+    #endif
     Ztmp = malloc(sizeof(*Ztmp));
     Ztmp->Lat = tmp->M;
     Ztmp->P = DomainPreimage(imA, tmp->M, MAXNOOFRAYS);

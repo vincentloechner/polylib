@@ -218,7 +218,7 @@ int main() {
     ZC = ZDomainPreimage(ZA, b);
     ZD = ZDomainImage(ZC, b);
     // ZD should be included in ZA
-    fprintf(stdout,"The image of the preimage is included in the original Z-polyhedron? %d\n",
+    fprintf(stdout,"The image of the preimage is included in the original Z-polyhedron (should always be true)? %d\n",
 	    ZDomainIncludes(ZD, ZA));
     ZB = ZDomainDifference(ZA, ZD);
     fprintf(stdout,"The image of the preimage is exactly the original Z-polyhedron? %d\n",
