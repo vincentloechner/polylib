@@ -124,10 +124,10 @@ int main() {
     break;
     
   case 2: /* AffineHermite */
-    if(isinHnf(a))
-      printf("input matrix is in HNF\n");
+    if(isNormalLattice(a))
+      printf("input matrix is normal\n");
     else
-      printf("input matrix is not in HNF\n");
+      printf("input matrix is not normal\n");
     AffineHermite(a,&b,&c);
     Matrix_Print(stdout,P_VALUE_FMT, b);
     Matrix_Print(stdout,P_VALUE_FMT, c);

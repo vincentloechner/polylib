@@ -1022,7 +1022,7 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
     return NULL;
   }
 
-  if (isinHnf(ZPol->Lat) != True) {
+  if (isNormalLattice(ZPol->Lat) != True) {
     AffineHermite(ZPol->Lat, &H, &U1);
     X = Matrix_Copy(H);
     Matrix_Free(U1);
@@ -1030,7 +1030,7 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
   } else
     X = Matrix_Copy(ZPol->Lat);
 
-  if (isinHnf(B) != True) {
+  if (isNormalLattice(B) != True) {
     AffineHermite(B, &H, &U1);
     Y = Matrix_Copy(H);
     Matrix_Free(H);
@@ -1396,7 +1396,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
 #endif
 
   // check if A->Lat is in Hermite form
-  if(!isinHnf(A->Lat)) {
+  if(!isNormalLattice(A->Lat)) {
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "A is not HNF\n");
     #endif
@@ -1430,24 +1430,39 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
 
     int nbZeros = count_zeroCols(H);
     if(nbZeros) {
-    Matrix* newConstraint = Matrix_Alloc(nbZeros,A->Lat->NbColumns+2);
-    Matrix_Print(stdout,P_VALUE_FMT,newConstraint);
+      Matrix* Transformation = Matrix_Alloc(A->Lat->NbColumns-nbZeros, A->Lat->NbColumns);
 
-    for (int  i = 0; i < newConstraint->NbRows; i++) {
-      for (int j = 0; j < newConstraint->NbColumns; j++) {
-        if(j+1 == (newConstraint->NbColumns) +i -nbZeros){
-          value_set_si(newConstraint->p[i][j],1);
-        }else{
-          value_set_si(newConstraint->p[i][j],0);
+
+      
+      for (int  i = 0; i < Transformation->NbRows; i++) {
+        for (int j = 0; j < Transformation->NbColumns; j++) {
+          if(i==j && i!=Transformation->NbRows-1) {
+            value_set_si(Transformation->p[i][j],1);
+          }else{
+            value_set_si(Transformation->p[i][j],0);
+          }
         }
       }
-    }
-    Matrix_Print(stdout,P_VALUE_FMT,newConstraint);
+      value_set_si(Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],1);
 
-    
-    A->P = AddConstraints(&newConstraint->p[0][0],nbZeros,A->P,MAXNOOFRAYS);
-    Canonical_ZPolyhedron_Gautam(A);
-  }
+
+      A->P = DomainImage(A->P, Transformation, MAXNOOFRAYS);
+      
+      Matrix_Free(Transformation);
+      Matrix* NewL = Matrix_Alloc(A->Lat->NbRows,A->Lat->NbColumns-nbZeros);
+      for (int  i = 0; i < NewL->NbRows; i++) {
+        for (int j = 0; j < NewL->NbColumns; j++) {
+          if(j < NewL->NbColumns-1) {
+            value_assign(NewL->p[i][j],A->Lat->p[i][j]);
+          }else{
+            value_assign(NewL->p[i][j],A->Lat->p[i][A->Lat->NbColumns-1]);
+          }
+        }
+      }
+      Matrix_Free(A->Lat);
+      A->Lat = NewL;
+      ZPolyhedronPrint(stdout,P_VALUE_FMT,A);
+    }
 
 
     #ifdef CANONICAL_DEBUG
