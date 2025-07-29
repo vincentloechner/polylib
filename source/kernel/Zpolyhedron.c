@@ -30,6 +30,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A);
 static ZPolyhedron *FindLattice(Lattice *L, ZPolyhedron *A);
 static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B);
 static Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B);
+static int count_zeroCols (Matrix* M);
 
 typedef struct forsimplify {
   Polyhedron *Pol;
@@ -1322,7 +1323,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
 
   for(Polyhedron *pp = A->P->next; pp; prevpp = pp, pp = nextpp) {
     // check that the equalities of pp->Constraints are the same as the ones of matrix Equalities.
-    if(! same_equalities(Equalities, pp)) {
+    if(!same_equalities(Equalities, pp)) {
       // here, get pp out.
       if(!new) {
         new = malloc(sizeof(*new));
@@ -1427,6 +1428,28 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     A->P = NewP;
     Matrix_Free(U);
 
+    int nbZeros = count_zeroCols(H);
+    if(nbZeros) {
+    Matrix* newConstraint = Matrix_Alloc(nbZeros,A->Lat->NbColumns+2);
+    Matrix_Print(stdout,P_VALUE_FMT,newConstraint);
+
+    for (int  i = 0; i < newConstraint->NbRows; i++) {
+      for (int j = 0; j < newConstraint->NbColumns; j++) {
+        if(j+1 == (newConstraint->NbColumns) +i -nbZeros){
+          value_set_si(newConstraint->p[i][j],1);
+        }else{
+          value_set_si(newConstraint->p[i][j],0);
+        }
+      }
+    }
+    Matrix_Print(stdout,P_VALUE_FMT,newConstraint);
+
+    
+    A->P = AddConstraints(&newConstraint->p[0][0],nbZeros,A->P,MAXNOOFRAYS);
+    Canonical_ZPolyhedron_Gautam(A);
+  }
+
+
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New P: ");
       Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
@@ -1496,3 +1519,21 @@ static ZPolyhedron *FindLattice(Lattice *L, ZPolyhedron *A) {
   }
   return (NULL);
 } /* FindLattice */
+
+int count_zeroCols (Matrix* M){
+  int nb=0;
+
+  for (int j = M->NbColumns-2 ; j >= 0; j--) {
+    Bool isZero=True;
+    for (int i = 0; i < M->NbRows; i++) {
+      if (value_notzero_p(M->p[i][j])){
+        isZero=False;
+        break;
+      }
+    }
+    if(!isZero)
+      break;
+    nb++;
+  }
+  return nb;
+}
