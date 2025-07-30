@@ -544,7 +544,7 @@ static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B) {
 static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) {
   ZPolyhedron *Result=NULL, *Ztmp, *ZI;
   LatticeUnion *LatDiff;
-  Polyhedron *imA, *imB, *ImTemp, *temp;
+  Polyhedron *imA, *imB, *ImDiff, *temp;
   Polyhedron *preimA, *preimB;
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
@@ -569,7 +569,7 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
     ZPolyhedron_Free(ZI);
     return(ZPolyhedron_Copy(A));
   }
-  ZPolyhedron_Free(ZI);
+  // ZPolyhedron_Free(ZI);
 
 
   // [STEP 0, includes Gautam's Step 2]
@@ -579,16 +579,16 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
 
   imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
-  ImTemp = DomainDifference(imA, imB, MAXNOOFRAYS);
+  ImDiff = DomainDifference(imA, imB, MAXNOOFRAYS);
 
   #ifdef DIFF_DEBUG
-    fprintf(stderr, "ImTemp (hull of A that does not cover B)= ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, ImTemp);
+    fprintf(stderr, "ImDiff (hull of A that does not cover B)= ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, ImDiff);
   #endif
 
-  if (!emptyQ(ImTemp)) {
+  if (!emptyQ(ImDiff)) {
     Polyhedron *RedPolyDiff;
-    RedPolyDiff = DomainPreimage(ImTemp, A->Lat, MAXNOOFRAYS);
+    RedPolyDiff = DomainPreimage(ImDiff, A->Lat, MAXNOOFRAYS);
     Result = ZPolyhedronAlloc(A->Lat, RedPolyDiff);
     #ifdef DIFF_DEBUG
       fprintf(stderr, "Adding this to the temporary result: ");
@@ -597,7 +597,7 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
     Domain_Free(RedPolyDiff);
   }
 
-  Domain_Free(ImTemp);
+  Domain_Free(ImDiff);
   // Domain_Free(imA);
   // Domain_Free(imB);
 
@@ -613,11 +613,13 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   
   preimA = DomainPreimage(temp, A->Lat, MAXNOOFRAYS);
   A = ZPolyhedronAlloc(A->Lat, preimA); // this A intersects B in the image space
-  preimB = DomainPreimage(temp, B->Lat, MAXNOOFRAYS);
-  B = ZPolyhedronAlloc(B->Lat, preimB); // this B intersects A in the image space
+  // preimB = DomainPreimage(temp, B->Lat, MAXNOOFRAYS);
+  // B = ZPolyhedronAlloc(B->Lat, preimB); // this B intersects A in the image space
+  // B is the intersection between A and B (from the first part of this function)
+  B = ZI;
 
   Domain_Free(preimA);
-  Domain_Free(preimB);
+  // Domain_Free(preimB);
   Domain_Free(imA);
   Domain_Free(imB);
   // now A and B have same lattices and polyhedra dimensions
