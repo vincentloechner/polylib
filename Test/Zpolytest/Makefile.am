@@ -38,6 +38,7 @@ ZPOLYTESTS =  \
 	ZPre2.in  \
 	ZPre3.in \
 	ZImPre1.in \
+	ZImPre2.in \
 	SplitZpol1.in \
 	SplitZpol2.in \
 	SplitZpol3.in

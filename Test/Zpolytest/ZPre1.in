@@ -1,12 +1,12 @@
-# Preimage by readMat["(i,j->3i+1,2i+5j)"] of readMat["(i,j->2i,2i+j)"]
 M 2
 3 3
   2 0 0 
   0 1 0
   0 0 1
+
 3 3
-  1 0 10
-  2 1 1
+  2 0 10
+  3 1 1
   0 0 1
 
 #readDom["{i,j| 1<= i,j<=10}"]
@@ -19,10 +19,9 @@ D 1
 
 F 11
 
-
-# ZP = { (2i,2i+j) | (i,j) \in Z^2, 1 <= i,j <= 100 }
+# ZP = { (2i,j) | (i,j) \in Z^2, 1 <= i,j <= 100 }
 #   (i is even, and j is between i and i+100)
-# T = (i,j->3i+1,2i+5j)
-
-# compute the preimage(T, ZP)
-#   = all point y having a image in ZP, i.e. such that T y \in ZP
+# 
+# T = (i,j) -> (2i+10, 3i+j+1)
+# T is not unimodular, but spreads the same lattice as the Z-polyhedron
+# so this preimage is in Z^d and keeps the same number of points.

@@ -18,7 +18,6 @@
   #define NEWINTERSECTION_DEBUG 1
   #define DIFF_DEBUG 1
 #endif
-  #define DIFF_DEBUG 1
 
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
 static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A);
@@ -560,13 +559,13 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
     ZPolyhedronPrint(stderr, P_VALUE_FMT, B);
   #endif
 
-  // TODO: this can be removed I think.
+  // treat the simple case where the Zpolyhedra do not intersect
   ZI = ZPolyhedronIntersection(A, B);
-  if(! ZPolyhedronIncludes(ZI, A)) {
-    #ifdef DIFF_DEBUG
-      fprintf(stderr, "ZI=(A inter B) is not included in A, so B does not intersect A, we return A\n");
-    #endif
+  if(isEmptyZPolyhedron(ZI)) {
     // if B does not intersect A, return A.
+    #ifdef DIFF_DEBUG
+      fprintf(stderr, "ZI=(A inter B) is empty, so B does not intersect A, we return A\n");
+    #endif
     ZPolyhedron_Free(ZI);
     return(ZPolyhedron_Copy(A));
   }
