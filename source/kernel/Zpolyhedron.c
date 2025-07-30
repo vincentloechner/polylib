@@ -18,6 +18,7 @@
   #define NEWINTERSECTION_DEBUG 1
   #define DIFF_DEBUG 1
 #endif
+  #define DIFF_DEBUG 1
 
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
 static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A);
@@ -553,23 +554,23 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   }
 
   #ifdef DIFF_DEBUG
-    printf("entering DifferenceGautam. A = ");
-    ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
-    printf("and B = ");
-    ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
+    fprintf(stderr, "entering DifferenceGautam. A = ");
+    ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
+    fprintf(stderr, "and B = ");
+    ZPolyhedronPrint(stderr, P_VALUE_FMT, B);
   #endif
 
   // TODO: this can be removed I think.
-  // ZI = ZPolyhedronIntersection(A, B);
-  // if(! ZPolyhedronIncludes(ZI, A)) {
-  //   #ifdef DIFF_DEBUG
-  //     printf("ZI=(A inter B) is not included in A, so B does not intersect A, we return A\n");
-  //   #endif
-  //   // if B does not intersect A, return A.
-  //   ZPolyhedron_Free(ZI);
-  //   return(ZPolyhedron_Copy(A));
-  // }
-  // ZPolyhedron_Free(ZI);
+  ZI = ZPolyhedronIntersection(A, B);
+  if(! ZPolyhedronIncludes(ZI, A)) {
+    #ifdef DIFF_DEBUG
+      fprintf(stderr, "ZI=(A inter B) is not included in A, so B does not intersect A, we return A\n");
+    #endif
+    // if B does not intersect A, return A.
+    ZPolyhedron_Free(ZI);
+    return(ZPolyhedron_Copy(A));
+  }
+  ZPolyhedron_Free(ZI);
 
 
   // [STEP 0, includes Gautam's Step 2]
@@ -582,8 +583,8 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   ImTemp = DomainDifference(imA, imB, MAXNOOFRAYS);
 
   #ifdef DIFF_DEBUG
-    printf("ImTemp (hull of A that does not cover B)= ");
-    Polyhedron_Print(stdout, P_VALUE_FMT, ImTemp);
+    fprintf(stderr, "ImTemp (hull of A that does not cover B)= ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, ImTemp);
   #endif
 
   if (!emptyQ(ImTemp)) {
@@ -591,8 +592,8 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
     RedPolyDiff = DomainPreimage(ImTemp, A->Lat, MAXNOOFRAYS);
     Result = ZPolyhedronAlloc(A->Lat, RedPolyDiff);
     #ifdef DIFF_DEBUG
-      printf("Adding this to the temporary result: ");
-      ZDomainPrint(stdout, P_VALUE_FMT, Result);
+      fprintf(stderr, "Adding this to the temporary result: ");
+      ZDomainPrint(stderr, P_VALUE_FMT, Result);
     #endif
     Domain_Free(RedPolyDiff);
   }
@@ -607,8 +608,8 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   temp = DomainIntersection(imA, imB, MAXNOOFRAYS);
 
   #ifdef DIFF_DEBUG
-    printf("temp (hull of A inter B) = ");
-    Polyhedron_Print(stdout, P_VALUE_FMT, temp);
+    fprintf(stderr, "temp (hull of A inter B) = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, temp);
   #endif
   
   preimA = DomainPreimage(temp, A->Lat, MAXNOOFRAYS);
@@ -623,10 +624,10 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   // now A and B have same lattices and polyhedra dimensions
 
   #ifdef DIFF_DEBUG
-    printf("-- now we compute the intersection on same lattice dimensions (new) A = ");
-    ZPolyhedronPrint(stdout, P_VALUE_FMT, A);
-    printf("-- and (new) B = ");
-    ZPolyhedronPrint(stdout, P_VALUE_FMT, B);
+    fprintf(stderr, "-- now we compute the intersection on same lattice dimensions (new) A = ");
+    ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
+    fprintf(stderr, "-- and (new) B = ");
+    ZPolyhedronPrint(stderr, P_VALUE_FMT, B);
   #endif
 
   // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of same dimensions
@@ -635,13 +636,17 @@ static ZPolyhedron *ZPolyhedronDifferenceGautam(ZPolyhedron* A, ZPolyhedron* B) 
   // compute the original convex polyhedral images imA and imB
   imA = temp;
 
+  #ifdef DIFF_DEBUG
+    if(!LatDiff)
+      fprintf(stderr, "Empty Lattice difference\n");
+  #endif
 
   // [STEP 1 of Gautam]:
   // Add all Z-polyhedra applying the (list of) lattice difference on imA
   for(LatticeUnion *tmp = LatDiff; tmp != NULL; tmp = tmp->next) {
     #ifdef DIFF_DEBUG
-      printf("Considering Lat diff: ");
-      Matrix_Print(stdout, P_VALUE_FMT, tmp->M);
+      fprintf(stderr, "Considering Lat diff: ");
+      Matrix_Print(stderr, P_VALUE_FMT, tmp->M);
     #endif
     Ztmp = malloc(sizeof(*Ztmp));
     Ztmp->Lat = tmp->M;
