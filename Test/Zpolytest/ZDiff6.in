@@ -11,15 +11,13 @@ M 2
 0 1 0
 0 0 1
 
-#readDom["{i,j| 1<= i,j<=10}"]
-#readDom["{i,j| 20<= i,j<=30}"]
 D 2
 3 4
-	  1 1 0 -1
-    1 0 1 -1
-    0 -1 0 10  # here, j=10, so the dimension is reduced !
+    1 1 0 -1
+    1 -1 0 20
+    0 0 -1 10  # here, j=10, so the dimension is reduced !
 4 4
-	  1 1 0 -1
+	1 1 0 -1
     1 0 1 -1
     1 -1 0 20
     1 0 -1 20

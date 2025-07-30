@@ -1,0 +1,15 @@
+ZPOLYHEDRON: Dimension 2 
+
+LATTICE: 
+3 2
+   2    0 
+   0   10 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   2  -21  ]
+Inequality: [  -1   20  ]
+Rays 2 3
+Vertex: [  20  ]/1
+Vertex: [  21  ]/2
