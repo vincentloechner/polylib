@@ -9,10 +9,10 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:4  Equations:0  Rays:5  Lines:1
 Constraints 4 5
+Inequality: [  -4   -2    2   99  ]
+Inequality: [  -3    0   -1   98  ]
 Inequality: [   3    0    1    1  ]
 Inequality: [   2    1   -1    0  ]
-Inequality: [  -3    0   -1   98  ]
-Inequality: [  -4   -2    2   99  ]
 Rays 5 5
 Line:   [   1   -5   -3  ]
 Vertex: [   0   98   98  ]/1
