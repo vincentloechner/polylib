@@ -154,19 +154,16 @@ Bool isNormalLattice(Matrix *A) {
 // we don't want to store such lattices.
 // the function return False when there is a column of zeroes.
 
-int j, nnl, previous_nnl = -1;
-  Value rem;
+  int previous_nnl = -1;
 
   Matrix_Move_Homogeneous_Dim_First(A);
-
-  value_init(rem);
-
-  for (j = 0; j < A->NbColumns; j++) {
+  for (int j = 0; j < A->NbColumns; j++) {
     // consider column j
+    int nnl; // first non-null row number
 
     // find the line number of the first non-null element
     for(nnl = 0; nnl<A->NbRows; nnl++) {
-      if(value_zero_p(A->p[nnl][j]))
+      if(value_notzero_p(A->p[nnl][j]))
         break;
     }
 
