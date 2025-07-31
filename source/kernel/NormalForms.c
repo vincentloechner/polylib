@@ -279,28 +279,28 @@ static void identite(Value *a, int n, int p) {
   whose indices are greater or equal to q
 -----------------------------------------------------------------------*/
 
-static void transpose(Value *a, int n, int q) {
+// static void transpose(Value *a, int n, int q) {
 
-  int i;
-  Value val;
-  Value *b, *c;
+//   int i;
+//   Value val;
+//   Value *b, *c;
 
-  value_init(val);
-  if (q < n) {
-    b = a + (q - 1) + (q - 1) * n;
-    c = b;
-    for (i = q + 1; i <= n; i++) {
-      b++;
-      c = c + n;
-      value_assign(val, *b);
-      value_assign(*b, *c);
-      value_assign(*c, val);
-    }
-    transpose(a, n, q + 1);
-  }
-  value_clear(val);
-  return;
-} /* transpose */
+//   value_init(val);
+//   if (q < n) {
+//     b = a + (q - 1) + (q - 1) * n;
+//     c = b;
+//     for (i = q + 1; i <= n; i++) {
+//       b++;
+//       c = c + n;
+//       value_assign(val, *b);
+//       value_assign(*b, *c);
+//       value_assign(*c, val);
+//     }
+//     transpose(a, n, q + 1);
+//   }
+//   value_clear(val);
+//   return;
+// } /* transpose */
 
 /*----------------------------------------------------------------------
         trouve le numero de colonne du premier element non divisible
