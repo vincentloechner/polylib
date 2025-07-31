@@ -935,15 +935,13 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   // }
 
   if (A->NbRows != B->NbRows) {
-    fprintf(stderr,
-            "\nIn Lattice Difference : The Input Lattices A and B have ");
-    fprintf(stderr, "incompatible dimensions (rows)\n");
+    errormsg1("LatticeDifference", "dimincomp",
+      "input lattices A and B have incompatible dimensions (rows)");
     return NULL;
   }
   if (A->NbColumns != B->NbColumns) {
-    fprintf(stderr,
-            "\nIn Lattice Difference : The Input Lattices A and B have ");
-    fprintf(stderr, "incompatible dimensions (columns)\n");
+    errormsg1("LatticeDifference", "dimincomp",
+      "input lattices A and B have incompatible dimensions (columns)");
     return NULL;
   }
 

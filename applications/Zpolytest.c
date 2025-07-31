@@ -151,7 +151,7 @@ int main() {
     
     l1 = LatticeDifference(a,b);
     l2 = LatticeDifference(b,a);
-    fprintf(stdout,"L1 - L2 :\n");
+    fprintf(stdout,"L1 - L2:\n");
     temp=l1;
     while (temp!=NULL) {
       
