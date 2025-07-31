@@ -291,7 +291,7 @@ unsigned int mpolyhedron_eliminate_first_variables(Matrix *Eqs, Matrix *Ineqs) {
   for (i = 0; i < Eqs->NbRows; i++) {
     /* find j, the first (non-marked) row of Eqs with a non-zero coefficient */
     for (j = 0; j < Eqs->NbRows &&
-                (Eqs->p[j][i + 1] == 0 || (!value_cmp_si(Eqs->p[j][0], 2)));
+                (value_notzero_p(Eqs->p[j][i + 1]) || (!value_cmp_si(Eqs->p[j][0], 2)));
          j++)
       ;
     /* if no row is found in Eqs that allows to eliminate variable i, return an

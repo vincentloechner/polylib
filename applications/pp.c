@@ -12,7 +12,7 @@ int main() {
   Param_Polyhedron *PA;
   Param_Domain *P;
   Param_Vertices *V;
-  int nbPV, i, j;
+  int i, j;
   const char **param_name;
   
   a = Matrix_Read();
@@ -39,7 +39,6 @@ int main() {
     printf("Empty polyhedron\n");
     return 0;
   }
-  nbPV = PA->nbV;
   Domain_Free(A);
   Domain_Free(B);
 
