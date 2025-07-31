@@ -1,7 +1,8 @@
 #include <polylib/polylib.h>
 #include <stdlib.h>
 
-// #define NEWINTERSECTION_DEBUG 1
+// #define LATINTER_DEBUG 1
+// #define LATDIF_DEBUG 1
 
 typedef struct {
   int count;
@@ -694,11 +695,15 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   Value k;
 
   Intersection = LatticeIntersection(X, Y);
-  // fprintf(stderr,"Lattice intersection = ");
-  // Matrix_Print(stderr, P_VALUE_FMT, Intersection);
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr,"Lattice intersection = ");
+    Matrix_Print(stderr, P_VALUE_FMT, Intersection);
+  #endif
   if (isEmptyLattice(Intersection)) {
-    // fprintf(stderr, "\nIn Lattice2LatticeUnion : the input lattices X and Y do "
-    //                 "not have any common part\n");
+    #ifdef LATDIF_DEBUG
+      fprintf(stderr, "\nIn Lattice2LatticeUnion : the input lattices X and Y do "
+                        "not have any common part\n");
+    #endif
     Matrix_Free(Intersection);
     return NULL;
   }
@@ -706,10 +711,12 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   value_init(k);
   M1 = (Matrix *)ExtractLinearPart(X);
   M2 = (Matrix *)ExtractLinearPart(Intersection);
-  // printf("M1 = ");
-  // Matrix_Print(stdout, P_VALUE_FMT, M1);
-  // printf("M2 = ");
-  // Matrix_Print(stdout, P_VALUE_FMT, M2);
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "M1 = ");
+    Matrix_Print(stderr, P_VALUE_FMT, M1);
+    fprintf(stderr, "M2 = ");
+    Matrix_Print(stderr, P_VALUE_FMT, M2);
+  #endif
 
   int maxdim = (M1->NbColumns > M1->NbRows)? M1->NbColumns : M1->NbRows;
   // compute left(!) inverse of M1 using a dirty patch
@@ -739,10 +746,12 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   Matrix_Free(M1Inverse);
   M1Inverse = temp;
 
-  // printf("M1Inverse = ");
-  // Matrix_Print(stdout, P_VALUE_FMT, M1Inverse);
-  // printf("inverse1: ok\n");
-
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "M1Inverse = ");
+    Matrix_Print(stderr, P_VALUE_FMT, M1Inverse);
+    fprintf(stderr, "inverse1: ok\n");
+  #endif
+  
   MtProduct = Matrix_Alloc(M1Inverse->NbRows, M2->NbColumns);
   Matrix_Product(M1Inverse, M2, MtProduct);
   Smith(MtProduct, &U, &Vinv, &DiagMatrix);
@@ -760,10 +769,12 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   for (i = 0; i < DiagMatrix->NbRows; i++)
     value_division(DiagMatrix->p[i][i], DiagMatrix->p[i][i], k);
 
-  // printf("B1 = ");
-  // Matrix_Print(stdout, P_VALUE_FMT, B1);
-  // printf("B2 = ");
-  // Matrix_Print(stdout, P_VALUE_FMT, B2);
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "B1 = ");
+    Matrix_Print(stderr, P_VALUE_FMT, B1);
+    fprintf(stderr, "B2 = ");
+    Matrix_Print(stderr, P_VALUE_FMT, B2);
+  #endif
 
   // previous method, supposed that B1 and B2 are square matrices:
   // newB1 = ChangeLatticeDimension(B1, B1->NbRows + 1);
@@ -794,11 +805,12 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
                  Intersection->p[i][Intersection->NbColumns - 1]);
   }
 
-
-  // printf("newB2 = ");
-  // Matrix_Print(stdout, P_VALUE_FMT, newB2);
-  // printf("Diag = ");
-  // Matrix_Print(stdout, P_VALUE_FMT, DiagMatrix);
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "newB2 = ");
+    Matrix_Print(stderr, P_VALUE_FMT, newB2);
+    fprintf(stderr, "Diag = ");
+    Matrix_Print(stderr, P_VALUE_FMT, DiagMatrix);
+  #endif
 
   Head = SplitLattice(newB1, newB2, DiagMatrix);
   Matrix_Free(newB1);
@@ -1948,7 +1960,7 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
     errormsg1("LatticeIntersection", "dimincomp", "incompatible dimensions!");
     return NULL;
   }
-  #ifdef NEWINTERSECTION_DEBUG
+  #ifdef LATINTER_DEBUG
   fprintf(stderr,"Matrix A:\n");
   Matrix_Print(stderr, P_VALUE_FMT, A);
   fprintf(stderr,"Matrix B:\n");
@@ -2003,7 +2015,7 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
     }
   }
   
-  #ifdef NEWINTERSECTION_DEBUG
+  #ifdef LATINTER_DEBUG
     fprintf(stderr,"\n Tmp init:\n");
     Matrix_Print(stderr,P_VALUE_FMT, Tmp);
   #endif
@@ -2025,7 +2037,7 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
   left_hermite(Tmp, &H, NULL, NULL);
 
 
-  #ifdef NEWINTERSECTION_DEBUG
+  #ifdef LATINTER_DEBUG
     fprintf(stderr,"\nH:\n");
     Matrix_Print(stderr,P_VALUE_FMT,H);
   #endif
@@ -2036,7 +2048,7 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
   int nbcol = (A->NbColumns<B->NbColumns)?A->NbColumns:B->NbColumns;
 
   if(value_notone_p(H->p[A->NbRows][H->NbColumns-nbcol])) {
-    #ifdef NEWINTERSECTION_DEBUG
+    #ifdef LATINTER_DEBUG
       fprintf(stderr,"\n Empty intersection\n");
     #endif
     Matrix_Free(H);
@@ -2053,7 +2065,7 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
   // put Res in the proper affine form (didn't want to write a loop, had a pre-written function.)
   Matrix_Move_Homogeneous_Dim_Last(Res);
 
-  #ifdef NEWINTERSECTION_DEBUG
+  #ifdef LATINTER_DEBUG
     fprintf(stderr, "\n NewLaticceIntersection result: ");
     Matrix_Print(stderr, P_VALUE_FMT, Res);
   #endif
