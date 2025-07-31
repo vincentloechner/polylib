@@ -1,4 +1,4 @@
-# just a ZAlloc and check that the result is in HNF
+# just a ZAlloc and check that the result is canonical
 
 M 1
 
