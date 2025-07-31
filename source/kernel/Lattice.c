@@ -1419,7 +1419,7 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
   factor allfac;
   Bool retval = False;
   int width;
-  Value cnt, aux, k, fac, tmp, foobar;
+  Value cnt, aux, k, fac, tmp, foobar, num;
 
   if ((*InputList == NULL) || (InputList[0]->next == NULL))
     return False;
