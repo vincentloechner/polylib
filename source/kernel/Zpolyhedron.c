@@ -466,7 +466,7 @@ ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func) {
  * If LInter is empty(null), we return the empty Zpolyhedron.
  * Otherwise, we calculate the intersection of the polyhedra on A and B, called PInter.
  * We calculate the Preimage of PInter by LInter and finally we allocate the result,
- * a Zpolyhedron in Gautam Canonical form.
+ * a Zpolyhedron in Canonical form.
  *
  *  /!\ USAGE: A and B contain a single Lattice, but can contain a polyhedral domain.
  */
@@ -1271,12 +1271,8 @@ static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
 
     // remove equalities in domain P and change Lat to spread the original space
-
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "P has equalities\n");
-    #endif
-
-    #ifdef CANONICAL_DEBUG
       fprintf(stderr, "Equality matrix (including constants): ");
       Matrix_Print(stderr, P_VALUE_FMT, Equalities);
     #endif
@@ -1316,14 +1312,12 @@ static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
     A->Lat = NewL;
   
     Matrix_Free(T);
-
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New Lat: ");
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
       fprintf(stderr, "New P: ");
       Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
     #endif
-
   }
   else { // P contains no equalities
     #ifdef CANONICAL_DEBUG
@@ -1391,9 +1385,6 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     if(A->P->Dimension > 0) {
       Polyhedron_Free(A->P);
       A->P = Empty_Polyhedron(0);
-    }
-    if(A->Lat->NbColumns != 1)
-    {
       Matrix_Free(A->Lat);
       A->Lat = Matrix_Alloc(dimension, 1);
       for(int j=0 ; j < dimension-1; j++) {
@@ -1409,14 +1400,14 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     return;
   }
 
-
-  #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Checking for equalites in P\n");
-  #endif
+  // A->next will be treated separately by the callee
 
   // change P such that all polyhedra in this list have the same set of equalities,
   // that is, the equalities of the first one.
   // all the other ones are added to a new ZPolyhedron, linked to (ZDomain) A.
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "Checking for equalites in P\n");
+  #endif
   ZPolyhedron *new = NULL;
   Matrix * Equalities = get_equalities(A->P); // get eq from the first one
   Polyhedron *nextpp, *prevpp = A->P;
@@ -1508,13 +1499,12 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     // to compute HNF of the lattice (constant part left-top)
     // We will use U = Q^{-1}, such that LU = H.
     left_hermite(A->Lat, &H, NULL, &U);
-    Matrix_Free(A->Lat);
-
     // Move the constant back to right-bottom
     Matrix_Move_Homogeneous_Dim_Last(H);
     Matrix_Move_Homogeneous_Dim_Last(U);
 
     // set the new Lat matrix as H
+    Matrix_Free(A->Lat);
     A->Lat = H;
 
     #ifdef CANONICAL_DEBUG
@@ -1528,12 +1518,10 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     A->P = NewP;
     Matrix_Free(U);
 
+    // remove the columns of zero's
     int nbZeros = count_zeroCols(H);
     if(nbZeros) {
       Matrix* Transformation = Matrix_Alloc(A->Lat->NbColumns-nbZeros, A->Lat->NbColumns);
-
-
-      
       for (int  i = 0; i < Transformation->NbRows; i++) {
         for (int j = 0; j < Transformation->NbColumns; j++) {
           if(i==j && i!=Transformation->NbRows-1) {
@@ -1545,9 +1533,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
       }
       value_set_si(Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],1);
 
-
       A->P = DomainImage(A->P, Transformation, MAXNOOFRAYS);
-      
       Matrix_Free(Transformation);
       Matrix* NewL = Matrix_Alloc(A->Lat->NbRows,A->Lat->NbColumns-nbZeros);
       for (int  i = 0; i < NewL->NbRows; i++) {
@@ -1561,7 +1547,9 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
       }
       Matrix_Free(A->Lat);
       A->Lat = NewL;
-      ZPolyhedronPrint(stdout,P_VALUE_FMT,A);
+      #ifdef CANONICAL_DEBUG
+        ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
+      #endif
     }
 
 
@@ -1569,7 +1557,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
       fprintf(stderr, "New P: ");
       Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
     #endif
-  } // A->Lat in Hermite form
+  } // A->Lat in canonical form
   else {
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "A is HNF.\n");
