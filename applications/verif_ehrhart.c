@@ -61,7 +61,7 @@ int st;
 int check_poly(Polyhedron *S,Polyhedron *C,Enumeration *en,
 	       int nparam,int pos,Value *z) {
   
-  int cc,k;
+  int k;
   Value c,tmp,*ctmp;
   
   value_init(c); value_init(tmp);

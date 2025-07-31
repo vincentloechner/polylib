@@ -23,10 +23,8 @@ int main(int argc, char *argv[]) {
   Matrix *C1, *P1;
   Polyhedron *C, *P, *S;
   Polyhedron *CC, *PP;
-  Enumeration *en;
   Value *p;
   int i, j, k;
-  int m, M;
   char str[1024];
   Value c;
 

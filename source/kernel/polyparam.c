@@ -241,6 +241,7 @@ static SatMatrix *SMAlloc(int rows, int cols) {
   return result;
 } /* SMAlloc */
 
+#if defined(DEBUGPP4)
 static void SMPrint(SatMatrix *matrix) {
 
   unsigned int *p;
@@ -256,6 +257,7 @@ static void SMPrint(SatMatrix *matrix) {
     fprintf(stderr, "\n");
   }
 } /* SMPrint */
+#endif
 
 static void SMFree(SatMatrix *matrix) {
 

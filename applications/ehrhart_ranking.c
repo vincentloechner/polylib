@@ -9,7 +9,6 @@
 
 int main( int argc, char **argv)
 {
-  int i;
   const char **param_name = NULL;
   Matrix *M;
   Polyhedron *P, *D, *C;

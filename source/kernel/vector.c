@@ -555,7 +555,6 @@ void Vector_Map(Value *p1, Value *p2, Value *p3, unsigned length,
 void Vector_Normalize(Value *p, unsigned length) {
 
   Value gcd;
-  int i;
 
   value_init(gcd);
 
@@ -574,7 +573,6 @@ void Vector_Normalize(Value *p, unsigned length) {
 void Vector_Normalize_Positive(Value *p, int length, int pos) {
 
   Value gcd;
-  int i;
 
   value_init(gcd);
   Vector_Gcd(p, length, &gcd);

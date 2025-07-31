@@ -116,7 +116,7 @@ unsigned long long int eliminable_vars(Matrix *Eqs, unsigned start,
                                        unsigned end) {
   unsigned long long int combination;
   unsigned int i, j, k;
-  Matrix *M, *H, *Q, *U;
+  Matrix *H, *Q, *U;
   Matrix *Square_Mat, *Eqs2;
   unsigned nb_vars = end - start + 1;
   Polyhedron *OverConstrained;
@@ -189,7 +189,7 @@ unsigned long long int eliminable_vars(Matrix *Eqs, unsigned start,
  * <i>eliminable_vars</i>
  */
 unsigned int *find_a_permutation(Matrix *Eqs, unsigned int nb_parms) {
-  unsigned int i, j, k;
+  unsigned int i, k;
   int nb_vars = Eqs->NbColumns - nb_parms - 2;
   unsigned long long int combination;
   unsigned int *permutation =

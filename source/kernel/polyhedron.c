@@ -141,6 +141,7 @@ static void SMFree(SatMatrix **matrix) {
  * Print the contents of a saturation matrix.
  * This function is defined only for debugging purpose.
  */
+#if defined(POLY_DEBUG) || defined(POLY_CH_DEBUG)
 static void SMPrint(SatMatrix *matrix) {
 
   int *p;
@@ -156,6 +157,7 @@ static void SMPrint(SatMatrix *matrix) {
     fprintf(stderr, "\n");
   }
 } /* SMPrint */
+#endif
 
 /*
  * Compute the bitwise OR of two saturation matrices.
@@ -1568,7 +1570,7 @@ Polyhedron *Polyhedron_Alloc(unsigned Dimension, unsigned NbConstraints,
 
   Polyhedron *Pol;
   unsigned NbRows, NbColumns;
-  int i, j;
+  int i;
   Value *p, **q;
 
   Pol = (Polyhedron *)malloc(sizeof(Polyhedron));
@@ -3755,7 +3757,7 @@ Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
  */
 Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
 
-  int i, j, k;
+  int i, k;
   Polyhedron *p = NULL, **next, *result = NULL;
   unsigned dim;
 

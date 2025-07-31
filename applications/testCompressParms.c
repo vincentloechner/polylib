@@ -58,7 +58,7 @@ int main(int argc, char ** argv) {
  */
 int test_Constraints_Remove_parm_eqs(Matrix * A, Matrix * B) {
   int isOk = 1;
-  Matrix * M, *C, *Cp, * Eqs, *M1, *C1;
+  Matrix * M, *C, * Eqs, *M1, *C1;
   Polyhedron *Pm, *Pc, *Pcp, *Peqs, *Pint;
   unsigned int * elimParms;
   printf("----- test_Constraints_Remove_parm_eqs() -----\n");
