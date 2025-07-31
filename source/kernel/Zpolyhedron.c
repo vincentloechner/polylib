@@ -1265,10 +1265,11 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
  * Remove the equalities from (A->Lat, A->P).
  * In place. A->P is a domain.
  */
-static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
+static void ZP_Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
 {
   // if A->P has equalities, remove them and spread the lattice
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
+    Matrix *ker, *T = NULL, *NewL;
 
     // remove equalities in domain P and change Lat to spread the original space
     #ifdef CANONICAL_DEBUG
@@ -1278,15 +1279,12 @@ static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
     #endif
 
     // compute Ker(Eq)
-    Matrix* ker;
     ker = int_ker(Equalities);
-
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "ker of eq: ");
       Matrix_Print(stderr, P_VALUE_FMT, ker);
     #endif
     
-    Matrix *T = NULL;
     Matrix_Move_Homogeneous_Dim_First(ker);
     left_hermite(ker, &T, NULL, NULL);
     Matrix_Move_Homogeneous_Dim_Last(T);
@@ -1300,7 +1298,7 @@ static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
     #endif
 
     // NewL = L . T
-    Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, T->NbColumns);
+    NewL = Matrix_Alloc(A->Lat->NbRows, T->NbColumns);
     Matrix_Product(A->Lat, T, NewL);
     // NewP = T^{-1} . P
     Polyhedron* NewP = DomainPreimage(A->P, T, MAXNOOFRAYS);
@@ -1310,7 +1308,6 @@ static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
     Matrix_Free(A->Lat);
     A->P = NewP;
     A->Lat = NewL;
-  
     Matrix_Free(T);
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New Lat: ");
@@ -1324,8 +1321,92 @@ static void Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
       fprintf(stderr, "P has no equalities.\n");
     #endif
   }
-} /* Remove_Equalities */
+} /* ZP_Remove_Equalities */
 
+/*
+ * Set the lattice to normal form in (A->Lat, A->P).
+ * In place. A->P is a domain.
+ */
+static void ZP_Normalize_Lat(ZPolyhedron *A)
+{
+    // check if A->Lat is in Hermite form
+  if(!isNormalLattice(A->Lat)) {
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "A is not HNF\n");
+    #endif
+    Matrix* U = NULL;
+    Matrix* H = NULL;
+
+    // for left hermite to include the constant:
+    Matrix_Move_Homogeneous_Dim_First(A->Lat);
+    // to compute HNF of the lattice (constant part left-top)
+    // We will use U = Q^{-1}, such that LU = H.
+    left_hermite(A->Lat, &H, NULL, &U);
+    // Move the constant back to right-bottom
+    Matrix_Move_Homogeneous_Dim_Last(H);
+    Matrix_Move_Homogeneous_Dim_Last(U);
+
+    // set the new Lat matrix as H
+    Matrix_Free(A->Lat);
+    A->Lat = H;
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "New Lat (HNF): ");
+      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+    #endif
+
+    // Now update of A->P using the premimage by U.
+    Polyhedron *NewP = DomainPreimage(A->P, U, MAXNOOFRAYS);
+    Domain_Free(A->P);
+    A->P = NewP;
+    Matrix_Free(U);
+
+    // remove the columns of zero's
+    int nbZeros = count_zeroCols(H);
+    if(nbZeros) {
+      Matrix* Transformation = Matrix_Alloc(A->Lat->NbColumns-nbZeros, A->Lat->NbColumns);
+      for (int  i = 0; i < Transformation->NbRows; i++) {
+        for (int j = 0; j < Transformation->NbColumns; j++) {
+          if(i==j && i!=Transformation->NbRows-1) {
+            value_set_si(Transformation->p[i][j],1);
+          }else{
+            value_set_si(Transformation->p[i][j],0);
+          }
+        }
+      }
+      value_set_si(Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],1);
+
+      A->P = DomainImage(A->P, Transformation, MAXNOOFRAYS);
+      Matrix_Free(Transformation);
+      Matrix* NewL = Matrix_Alloc(A->Lat->NbRows,A->Lat->NbColumns-nbZeros);
+      for (int  i = 0; i < NewL->NbRows; i++) {
+        for (int j = 0; j < NewL->NbColumns; j++) {
+          if(j < NewL->NbColumns-1) {
+            value_assign(NewL->p[i][j],A->Lat->p[i][j]);
+          }else{
+            value_assign(NewL->p[i][j],A->Lat->p[i][A->Lat->NbColumns-1]);
+          }
+        }
+      }
+      Matrix_Free(A->Lat);
+      A->Lat = NewL;
+      #ifdef CANONICAL_DEBUG
+        ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
+      #endif
+    }
+
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "New P: ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+    #endif
+  } // A->Lat in canonical form
+  else {
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "A is HNF.\n");
+    #endif
+  }
+}
 /*
  * The function takes a Zpolyhedron 
  * --- containing a domain (list of polyhedra), and a single lattice ---
@@ -1436,8 +1517,9 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     new->next = A->next;
     A->next = new;
   }
-    
-  Remove_Equalities(A, Equalities);
+  
+  // NOW REMOVE EQUALITIES FROM A
+  ZP_Remove_Equalities(A, Equalities);
   Matrix_Free(Equalities);
 
 
@@ -1486,83 +1568,8 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
   value_clear(gcd);
 #endif
 
-  // check if A->Lat is in Hermite form
-  if(!isNormalLattice(A->Lat)) {
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "A is not HNF\n");
-    #endif
-    Matrix* U = NULL;
-    Matrix* H = NULL;
-
-    // for left hermite to include the constant:
-    Matrix_Move_Homogeneous_Dim_First(A->Lat);
-    // to compute HNF of the lattice (constant part left-top)
-    // We will use U = Q^{-1}, such that LU = H.
-    left_hermite(A->Lat, &H, NULL, &U);
-    // Move the constant back to right-bottom
-    Matrix_Move_Homogeneous_Dim_Last(H);
-    Matrix_Move_Homogeneous_Dim_Last(U);
-
-    // set the new Lat matrix as H
-    Matrix_Free(A->Lat);
-    A->Lat = H;
-
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "New Lat (HNF): ");
-      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
-    #endif
-
-    // Now update of A->P using the premimage by U.
-    Polyhedron *NewP = DomainPreimage(A->P, U, MAXNOOFRAYS);
-    Domain_Free(A->P);
-    A->P = NewP;
-    Matrix_Free(U);
-
-    // remove the columns of zero's
-    int nbZeros = count_zeroCols(H);
-    if(nbZeros) {
-      Matrix* Transformation = Matrix_Alloc(A->Lat->NbColumns-nbZeros, A->Lat->NbColumns);
-      for (int  i = 0; i < Transformation->NbRows; i++) {
-        for (int j = 0; j < Transformation->NbColumns; j++) {
-          if(i==j && i!=Transformation->NbRows-1) {
-            value_set_si(Transformation->p[i][j],1);
-          }else{
-            value_set_si(Transformation->p[i][j],0);
-          }
-        }
-      }
-      value_set_si(Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],1);
-
-      A->P = DomainImage(A->P, Transformation, MAXNOOFRAYS);
-      Matrix_Free(Transformation);
-      Matrix* NewL = Matrix_Alloc(A->Lat->NbRows,A->Lat->NbColumns-nbZeros);
-      for (int  i = 0; i < NewL->NbRows; i++) {
-        for (int j = 0; j < NewL->NbColumns; j++) {
-          if(j < NewL->NbColumns-1) {
-            value_assign(NewL->p[i][j],A->Lat->p[i][j]);
-          }else{
-            value_assign(NewL->p[i][j],A->Lat->p[i][A->Lat->NbColumns-1]);
-          }
-        }
-      }
-      Matrix_Free(A->Lat);
-      A->Lat = NewL;
-      #ifdef CANONICAL_DEBUG
-        ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
-      #endif
-    }
-
-
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "New P: ");
-      Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
-    #endif
-  } // A->Lat in canonical form
-  else {
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "A is HNF.\n");
-    #endif
-  }
+  // NOW NORMALIZE LATTICE A->Lat
+  ZP_Normalize_Lat(A);
 
   return;
 } /* Canonical_ZPolyhedron_Gautam */
