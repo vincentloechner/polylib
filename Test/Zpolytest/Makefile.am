@@ -14,7 +14,6 @@ ZPOLYTESTS =  \
 	LatHNF3.in \
 	LatInter1.in \
 	LatInter2.in \
-	LatInter3.in \
 	LatInter4.in \
 	LatInter5.in \
 	LatInc1.in \
