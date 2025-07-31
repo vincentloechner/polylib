@@ -143,7 +143,7 @@ Matrix *mtransformation_expand_left_to_dim(Matrix *M, int new_dim) {
 /** simplify a matrix seen as a polyhedron, by dividing its rows by the gcd of
    their elements. */
 void mpolyhedron_simplify(Matrix *polyh) {
-  int i, j;
+  int i;
   Value cur_gcd;
   value_init(cur_gcd);
   for (i = 0; i < polyh->NbRows; i++) {
@@ -291,7 +291,7 @@ unsigned int mpolyhedron_eliminate_first_variables(Matrix *Eqs, Matrix *Ineqs) {
   for (i = 0; i < Eqs->NbRows; i++) {
     /* find j, the first (non-marked) row of Eqs with a non-zero coefficient */
     for (j = 0; j < Eqs->NbRows &&
-                (Eqs->p[j][i + 1] == 0 || (!value_cmp_si(Eqs->p[j][0], 2)));
+                (value_notzero_p(Eqs->p[j][i + 1]) || (!value_cmp_si(Eqs->p[j][0], 2)));
          j++)
       ;
     /* if no row is found in Eqs that allows to eliminate variable i, return an
