@@ -1769,7 +1769,8 @@ static Bool SameLinearPart(LatticeUnion *A, LatticeUnion *B) {
  * Given a union of lattices, return a simplified list of lattices.
  */
 LatticeUnion *LatticeSimplify(LatticeUnion *latlist) {
-
+  // fprintf(stderr, "Entering LatticeSimplify with:");
+  // PrintLatticeUnion(stderr, P_VALUE_FMT, latlist);
   LatticeUnion *curlist, *nextlist;
   LatticeUnion *curr, *next;
   Bool change = True;
