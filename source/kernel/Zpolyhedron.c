@@ -803,133 +803,133 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
   return(Result);
 } /* ZPolyhedronPreimage */
 
-/*
- * Return the Z-polyhderon 'Zpol' in canonical form: 'Result' (for the Z-poly-
- * hedron in canonical form) and Basis 'Basis' (for the basis with respect to
- * which 'Result' is in canonical form.
- */
-void CanonicalForm(ZPolyhedron *Zpol, ZPolyhedron **Result, Matrix **Basis) {
+// /*
+//  * Return the Z-polyhderon 'Zpol' in canonical form: 'Result' (for the Z-poly-
+//  * hedron in canonical form) and Basis 'Basis' (for the basis with respect to
+//  * which 'Result' is in canonical form.
+//  */
+// void CanonicalForm(ZPolyhedron *Zpol, ZPolyhedron **Result, Matrix **Basis) {
 
-  Matrix *B1 = NULL, *B2 = NULL, *T1, *B2inv;
-  int i, l1, l2;
-  Value tmp;
-  Polyhedron *Image, *ImageP;
-  Matrix *H, *U, *temp, *Hprime, *Uprime, *T2;
+//   Matrix *B1 = NULL, *B2 = NULL, *T1, *B2inv;
+//   int i, l1, l2;
+//   Value tmp;
+//   Polyhedron *Image, *ImageP;
+//   Matrix *H, *U, *temp, *Hprime, *Uprime, *T2;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered CANONICALFORM\n");
-  fclose(fp);
-#endif
+// #ifdef DOMDEBUG
+//   FILE *fp;
+//   fp = fopen("_debug", "a");
+//   fprintf(fp, "\nEntered CANONICALFORM\n");
+//   fclose(fp);
+// #endif
 
-  if (isEmptyZPolyhedron(Zpol)) {
-    Basis[0] = Identity(Zpol->Lat->NbRows);
-    Result[0] = ZDomain_Copy(Zpol);
-    return;
-  }
-  value_init(tmp);
-  l1 = FindHermiteBasisofDomain(Zpol->P, &B1);
-  Image = DomainImage(Zpol->P, Zpol->Lat, MAXNOOFRAYS);
-  l2 = FindHermiteBasisofDomain(Image, &B2);
+//   if (isEmptyZPolyhedron(Zpol)) {
+//     Basis[0] = Identity(Zpol->Lat->NbRows);
+//     Result[0] = ZDomain_Copy(Zpol);
+//     return;
+//   }
+//   value_init(tmp);
+//   l1 = FindHermiteBasisofDomain(Zpol->P, &B1);
+//   Image = DomainImage(Zpol->P, Zpol->Lat, MAXNOOFRAYS);
+//   l2 = FindHermiteBasisofDomain(Image, &B2);
 
-  if (l1 != l2)
-    fprintf(stderr, "In CNF : Something wrong with the Input Zpolyhedra \n");
+//   if (l1 != l2)
+//     fprintf(stderr, "In CNF : Something wrong with the Input Zpolyhedra \n");
 
-  B2inv = Matrix_Alloc(B2->NbRows, B2->NbColumns);
-  temp = Matrix_Copy(B2);
-  Matrix_Inverse(temp, B2inv);
-  Matrix_Free(temp);
+//   B2inv = Matrix_Alloc(B2->NbRows, B2->NbColumns);
+//   temp = Matrix_Copy(B2);
+//   Matrix_Inverse(temp, B2inv);
+//   Matrix_Free(temp);
 
-  temp = Matrix_Alloc(B2inv->NbRows, Zpol->Lat->NbColumns);
-  T1 = Matrix_Alloc(temp->NbRows, B1->NbColumns);
-  Matrix_Product(B2inv, Zpol->Lat, temp);
-  Matrix_Product(temp, B1, T1);
-  Matrix_Free(temp);
+//   temp = Matrix_Alloc(B2inv->NbRows, Zpol->Lat->NbColumns);
+//   T1 = Matrix_Alloc(temp->NbRows, B1->NbColumns);
+//   Matrix_Product(B2inv, Zpol->Lat, temp);
+//   Matrix_Product(temp, B1, T1);
+//   Matrix_Free(temp);
 
-  T2 = ChangeLatticeDimension(T1, l1);
-  temp = ChangeLatticeDimension(T2, T2->NbRows + 1);
+//   T2 = ChangeLatticeDimension(T1, l1);
+//   temp = ChangeLatticeDimension(T2, T2->NbRows + 1);
 
-  /* Adding the affine part */
-  for (i = 0; i < l1; i++)
-    value_assign(temp->p[i][temp->NbColumns - 1], T1->p[i][T1->NbColumns - 1]);
+//   /* Adding the affine part */
+//   for (i = 0; i < l1; i++)
+//     value_assign(temp->p[i][temp->NbColumns - 1], T1->p[i][T1->NbColumns - 1]);
 
-  AffineHermite(temp, &H, &U);
-  Hprime = ChangeLatticeDimension(H, Zpol->Lat->NbRows);
+//   AffineHermite(temp, &H, &U);
+//   Hprime = ChangeLatticeDimension(H, Zpol->Lat->NbRows);
 
-  /* Exchanging the Affine part */
-  for (i = 0; i < l1; i++) {
-    value_assign(tmp, Hprime->p[i][Hprime->NbColumns - 1]);
-    value_assign(Hprime->p[i][Hprime->NbColumns - 1],
-                 Hprime->p[i][H->NbColumns - 1]);
-    value_assign(Hprime->p[i][H->NbColumns - 1], tmp);
-  }
-  Uprime = ChangeLatticeDimension(U, Zpol->Lat->NbRows);
+//   /* Exchanging the Affine part */
+//   for (i = 0; i < l1; i++) {
+//     value_assign(tmp, Hprime->p[i][Hprime->NbColumns - 1]);
+//     value_assign(Hprime->p[i][Hprime->NbColumns - 1],
+//                  Hprime->p[i][H->NbColumns - 1]);
+//     value_assign(Hprime->p[i][H->NbColumns - 1], tmp);
+//   }
+//   Uprime = ChangeLatticeDimension(U, Zpol->Lat->NbRows);
 
-  /* Exchanging the Affine part */
-  for (i = 0; i < l1; i++) {
-    value_assign(tmp, Uprime->p[i][Uprime->NbColumns - 1]);
-    value_assign(Uprime->p[i][Uprime->NbColumns - 1],
-                 Uprime->p[i][U->NbColumns - 1]);
-    value_assign(Uprime->p[i][U->NbColumns - 1], tmp);
-  }
-  Polyhedron_Free(Image);
-  Matrix_Free(B2inv);
-  B2inv = Matrix_Alloc(B1->NbRows, B1->NbColumns);
-  Matrix_Inverse(B1, B2inv);
-  ImageP = DomainImage(Zpol->P, B2inv, MAXNOOFRAYS);
-  Matrix_Free(B2inv);
-  Image = DomainImage(ImageP, Uprime, MAXNOOFRAYS);
-  Domain_Free(ImageP);
-  Result[0] = ZPolyhedronAlloc(Hprime, Image);
-  Basis[0] = Matrix_Copy(B2);
+//   /* Exchanging the Affine part */
+//   for (i = 0; i < l1; i++) {
+//     value_assign(tmp, Uprime->p[i][Uprime->NbColumns - 1]);
+//     value_assign(Uprime->p[i][Uprime->NbColumns - 1],
+//                  Uprime->p[i][U->NbColumns - 1]);
+//     value_assign(Uprime->p[i][U->NbColumns - 1], tmp);
+//   }
+//   Polyhedron_Free(Image);
+//   Matrix_Free(B2inv);
+//   B2inv = Matrix_Alloc(B1->NbRows, B1->NbColumns);
+//   Matrix_Inverse(B1, B2inv);
+//   ImageP = DomainImage(Zpol->P, B2inv, MAXNOOFRAYS);
+//   Matrix_Free(B2inv);
+//   Image = DomainImage(ImageP, Uprime, MAXNOOFRAYS);
+//   Domain_Free(ImageP);
+//   Result[0] = ZPolyhedronAlloc(Hprime, Image);
+//   Basis[0] = Matrix_Copy(B2);
 
-  /* Free the memory used */
-  Polyhedron_Free(Image);
-  Matrix_Free(B1);
-  Matrix_Free(B2);
-  Matrix_Free(temp);
-  Matrix_Free(T1);
-  Matrix_Free(T2);
-  Matrix_Free(H);
-  Matrix_Free(U);
-  Matrix_Free(Hprime);
-  Matrix_Free(Uprime);
-  value_clear(tmp);
-  return;
-} /* CanonicalForm */
+//   /* Free the memory used */
+//   Polyhedron_Free(Image);
+//   Matrix_Free(B1);
+//   Matrix_Free(B2);
+//   Matrix_Free(temp);
+//   Matrix_Free(T1);
+//   Matrix_Free(T2);
+//   Matrix_Free(H);
+//   Matrix_Free(U);
+//   Matrix_Free(Hprime);
+//   Matrix_Free(Uprime);
+//   value_clear(tmp);
+//   return;
+// } /* CanonicalForm */
 
-/*
- * Given a Z-polyhedron 'A' in which the Lattice is not integral, return the
- * Z-polyhedron which contains all the integral points in the input lattice.
- */
-ZPolyhedron *IntegraliseLattice(ZPolyhedron *A) {
+// /*
+//  * Given a Z-polyhedron 'A' in which the Lattice is not integral, return the
+//  * Z-polyhedron which contains all the integral points in the input lattice.
+//  */
+// ZPolyhedron *IntegraliseLattice(ZPolyhedron *A) {
 
-  ZPolyhedron *Result;
-  Lattice *M = NULL, *Id;
-  Polyhedron *Im = NULL, *Preim = NULL;
+//   ZPolyhedron *Result;
+//   Lattice *M = NULL, *Id;
+//   Polyhedron *Im = NULL, *Preim = NULL;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered INTEGRALISELATTICE\n");
-  fclose(fp);
-#endif
+// #ifdef DOMDEBUG
+//   FILE *fp;
+//   fp = fopen("_debug", "a");
+//   fprintf(fp, "\nEntered INTEGRALISELATTICE\n");
+//   fclose(fp);
+// #endif
 
-  Im = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
-  Id = Identity(A->Lat->NbRows);
-  M = LatticeImage(Id, A->Lat);
-  if (isEmptyLattice(M))
-    Result = EmptyZPolyhedron(A->Lat->NbRows - 1);
-  else {
-    Preim = DomainPreimage(Im, M, MAXNOOFRAYS);
-    Result = ZPolyhedronAlloc(M, Preim);
-  }
-  Matrix_Free(M);
-  Domain_Free(Im);
-  Domain_Free(Preim);
-  return Result;
-} /* IntegraliseLattice */
+//   Im = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
+//   Id = Identity(A->Lat->NbRows);
+//   M = LatticeImage(Id, A->Lat);
+//   if (isEmptyLattice(M))
+//     Result = EmptyZPolyhedron(A->Lat->NbRows - 1);
+//   else {
+//     Preim = DomainPreimage(Im, M, MAXNOOFRAYS);
+//     Result = ZPolyhedronAlloc(M, Preim);
+//   }
+//   Matrix_Free(M);
+//   Domain_Free(Im);
+//   Domain_Free(Preim);
+//   return Result;
+// } /* IntegraliseLattice */
 
 /*
  * Return the simplified representation of the Z-domain 'ZDom'. It attempts to
@@ -1199,7 +1199,7 @@ static void ZP_Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
 {
   // if A->P has equalities, remove them and spread the lattice
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
-    Matrix *ker, *T = NULL, *NewL;
+    Matrix *ker, *H = NULL, *NewL;
 
     // remove equalities in domain P and change Lat to spread the original space
     #ifdef CANONICAL_DEBUG
@@ -1216,29 +1216,29 @@ static void ZP_Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
     #endif
     
     Matrix_Move_Homogeneous_Dim_First(ker);
-    left_hermite(ker, &T, NULL, NULL);
-    Matrix_Move_Homogeneous_Dim_Last(T);
+    left_hermite(ker, &H, NULL, NULL);
+    Matrix_Move_Homogeneous_Dim_Last(H);
     Matrix_Free(ker);
 
     #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "Matrix T: ");
-      Matrix_Print(stderr, P_VALUE_FMT, T);
+      fprintf(stderr, "Matrix H: ");
+      Matrix_Print(stderr, P_VALUE_FMT, H);
       fprintf(stderr, "Lattice of A: ");
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
 
-    // NewL = L . T
-    NewL = Matrix_Alloc(A->Lat->NbRows, T->NbColumns);
-    Matrix_Product(A->Lat, T, NewL);
-    // NewP = T^{-1} . P
-    Polyhedron* NewP = DomainPreimage(A->P, T, MAXNOOFRAYS);
+    // NewL = L . H
+    NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
+    Matrix_Product(A->Lat, H, NewL);
+    // NewP = H^{-1} . P
+    Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
 
     // update A
     Domain_Free(A->P);
     Matrix_Free(A->Lat);
     A->P = NewP;
     A->Lat = NewL;
-    Matrix_Free(T);
+    Matrix_Free(H);
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New Lat: ");
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
@@ -1415,7 +1415,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
 
   // change P such that all polyhedra in this list have the same set of equalities,
   // that is, the equalities of the first one.
-  // all the other ones are added to a new ZPolyhedron, linked to (ZDomain) A.
+  // all the other ones are added to a new ZPolyhedron, linked to (ZDomain) A in A->next
   #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Checking for equalites in P\n");
   #endif

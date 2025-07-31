@@ -11,7 +11,7 @@ extern Matrix *AddANullColumn(Matrix *M);
 extern Matrix *AddANullRow(Matrix *M);
 extern void ExchangeColumns(Matrix *M, int Column1, int Column2);
 extern void ExchangeRows(Matrix *M, int Row1, int Row2);
-extern int findHermiteBasis(Matrix *M, Matrix **Result);
+// extern int findHermiteBasis(Matrix *M, Matrix **Result);
 extern Matrix *Identity(unsigned size);
 extern Bool isNormalLattice(Matrix *A);
 extern Bool isIntegral(Matrix *A);

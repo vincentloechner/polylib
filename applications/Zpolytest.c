@@ -249,21 +249,21 @@ int main() {
 	    ZDomainIncludes(ZB,ZA));
     break;
   
-  case 16: /* LatticePreimage */
+  // case 16: /* LatticePreimage */
         
-    c = LatticePreimage(a,b);
-    Matrix_Print(stdout,P_VALUE_FMT, c);
-    AffineHermite(c,&d,&e);
-    Matrix_Print(stdout,P_VALUE_FMT, d);
-    break;
+  //   c = LatticePreimage(a,b);
+  //   Matrix_Print(stdout,P_VALUE_FMT, c);
+  //   AffineHermite(c,&d,&e);
+  //   Matrix_Print(stdout,P_VALUE_FMT, d);
+  //   break;
     
-  case 17: /* LatticeImage */
+  // case 17: /* LatticeImage */
     
-    c = LatticeImage(a,b);
-    Matrix_Print(stdout,P_VALUE_FMT, c);
-    AffineHermite(c,&d,&e);
-    Matrix_Print(stdout,P_VALUE_FMT, d);
-    break;
+  //   c = LatticeImage(a,b);
+  //   Matrix_Print(stdout,P_VALUE_FMT, c);
+  //   AffineHermite(c,&d,&e);
+  //   Matrix_Print(stdout,P_VALUE_FMT, d);
+  //   break;
       
   case 18:  /* EmptyLattice */
         
@@ -271,15 +271,15 @@ int main() {
     fprintf(stdout,"is Empty? :%d \n", isEmptyLattice(EmptyLattice(3)));
     break;
   
-  case 19:  /* CanonicalForm */
+  // case 19:  /* CanonicalForm */
      
-    ZA=ZPolyhedronAlloc(a,A);
-    ZB=ZPolyhedronAlloc(a,B);
-    CanonicalForm(ZA,&ZC,&c);
-    CanonicalForm(ZB,&ZD,&d);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZD);
-    break;
+  //   ZA=ZPolyhedronAlloc(a,A);
+  //   ZB=ZPolyhedronAlloc(a,B);
+  //   CanonicalForm(ZA,&ZC,&c);
+  //   CanonicalForm(ZB,&ZD,&d);
+  //   ZDomainPrint(stdout,P_VALUE_FMT, ZC);
+  //   ZDomainPrint(stdout,P_VALUE_FMT, ZD);
+  //   break;
     
   case 20: /* LatticeSimplify */
     
@@ -293,34 +293,34 @@ int main() {
     LatticeUnion_Free(l1);
     break;
     
-  case 21: /* AffineSmith */
+  // case 21: /* AffineSmith */
   
-    AffineSmith(a,&b,&c, &d);
-    printf("A = U . Diag . V\n");
-    Matrix_Print(stdout,P_VALUE_FMT, b); 
-    Matrix_Print(stdout,P_VALUE_FMT, d);
-    Matrix_Print(stdout,P_VALUE_FMT, c);
-    break;
+  //   AffineSmith(a,&b,&c, &d);
+  //   printf("A = U . Diag . V\n");
+  //   Matrix_Print(stdout,P_VALUE_FMT, b); 
+  //   Matrix_Print(stdout,P_VALUE_FMT, d);
+  //   Matrix_Print(stdout,P_VALUE_FMT, c);
+  //   break;
   
-  case 22: /* SolveDiophantine */
+  // case 22: /* SolveDiophantine */
         
-    rank=SolveDiophantine(a,&d,&v); 
-    Matrix_Print(stdout,P_VALUE_FMT, a);
-    fprintf(stdout," rank: %d \n ",rank);
-    Matrix_Print(stdout,P_VALUE_FMT, d); 
-    Vector_Print(stdout,P_VALUE_FMT, v);
-    rank=SolveDiophantine(b,&d,&v); 
-    Matrix_Print(stdout,P_VALUE_FMT, b);
-    fprintf(stdout," rank: %d \n ",rank);
-    Matrix_Print(stdout,P_VALUE_FMT, d); 
-    Vector_Print(stdout,P_VALUE_FMT, v);
-    rank=SolveDiophantine(c,&d,&v); 
-    Matrix_Print(stdout,P_VALUE_FMT, c);
-    fprintf(stdout," rank: %d \n ",rank);
-    Matrix_Print(stdout,P_VALUE_FMT, d); 
-    Vector_Print(stdout,P_VALUE_FMT, v);
-    Vector_Free(v);
-    break;
+  //   rank=SolveDiophantine(a,&d,&v); 
+  //   Matrix_Print(stdout,P_VALUE_FMT, a);
+  //   fprintf(stdout," rank: %d \n ",rank);
+  //   Matrix_Print(stdout,P_VALUE_FMT, d); 
+  //   Vector_Print(stdout,P_VALUE_FMT, v);
+  //   rank=SolveDiophantine(b,&d,&v); 
+  //   Matrix_Print(stdout,P_VALUE_FMT, b);
+  //   fprintf(stdout," rank: %d \n ",rank);
+  //   Matrix_Print(stdout,P_VALUE_FMT, d); 
+  //   Vector_Print(stdout,P_VALUE_FMT, v);
+  //   rank=SolveDiophantine(c,&d,&v); 
+  //   Matrix_Print(stdout,P_VALUE_FMT, c);
+  //   fprintf(stdout," rank: %d \n ",rank);
+  //   Matrix_Print(stdout,P_VALUE_FMT, d); 
+  //   Vector_Print(stdout,P_VALUE_FMT, v);
+  //   Vector_Free(v);
+  //   break;
 
   case 23: /* SplitZPolyhedron */
         

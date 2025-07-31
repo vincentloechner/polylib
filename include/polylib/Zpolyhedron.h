@@ -13,10 +13,10 @@ extern "C" {
 // - a ZDomain is a chained list of ZPolyhedra (with possibly multiple lattices;
 //   using the ->next structure element).
 
-extern void CanonicalForm(ZPolyhedron *Zpol, ZPolyhedron **Result,
-                          Matrix **Basis);
+// extern void CanonicalForm(ZPolyhedron *Zpol, ZPolyhedron **Result,
+//                           Matrix **Basis);
 extern ZPolyhedron *EmptyZPolyhedron(int dimension);
-extern ZPolyhedron *IntegraliseLattice(ZPolyhedron *A);
+// extern ZPolyhedron *IntegraliseLattice(ZPolyhedron *A);
 extern Bool isEmptyZPolyhedron(ZPolyhedron *Zpol);
 extern ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B);
 extern ZPolyhedron *ZDomainImage(ZPolyhedron *A, Matrix *Func);

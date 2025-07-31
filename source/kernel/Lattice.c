@@ -221,87 +221,87 @@ void AffineHermite(Lattice *A, Lattice **H, Matrix **U) {
   // printf("                    U = ");
   // Matrix_Print(stdout, P_VALUE_FMT, *U);
 
-return;
+  return;
 } /* AffineHermite */
 
-/*
- * Given a Polylib matrix 'A' that represents an affine function, return the
- * affine Smith normal form 'Delta' of 'A' and unimodular matrices 'U' and 'V'
- * such that 'A = U*Delta*V'.
- * Algorithm:
- *           (1) Homogenize the Lattice.
- *           (2) Call Smith
- *           (3) The Smith Normal Form Delta must be Dehomogenized and also
- *               corresponding changes must be made to the Unimodular Matrices
- *               U and V.
- *           4) Bring Delta into AffineSmith Form.
- */
-void AffineSmith(Lattice *A, Lattice **U, Lattice **V, Lattice **Diag) {
+// /*
+//  * Given a Polylib matrix 'A' that represents an affine function, return the
+//  * affine Smith normal form 'Delta' of 'A' and unimodular matrices 'U' and 'V'
+//  * such that 'A = U*Delta*V'.
+//  * Algorithm:
+//  *           (1) Homogenize the Lattice.
+//  *           (2) Call Smith
+//  *           (3) The Smith Normal Form Delta must be Dehomogenized and also
+//  *               corresponding changes must be made to the Unimodular Matrices
+//  *               U and V.
+//  *           4) Bring Delta into AffineSmith Form.
+//  */
+// void AffineSmith(Lattice *A, Lattice **U, Lattice **V, Lattice **Diag) {
 
-  Lattice *temp;
-  Lattice *Uinv;
-  int i, j;
-  Value sum, quo, rem;
+//   Lattice *temp;
+//   Lattice *Uinv;
+//   int i, j;
+//   Value sum, quo, rem;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered AFFINESMITH \n");
-  fclose(fp);
-#endif
+// #ifdef DOMDEBUG
+//   FILE *fp;
+//   fp = fopen("_debug", "a");
+//   fprintf(fp, "\nEntered AFFINESMITH \n");
+//   fclose(fp);
+// #endif
 
-  value_init(sum);
-  value_init(quo);
-  value_init(rem);
-  temp = Homogenise(A, True);
-  Smith(temp, U, V, Diag);
-  Matrix_Free(temp);
+//   value_init(sum);
+//   value_init(quo);
+//   value_init(rem);
+//   temp = Homogenise(A, True);
+//   Smith(temp, U, V, Diag);
+//   Matrix_Free(temp);
 
-  temp = Homogenise(*U, False);
-  Matrix_Free(*U);
-  *U = temp;
+//   temp = Homogenise(*U, False);
+//   Matrix_Free(*U);
+//   *U = temp;
 
-  temp = Homogenise(*V, False);
-  Matrix_Free(*V);
-  *V = temp;
+//   temp = Homogenise(*V, False);
+//   Matrix_Free(*V);
+//   *V = temp;
 
-  temp = Homogenise(*Diag, False);
-  Matrix_Free(*Diag);
-  *Diag = temp;
+//   temp = Homogenise(*Diag, False);
+//   Matrix_Free(*Diag);
+//   *Diag = temp;
 
-  temp = Matrix_Copy(*U);
-  Uinv = Matrix_Alloc((*U)->NbColumns, (*U)->NbRows);
-  Matrix_Inverse(temp, Uinv);
-  Matrix_Free(temp);
+//   temp = Matrix_Copy(*U);
+//   Uinv = Matrix_Alloc((*U)->NbColumns, (*U)->NbRows);
+//   Matrix_Inverse(temp, Uinv);
+//   Matrix_Free(temp);
 
-  for (i = 0; i < U[0]->NbRows - 1; i++) {
-    value_set_si(sum, 0);
-    for (j = 0; j < U[0]->NbColumns - 1; j++) {
-      value_addmul(sum, Uinv->p[i][j], U[0]->p[j][U[0]->NbColumns - 1]);
-    }
-    value_assign(Diag[0]->p[i][j], sum);
-  }
-  Matrix_Free(Uinv);
-  for (i = 0; i < U[0]->NbRows - 1; i++)
-    value_set_si(U[0]->p[i][U[0]->NbColumns - 1], 0);
-  for (i = 0; i < Diag[0]->NbRows - 1; i++) {
-    value_division(quo, Diag[0]->p[i][Diag[0]->NbColumns - 1],
-                   Diag[0]->p[i][i]);
-    value_modulus(rem, Diag[0]->p[i][Diag[0]->NbColumns - 1], Diag[0]->p[i][i]);
+//   for (i = 0; i < U[0]->NbRows - 1; i++) {
+//     value_set_si(sum, 0);
+//     for (j = 0; j < U[0]->NbColumns - 1; j++) {
+//       value_addmul(sum, Uinv->p[i][j], U[0]->p[j][U[0]->NbColumns - 1]);
+//     }
+//     value_assign(Diag[0]->p[i][j], sum);
+//   }
+//   Matrix_Free(Uinv);
+//   for (i = 0; i < U[0]->NbRows - 1; i++)
+//     value_set_si(U[0]->p[i][U[0]->NbColumns - 1], 0);
+//   for (i = 0; i < Diag[0]->NbRows - 1; i++) {
+//     value_division(quo, Diag[0]->p[i][Diag[0]->NbColumns - 1],
+//                    Diag[0]->p[i][i]);
+//     value_modulus(rem, Diag[0]->p[i][Diag[0]->NbColumns - 1], Diag[0]->p[i][i]);
 
-    /* Apparently the % operator is strange when sign are different */
-    if (value_neg_p(rem)) {
-      value_addto(rem, rem, Diag[0]->p[i][i]);
-      value_decrement(quo, quo);
-    };
-    value_assign(Diag[0]->p[i][Diag[0]->NbColumns - 1], rem);
-    value_assign(V[0]->p[i][V[0]->NbColumns - 1], quo);
-  }
-  value_clear(sum);
-  value_clear(quo);
-  value_clear(rem);
-  return;
-} /* AffineSmith */
+//     /* Apparently the % operator is strange when sign are different */
+//     if (value_neg_p(rem)) {
+//       value_addto(rem, rem, Diag[0]->p[i][i]);
+//       value_decrement(quo, quo);
+//     };
+//     value_assign(Diag[0]->p[i][Diag[0]->NbColumns - 1], rem);
+//     value_assign(V[0]->p[i][V[0]->NbColumns - 1], quo);
+//   }
+//   value_clear(sum);
+//   value_clear(quo);
+//   value_clear(rem);
+//   return;
+// } /* AffineSmith */
 
 /*
  * Given a lattice 'A' and a boolean variable 'Forward', homogenise the lattice
@@ -457,125 +457,125 @@ Lattice *ExtractLinearPart(Lattice *A) {
 
 static Matrix *MakeDioEqforInter(Matrix *A, Matrix *B);
 
-/*
- * Given two lattices 'A' and 'B', return the intersection of the two lattcies.
- * The dimension of 'A' and 'B' should be the same.
- * Algorithm:
- *           (1) Verify if the lattcies 'A' and 'B' have the same affine part.
- *               If they have same affine part, then only their Linear parts
- *               need to be intersected. If they don't have the same affine
- *               part then the affine part has to be taken into consideration.
- *               For this, homogenise the lattices to get their Hermite Forms
- *               and then find their intersection.
- *
- *           (2) Step(2) involves, solving the Diophantine Equations in order
- *               to extract the intersection of the Lattices. The Diophantine
- *               equations are formed taking into consideration whether the
- *               affine part has to be included or not.
- *
- *           (3) Solve the Diophantine equations.
- *
- *           (4) Extract the necessary information from the result.
- *
- *           (5) If the lattices have different affine parts and they were
- *               homogenised, the result is dehomogenised.
- */
-Lattice *OldLatticeIntersection(Lattice *X, Lattice *Y) {
+// /*
+//  * Given two lattices 'A' and 'B', return the intersection of the two lattcies.
+//  * The dimension of 'A' and 'B' should be the same.
+//  * Algorithm:
+//  *           (1) Verify if the lattcies 'A' and 'B' have the same affine part.
+//  *               If they have same affine part, then only their Linear parts
+//  *               need to be intersected. If they don't have the same affine
+//  *               part then the affine part has to be taken into consideration.
+//  *               For this, homogenise the lattices to get their Hermite Forms
+//  *               and then find their intersection.
+//  *
+//  *           (2) Step(2) involves, solving the Diophantine Equations in order
+//  *               to extract the intersection of the Lattices. The Diophantine
+//  *               equations are formed taking into consideration whether the
+//  *               affine part has to be included or not.
+//  *
+//  *           (3) Solve the Diophantine equations.
+//  *
+//  *           (4) Extract the necessary information from the result.
+//  *
+//  *           (5) If the lattices have different affine parts and they were
+//  *               homogenised, the result is dehomogenised.
+//  */
+// Lattice *OldLatticeIntersection(Lattice *X, Lattice *Y) {
 
-  int i, j, exist;
-  Lattice *result = NULL, *U = NULL;
-  Lattice *A = NULL, *B = NULL, *H = NULL;
-  Matrix *fordio;
-  Vector *X1 = NULL;
+//   int i, j, exist;
+//   Lattice *result = NULL, *U = NULL;
+//   Lattice *A = NULL, *B = NULL, *H = NULL;
+//   Matrix *fordio;
+//   Vector *X1 = NULL;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered LATTICEINTERSECTION \n");
-  fclose(fp);
-#endif
+// #ifdef DOMDEBUG
+//   FILE *fp;
+//   fp = fopen("_debug", "a");
+//   fprintf(fp, "\nEntered LATTICEINTERSECTION \n");
+//   fclose(fp);
+// #endif
 
-  if (X->NbRows != X->NbColumns) {
-    fprintf(stderr, "\nIn LatticeIntersection : The Input Matrix X is a not a "
-                    "well defined Lattice\n");
-    return EmptyLattice(X->NbRows);
-  }
+//   if (X->NbRows != X->NbColumns) {
+//     fprintf(stderr, "\nIn LatticeIntersection : The Input Matrix X is a not a "
+//                     "well defined Lattice\n");
+//     return EmptyLattice(X->NbRows);
+//   }
 
-  if (Y->NbRows != Y->NbColumns) {
-    fprintf(stderr, "\nIn LatticeIntersection : The Input Matrix Y is a not a "
-                    "well defined Lattice\n");
-    return EmptyLattice(X->NbRows);
-  }
+//   if (Y->NbRows != Y->NbColumns) {
+//     fprintf(stderr, "\nIn LatticeIntersection : The Input Matrix Y is a not a "
+//                     "well defined Lattice\n");
+//     return EmptyLattice(X->NbRows);
+//   }
 
-  if (Y->NbRows != X->NbRows) {
-    fprintf(stderr, "\nIn LatticeIntersection : the input lattices X and Y are "
-                    "of incompatible dimensions\n");
-    return EmptyLattice(X->NbRows);
-  }
+//   if (Y->NbRows != X->NbRows) {
+//     fprintf(stderr, "\nIn LatticeIntersection : the input lattices X and Y are "
+//                     "of incompatible dimensions\n");
+//     return EmptyLattice(X->NbRows);
+//   }
 
-  if (isNormalLattice(X))
-    A = (Lattice *)Matrix_Copy(X);
-  else {
-    AffineHermite(X, &H, &U);
-    A = (Lattice *)Matrix_Copy(H);
-    Matrix_Free((Matrix *)H);
-    Matrix_Free((Matrix *)U);
-  }
+//   if (isNormalLattice(X))
+//     A = (Lattice *)Matrix_Copy(X);
+//   else {
+//     AffineHermite(X, &H, &U);
+//     A = (Lattice *)Matrix_Copy(H);
+//     Matrix_Free((Matrix *)H);
+//     Matrix_Free((Matrix *)U);
+//   }
 
-  if (isNormalLattice(Y))
-    B = (Lattice *)Matrix_Copy(Y);
-  else {
-    AffineHermite(Y, &H, &U);
-    B = (Lattice *)Matrix_Copy(H);
-    Matrix_Free((Matrix *)H);
-    Matrix_Free((Matrix *)U);
-  }
+//   if (isNormalLattice(Y))
+//     B = (Lattice *)Matrix_Copy(Y);
+//   else {
+//     AffineHermite(Y, &H, &U);
+//     B = (Lattice *)Matrix_Copy(H);
+//     Matrix_Free((Matrix *)H);
+//     Matrix_Free((Matrix *)U);
+//   }
 
-  if ((isEmptyLattice(A)) || (isEmptyLattice(B))) {
-    result = EmptyLattice(X->NbRows);
-    Matrix_Free((Matrix *)A);
-    Matrix_Free((Matrix *)B);
-    return result;
-  }
-  fordio = MakeDioEqforInter(A, B);
-  Matrix_Free(A);
-  Matrix_Free(B);
-  exist = SolveDiophantine(fordio, (Matrix **)&U, &X1);
-  if (exist < 0) { /* Intersection is NULL */
-    result = (EmptyLattice(X->NbRows));
-    return result;
-  }
+//   if ((isEmptyLattice(A)) || (isEmptyLattice(B))) {
+//     result = EmptyLattice(X->NbRows);
+//     Matrix_Free((Matrix *)A);
+//     Matrix_Free((Matrix *)B);
+//     return result;
+//   }
+//   fordio = MakeDioEqforInter(A, B);
+//   Matrix_Free(A);
+//   Matrix_Free(B);
+//   exist = SolveDiophantine(fordio, (Matrix **)&U, &X1);
+//   if (exist < 0) { /* Intersection is NULL */
+//     result = (EmptyLattice(X->NbRows));
+//     return result;
+//   }
 
-  result = (Lattice *)Matrix_Alloc(X->NbRows, X->NbColumns);
-  for (i = 0; i < result->NbRows - 1; i++)
-    for (j = 0; j < result->NbColumns - 1; j++)
-      value_assign(result->p[i][j], U->p[i][j]);
+//   result = (Lattice *)Matrix_Alloc(X->NbRows, X->NbColumns);
+//   for (i = 0; i < result->NbRows - 1; i++)
+//     for (j = 0; j < result->NbColumns - 1; j++)
+//       value_assign(result->p[i][j], U->p[i][j]);
 
-  for (i = 0; i < result->NbRows - 1; i++)
-    value_assign(result->p[i][result->NbColumns - 1], X1->p[i]);
-  for (i = 0; i < result->NbColumns - 1; i++)
-    value_set_si(result->p[result->NbRows - 1][i], 0);
-  value_set_si(result->p[result->NbRows - 1][result->NbColumns - 1], 1);
+//   for (i = 0; i < result->NbRows - 1; i++)
+//     value_assign(result->p[i][result->NbColumns - 1], X1->p[i]);
+//   for (i = 0; i < result->NbColumns - 1; i++)
+//     value_set_si(result->p[result->NbRows - 1][i], 0);
+//   value_set_si(result->p[result->NbRows - 1][result->NbColumns - 1], 1);
 
-  Matrix_Free((Matrix *)U);
-  Vector_Free(X1);
-  Matrix_Free(fordio);
+//   Matrix_Free((Matrix *)U);
+//   Vector_Free(X1);
+//   Matrix_Free(fordio);
 
-  AffineHermite(result, &H, &U);
-  Matrix_Free((Matrix *)result);
-  result = (Lattice *)Matrix_Copy(H);
+//   AffineHermite(result, &H, &U);
+//   Matrix_Free((Matrix *)result);
+//   result = (Lattice *)Matrix_Copy(H);
 
-  Matrix_Free((Matrix *)H);
-  Matrix_Free((Matrix *)U);
+//   Matrix_Free((Matrix *)H);
+//   Matrix_Free((Matrix *)U);
 
-  /* Check whether the Lattice is NULL or not */
+//   /* Check whether the Lattice is NULL or not */
 
-  if (isEmptyLattice(result)) {
-    Matrix_Free((Matrix *)result);
-    return (EmptyLattice(X->NbRows));
-  }
-  return result;
-} /* LatticeIntersection */
+//   if (isEmptyLattice(result)) {
+//     Matrix_Free((Matrix *)result);
+//     return (EmptyLattice(X->NbRows));
+//   }
+//   return result;
+// } /* LatticeIntersection */
 
 static Matrix *MakeDioEqforInter(Lattice *A, Lattice *B) {
 
@@ -749,12 +749,11 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "M1Inverse = ");
     Matrix_Print(stderr, P_VALUE_FMT, M1Inverse);
-    fprintf(stderr, "inverse1: ok\n");
   #endif
   
   MtProduct = Matrix_Alloc(M1Inverse->NbRows, M2->NbColumns);
   Matrix_Product(M1Inverse, M2, MtProduct);
-  Smith(MtProduct, &U, &Vinv, &DiagMatrix);
+  left_hermite(MtProduct, &DiagMatrix, &U, &Vinv);
   V = Matrix_Alloc(Vinv->NbRows, Vinv->NbColumns);
   Matrix_Inverse(Vinv, V);
   Matrix_Free(Vinv);
@@ -1066,281 +1065,281 @@ static void AddLattice(LatticeUnion *Head, Matrix *B1, Matrix *B2,
   return;
 } /* AddLattice */
 
-/*
- * Given a polyhedron 'A', store the Hermite basis 'B' and return the true
- * dimension of the polyhedron 'A'.
- * Algorithm :
- *
- *             1) First we find all the vertices of the Polyhedron A.
- *                Now suppose the vertices are [v1, v2...vn], then
- *                a particular set of vectors governing the space of A are
- *                given by [v1-v2, v1-v3, ... v1-vn] (let us say V).
- *                So we initially calculate these vectors.
- *             2) Then there are the rays and lines which contribute to the
- *                space in which A is going to lie.
- *                So we append to the rays and lines. So now we get a matrix
- *                {These are the rows} [ V ] [l1] [l2]...[lk]
- *                where l1 to lk are either rays or lines of the Polyhedron A.
- *             3) The above matrix is the set of vectors which determine
- *                the space in which A is going to lie.
- *                Using this matrix we find a Basis which is such that
- *                the first 'm' columns of it determine the space of A.
- *             4) But we also have to ensure that in the last 'n-m'
- *                coordinates the Polyhedron is '0', this is done by
- *                taking the image by B(inv) of A and finding the remaining
- *                equalities, and composing it with the matrix B, so as
- *                to get a new matrix which is the actual Hermite Basis of
- *                the Polyhedron.
- */
-int FindHermiteBasisofDomain(Polyhedron *A, Matrix **B) {
+// /*
+//  * Given a polyhedron 'A', store the Hermite basis 'B' and return the true
+//  * dimension of the polyhedron 'A'.
+//  * Algorithm :
+//  *
+//  *             1) First we find all the vertices of the Polyhedron A.
+//  *                Now suppose the vertices are [v1, v2...vn], then
+//  *                a particular set of vectors governing the space of A are
+//  *                given by [v1-v2, v1-v3, ... v1-vn] (let us say V).
+//  *                So we initially calculate these vectors.
+//  *             2) Then there are the rays and lines which contribute to the
+//  *                space in which A is going to lie.
+//  *                So we append to the rays and lines. So now we get a matrix
+//  *                {These are the rows} [ V ] [l1] [l2]...[lk]
+//  *                where l1 to lk are either rays or lines of the Polyhedron A.
+//  *             3) The above matrix is the set of vectors which determine
+//  *                the space in which A is going to lie.
+//  *                Using this matrix we find a Basis which is such that
+//  *                the first 'm' columns of it determine the space of A.
+//  *             4) But we also have to ensure that in the last 'n-m'
+//  *                coordinates the Polyhedron is '0', this is done by
+//  *                taking the image by B(inv) of A and finding the remaining
+//  *                equalities, and composing it with the matrix B, so as
+//  *                to get a new matrix which is the actual Hermite Basis of
+//  *                the Polyhedron.
+//  */
+// int FindHermiteBasisofDomain(Polyhedron *A, Matrix **B) {
 
-  int i, j;
-  Matrix *temp, *temp1, *tempinv, *Newmat;
-  Matrix *vert, *rays, *result;
-  Polyhedron *Image;
-  int rank, equcount;
-  int noofvertices = 0, noofrays = 0;
-  int vercount, raycount;
-  Value lcm, fact;
+//   int i, j;
+//   Matrix *temp, *temp1, *tempinv, *Newmat;
+//   Matrix *vert, *rays, *result;
+//   Polyhedron *Image;
+//   int rank, equcount;
+//   int noofvertices = 0, noofrays = 0;
+//   int vercount, raycount;
+//   Value lcm, fact;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered FINDHERMITEBASISOFDOMAIN \n");
-  fclose(fp);
-#endif
+// #ifdef DOMDEBUG
+//   FILE *fp;
+//   fp = fopen("_debug", "a");
+//   fprintf(fp, "\nEntered FINDHERMITEBASISOFDOMAIN \n");
+//   fclose(fp);
+// #endif
 
-  POL_ENSURE_FACETS(A);
-  POL_ENSURE_VERTICES(A);
+//   POL_ENSURE_FACETS(A);
+//   POL_ENSURE_VERTICES(A);
 
-  /* Checking is empty */
-  if (emptyQ(A)) {
-    B[0] = Identity(A->Dimension + 1);
-    return (-1);
-  }
+//   /* Checking is empty */
+//   if (emptyQ(A)) {
+//     B[0] = Identity(A->Dimension + 1);
+//     return (-1);
+//   }
 
-  value_init(lcm);
-  value_init(fact);
-  value_set_si(lcm, 1);
+//   value_init(lcm);
+//   value_init(fact);
+//   value_set_si(lcm, 1);
 
-  /* Finding the Vertices */
-  for (i = 0; i < A->NbRays; i++)
-    if ((value_notzero_p(A->Ray[i][0])) &&
-        value_notzero_p(A->Ray[i][A->Dimension + 1]))
-      noofvertices++;
-    else
-      noofrays++;
+//   /* Finding the Vertices */
+//   for (i = 0; i < A->NbRays; i++)
+//     if ((value_notzero_p(A->Ray[i][0])) &&
+//         value_notzero_p(A->Ray[i][A->Dimension + 1]))
+//       noofvertices++;
+//     else
+//       noofrays++;
 
-  vert = Matrix_Alloc(noofvertices, A->Dimension + 1);
-  rays = Matrix_Alloc(noofrays, A->Dimension);
-  vercount = 0;
-  raycount = 0;
+//   vert = Matrix_Alloc(noofvertices, A->Dimension + 1);
+//   rays = Matrix_Alloc(noofrays, A->Dimension);
+//   vercount = 0;
+//   raycount = 0;
 
-  for (i = 0; i < A->NbRays; i++) {
-    if ((value_notzero_p(A->Ray[i][0])) &&
-        value_notzero_p(A->Ray[i][A->Dimension + 1])) {
-      for (j = 1; j < A->Dimension + 2; j++)
-        value_assign(vert->p[vercount][j - 1], A->Ray[i][j]);
-      value_lcm(lcm, lcm, A->Ray[i][j - 1]);
-      vercount++;
-    } else {
-      for (j = 1; j < A->Dimension + 1; j++)
-        value_assign(rays->p[raycount][j - 1], A->Ray[i][j]);
-      raycount++;
-    }
-  }
+//   for (i = 0; i < A->NbRays; i++) {
+//     if ((value_notzero_p(A->Ray[i][0])) &&
+//         value_notzero_p(A->Ray[i][A->Dimension + 1])) {
+//       for (j = 1; j < A->Dimension + 2; j++)
+//         value_assign(vert->p[vercount][j - 1], A->Ray[i][j]);
+//       value_lcm(lcm, lcm, A->Ray[i][j - 1]);
+//       vercount++;
+//     } else {
+//       for (j = 1; j < A->Dimension + 1; j++)
+//         value_assign(rays->p[raycount][j - 1], A->Ray[i][j]);
+//       raycount++;
+//     }
+//   }
 
-  /* Multiplying the rows by the lcm */
-  for (i = 0; i < vert->NbRows; i++) {
-    value_division(fact, lcm, vert->p[i][vert->NbColumns - 1]);
-    for (j = 0; j < vert->NbColumns - 1; j++)
-      value_multiply(vert->p[i][j], vert->p[i][j], fact);
-  }
+//   /* Multiplying the rows by the lcm */
+//   for (i = 0; i < vert->NbRows; i++) {
+//     value_division(fact, lcm, vert->p[i][vert->NbColumns - 1]);
+//     for (j = 0; j < vert->NbColumns - 1; j++)
+//       value_multiply(vert->p[i][j], vert->p[i][j], fact);
+//   }
 
-  /* Drop the Last Columns */
-  temp = RemoveColumn(vert, vert->NbColumns - 1);
-  Matrix_Free(vert);
+//   /* Drop the Last Columns */
+//   temp = RemoveColumn(vert, vert->NbColumns - 1);
+//   Matrix_Free(vert);
 
-  /* Getting the Vectors */
-  vert = Matrix_Alloc(temp->NbRows - 1, temp->NbColumns);
-  for (i = 1; i < temp->NbRows; i++)
-    for (j = 0; j < temp->NbColumns; j++)
-      value_subtract(vert->p[i - 1][j], temp->p[0][j], temp->p[i][j]);
+//   /* Getting the Vectors */
+//   vert = Matrix_Alloc(temp->NbRows - 1, temp->NbColumns);
+//   for (i = 1; i < temp->NbRows; i++)
+//     for (j = 0; j < temp->NbColumns; j++)
+//       value_subtract(vert->p[i - 1][j], temp->p[0][j], temp->p[i][j]);
 
-  Matrix_Free(temp);
+//   Matrix_Free(temp);
 
-  /* Add the Rays and Lines */
-  /* Combined Matrix */
-  result = Matrix_Alloc(vert->NbRows + rays->NbRows, vert->NbColumns);
-  for (i = 0; i < vert->NbRows; i++)
-    for (j = 0; j < result->NbColumns; j++)
-      value_assign(result->p[i][j], vert->p[i][j]);
+//   /* Add the Rays and Lines */
+//   /* Combined Matrix */
+//   result = Matrix_Alloc(vert->NbRows + rays->NbRows, vert->NbColumns);
+//   for (i = 0; i < vert->NbRows; i++)
+//     for (j = 0; j < result->NbColumns; j++)
+//       value_assign(result->p[i][j], vert->p[i][j]);
 
-  for (; i < result->NbRows; i++)
-    for (j = 0; j < result->NbColumns; j++)
-      value_assign(result->p[i][j], rays->p[i - vert->NbRows][j]);
+//   for (; i < result->NbRows; i++)
+//     for (j = 0; j < result->NbColumns; j++)
+//       value_assign(result->p[i][j], rays->p[i - vert->NbRows][j]);
 
-  Matrix_Free(vert);
-  Matrix_Free(rays);
+//   Matrix_Free(vert);
+//   Matrix_Free(rays);
 
-  rank = findHermiteBasis(result, &temp);
-  temp1 = ChangeLatticeDimension(temp, temp->NbRows + 1);
+//   rank = findHermiteBasis(result, &temp);
+//   temp1 = ChangeLatticeDimension(temp, temp->NbRows + 1);
 
-  Matrix_Free(result);
-  Matrix_Free(temp);
+//   Matrix_Free(result);
+//   Matrix_Free(temp);
 
-  /* Adding the Affine Part to take care of the Equalities */
-  temp = Matrix_Copy(temp1);
-  tempinv = Matrix_Alloc(temp->NbRows, temp->NbColumns);
-  Matrix_Inverse(temp, tempinv);
-  Matrix_Free(temp);
-  Image = DomainImage(A, tempinv, MAXNOOFRAYS);
-  Matrix_Free(tempinv);
-  Newmat = Matrix_Alloc(temp1->NbRows, temp1->NbColumns);
-  for (i = 0; i < rank; i++)
-    for (j = 0; j < Newmat->NbColumns; j++)
-      value_set_si(Newmat->p[i][j], 0);
-  for (i = 0; i < rank; i++)
-    value_set_si(Newmat->p[i][i], 1);
-  equcount = 0;
-  for (i = 0; i < Image->NbConstraints; i++)
-    if (value_zero_p(Image->Constraint[i][0])) {
-      for (j = 1; j < Image->Dimension + 2; j++)
-        value_assign(Newmat->p[rank + equcount][j - 1],
-                     Image->Constraint[i][j]);
-      ++equcount;
-    }
-  Domain_Free(Image);
-  for (i = 0; i < Newmat->NbColumns - 1; i++)
-    value_set_si(Newmat->p[Newmat->NbRows - 1][i], 0);
-  value_set_si(Newmat->p[Newmat->NbRows - 1][Newmat->NbColumns - 1], 1);
-  temp = Matrix_Alloc(Newmat->NbRows, Newmat->NbColumns);
-  Matrix_Inverse(Newmat, temp);
-  Matrix_Free(Newmat);
-  B[0] = Matrix_Alloc(temp1->NbRows, temp->NbColumns);
+//   /* Adding the Affine Part to take care of the Equalities */
+//   temp = Matrix_Copy(temp1);
+//   tempinv = Matrix_Alloc(temp->NbRows, temp->NbColumns);
+//   Matrix_Inverse(temp, tempinv);
+//   Matrix_Free(temp);
+//   Image = DomainImage(A, tempinv, MAXNOOFRAYS);
+//   Matrix_Free(tempinv);
+//   Newmat = Matrix_Alloc(temp1->NbRows, temp1->NbColumns);
+//   for (i = 0; i < rank; i++)
+//     for (j = 0; j < Newmat->NbColumns; j++)
+//       value_set_si(Newmat->p[i][j], 0);
+//   for (i = 0; i < rank; i++)
+//     value_set_si(Newmat->p[i][i], 1);
+//   equcount = 0;
+//   for (i = 0; i < Image->NbConstraints; i++)
+//     if (value_zero_p(Image->Constraint[i][0])) {
+//       for (j = 1; j < Image->Dimension + 2; j++)
+//         value_assign(Newmat->p[rank + equcount][j - 1],
+//                      Image->Constraint[i][j]);
+//       ++equcount;
+//     }
+//   Domain_Free(Image);
+//   for (i = 0; i < Newmat->NbColumns - 1; i++)
+//     value_set_si(Newmat->p[Newmat->NbRows - 1][i], 0);
+//   value_set_si(Newmat->p[Newmat->NbRows - 1][Newmat->NbColumns - 1], 1);
+//   temp = Matrix_Alloc(Newmat->NbRows, Newmat->NbColumns);
+//   Matrix_Inverse(Newmat, temp);
+//   Matrix_Free(Newmat);
+//   B[0] = Matrix_Alloc(temp1->NbRows, temp->NbColumns);
 
-  Matrix_Product(temp1, temp, B[0]);
-  Matrix_Free(temp1);
-  Matrix_Free(temp);
-  value_clear(lcm);
-  value_clear(fact);
-  return rank;
-} /* FindHermiteBasisofDomain */
+//   Matrix_Product(temp1, temp, B[0]);
+//   Matrix_Free(temp1);
+//   Matrix_Free(temp);
+//   value_clear(lcm);
+//   value_clear(fact);
+//   return rank;
+// } /* FindHermiteBasisofDomain */
 
-/*
- * Return the image of a lattice 'A' by the invertible, affine, rational
- * function 'M'.
- */
-Lattice *LatticeImage(Lattice *A, Matrix *M) {
+// /*
+//  * Return the image of a lattice 'A' by the invertible, affine, rational
+//  * function 'M'.
+//  */
+// Lattice *LatticeImage(Lattice *A, Matrix *M) {
 
-  Lattice *Img, *temp, *Minv;
+//   Lattice *Img, *temp, *Minv;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered LATTICEIMAGE \n");
-  fclose(fp);
-#endif
+// #ifdef DOMDEBUG
+//   FILE *fp;
+//   fp = fopen("_debug", "a");
+//   fprintf(fp, "\nEntered LATTICEIMAGE \n");
+//   fclose(fp);
+// #endif
 
-  if ((A->NbRows != M->NbRows) || (M->NbRows != M->NbColumns))
-    return (EmptyLattice(A->NbRows));
+//   if ((A->NbRows != M->NbRows) || (M->NbRows != M->NbColumns))
+//     return (EmptyLattice(A->NbRows));
 
-  if (value_one_p(M->p[M->NbRows - 1][M->NbColumns - 1])) {
-    Img = Matrix_Alloc(M->NbRows, A->NbColumns);
-    Matrix_Product(M, A, Img);
-    return Img;
-  }
-  temp = Matrix_Copy(M);
-  Minv = Matrix_Alloc(temp->NbColumns, temp->NbRows);
-  Matrix_Inverse(temp, Minv);
-  Matrix_Free(temp);
+//   if (value_one_p(M->p[M->NbRows - 1][M->NbColumns - 1])) {
+//     Img = Matrix_Alloc(M->NbRows, A->NbColumns);
+//     Matrix_Product(M, A, Img);
+//     return Img;
+//   }
+//   temp = Matrix_Copy(M);
+//   Minv = Matrix_Alloc(temp->NbColumns, temp->NbRows);
+//   Matrix_Inverse(temp, Minv);
+//   Matrix_Free(temp);
 
-  Img = LatticePreimage(A, Minv);
-  Matrix_Free(Minv);
-  return Img;
-} /* LatticeImage */
+//   Img = LatticePreimage(A, Minv);
+//   Matrix_Free(Minv);
+//   return Img;
+// } /* LatticeImage */
 
-/*
- * Return the preimage of a lattice 'L' by an affine, rational function 'G'.
- * Algorithm:
- *           (1) Prepare Diophantine equation :
- *               [Gl -Ll][x y] = [Ga -La]{"l-linear, a-affine"}
- *           (2) Solve the Diophantine equations.
- *           (3) If there is solution to the Diophantine eq., extract the
- *               general solution and the particular solution of x and that
- *               forms the preimage of 'L' by 'G'.
- */
-Lattice *LatticePreimage(Lattice *L, Matrix *G) {
+// /*
+//  * Return the preimage of a lattice 'L' by an affine, rational function 'G'.
+//  * Algorithm:
+//  *           (1) Prepare Diophantine equation :
+//  *               [Gl -Ll][x y] = [Ga -La]{"l-linear, a-affine"}
+//  *           (2) Solve the Diophantine equations.
+//  *           (3) If there is solution to the Diophantine eq., extract the
+//  *               general solution and the particular solution of x and that
+//  *               forms the preimage of 'L' by 'G'.
+//  */
+// Lattice *LatticePreimage(Lattice *L, Matrix *G) {
 
-  Matrix *Dio, *U;
-  Lattice *Result;
-  Vector *X;
-  int i, j;
-  int rank;
-  Value divisor, tmp;
+//   Matrix *Dio, *U;
+//   Lattice *Result;
+//   Vector *X;
+//   int i, j;
+//   int rank;
+//   Value divisor, tmp;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered LATTICEPREIMAGE \n");
-  fclose(fp);
-#endif
+// #ifdef DOMDEBUG
+//   FILE *fp;
+//   fp = fopen("_debug", "a");
+//   fprintf(fp, "\nEntered LATTICEPREIMAGE \n");
+//   fclose(fp);
+// #endif
 
-  /* Check for the validity of the function */
-  if (G->NbRows != L->NbRows) {
-    fprintf(stderr, "\nIn LatticePreimage: Incompatible types of Lattice and "
-                    "the function\n");
-    return (EmptyLattice(G->NbColumns));
-  }
+//   /* Check for the validity of the function */
+//   if (G->NbRows != L->NbRows) {
+//     fprintf(stderr, "\nIn LatticePreimage: Incompatible types of Lattice and "
+//                     "the function\n");
+//     return (EmptyLattice(G->NbColumns));
+//   }
 
-  value_init(divisor);
-  value_init(tmp);
+//   value_init(divisor);
+//   value_init(tmp);
 
-  /* Making Diophantine Equations [g -L] */
-  value_assign(divisor, G->p[G->NbRows - 1][G->NbColumns - 1]);
-  Dio = Matrix_Alloc(G->NbRows, G->NbColumns + L->NbColumns - 1);
-  for (i = 0; i < G->NbRows - 1; i++)
-    for (j = 0; j < G->NbColumns - 1; j++)
-      value_assign(Dio->p[i][j], G->p[i][j]);
+//   /* Making Diophantine Equations [g -L] */
+//   value_assign(divisor, G->p[G->NbRows - 1][G->NbColumns - 1]);
+//   Dio = Matrix_Alloc(G->NbRows, G->NbColumns + L->NbColumns - 1);
+//   for (i = 0; i < G->NbRows - 1; i++)
+//     for (j = 0; j < G->NbColumns - 1; j++)
+//       value_assign(Dio->p[i][j], G->p[i][j]);
 
-  for (i = 0; i < G->NbRows - 1; i++)
-    for (j = 0; j < L->NbColumns - 1; j++) {
-      value_multiply(tmp, divisor, L->p[i][j]);
-      value_oppose(Dio->p[i][j + G->NbColumns - 1], tmp);
-    }
+//   for (i = 0; i < G->NbRows - 1; i++)
+//     for (j = 0; j < L->NbColumns - 1; j++) {
+//       value_multiply(tmp, divisor, L->p[i][j]);
+//       value_oppose(Dio->p[i][j + G->NbColumns - 1], tmp);
+//     }
 
-  for (i = 0; i < Dio->NbRows - 1; i++) {
-    value_multiply(tmp, divisor, L->p[i][L->NbColumns - 1]);
-    value_subtract(tmp, G->p[i][G->NbColumns - 1], tmp);
-    value_assign(Dio->p[i][Dio->NbColumns - 1], tmp);
-  }
-  for (i = 0; i < Dio->NbColumns - 1; i++)
-    value_set_si(Dio->p[Dio->NbRows - 1][i], 0);
+//   for (i = 0; i < Dio->NbRows - 1; i++) {
+//     value_multiply(tmp, divisor, L->p[i][L->NbColumns - 1]);
+//     value_subtract(tmp, G->p[i][G->NbColumns - 1], tmp);
+//     value_assign(Dio->p[i][Dio->NbColumns - 1], tmp);
+//   }
+//   for (i = 0; i < Dio->NbColumns - 1; i++)
+//     value_set_si(Dio->p[Dio->NbRows - 1][i], 0);
 
-  value_set_si(Dio->p[Dio->NbRows - 1][Dio->NbColumns - 1], 1);
-  rank = SolveDiophantine(Dio, &U, &X);
+//   value_set_si(Dio->p[Dio->NbRows - 1][Dio->NbColumns - 1], 1);
+//   rank = SolveDiophantine(Dio, &U, &X);
 
-  if (rank == -1)
-    Result = EmptyLattice(G->NbColumns);
-  else {
-    Result = Matrix_Alloc(G->NbColumns, G->NbColumns);
-    for (i = 0; i < Result->NbRows - 1; i++)
-      for (j = 0; j < Result->NbColumns - 1; j++)
-        value_assign(Result->p[i][j], U->p[i][j]);
+//   if (rank == -1)
+//     Result = EmptyLattice(G->NbColumns);
+//   else {
+//     Result = Matrix_Alloc(G->NbColumns, G->NbColumns);
+//     for (i = 0; i < Result->NbRows - 1; i++)
+//       for (j = 0; j < Result->NbColumns - 1; j++)
+//         value_assign(Result->p[i][j], U->p[i][j]);
 
-    for (i = 0; i < Result->NbRows - 1; i++)
-      value_assign(Result->p[i][Result->NbColumns - 1], X->p[i]);
-    Matrix_Free(U);
-    Vector_Free(X);
-    for (i = 0; i < Result->NbColumns - 1; i++)
-      value_set_si(Result->p[Result->NbRows - 1][i], 0);
-    value_set_si(Result->p[i][i], 1);
-  }
-  Matrix_Free(Dio);
-  value_clear(divisor);
-  value_clear(tmp);
-  return Result;
-} /* LatticePreimage */
+//     for (i = 0; i < Result->NbRows - 1; i++)
+//       value_assign(Result->p[i][Result->NbColumns - 1], X->p[i]);
+//     Matrix_Free(U);
+//     Vector_Free(X);
+//     for (i = 0; i < Result->NbColumns - 1; i++)
+//       value_set_si(Result->p[Result->NbRows - 1][i], 0);
+//     value_set_si(Result->p[i][i], 1);
+//   }
+//   Matrix_Free(Dio);
+//   value_clear(divisor);
+//   value_clear(tmp);
+//   return Result;
+// } /* LatticePreimage */
 
 /*
  * Return True if the matrix 'm' is a valid lattice, otherwise return False.
@@ -1371,31 +1370,31 @@ Bool IsLattice(Matrix *m) {
   return True;
 } /* IsLattice */
 
-/*
- *  Check whether the matrix 'm' is full row-rank or not.
- */
-Bool isfulldim(Matrix *m) {
+// /*
+//  *  Check whether the matrix 'm' is full row-rank or not.
+//  */
+// Bool isfulldim(Matrix *m) {
 
-  Matrix *h, *u;
-  int i;
+//   Matrix *h, *u;
+//   int i;
 
-  /*
-     res = Hermite (m, &h, &u);
-     if (res != m->NbRows)
-     return False ;
-  */
+//   /*
+//      res = Hermite (m, &h, &u);
+//      if (res != m->NbRows)
+//      return False ;
+//   */
 
-  Hermite(m, &h, &u);
-  for (i = 0; i < h->NbRows; i++)
-    if (value_zero_p(h->p[i][i])) {
-      Matrix_Free(h);
-      Matrix_Free(u);
-      return False;
-    }
-  Matrix_Free(h);
-  Matrix_Free(u);
-  return True;
-} /* isfulldim */
+//   Hermite(m, &h, &u);
+//   for (i = 0; i < h->NbRows; i++)
+//     if (value_zero_p(h->p[i][i])) {
+//       Matrix_Free(h);
+//       Matrix_Free(u);
+//       return False;
+//     }
+//   Matrix_Free(h);
+//   Matrix_Free(u);
+//   return True;
+// } /* isfulldim */
 
 /*
  * This function takes as input a lattice list in which the lattices have the
