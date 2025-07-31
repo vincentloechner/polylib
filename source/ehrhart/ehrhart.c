@@ -2286,15 +2286,12 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
   Matrix *CT;
   Param_Polyhedron *PP;
   Param_Domain *Q;
-  int i, j, hdim, dim, nb_param, np;
+  int i, hdim, dim, nb_param, np;
   Value *lcm, *m1, hdv;
   Value *context;
   Enumeration *en, *res;
   Value expansion_det;
   Polyhedron *Expanded;
-
-  /* used to scan the vertices */
-  Param_Vertices *V_tmp;
 
   res = NULL;
   P = Pi;
@@ -2698,7 +2695,7 @@ Enumeration *Constraints_EhrhartQuickApx(Matrix const *M, Matrix const *C,
 const char **parmsWithoutElim(char const **parmNames,
                               unsigned int const *elimParms,
                               unsigned int nbParms) {
-  int i = 0, j = 0, k;
+  int i = 0, k;
   int newParmNb = nbParms - elimParms[0];
   const char **newParmNames = (const char **)malloc(newParmNb * sizeof(char *));
   for (k = 1; k <= elimParms[0]; k++) {

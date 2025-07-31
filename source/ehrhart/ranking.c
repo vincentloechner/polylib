@@ -33,7 +33,7 @@
  */
 Polyhedron *LexSmaller(Polyhedron *P, Polyhedron *D, unsigned dim,
                        Polyhedron *C, unsigned MAXRAYS) {
-  unsigned i, j, k, r;
+  unsigned i, k, r;
   unsigned nb_parms = C->Dimension;
   unsigned nb_vars = dim;
   unsigned P_extra = P->Dimension - nb_vars - nb_parms;

@@ -54,7 +54,6 @@ void dehomogenize_evalue(evalue *ep, int nb_param) {
     This function is mutually recursive with dehomogenize_evalue.
 **/
 void dehomogenize_enode(enode *p, int nb_param) {
-  evalue *temp;
   int i;
   for (i = 0; i < p->size; i++) {
     dehomogenize_evalue(&p->arr[i], nb_param);
@@ -83,10 +82,8 @@ static evalue *dehomogenize_polynomial(enode *en) {
   evalue *enn;
   evalue *ev;
   int i;
-  double som;
   Value num, den, gcd, f1, f2;
   assert(en->type == polynomial);
-  som = 0;
   value_init(num);
   value_init(den);
   value_init(gcd);
