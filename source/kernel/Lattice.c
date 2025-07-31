@@ -115,7 +115,7 @@ Bool isEmptyLattice(Lattice *A) {
 #endif
   if(A->NbColumns==1) { 
     for ( j = 0; j < A->NbRows-2; j++) {
-      if (A->p[0][j]!=0) {
+      if (value_notzero_p(A->p[0][j])) {
         a=False;
         return a;
       }
@@ -1419,7 +1419,7 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
   factor allfac;
   Bool retval = False;
   int width;
-  Value cnt, aux, k, fac, num, tmp, foobar;
+  Value cnt, aux, k, fac, tmp, foobar;
 
   if ((*InputList == NULL) || (InputList[0]->next == NULL))
     return False;
