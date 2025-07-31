@@ -9,8 +9,9 @@ M 1
 
 D 1
 
-0 4
-#0 0 2 1
+# polyhedron with an equality
+1 4
+0 0 1 -1
 
 # ZAlloc test
 F 100

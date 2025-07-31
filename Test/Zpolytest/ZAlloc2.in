@@ -1,20 +1,20 @@
-# just a ZAlloc and check that the result is in HNF
+# just a ZAlloc and check that the result is canonical
 
 M 1
 
+# a lattice with an empty column HNF
 3 3
-0 1 0
+1 1 0
 0 0 1
 0 0 1
 
 D 1
 
-5 4
+4 4
 1 1 0 0
 1 -1 0 10
 1 0 1 0
 1 0 -1 100
-0 1 0 0
 
 
 # ZAlloc test
