@@ -98,6 +98,12 @@ ZPOLYTESTS =  \
 	ZUnion2.in \
 	ZDiff1.in \
 	ZDiff2.in \
+	ZDiff3.in \
+	ZDiff4.in \
+	ZDiff5.in \
+	ZDiff6.in \
+	ZDiff7.in \
+	ZDiff8.in \
 	ZImage1.in \
 	ZPre1.in \
 	ZPre2.in  \

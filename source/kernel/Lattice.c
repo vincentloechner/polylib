@@ -1,7 +1,7 @@
 #include <polylib/polylib.h>
 #include <stdlib.h>
 
-#define NEWINTERSECTION_DEBUG 1
+// #define NEWINTERSECTION_DEBUG 1
 
 typedef struct {
   int count;
