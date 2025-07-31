@@ -1,10 +1,13 @@
 #include <polylib/polylib.h>
 #include <stdlib.h>
 
+#define NEWINTERSECTION_DEBUG 1
+
 typedef struct {
   int count;
   int *fac;
 } factor;
+
 
 static factor allfactors(int num);
 
@@ -691,7 +694,9 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   Value k;
 
   Intersection = LatticeIntersection(X, Y);
-  if (isEmptyLattice(Intersection) == True) {
+  // fprintf(stderr,"Lattice intersection = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, Intersection);
+  if (isEmptyLattice(Intersection)) {
     // fprintf(stderr, "\nIn Lattice2LatticeUnion : the input lattices X and Y do "
     //                 "not have any common part\n");
     Matrix_Free(Intersection);
@@ -706,14 +711,20 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   // printf("M2 = ");
   // Matrix_Print(stdout, P_VALUE_FMT, M2);
 
+  int maxdim = (M1->NbColumns > M1->NbRows)? M1->NbColumns : M1->NbRows;
   // compute left(!) inverse of M1 using a dirty patch
-  M1Inverse = Matrix_Alloc(M1->NbColumns, M1->NbColumns);
+  M1Inverse = Matrix_Alloc(maxdim, maxdim);
   // temp = Matrix_Copy(M1);
-  temp = Matrix_Alloc(M1->NbColumns, M1->NbColumns);
-  for (i = 0; i < M1->NbRows; i++)
-    for (int j = 0; j < M1->NbColumns; j++)
-      value_assign(temp->p[i][j], M1->p[i][j]);
+
   // complete temp with Id to make it square
+  temp = Matrix_Alloc(maxdim, maxdim);
+  for (i = 0; i < M1->NbRows; i++) {
+    int j;
+    for (j = 0; j < M1->NbColumns; j++)
+      value_assign(temp->p[i][j], M1->p[i][j]);
+    for( ; j < maxdim; j++)
+      value_set_si(temp->p[i][j], (i==j));
+  }
   for( ; i < temp->NbColumns ; i++ )
     for (int j = 0; j < M1->NbColumns; j++)
       value_set_si(temp->p[i][j], (i==j));
@@ -723,6 +734,7 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
 
   // get the right result: the rightmost columns of M1Inverse are just ignored :)
   M1Inverse->NbColumns = M1->NbRows;
+  M1Inverse->NbRows = M1->NbColumns;
   temp = Matrix_Copy(M1Inverse);
   Matrix_Free(M1Inverse);
   M1Inverse = temp;
@@ -2019,9 +2031,11 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
   #endif
   Matrix_Free(Tmp);
 
-  // recuperating the result. if the top-left value of R is not 1 then we have an empty solution.
+  // get the result. if the top-left value of R is not 1 then we have an empty solution.
 
-  if(value_notone_p(H->p[A->NbRows][A->NbRows])) {
+  int nbcol = (A->NbColumns<B->NbColumns)?A->NbColumns:B->NbColumns;
+
+  if(value_notone_p(H->p[A->NbRows][H->NbColumns-nbcol])) {
     #ifdef NEWINTERSECTION_DEBUG
       fprintf(stderr,"\n Empty intersection\n");
     #endif
@@ -2029,18 +2043,10 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
     return NULL;
   }
 
-  int nbcol = (A->NbColumns<B->NbColumns)?A->NbColumns:B->NbColumns;
-
-  Res=Matrix_Alloc(A->NbRows, nbcol);
-  if (!Res) {
-    errormsg1("LatticeIntersection", "outofmem", "Not enough memory space!");
-    return NULL;
-  }
-  
-
-  for (int i = 0; i < A->NbRows; i++) {
-    for (int j = 0; j < nbcol; j++) {
-        value_assign(Res->p[i][j], H->p[i + A->NbRows][j + A->NbRows]);
+  Res = Matrix_Alloc(A->NbRows, nbcol);
+  for (int i = 0; i < Res->NbRows; i++) {
+    for (int j = 0; j < Res->NbColumns; j++) {
+        value_assign(Res->p[i][j], H->p[i + H->NbRows - Res->NbRows][j + H->NbColumns - Res->NbColumns]);
     }
   }
   Matrix_Free(H);
