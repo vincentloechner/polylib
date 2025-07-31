@@ -694,61 +694,19 @@ static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron* A, ZPolyhedron* B) {
 
 /*
  * Return the image of the Z-polyhedron 'ZPol' under the invertible, affine,
- * rational transformation function 'Func'. The matrix representing the funct-
- * ion must be non-singular and the number of rows of the function must be
- * equal to the number of rows in the matrix representing the lattice of 'ZPol'
+ * rational transformation function 'Func'. 
+ * 
  * Algorithm:
- *         1)  Let ZPol = L (intersect) Q
- *         2)  L1 = LatticeImage(L,F)
- *         3)  Q1 = DomainImage(Q,F)
- *         4)  Z1 = L1(Inverse(L1)*Q1)
- *         5)  Return Z1
+ * - Multiply Lat by Func,
+ * - Canonicalize the result (done in ZPAlloc)
  */
 static ZPolyhedron *ZPolyhedronImage(ZPolyhedron *ZPol, Matrix *Func) {
-
-  // OLD VERSION
-  //   ZPolyhedron *Result = NULL;
-  //   Matrix *LatIm;
-  //   Polyhedron *Pol, *PolImage;
-
-  // #ifdef DOMDEBUG
-  //   FILE *fp;
-  //   fp = fopen("_debug", "a");
-  //   fprintf(fp, "\nEntered ZPOLYHEDRONIMAGE\n");
-  //   fclose(fp);
-  // #endif
-
-  // if ((Func->NbRows != ZPol->Lat->NbRows) ||
-  //     (Func->NbColumns != ZPol->Lat->NbColumns)) {
-  //   fprintf(stderr, "In ZPolImage - The Function, is not compatible with the "
-  //                   "ZPolyhedron\n");
-  //   return NULL;
-  // }
-  // LatIm = LatticeImage(ZPol->Lat, Func);
-  // if (isEmptyLattice(LatIm)) {
-  //   Matrix_Free(LatIm);
-  //   return NULL;
-  // }
-  // Pol = DomainImage(ZPol->P, ZPol->Lat, MAXNOOFRAYS);
-  // PolImage = DomainImage(Pol, Func, MAXNOOFRAYS);
-  // Domain_Free(Pol);
-  // if (emptyQ(PolImage)) {
-  //   Matrix_Free(LatIm);
-  //   Domain_Free(PolImage);
-  //   return NULL;
-  // }
-  // Pol = DomainPreimage(PolImage, LatIm, MAXNOOFRAYS);
-  // Result = ZPolyhedronAlloc(LatIm, Pol);
-  // Domain_Free(Pol);
-  // Domain_Free(PolImage);
-  // Matrix_Free(LatIm);
-  // return Result;
 
   Matrix *newL;
   ZPolyhedron *result;
 
   if ((Func->NbColumns != ZPol->Lat->NbRows)) {
-    errormsg1("ZPolyhedronImage", "diomincomp", "Incompatible dimensions");
+    errormsg1("ZPolyhedronImage", "dimincomp", "Incompatible dimensions");
     return NULL;
   }
 
@@ -761,54 +719,19 @@ static ZPolyhedron *ZPolyhedronImage(ZPolyhedron *ZPol, Matrix *Func) {
 } /* ZPolyhedronImage */
 
 /*
- * Return the preimage of the Z-polyhedron 'Zpol' under an affine transformati-
- * on function 'G'. The number of rows of matrix representing the function 'G',
- * must be equal to the number of rows of the matrix representing the lattice
- * of Z1.
+ * Return the preimage of the Z-polyhedron 'Zpol' under an affine
+ * transformation function 'G'. The number of rows of matrix 'G' must
+ * be equal to the number of rows of the matrix representing the
+ * lattice of Zpol
  * Algorithm:
- *            1) Let Zpol = L (intersect) Q
- *            2) L1 =LatticePreimage(L,F);
- *            3) Q1 = DomainPreimage(Q,F);
- *            4) Z1 = L1(Inverse(L1)*Q1);
- *            5) Return Z1
+ * - build the Z-polyhedron { z' | Lz = Gz', z \in Zpol.P },
+ * - remove z by normalizing the result (remove equalities)
  */
 static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 
   ZPolyhedron *Result;
-  // OLD VERSION
-  // Lattice *Latpreim;
-  // Polyhedron *Qprime, *Q, *Polpreim;
-
-  // #ifdef DOMDEBUG
-  //   FILE *fp;
-  //   fp = fopen("_debug", "a");
-  //   fprintf(fp, "\nEntered ZPOLYHEDRONPREIMAGE\n");
-  //   fclose(fp);
-  // #endif
-
-  // if (G->NbRows != Zpol->Lat->NbRows) {
-  //   fprintf(stderr, "\nIn ZPolyhedronPreimage: Error, The dimensions of the ");
-  //   fprintf(stderr, "function are not compatible with that of the Zpolyhedron");
-  //   return EmptyZPolyhedron(G->NbColumns - 1);
-  // }
-  // Q = DomainImage(Zpol->P, Zpol->Lat, MAXNOOFRAYS);
-  // Polpreim = DomainPreimage(Q, G, MAXNOOFRAYS);
-  // if (emptyQ(Polpreim))
-  //   Result = NULL;
-  // else {
-  //   Latpreim = LatticePreimage(Zpol->Lat, G);
-  //   if (isEmptyLattice(Latpreim))
-  //     Result = NULL;
-  //   else {
-  //     Qprime = DomainPreimage(Polpreim, Latpreim, MAXNOOFRAYS);
-  //     Result = ZPolyhedronAlloc(Latpreim, Qprime);
-  //     Domain_Free(Qprime);
-  //     Polyhedron_Free(Polpreim);
-  //   }
-  //   Matrix_Free(Latpreim);
-  // }
-  // Domain_Free(Q);
-  // return Result;
+  Polyhedron *P, *newP;
+  Matrix *Con;
 
   if(G->NbRows != Z->Lat->NbRows) {
     // G z' = L z
@@ -816,7 +739,8 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
     return(NULL);
   }
 
-  // d is the dimension of Z. d' is the number of columns of G = the dimension of the result
+  // d is the dimension of Z.
+  // d' is the number of columns of G = the dimension of the result
   // build the Z-polyhedron = { z' | with P in dimension d + d'
   // such that L z = G z' }
   // then eliminate z by simplifying the result
@@ -825,6 +749,10 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
   // homogeneous d and d', homogeneous sum is d+d'-1
   int d = Z->Lat->NbRows;
   int dp = G->NbColumns;
+
+  //          z'    z    cst
+  // newL =   Id |  0   | 0 |
+  //           0 |  0   | 1 |
   Matrix *newL = Matrix_Alloc(dp, d+dp-1);
   for(int i = 0; i < newL->NbRows; i++) {
     for(int j = 0; j < newL->NbColumns; j++) {
@@ -838,14 +766,15 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
   }
   value_set_si(newL->p[newL->NbRows-1][newL->NbColumns-1], 1);
 
-  Polyhedron *P, *newP = align_context(Z->P, d+dp-2, MAXNOOFRAYS);
+  // add the extra dimension on P
+  newP = align_context(Z->P, d+dp-2, MAXNOOFRAYS);
 
   // build the extra constraint to be added to newP: G z' = L z
-  // newP =    0 |     |    |
-  //           . |  G  | -L | (g-l)
-  //           0 |     |    |
-
-  Matrix *Con = Matrix_Alloc(d-1, d+dp-1+1);
+  // con =    0 |     |     |
+  //          . |  G  | -L  | (g-l)
+  //          0 |     |     |
+  Con = Matrix_Alloc(d-1, d+dp-1+1);
+  // copy G
   for(int i = 0; i < Con->NbRows; i++) {
     value_set_si(Con->p[i][0], 0); // equality
     for(int j = 0; j < dp-1; j++) {
@@ -854,11 +783,12 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
     // constant
     value_assign(Con->p[i][Con->NbColumns-1], G->p[i][G->NbColumns-1]);
   }
-  // NEGATIVE!
+  // copy NEGATIVE L
   for(int i = 0; i < Con->NbRows; i++) {
     for(int j = 0; j < d-1; j++) {
       value_oppose(Con->p[i][j+dp-1+1], Z->Lat->p[i][j]);
     }
+    // substract constant l from g
     value_substract(Con->p[i][Con->NbColumns-1], Con->p[i][Con->NbColumns-1], Z->Lat->p[i][Z->Lat->NbColumns-1]);
   }
 
