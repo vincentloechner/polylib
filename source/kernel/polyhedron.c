@@ -1568,7 +1568,7 @@ Polyhedron *Polyhedron_Alloc(unsigned Dimension, unsigned NbConstraints,
 
   Polyhedron *Pol;
   unsigned NbRows, NbColumns;
-  int i, j;
+  int i;
   Value *p, **q;
 
   Pol = (Polyhedron *)malloc(sizeof(Polyhedron));
@@ -3755,7 +3755,7 @@ Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
  */
 Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
 
-  int i, j, k;
+  int i, k;
   Polyhedron *p = NULL, **next, *result = NULL;
   unsigned dim;
 

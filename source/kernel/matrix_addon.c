@@ -143,7 +143,7 @@ Matrix *mtransformation_expand_left_to_dim(Matrix *M, int new_dim) {
 /** simplify a matrix seen as a polyhedron, by dividing its rows by the gcd of
    their elements. */
 void mpolyhedron_simplify(Matrix *polyh) {
-  int i, j;
+  int i;
   Value cur_gcd;
   value_init(cur_gcd);
   for (i = 0; i < polyh->NbRows; i++) {

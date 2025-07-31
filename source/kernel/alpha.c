@@ -367,7 +367,7 @@ int GaussSimplify(Matrix *Mat1, Matrix *Mat2) {
   int NbRows = Mat1->NbRows;
   int NbCols = Mat1->NbColumns;
   int *column_index;
-  int i, j, k, n, t, pivot, Rank;
+  int i, j, k, n, Rank;
   Value gcd, tmp, *cp;
 
   column_index = (int *)malloc(NbCols * sizeof(int));
@@ -406,7 +406,6 @@ int GaussSimplify(Matrix *Mat1, Matrix *Mat2) {
           value_oppose(*cp, *cp);
       }
       /* End of normalize */
-      pivot = i;
       for (i = 0; i < NbRows; i++) /* Zero out the rest of the column */
         if (i != Rank) {
           if (value_notzero_p(Mat1->p[i][j])) {

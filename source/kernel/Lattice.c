@@ -81,7 +81,7 @@ Bool sameAffinepart(Lattice *A, Lattice *B) {
 Lattice *EmptyLattice(int dimension) {
 
   Lattice *result;
-  int i, j;
+  int j;
 
 #ifdef DOMDEBUG
   FILE *fp;
@@ -103,7 +103,7 @@ Lattice *EmptyLattice(int dimension) {
  */
 Bool isEmptyLattice(Lattice *A) {
 
-  int i, j;
+  int j;
   Bool a = True;
   if(A==NULL)
     return True;
@@ -455,7 +455,7 @@ Lattice *ExtractLinearPart(Lattice *A) {
   return Result;
 } /* ExtractLinearPart */
 
-static Matrix *MakeDioEqforInter(Matrix *A, Matrix *B);
+// static Matrix *MakeDioEqforInter(Matrix *A, Matrix *B);
 
 // /*
 //  * Given two lattices 'A' and 'B', return the intersection of the two lattcies.
@@ -577,45 +577,45 @@ static Matrix *MakeDioEqforInter(Matrix *A, Matrix *B);
 //   return result;
 // } /* LatticeIntersection */
 
-static Matrix *MakeDioEqforInter(Lattice *A, Lattice *B) {
+// static Matrix *MakeDioEqforInter(Lattice *A, Lattice *B) {
 
-  Matrix *Dio;
-  int i, j;
+//   Matrix *Dio;
+//   int i, j;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered MAKEDIOEQFORINTER \n");
-  fclose(fp);
-#endif
+// #ifdef DOMDEBUG
+//   FILE *fp;
+//   fp = fopen("_debug", "a");
+//   fprintf(fp, "\nEntered MAKEDIOEQFORINTER \n");
+//   fclose(fp);
+// #endif
 
-  Dio = Matrix_Alloc(2 * (A->NbRows - 1) + 1, 3 * (A->NbColumns - 1) + 1);
+//   Dio = Matrix_Alloc(2 * (A->NbRows - 1) + 1, 3 * (A->NbColumns - 1) + 1);
 
-  for (i = 0; i < Dio->NbRows; i++)
-    for (j = 0; j < Dio->NbColumns; j++)
-      value_set_si(Dio->p[i][j], 0);
+//   for (i = 0; i < Dio->NbRows; i++)
+//     for (j = 0; j < Dio->NbColumns; j++)
+//       value_set_si(Dio->p[i][j], 0);
 
-  for (i = 0; i < A->NbRows - 1; i++) {
-    value_set_si(Dio->p[i][i], 1);
-    value_set_si(Dio->p[i + A->NbRows - 1][i], 1);
-  }
-  for (i = 0; i < A->NbRows - 1; i++)
-    for (j = 0; j < A->NbRows - 1; j++) {
-      value_oppose(Dio->p[i][j + A->NbRows - 1], A->p[i][j]);
-      value_oppose(Dio->p[i + (A->NbRows - 1)][j + 2 * (A->NbRows - 1)],
-                   B->p[i][j]);
-    }
+//   for (i = 0; i < A->NbRows - 1; i++) {
+//     value_set_si(Dio->p[i][i], 1);
+//     value_set_si(Dio->p[i + A->NbRows - 1][i], 1);
+//   }
+//   for (i = 0; i < A->NbRows - 1; i++)
+//     for (j = 0; j < A->NbRows - 1; j++) {
+//       value_oppose(Dio->p[i][j + A->NbRows - 1], A->p[i][j]);
+//       value_oppose(Dio->p[i + (A->NbRows - 1)][j + 2 * (A->NbRows - 1)],
+//                    B->p[i][j]);
+//     }
 
-  /* Adding the affine part */
+//   /* Adding the affine part */
 
-  for (i = 0; i < A->NbColumns - 1; i++) {
-    value_oppose(Dio->p[i][Dio->NbColumns - 1], A->p[i][A->NbColumns - 1]);
-    value_oppose(Dio->p[i + A->NbRows - 1][Dio->NbColumns - 1],
-                 B->p[i][A->NbColumns - 1]);
-  }
-  value_set_si(Dio->p[Dio->NbRows - 1][Dio->NbColumns - 1], 1);
-  return Dio;
-} /* MakeDioEqforInter */
+//   for (i = 0; i < A->NbColumns - 1; i++) {
+//     value_oppose(Dio->p[i][Dio->NbColumns - 1], A->p[i][A->NbColumns - 1]);
+//     value_oppose(Dio->p[i + A->NbRows - 1][Dio->NbColumns - 1],
+//                  B->p[i][A->NbColumns - 1]);
+//   }
+//   value_set_si(Dio->p[Dio->NbRows - 1][Dio->NbColumns - 1], 1);
+//   return Dio;
+// } /* MakeDioEqforInter */
 
 static void AddLattice(LatticeUnion *, Matrix *, Matrix *, Value, int);
 LatticeUnion *SplitLattice(Matrix *, Matrix *, Matrix *);
@@ -690,7 +690,7 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
          *MtProduct = NULL;
   Matrix *Vinv, *V, *temp, *DiagMatrix;
 
-  LatticeUnion *Head = NULL, *tempHead = NULL;
+  LatticeUnion *Head = NULL;
   int i;
   Value k;
 
@@ -910,7 +910,6 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
  */
 LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
-  Lattice *Intersection = NULL;
   LatticeUnion *Head = NULL, *tempHead = NULL;
   Matrix *H, *U1, *X, *Y;
 
@@ -2069,3 +2068,72 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
 
   return Res;
 }
+
+/*
+ * Moves the constant part (last line and last row) as first line and row
+ * of the matrix.
+ * This is useful to compute the HNF and keeping the affine part as top-left
+ * non-nul result. The same function can be called again to get the result
+ * of affine HNF.
+ *  A =  A'  | c     ->    z | 0..0
+ *      0..0 | z           c |  A'
+ */
+void Matrix_Move_Homogeneous_Dim_First(Matrix *A) {
+  if(A->NbRows == 0 || A->NbColumns == 0)
+    return;
+
+  Value tmp;
+  value_init(tmp);
+  // puts the last column first:
+  for(int i=0; i<A->NbRows; i++) {
+    // on row i
+    value_assign(tmp, A->p[i][A->NbColumns-1]); // tmp = last col value
+    for(int j = A->NbColumns-1; j > 0; j--) {
+      value_assign(A->p[i][j], A->p[i][j-1]);  // [j] <- [j-1]
+    }
+    value_assign(A->p[i][0], tmp);  // [0]<- tmp
+  }
+  // then puts the last row first:
+  for(int j = 0; j < A->NbColumns; j++) {
+    value_assign(tmp, A->p[A->NbRows-1][j]); // tmp = last row value
+    for(int i = A->NbRows-1; i > 0; i--) {
+      value_assign(A->p[i][j], A->p[i-1][j]); // [i] <- [i-1]
+    }
+    value_assign(A->p[0][j], tmp); // [0]<- tmp
+  }
+  value_clear(tmp);
+} /* Matrix_Move_Homogeneous_Dim_First */
+
+
+/*
+ * Moves the constant part on a homogenous matrix (first line and first row) as last line and last row
+ * of the matrix.
+ * This is useful to compute the HNF and keeping the affine part as top-left
+ * non-nul result. The same function can be called again to get the result
+ * of affine HNF.
+ *  A =  A'  | c     ->    z | 0..0
+ *      0..0 | z           c |  A'
+ */
+void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
+  if(A->NbRows == 0 || A->NbColumns == 0)
+    return;
+
+  Value tmp;
+  value_init(tmp);
+  // puts the first col in the end
+  for (int i = 0; i < A->NbRows; i++) {
+    value_assign(tmp,A->p[i][0]); // tmp = first col value
+    for (int j = 0; j < A->NbColumns-1; j++) {
+      value_assign(A->p[i][j],A->p[i][j+1]); // [i] <- [i+1]
+    }
+    value_assign(A->p[i][A->NbColumns-1],tmp); //[last] <- tmp
+  }
+  for (int j = 0; j < A->NbColumns; j++) {
+    value_assign(tmp,A->p[0][j]); // tmp first row value
+    for (int i = 0; i < A->NbRows-1; i++) {
+      value_assign(A->p[i][j],A->p[i+1][j]);
+    }
+    value_assign(A->p[A->NbRows-1][j],tmp);
+  }
+  value_clear(tmp);
+} /* Matrix_Move_Homogeneous_Dim_Last */

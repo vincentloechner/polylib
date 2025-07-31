@@ -29,7 +29,8 @@ extern void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head);
 extern Bool sameAffinepart(Lattice *A, Lattice *B);
 extern Bool sameLattice(Lattice *A, Lattice *B);
 extern LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y);
-
+extern void Matrix_Move_Homogeneous_Dim_First(Matrix *A);
+extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
 #if defined(__cplusplus)
 }
 #endif

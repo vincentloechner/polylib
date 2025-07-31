@@ -43,7 +43,7 @@
  */
 Matrix *int_ker(Matrix *M) {
   Matrix *U, *Q, *H, *H2, *K = NULL;
-  int i, j, rk;
+  int rk;
 
   if (dbgCompParm)
     show_matrix(M);
@@ -110,7 +110,7 @@ static void linearInter(Matrix *A, Matrix *B, Matrix **I, Matrix **Lb) {
   int rk = A->NbRows;
   int a = A->NbColumns;
   int b = B->NbColumns;
-  int i, j, z = 0;
+  int i, z = 0;
 
   Matrix *H, *U, *Q;
   /* ensure that the spanning vectors are in the same space */
@@ -886,7 +886,7 @@ Matrix *full_dimensionize(Matrix const *M, int nbParms,
   Matrix *WVL; /* The Whole Validity Lattice (vars+parms) */
   unsigned int i, j;
   int nbElimVars;
-  unsigned int *permutation, *permutationInv;
+  unsigned int *permutation;
   /* 0- Split the equalities and inequalities from each other */
   split_constraints(M, &Eqs, &Ineqs);
 
