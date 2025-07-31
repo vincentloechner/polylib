@@ -11,12 +11,12 @@ char s[128];
 
 int main() {
   
-  Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *e, *g;
-  LatticeUnion *l1,*l2,*l3,*l4,*temp;
+  Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *g;
+  LatticeUnion *l1, *l2, *l3, *temp;
   Polyhedron *A=NULL, *B=NULL, *C=NULL, *D;
   ZPolyhedron *ZA=NULL, *ZB=NULL, *ZC=NULL, *ZD=NULL;
-  int  nbPol, nbMat, func, rank ;
-  Vector *v=NULL;
+  int  nbPol, nbMat, func ;
+
     
   /* The structure of the input file to this program  is the following: 
        First a line containing        
