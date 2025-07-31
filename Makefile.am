@@ -24,11 +24,12 @@ CFILES= \
 	source/kernel/matrix_addon.c \
 	source/kernel/matrix_permutations.c \
 	source/kernel/compress_parms.c \
-	source/kernel/SolveDio.c \
 	source/kernel/Lattice.c \
 	source/kernel/Matop.c \
 	source/kernel/NormalForms.c \
 	source/kernel/Zpolyhedron.c
+
+#	source/kernel/SolveDio.c
 
 sources = $(CFILES) \
 	$(poly_arith)/assert.h \
