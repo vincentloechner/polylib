@@ -1306,7 +1306,9 @@ static void ZP_Normalize_Lat(ZPolyhedron *A)
       }
       value_set_si(Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],1);
 
-      A->P = DomainImage(A->P, Transformation, MAXNOOFRAYS);
+      NewP = DomainImage(A->P, Transformation, MAXNOOFRAYS);
+      Polyhedron_Free(A->P);
+      A->P = NewP;
       Matrix_Free(Transformation);
       Matrix* NewL = Matrix_Alloc(A->Lat->NbRows,A->Lat->NbColumns-nbZeros);
       for (int  i = 0; i < NewL->NbRows; i++) {
