@@ -1285,7 +1285,7 @@ static void ZP_Normalize_Lat(ZPolyhedron *A)
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
 
-    // Now update of A->P using the premimage by U.
+    // Now update of A->P using the preimage by U.
     Polyhedron *NewP = DomainPreimage(A->P, U, MAXNOOFRAYS);
     Domain_Free(A->P);
     A->P = NewP;
@@ -1319,7 +1319,6 @@ static void ZP_Normalize_Lat(ZPolyhedron *A)
         }
       }
       Matrix_Free(A->Lat);
-      Matrix_Free(H);
       A->Lat = NewL;
       #ifdef CANONICAL_DEBUG
         ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
