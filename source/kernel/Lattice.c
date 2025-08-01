@@ -821,7 +821,7 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
 LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
   LatticeUnion *Head = NULL, *tempHead = NULL;
-  Matrix *H, *U1, *X, *Y;
+  Matrix *H, *X, *Y;
 
 #ifdef DOMDEBUG
   FILE *fp;
@@ -1339,7 +1339,7 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
   factor allfac;
   Bool retval = False;
   int width;
-  Value cnt, aux, k, fac, tmp, foobar, num;
+  Value cnt, aux, k, fac, tmp, foobar; //, num
 
   if ((*InputList == NULL) || (InputList[0]->next == NULL))
     return False;
@@ -1348,7 +1348,7 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
   value_init(cnt);
   value_init(k);
   value_init(fac);
-  value_init(num);
+  // value_init(num);
   value_init(tmp);
   value_init(foobar);
 
@@ -1368,7 +1368,7 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
     value_clear(aux);
     value_clear(k);
     value_clear(fac);
-    value_clear(num);
+    // value_clear(num);
     value_clear(tmp);
     value_clear(foobar);
     free(allfac.fac);
@@ -1383,14 +1383,14 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
       value_clear(aux);
       value_clear(k);
       value_clear(fac);
-      value_clear(num);
+      // value_clear(num);
       value_clear(tmp);
       value_clear(foobar);
       free(allfac.fac);
       return retval;
     }
     value_set_si(foobar, allfac.fac[i]);
-    value_division(num, InputList[0]->M->p[dim][dim], foobar);
+    // value_division(num, InputList[0]->M->p[dim][dim], foobar);
     while (value_lt(k, foobar)) {
       Present = False;
       value_assign(fac, k);
@@ -1458,7 +1458,7 @@ static Bool Simplify(LatticeUnion **InputList, LatticeUnion **ResultList,
   value_clear(aux);
   value_clear(k);
   value_clear(fac);
-  value_clear(num);
+  // value_clear(num);
   value_clear(tmp);
   value_clear(foobar);
   return retval;
