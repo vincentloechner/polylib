@@ -18,7 +18,6 @@
   #define NEWINTERSECTION_DEBUG 1
   #define DIFF_DEBUG 1
 #endif
-  #define CANONICAL_DEBUG 1
 
 static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
 static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A);
