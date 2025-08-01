@@ -197,7 +197,6 @@ ZPolyhedron *EmptyZPolyhedron(int dimension) {
  */
 Bool ZDomainIncludes(ZPolyhedron *A, ZPolyhedron *B) {
 
-  ZPolyhedron *Rest = ZPolyhedron_Copy(A);
   Bool ret = False;
 
   #ifdef DIFF_DEBUG
@@ -1076,65 +1075,6 @@ ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
   return Result;
 } /* SplitZpolyhedron */
 
-// /*
-//  * Moves the constant part (last line and last row) as first line and row
-//  * of the matrix.
-//  * This is useful to perform the HNF and keeping the affine part as top-left
-//  * non-nul result. The same function can be called again to get the result
-//  * of affine HNF.
-//  *  A =  A'  | c     ->    z | 0..0
-//  *      0..0 | z           c |  A'
-//  */
-// void Matrix_Move_Homogeneous_Dim_First(Matrix *A) {
-//   if(A->NbRows == 0 || A->NbColumns == 0)
-//     return;
-
-//   Value tmp;
-//   value_init(tmp);
-//   // puts the last column first:
-//   for(int i=0; i<A->NbRows; i++) {
-//     // on row i
-//     value_assign(tmp, A->p[i][A->NbColumns-1]); // tmp = last col value
-//     for(int j = A->NbColumns-1; j > 0; j--) {
-//       value_assign(A->p[i][j], A->p[i][j-1]);  // [j] <- [j-1]
-//     }
-//     value_assign(A->p[i][0], tmp);  // [0]<- tmp
-//   }
-//   // then puts the last row first:
-//   for(int j = 0; j < A->NbColumns; j++) {
-//     value_assign(tmp, A->p[A->NbRows-1][j]); // tmp = last row value
-//     for(int i = A->NbRows-1; i > 0; i--) {
-//       value_assign(A->p[i][j], A->p[i-1][j]); // [i] <- [i-1]
-//     }
-//     value_assign(A->p[0][j], tmp); // [0]<- tmp
-//   }
-//   value_clear(tmp);
-// } /* Matrix_Move_Homogeneous_Dim_First */
-
-// void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
-//   if(A->NbRows == 0 || A->NbColumns == 0)
-//     return;
-
-//   Value tmp;
-//   value_init(tmp);
-//   // puts the first col in the end
-//   for (int i = 0; i < A->NbRows; i++) {
-//     value_assign(tmp,A->p[i][0]); // tmp = first col value
-//     for (int j = 0; j < A->NbColumns-1; j++) {
-//       value_assign(A->p[i][j],A->p[i][j+1]); // [i] <- [i+1]
-//     }
-//     value_assign(A->p[i][A->NbColumns-1],tmp); //[last] <- tmp
-//   }
-//   for (int j = 0; j < A->NbColumns; j++) {
-//     value_assign(tmp,A->p[0][j]); // tmp first row value
-//     for (int i = 0; i < A->NbRows-1; i++) {
-//       value_assign(A->p[i][j],A->p[i+1][j]);
-//     }
-//     value_assign(A->p[A->NbRows-1][j],tmp);
-//   }
-//   value_clear(tmp);
-// } /* Matrix_Move_Homogeneous_Dim_Last */
-
 /*
  * get the matrix of equalities from a polyhedron
  * (without the first columns of 0's)
@@ -1204,6 +1144,14 @@ static void ZP_Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
       fprintf(stderr, "Lattice of A: ");
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
+
+    // TODO: CHECK THAT THIS IS CORRECT!
+
+    // if the bottom right value of H is not one, this means that
+    // the transformation matrix is not integer
+    // just make it integer and do not bother about never taken
+    // rational values.
+    value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
 
     // NewL = L . H
     NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
@@ -1431,6 +1379,52 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
   // NOW REMOVE EQUALITIES FROM A (Lat, P)
   ZP_Remove_Equalities(A, Equalities);
   Matrix_Free(Equalities);
+
+
+  // this was useful if for some reason the homogeneous dimension spread
+  // to something different than 1... (bottom right value of Lat matrix)
+  // seems impossible with Hermite(homogeneous_dim_first(Ker(Eq)))
+#ifdef I_THINK_THAT_THIS_IS_NOT_NECESSARY
+  // Check if the constant part (last column of Lat) is normal (simplified by its gcd)
+  // if not, divide it by the gcd, and compute the new polyhedron P' = image(T, P) with
+  // T = Id   0
+  //      0  gcd
+  Value gcd;
+  value_init(gcd);
+  // calul gcd sur la dernière colonne
+  value_absolute(gcd,A->Lat->p[0][A->Lat->NbColumns-1]);
+  // value_print(stderr, P_VALUE_FMT, gcd);
+  for (int i = 1; i < A->Lat->NbRows; i++){
+    Gcd(gcd,A->Lat->p[i][A->Lat->NbColumns-1],&gcd);
+  }
+
+  // si gcd != 1 faire la simplification
+  if (value_notone_p(gcd)) {
+    // diviser la dernière colonne de A->Lat (en place)
+    for (int i = 0; i < A->Lat->NbRows; i++)
+    {
+      value_division(A->Lat->p[i][A->Lat->NbColumns-1], A->Lat->p[i][A->Lat->NbColumns-1], gcd);
+    }
+    // et construire T, puis faire l'image par T de A->P
+    Matrix *T = Identity(A->P->Dimension + 1); // ajouter la constante (gcd) en bas à droite
+    for (int i = 0; i < T->NbColumns; i++){
+      for (int j = 0; j < T->NbColumns; j++){
+        if (i==j){
+          value_set_si(T->p[i][j],1);
+        }
+        else{
+          value_set_si(T->p[i][j],0);
+        } 
+      }  
+    }
+    value_assign(T->p[T->NbRows-1][T->NbColumns-1],gcd);
+    Polyhedron* tmp=Polyhedron_Image(A->P,T,MAXNOOFRAYS);
+    Matrix_Free(T);
+    Polyhedron_Free(A->P);
+    A->P=tmp;
+  }
+  value_clear(gcd);
+#endif
 
 
   // NOW NORMALIZE LATTICE A->Lat
