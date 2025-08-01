@@ -17,7 +17,7 @@ extern "C" {
 //                           Matrix **Basis);
 extern ZPolyhedron *EmptyZPolyhedron(int dimension);
 // extern ZPolyhedron *IntegraliseLattice(ZPolyhedron *A);
-extern Bool isEmptyZPolyhedron(ZPolyhedron *Zpol);
+extern Bool isEmptyZDomain(ZPolyhedron *Zpol);
 extern ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B);
 extern ZPolyhedron *ZDomainImage(ZPolyhedron *A, Matrix *Func);
 extern Bool ZDomainIncludes(ZPolyhedron *A, ZPolyhedron *B);

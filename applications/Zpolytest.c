@@ -168,49 +168,49 @@ int main() {
     LatticeUnion_Free(l2);
     break;
     
-  case 6: /* isEmptyZPolyhedron */
+  case 6: /* isEmptyZDomain */
     ZA = ZPolyhedronAlloc(a,A);
-    fprintf(stdout,"is Empty? :%d \n", isEmptyZPolyhedron(ZA));
+    fprintf(stdout,"is Empty? :%d \n", isEmptyZDomain(ZA));
     break;
     
   case 7: /* ZDomainIntersection */
         
-    ZA=ZPolyhedronAlloc(a,A);
-    ZB=ZPolyhedronAlloc(b,B);
-    ZC = ZDomainIntersection(ZA,ZB);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
+    ZA = ZPolyhedronAlloc(a, A);
+    ZB = ZPolyhedronAlloc(b, B);
+    ZC = ZDomainIntersection(ZA, ZB);
+    ZDomainPrint(stdout, P_VALUE_FMT, ZC);
     break;
     
   case 8: /* ZDomainUnion */
     
-    ZA=ZPolyhedronAlloc(a,A);
-    ZB=ZPolyhedronAlloc(b,B);
+    ZA = ZPolyhedronAlloc(a, A);
+    ZB = ZPolyhedronAlloc(b, B);
     ZC = ZDomainUnion(ZA,ZB);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
+    ZDomainPrint(stdout, P_VALUE_FMT, ZC);
     break;
     
   case 9: /* ZDomainDifference */
     
-    ZA=ZPolyhedronAlloc(a,A);
-    ZB=ZPolyhedronAlloc(b,B);
+    ZA = ZPolyhedronAlloc(a, A);
+    ZB = ZPolyhedronAlloc(b, B);
     // ZDomainPrint(stdout,P_VALUE_FMT, ZA);
     // ZDomainPrint(stdout,P_VALUE_FMT, ZB);
-    ZC = ZDomainDifference(ZA,ZB);
+    ZC = ZDomainDifference(ZA, ZB);
     ZDomainPrint(stdout,P_VALUE_FMT, ZC);
     break;
     
   case 10: /* ZDomainImage */
     
-    ZA=ZPolyhedronAlloc(a,A);
-    ZC = ZDomainImage(ZA,b); 
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
+    ZA = ZPolyhedronAlloc(a, A);
+    ZC = ZDomainImage(ZA, b); 
+    ZDomainPrint(stdout, P_VALUE_FMT, ZC);
     break;
     
   case 11: /* ZDomainPreimage */
     
-    ZA=ZPolyhedronAlloc(a,A);
-    ZC = ZDomainPreimage(ZA,b); 
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
+    ZA = ZPolyhedronAlloc(a, A);
+    ZC = ZDomainPreimage(ZA, b); 
+    ZDomainPrint(stdout, P_VALUE_FMT, ZC);
     break;
     
   case 12: /* difference between image of preimage and original*/
@@ -218,17 +218,18 @@ int main() {
     ZC = ZDomainPreimage(ZA, b);
     ZD = ZDomainImage(ZC, b);
     // ZD should be included in ZA
-    fprintf(stdout,"The image of the preimage is included in the original Z-polyhedron (should always be true)? %d\n",
+    fprintf(stdout,
+      "The image of the preimage is included in the original Z-polyhedron (should always be true)? %d\n",
 	    ZDomainIncludes(ZD, ZA));
     ZB = ZDomainDifference(ZA, ZD);
     fprintf(stdout,"The image of the preimage is exactly the original Z-polyhedron? %d\n",
-	    isEmptyZPolyhedron(ZB));
+	    isEmptyZDomain(ZB));
     break;
   
   case 13:  /* ZDomainSimplify */
     
-    ZA=ZPolyhedronAlloc(a,A);
-    ZA->next = ZPolyhedronAlloc(b,B);
+    ZA = ZPolyhedronAlloc(a, A);
+    ZA->next = ZPolyhedronAlloc(b, B);
     ZDomainPrint(stdout,P_VALUE_FMT, ZA);
     ZD = ZDomainSimplify(ZA);
     ZDomainPrint(stdout,P_VALUE_FMT, ZD);
@@ -236,17 +237,17 @@ int main() {
     
   case 14:  /* EmptyZpolyhedron */
         
-    ZA=EmptyZPolyhedron(3);
-    fprintf(stdout,"is Empty? :%d \n", isEmptyZPolyhedron(ZA));
+    ZA = EmptyZPolyhedron(3);
+    fprintf(stdout,"is Empty? :%d \n", isEmptyZDomain(ZA));
     break;
     
   case 15:  /* ZDomainInclude */
   
-    ZA=ZPolyhedronAlloc(a,A);
-    ZB=ZPolyhedronAlloc(b,B);
+    ZA = ZPolyhedronAlloc(a, A);
+    ZB = ZPolyhedronAlloc(b, B);
     fprintf(stdout,"A in B  :%d \nB in A  :%d \n", 
-	    ZDomainIncludes(ZA,ZB),
-	    ZDomainIncludes(ZB,ZA));
+	    ZDomainIncludes(ZA, ZB),
+	    ZDomainIncludes(ZB, ZA));
     break;
   
   // case 16: /* LatticePreimage */

@@ -99,35 +99,23 @@ Lattice *EmptyLattice(int dimension) {
 } /* EmptyLattice */
 
 /*
- * Return True if Lattice 'A' is empty, otherwise return False.
+ * Return True if lattice 'A' is empty, otherwise return False.
+ * A has been normalized.
  */
 Bool isEmptyLattice(Lattice *A) {
 
-  int j;
-  Bool a = True;
-  if(A==NULL)
+  if(A == NULL || A->NbColumns == 0) {
     return True;
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered ISNULLATTICE \n");
-  fclose(fp);
-#endif
-  if(A->NbColumns==1) { 
-    for ( j = 0; j < A->NbRows-2; j++) {
-      if (value_notzero_p(A->p[0][j])) {
-        a=False;
-        return a;
-      }
+  }
+  // A is empty if there are only zero's in the first column
+  for (int j = 0; j < A->NbRows-1; j++) {
+    if (value_notzero_p(A->p[0][j])) {
+      return False;
     }
-    a = value_one_p(A->p[0][A->NbRows-1]);
-    return a;
   }
-  else{
-    return False;
-  }
+  return True;
   
-} /* isEmptyLaattice */
+} /* isEmptyLattice */
 
 /*
  * Given a Lattice 'A', check whether it is linear or not, i.e. whether the
@@ -825,88 +813,10 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
   return Head;
 }
 
-/**
-
-***        Method :
-***
-**/
 /*
- * Return the Union of lattices that constitute the difference the lattices
- * 'A' and 'B'. The dimensions of 'A' and 'B' should be the same.
- * Note :
- *        Inorder to Find the Difference of Lattices, we make use of
- *        the following facts.
- *
- * Theorem : Given Two Lattices L1 and L2, (L2 subset of L1) there exists a
- *           Basis B = {b1, b2,..bn} of L1 and integers {a1, a2...,an} such
- *           that a1 divides a2, a2 divides a3 and so on and {a1b1, a2b2 ,...,
- *           .., anbn} is a Basis of L2. So given this theorem we can express
- *           the Lattice L1 in terms of Union of Lattices Involving L2, such
- *           that Lattice L1 = B1 = Union of (B2 + i1b1 + i2b2 + .. inbn) such
- *           that 0 <= i1 < a1; 0 <= i2 < a2; .......   0 <= in < an. We also
- *           know that A/B = A/(A Intersection B) and that (A Intersection B)
- *           is a subset of A. So, Making use of these two facts, we find the
- *           A/B. We Split The Lattice A in terms of Lattice (A Int B). From
- *           this Union of Lattices Delete the Lattice (A Int B).
- *
- * Algorithm :
- *
- *       Step 1:  Find Intersection = LatticeIntersection (A, B).
- *       Step 2:  Extract the Linear Parts of the Lattices A and Intersection.
- *                (while dealing with Basis we only deal with the Linear Parts)
- *       Step 3:  Let M1 = Basis of A and M2 = Basis of B.
- *                Let B1 and B2 be the Basis of A and B respectively,
- *                corresponding to the above Theorem.
- *                Then we Have B1 = M1 * U1 {a unimodular Matrix }
- *                and B2 = M2 * U2. M1 and M2 we know, they are the linear
- *                parts we obtained in Step 2. Our Task is now to find U1 and
- *                U2.
- *                We know that B1  * Delta = B2.
- *                i.e. M1 * U1 * Delta = M2 * U2
- *                or U1*Delta*U2Inverse = M1Inverse * M2.
- *                and Delta is the Diagonal Matrix which satisfies the
- *                above properties (in the Theorem).
- *                So Delta is nothing but the Smith Normal Form of
- *                M1Inverse * M2.
- *                So, first we have to find M1Inverse.
- *
- *                This Step, involves finding the Inverse of the Matrix M1.
- *                We find the Inverse using the Polylib function
- *                Matrix_Inverse. There is a catch here, the result of this
- *                function is an integral matrix, not necessarily the exact
- *                Inverse (since M1 need not be Unimodular), but a multiple
- *                of the actual inverse. The number by which we have to divide
- *                the matrix, is not obtained here as the input matrix is not
- *                a Polylib matrix { We input only the Linear part }. Later I
- *                give a way for finding that number.
- *
- *                M1Inverse = Matrix_Inverse ( M1 );
- *
- *      Step 4 :  MtProduct = Matrix_Product (M1Inverse, M2);
- *      Step 5 :  SmithNormalFrom (MtProduct, Delta, U, V);
- *                U1 = U and U2Inverse = V.
- *      Step 6 :  Find U2 = Matrix_Inverse  (U2inverse). Here there is no prob
- *                as U1 and its inverse are unimodular.
- *
- *      Step 7 :  Compute B1 = M1 * U1;
- *      Step 8 :  Compute B2 = M2 * U2;
- *      Step 9 :  Earlier when we computed M1Inverse, we knew that it was not
- *                the exact inverse but a multiple of it. Now we find the
- *                number, such that ( M1Inverse / number ) would give us the
- *                exact inverse of M1.
- *                We know that B1 * Delta = B2.
- *                Let k = B2[0][0] / B1[0][0].
- *                Let number = Delta[0][0]/k;
- *                This 'number' is the number we want.
- *                We Divide the matrix Delta by this number, to get the actual
- *                Delta such that B1 * Delta = B2.
- *     Step 10 :  Call Split Lattice (B1, B2, Delta ).
- *                This function returns the Union of Lattices in such a way
- *                that B2 is at the Head of this List.
- *     Step 11 :  To Remove B2 From the list of the Union of Lattices.
- *                Head = Head->next;
- *     Step 12 :  Free the Memory that is now not needed and return Head.
- *
+ * Return the Union of lattices that constitute the difference between
+ * two single lattices: A - B.
+ * The dimensions of A and B should be the same.
  */
 LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
@@ -920,17 +830,12 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   fclose(fp);
 #endif
 
-  // if (A->NbRows != A->NbColumns) {
-  //   fprintf(stderr, "\nIn LatticeDifference : The Input Matrix A is not a "
-  //                   "proper Lattice \n");
-  //   return NULL;
-  // }
-
-  // if (B->NbRows != B->NbColumns) {
-  //   fprintf(stderr, "\nIn LatticeDifference : The Input Matrix B is not a "
-  //                   "proper Lattice \n");
-  //   return NULL;
-  // }
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "Entering LatDiff. A = ");
+    Matrix_Print(stderr, P_VALUE_FMT, A);
+    fprintf(stderr, "B = ");
+    Matrix_Print(stderr, P_VALUE_FMT, B);
+  #endif
 
   if (A->NbRows != B->NbRows) {
     errormsg1("LatticeDifference", "dimincomp",
@@ -944,27 +849,37 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   }
 
   if (! isNormalLattice(A)) {
-    AffineHermite(A, &H, &U1);
-    X = Matrix_Copy(H);
-    Matrix_Free(U1);
-    Matrix_Free(H);
-  } else
+    AffineHermite(A, &H, NULL);
+    X = H;
+  }
+  else {
     X = Matrix_Copy(A);
+  }
+  if (isEmptyLattice(X)) {
+    Matrix_Free(X);
+    return(NULL);
+  }
 
   if (! isNormalLattice(B)) {
-    AffineHermite(B, &H, &U1);
-    Y = Matrix_Copy(H);
-    Matrix_Free(H);
-    Matrix_Free(U1);
-  } else
+    AffineHermite(B, &H, NULL);
+    Y = H;
+  }
+  else {
     Y = Matrix_Copy(B);
-  if (isEmptyLattice(X)) {
-    return NULL;
   }
 
   Head = Lattice2LatticeUnion(X, Y);
 
-  /* If the spliting operation can't be done the result is X. */ /*********** NO, IT IS EMPTY! --Vincent ***********/
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "Raw result = ");
+    if(Head)
+      PrintLatticeUnion(stderr, P_VALUE_FMT, Head);
+    else
+      fprintf(stderr, "empty\n");
+  #endif
+
+  /* If the spliting operation can't be done the result is X. */
+  /*********** NO, IT IS EMPTY! --Vincent ***********/
 
   if (Head == NULL) {
     // Head = (LatticeUnion *)malloc(sizeof(LatticeUnion));
@@ -982,8 +897,13 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   tempHead->next = NULL;
   free(tempHead);
 
-  if ((Head != NULL))
+  if ((Head != NULL)) {
     Head = LatticeSimplify(Head);
+    #ifdef LATDIF_DEBUG
+      fprintf(stderr, "Simplified result = ");
+      PrintLatticeUnion(stderr, P_VALUE_FMT, Head);
+    #endif
+  }
   Matrix_Free(X);
   Matrix_Free(Y);
 

@@ -2443,7 +2443,7 @@ int PolyhedronIncludes(Polyhedron *Pol1, Polyhedron *Pol2) {
 } /* PolyhedronIncludes */
 
 /*
- * Add Polyhedron 'Pol' to polhedral domain 'PolDomain'. If 'Pol' covers
+ * Add Polyhedron 'Pol' to polyhedral domain 'PolDomain'. If 'Pol' covers
  * some polyhedron in the domain 'PolDomain', it is removed from the list.
  * On the other hand if some polyhedron in the domain covers polyhedron
  * 'Pol' then 'Pol' is not included in the domain.
