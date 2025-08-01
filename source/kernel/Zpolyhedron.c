@@ -1319,6 +1319,7 @@ static void ZP_Normalize_Lat(ZPolyhedron *A)
         }
       }
       Matrix_Free(A->Lat);
+      Matrix_Free(H);
       A->Lat = NewL;
       #ifdef CANONICAL_DEBUG
         ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
