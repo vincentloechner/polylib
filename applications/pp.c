@@ -13,7 +13,7 @@ int main() {
   Param_Domain *P;
   Param_Vertices *V;
   int i, j;
-  const char **param_name;
+  char **param_name;
   
   a = Matrix_Read();
   if(!a || a->NbColumns == 0) {

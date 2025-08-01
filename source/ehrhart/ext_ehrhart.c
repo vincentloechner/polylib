@@ -669,7 +669,7 @@ int Degenerate(Enumeration *en) {
 /* Enumeration of a domain D */
 
 Enumeration *Domain_Enumerate(Polyhedron *D, Polyhedron *C, unsigned MAXRAYS,
-                              const char **pn) {
+                              char **pn) {
   Polyhedron_union *Polun, *pu;
   Polyhedron *lp, *lp1, *lp1next;
   Polyhedron *d1, *d2, *d;
@@ -798,7 +798,7 @@ Enumeration *Domain_Enumerate(Polyhedron *D, Polyhedron *C, unsigned MAXRAYS,
 /* Enumeration of the image by T of domain D */
 Enumeration *Polyhedron_Image_Enumerate(Polyhedron *D, Polyhedron *C, Matrix *T,
                                         unsigned MAXRAYS,
-                                        const char **par_name) {
+                                        char **par_name) {
   Polyhedron *polun, *pol;
   Enumeration *ee;
   Matrix *TCopy, *Tred, *d1, *d;

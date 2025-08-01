@@ -7,7 +7,7 @@
 
 int main( int argc, char **argv)
 {
-  const char **param_name;
+  char **param_name;
   Matrix *C1, *P1;
   Enumeration *e, *en;
 

@@ -9,7 +9,7 @@
 
 int main( int argc, char **argv)
 {
-  const char **param_name = NULL;
+  char **param_name = NULL;
   Matrix *M;
   Polyhedron *P, *D, *C;
   Enumeration *e, *en;
