@@ -1,0 +1,17 @@
+# Intersection of these two linear lattices
+M 2
+4 2
+   1    0 
+   0    0 
+   0    0 
+   0    1 
+4 2
+   1    0 
+   0    0 
+   0    0 
+   0    1 
+
+
+D 0
+F 27
+

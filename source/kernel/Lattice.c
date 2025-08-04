@@ -1878,9 +1878,9 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
     return NULL;
   }
   #ifdef LATINTER_DEBUG
-  fprintf(stderr,"Matrix A:\n");
+  fprintf(stderr,"---Entering LatInter---\nMatrix A = ");
   Matrix_Print(stderr, P_VALUE_FMT, A);
-  fprintf(stderr,"Matrix B:\n");
+  fprintf(stderr,"Matrix B = ");
   Matrix_Print(stderr, P_VALUE_FMT, B);
   #endif
 
@@ -1933,7 +1933,7 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
   }
   
   #ifdef LATINTER_DEBUG
-    fprintf(stderr,"\n Tmp init:\n");
+    fprintf(stderr,"H init = ");
     Matrix_Print(stderr,P_VALUE_FMT, Tmp);
   #endif
   
@@ -1942,9 +1942,9 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
   // H is the matrix that contains the solution. it is of the form:
   // 
   // H =   D  |   0          D is a square matrix
-  //     ------------
-  //       X  | 1 0.0
-  //          | r  R
+  //     -----------------
+  //       X  |  1 0.0
+  //          |  r  R
   // 
   // with  R    r
   //      0..0  1   being our result
@@ -1955,18 +1955,32 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
 
 
   #ifdef LATINTER_DEBUG
-    fprintf(stderr,"\nH:\n");
+    fprintf(stderr,"\nH = ");
     Matrix_Print(stderr,P_VALUE_FMT,H);
   #endif
   Matrix_Free(Tmp);
 
-  // get the result. if the top-left value of R is not 1 then we have an empty solution.
+  // get the result. if the value on top-left of R is not 1 then we have an empty solution.
 
-  int nbcol = (A->NbColumns<B->NbColumns)?A->NbColumns:B->NbColumns;
+  // what is the number of columns of zeros on the first NbRows Rows of H?
+  // the matrix has A->NbColumns + B-> NbColumns columns.
+  int nbcol = 0;
+  for(int col_num = H->NbColumns-1 ; col_num >= 0; col_num--) {
+    int i;
+    for(i = 0; i < A->NbRows; i++) {
+      if(value_notzero_p(H->p[i][col_num]))
+        break;
+    }
+    if(i != A->NbRows) {
+      // there is a non-zero value
+      break;
+    }
+    nbcol++;
+  }
 
   if(value_notone_p(H->p[A->NbRows][H->NbColumns-nbcol])) {
     #ifdef LATINTER_DEBUG
-      fprintf(stderr,"\n Empty intersection\n");
+      fprintf(stderr,"\nEmpty intersection\n");
     #endif
     Matrix_Free(H);
     return NULL;
@@ -1983,8 +1997,9 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
   Matrix_Move_Homogeneous_Dim_Last(Res);
 
   #ifdef LATINTER_DEBUG
-    fprintf(stderr, "\n NewLaticceIntersection result: ");
+    fprintf(stderr, "\nLatticeIntersection result = ");
     Matrix_Print(stderr, P_VALUE_FMT, Res);
+    fprintf(stderr,"---Exiting LatInter---\n\n");
   #endif
 
   return Res;
