@@ -614,7 +614,19 @@ LatticeUnion *SplitLattice(Matrix *, Matrix *, Matrix *);
  * Note1: If the intersection of X and Y lattices is empty the result is identic
  with the first argument (X) because no operation can be made. *Note2: The
  function is available only for simple Lattices and not for a union of Lattices.
-
+ *
+ * Theorem : Given Two Lattices L1 and L2, (L2 subset of L1) there exists a
+ *           Basis B = {b1, b2,..bn} of L1 and integers {a1, a2...,an} such
+ *           that a1 divides a2, a2 divides a3 and so on and {a1b1, a2b2 ,...,
+ *           .., anbn} is a Basis of L2. So given this theorem we can express
+ *           the Lattice L1 in terms of Union of Lattices Involving L2, such
+ *           that Lattice L1 = B1 = Union of (B2 + i1b1 + i2b2 + .. inbn) such
+ *           that 0 <= i1 < a1; 0 <= i2 < a2; .......   0 <= in < an. We also
+ *           know that A/B = A/(A Intersection B) and that (A Intersection B)
+ *           is a subset of A. So, Making use of these two facts, we find the
+ *           A/B. We Split The Lattice A in terms of Lattice (A Int B). From
+ *           this Union of Lattices Delete the Lattice (A Int B).
+ *
  *       Step 1:  Find Intersection = LatticeIntersection (A, B).
  *       Step 2:  Extract the Linear Parts of the Lattices A and Intersection.
  *                (while dealing with Basis we only deal with the Linear Parts)
