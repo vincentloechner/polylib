@@ -951,10 +951,11 @@ static void AddLattice(LatticeUnion *Head, Matrix *B1, Matrix *B2,
 
   LatticeUnion *temp, *tail, *marker;
   int j;
-  Value i;
+  Value i, maxval;
 
   // printf("Apply " P_VALUE_FMT "to column %d\n", NumofTimes, Colnumber);
   value_init(i);
+  value_init(maxval);
   tail = Head;
   while (tail->next != NULL)
     tail = tail->next;
@@ -962,17 +963,27 @@ static void AddLattice(LatticeUnion *Head, Matrix *B1, Matrix *B2,
 
   for (temp = Head; temp != NULL; temp = temp->next) {
     for (value_set_si(i, 1); value_lt(i, NumofTimes); value_increment(i, i)) {
-      Lattice *tempMatrix, *H, *U;
+      Lattice *tempMatrix, *H;
 
       tempMatrix = Matrix_Copy(temp->M);
       for (j = 0; j < B2->NbRows; j++) {
         value_addmul(tempMatrix->p[j][B2->NbColumns - 1], i,
                      B1->p[j][Colnumber]);
+        if(value_notzero_p(B1->p[j][Colnumber])) {
+          value_multiply(maxval, NumofTimes, B1->p[j][Colnumber]);
+          // if(value_neg_p(tempMatrix->p[j][B2->NbColumns - 1])) {
+
+          // }
+          // else {
+          // value_print(stderr, P_VALUE_FMT, maxval);
+          value_modulus(tempMatrix->p[j][B2->NbColumns - 1],
+                          tempMatrix->p[j][B2->NbColumns - 1], maxval);
+          // }
+        }
       }
       tail->next = malloc(sizeof(LatticeUnion));
-      AffineHermite(tempMatrix, &H, &U);
+      AffineHermite(tempMatrix, &H, NULL);
       Matrix_Free(tempMatrix);
-      Matrix_Free(U);
       tail->next->M = H;
       tail->next->next = NULL;
       tail = tail->next;
@@ -981,6 +992,7 @@ static void AddLattice(LatticeUnion *Head, Matrix *B1, Matrix *B2,
       break;
   }
   value_clear(i);
+  value_clear(maxval);
   return;
 } /* AddLattice */
 
