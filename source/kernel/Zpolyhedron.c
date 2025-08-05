@@ -15,7 +15,7 @@
 #ifdef DEBUG
   #define LAT_TEST 1
   #define CANONICAL_DEBUG 1
-  #define NEWINTERSECTION_DEBUG 1
+  #define INTERSECTION_DEBUG 1
   #define DIFF_DEBUG 1
 #endif
 
@@ -223,7 +223,7 @@ Bool ZDomainIncludes(ZPolyhedron *A, ZPolyhedron *B) {
  * Given Z-polyhedra 'A' and 'B', return True if 'A' is directly present in 'B',
  * otherwise return False
  */
-// static Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B) {
+// static Bool old_ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B) {
 
 //   Polyhedron *Diff = NULL;
 //   Bool retval = False;
@@ -445,9 +445,9 @@ ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func) {
  * Return the Z-polyhedron intersection of the Z-polyhedra 'A' and 'B'.
  * We are based on the intersection of the two lattices of the polyhedra, named LInter.
  * If LInter is empty, we return the empty Zpolyhedron.
- * Otherwise, we calculate the intersection of the polyhedra on A and B, called PInter.
+ * Otherwise, we calculate the intersection of the polyhedral images of A and B (PInter).
  * We calculate the Preimage of PInter by LInter and finally we allocate the result,
- * a Zpolyhedron in Canonical form.
+ * a Zpolyhedron allocated in canonical form.
  *
  *  /!\ USAGE: A and B contain a single Lattice, but can contain a polyhedral domain.
  */
@@ -650,7 +650,7 @@ static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron* A, ZPolyhedron* B) {
 
   if(Result == NULL) {
     #ifdef DIFF_DEBUG
-      fprintf(stderr, "-- result = (NULL)");
+      fprintf(stderr, "-- result = (NULL)\n");
     #endif
     return(EmptyZPolyhedron(A->Lat->NbRows - 1));
   }

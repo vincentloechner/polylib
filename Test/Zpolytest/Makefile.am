@@ -35,6 +35,7 @@ ZPOLYTESTS =  \
 	ZDiff6.in \
 	ZDiff7.in \
 	ZDiff8.in \
+	ZDiff9.in \
 	ZImage1.in \
 	ZPre1.in \
 	ZPre2.in  \
