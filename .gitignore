@@ -3,6 +3,9 @@
 # library description files
 *.lo
 *.la
+# diff files
+xyz
+*~
 
 .deps/
 .libs/
