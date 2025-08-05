@@ -1183,7 +1183,7 @@ static void ZP_Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
  * Set the lattice to normal form in (A->Lat, A->P).
  * In place. A->P is a domain.
  */
-static void ZP_Normalize_Lat(ZPolyhedron *A)
+static void ZP_Lat_Normalize(ZPolyhedron *A)
 {
     // check if A->Lat is in Hermite form
   if(!isNormalLattice(A->Lat)) {
@@ -1217,43 +1217,6 @@ static void ZP_Normalize_Lat(ZPolyhedron *A)
     A->P = NewP;
     Matrix_Free(U);
 
-    // remove the columns of zero's
-    int nbZeros = count_zeroCols(H);
-    if(nbZeros) {
-      Matrix* Transformation = Matrix_Alloc(A->Lat->NbColumns-nbZeros, A->Lat->NbColumns);
-      for (int  i = 0; i < Transformation->NbRows; i++) {
-        for (int j = 0; j < Transformation->NbColumns; j++) {
-          if(i==j && i!=Transformation->NbRows-1) {
-            value_set_si(Transformation->p[i][j],1);
-          }else{
-            value_set_si(Transformation->p[i][j],0);
-          }
-        }
-      }
-      value_set_si(Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],1);
-
-      NewP = DomainImage(A->P, Transformation, MAXNOOFRAYS);
-      Domain_Free(A->P);
-      A->P = NewP;
-      Matrix_Free(Transformation);
-      Matrix* NewL = Matrix_Alloc(A->Lat->NbRows,A->Lat->NbColumns-nbZeros);
-      for (int  i = 0; i < NewL->NbRows; i++) {
-        for (int j = 0; j < NewL->NbColumns; j++) {
-          if(j < NewL->NbColumns-1) {
-            value_assign(NewL->p[i][j],A->Lat->p[i][j]);
-          }else{
-            value_assign(NewL->p[i][j],A->Lat->p[i][A->Lat->NbColumns-1]);
-          }
-        }
-      }
-      Matrix_Free(A->Lat);
-      A->Lat = NewL;
-      #ifdef CANONICAL_DEBUG
-        ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
-      #endif
-    }
-
-
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New P: ");
       Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
@@ -1265,6 +1228,54 @@ static void ZP_Normalize_Lat(ZPolyhedron *A)
     #endif
   }
 }
+
+/*
+ * Remove the columns of zeros from A->Lat.
+ * In place. A->P is a domain.
+ */
+static void ZP_Lat_Remove_Zeros(ZPolyhedron *A)
+{
+  // TODO: this is the naive version,
+  // need to consider integer existential variable elimination and dark shadow!
+  Polyhedron *NewP;
+  int nbZeros = count_zeroCols(A->Lat);
+  if(nbZeros) {
+    Matrix* Transformation = Matrix_Alloc(A->Lat->NbColumns-nbZeros, A->Lat->NbColumns);
+    for (int  i = 0; i < Transformation->NbRows; i++) {
+      for (int j = 0; j < Transformation->NbColumns; j++) {
+        if(i==j && i!=Transformation->NbRows-1) {
+          value_set_si(Transformation->p[i][j], 1);
+        }
+        else {
+          value_set_si(Transformation->p[i][j], 0);
+        }
+      }
+    }
+    value_set_si(Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1], 1);
+
+    NewP = DomainImage(A->P, Transformation, MAXNOOFRAYS);
+    Domain_Free(A->P);
+    A->P = NewP;
+    Matrix_Free(Transformation);
+    Matrix* NewL = Matrix_Alloc(A->Lat->NbRows,A->Lat->NbColumns-nbZeros);
+    for (int  i = 0; i < NewL->NbRows; i++) {
+      for (int j = 0; j < NewL->NbColumns; j++) {
+        if(j < NewL->NbColumns-1) {
+          value_assign(NewL->p[i][j],A->Lat->p[i][j]);
+        }else{
+          value_assign(NewL->p[i][j],A->Lat->p[i][A->Lat->NbColumns-1]);
+        }
+      }
+    }
+    Matrix_Free(A->Lat);
+    A->Lat = NewL;
+    #ifdef CANONICAL_DEBUG
+      ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
+    #endif
+  }
+}
+
+
 /*
  * The function takes a Zpolyhedron 
  * --- containing a domain (list of polyhedra), and a single lattice ---
@@ -1376,8 +1387,9 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     A->next = new;
   }
   
-  // NOW REMOVE EQUALITIES FROM A (Lat, P)
+  // REMOVE EQUALITIES FROM A->P
   ZP_Remove_Equalities(A, Equalities);
+
   Matrix_Free(Equalities);
 
 
@@ -1427,8 +1439,11 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
 #endif
 
 
-  // NOW NORMALIZE LATTICE A->Lat
-  ZP_Normalize_Lat(A);
+  // Normalize the affine lattice A->Lat
+  ZP_Lat_Normalize(A);
+
+  // Remove the columns of zeros from A->Lat
+  ZP_Lat_Remove_Zeros(A);
 
   return;
 } /* Canonical_ZPolyhedron_Gautam */
@@ -1473,6 +1488,7 @@ void Canonical_ZDomain(ZPolyhedron *A) {
       remove = ZZ->next;
       ZZ->next = ZZ->next->next;
       Matrix_Free(remove->Lat);
+      // remove->P has been reused
       free(remove);
     }
   }
