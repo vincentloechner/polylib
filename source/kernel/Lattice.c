@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // #define LATINTER_DEBUG 1
-// #define LATDIF_DEBUG 1
+#define LATDIF_DEBUG 1
 
 typedef struct {
   int count;
@@ -11,7 +11,7 @@ typedef struct {
 
 
 static factor allfactors(int num);
-
+static LatticeUnion* generate_lattice_union_line(int line_nb, Vector* diag_A, Vector* diag_Inter, Lattice* Intersection, LatticeUnion *Result);
 /*
  * Print the contents of a list of Lattices 'Head'
  */
@@ -828,11 +828,12 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
 /*
  * Return the Union of lattices that constitute the difference between
  * two single lattices: A - B.
- * The dimensions of A and B should be the same.
+ * The dimensions of A and B should be the same. 
+ * If the difference is empty return NULL.
  */
 LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
-  LatticeUnion *Head = NULL, *tempHead = NULL;
+  LatticeUnion *Head = NULL;
   Matrix *H, *X, *Y;
 
 #ifdef DOMDEBUG
@@ -841,13 +842,6 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   fprintf(fp, "\nEntered LATTICEDIFFERENCE \n");
   fclose(fp);
 #endif
-
-  #ifdef LATDIF_DEBUG
-    fprintf(stderr, "Entering LatDiff. A = ");
-    Matrix_Print(stderr, P_VALUE_FMT, A);
-    fprintf(stderr, "B = ");
-    Matrix_Print(stderr, P_VALUE_FMT, B);
-  #endif
 
   if (A->NbRows != B->NbRows) {
     errormsg1("LatticeDifference", "dimincomp",
@@ -879,8 +873,46 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   else {
     Y = Matrix_Copy(B);
   }
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "Entering LatDiff. x = ");
+    Matrix_Print(stderr, P_VALUE_FMT, X);
+    fprintf(stderr, "Y = ");
+    Matrix_Print(stderr, P_VALUE_FMT, Y);
+  #endif
+  // allocating the lattice union
+  Head = LatticeUnion_Alloc();
 
-  Head = Lattice2LatticeUnion(X, Y);
+  //calculating intersection between X and Y
+  Lattice *Inter = LatticeIntersection(X,Y);
+  if(!Inter){
+    //if empty intersection return A
+    Matrix_Free(Y);
+    Head->M = X;
+    return Head;
+  }
+
+  Head->M = Inter;
+
+  //get the diagonal coefficients of A and Inter
+  Vector *diag_X = get_pivots(X);
+  Vector *diag_Inter = get_pivots(Inter);
+  for (int line = 0; line < Inter->NbRows; line++) {
+    Head = generate_lattice_union_line(line, diag_X, diag_Inter, Inter, Head);
+  }
+  
+  if(!Head->next){ 
+    //result is empty  
+    LatticeUnion_Free(Head);
+    return NULL;
+  }
+
+  LatticeUnion* tmp = Head;
+  //remove the last element of head 
+  while(tmp->next->next) {
+    tmp = tmp->next;
+  }
+  LatticeUnion_Free(tmp->next);
+  tmp->next = NULL;
 
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "Raw result = ");
@@ -889,25 +921,6 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     else
       fprintf(stderr, "empty\n");
   #endif
-
-  /* If the spliting operation can't be done the result is X. */
-  /*********** NO, IT IS EMPTY! --Vincent ***********/
-
-  if (Head == NULL) {
-    // Head = (LatticeUnion *)malloc(sizeof(LatticeUnion));
-    // Head->M = Matrix_Copy(X);
-    // Head->next = NULL;
-    Matrix_Free(X);
-    Matrix_Free(Y);
-    // return Head;
-    return(NULL);
-  }
-
-  tempHead = Head;
-  Head = Head->next;
-  Matrix_Free(tempHead->M);
-  tempHead->next = NULL;
-  free(tempHead);
 
   if ((Head != NULL)) {
     Head = LatticeSimplify(Head);
@@ -918,6 +931,8 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   }
   Matrix_Free(X);
   Matrix_Free(Y);
+  Vector_Free(diag_Inter);
+  Vector_Free(diag_X);
 
   return Head;
 } /* LatticeDifference */
@@ -1894,6 +1909,8 @@ static factor allfactors(int n)
  *  the Lattice of size A->Nbrows x min(A->NbCols, B->NbCols) is the
  *  intersection of A and B.
  * 
+ * If the result is empty return NULL.
+ * 
  */
 Lattice* LatticeIntersection(Lattice* A, Lattice* B) {
   Lattice *Tmp, *H, *Res;
@@ -2097,3 +2114,40 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
   }
   value_clear(tmp);
 } /* Matrix_Move_Homogeneous_Dim_Last */
+
+static Vector* get_pivots(Matrix* A){
+  Vector* pivot = Vector_Alloc(A->NbRows);
+  int j=0;
+  for(int i=0; i < A->NbRows ; i++) {
+    if(value_zero_p(A->p[i][j])){
+      value_set_si(pivot->p[i],1);
+    }else {
+      value_assign(pivot->p[i],A->p[i][j]);
+      j++;
+    }
+  }
+  Vector_Print(stdout,P_VALUE_FMT,pivot);
+
+  return pivot;
+}
+
+
+static LatticeUnion* generate_lattice_union_line(int line_nb, Vector* diag_A, Vector* diag_Inter, Lattice* Intersection, LatticeUnion *Result){
+  Value cst;
+  value_init(cst);
+  for(LatticeUnion *L = Result; L; L=L->next){
+    for(value_assign(cst,diag_A->p[line_nb]); value_lt(cst,diag_Inter->p[line_nb]); value_addto(cst, cst, diag_A->p[line_nb])){
+      LatticeUnion* newResult = malloc(sizeof(*newResult));
+      newResult->M = Matrix_Copy(L->M);
+      newResult->next = Result;
+      value_addto(newResult->M->p[line_nb][newResult->M->NbColumns-1], 
+                  newResult->M->p[line_nb][newResult->M->NbColumns-1], cst);
+
+      value_modulus(newResult->M->p[line_nb][newResult->M->NbColumns-1], 
+                    newResult->M->p[line_nb][newResult->M->NbColumns-1], diag_Inter->p[line_nb]);
+      Result=newResult;
+    }
+  }
+  value_clear(cst);
+  return Result;
+}
