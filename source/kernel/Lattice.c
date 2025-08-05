@@ -2115,7 +2115,7 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
   value_clear(tmp);
 } /* Matrix_Move_Homogeneous_Dim_Last */
 
-static Vector* get_pivots(Matrix* A){
+Vector* get_pivots(Matrix* A){
   Vector* pivot = Vector_Alloc(A->NbRows);
   int j=0;
   for(int i=0; i < A->NbRows ; i++) {
