@@ -874,7 +874,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     Y = Matrix_Copy(B);
   }
   #ifdef LATDIF_DEBUG
-    fprintf(stderr, "Entering LatDiff. x = ");
+    fprintf(stderr, "Entering LatDiff. X = ");
     Matrix_Print(stderr, P_VALUE_FMT, X);
     fprintf(stderr, "Y = ");
     Matrix_Print(stderr, P_VALUE_FMT, Y);
@@ -883,13 +883,38 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   Head = LatticeUnion_Alloc();
 
   //calculating intersection between X and Y
-  Lattice *Inter = LatticeIntersection(X,Y);
+  Lattice *Inter = LatticeIntersection(X, Y);
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "Inter = ");
+    Matrix_Print(stderr, P_VALUE_FMT, Inter);
+  #endif
   if(!Inter){
     //if empty intersection return A
     Matrix_Free(Y);
     Head->M = X;
     return Head;
   }
+
+  // Matrix *DiagX = NULL, *XU = NULL, *XV = NULL;
+  // AffineSmith(X, &XU, &XV, &DiagX); // X = XU DiagX XV
+
+  // fprintf(stderr, "XU = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, XU);
+  // fprintf(stderr, "DiagX = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, DiagX);
+  // fprintf(stderr, "XV = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, XV);
+
+  // Matrix *DiagInter = NULL, *U = NULL, *V = NULL;
+  // AffineSmith(Inter, &U, &V, &DiagInter); // Inter = U DiagInter V
+
+  // fprintf(stderr, "U = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, U);
+  // fprintf(stderr, "DiagInter = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, DiagInter);
+  // fprintf(stderr, "V = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, V);
+
 
   Head->M = Inter;
 
@@ -901,13 +926,16 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   }
   
   if(!Head->next){ 
-    //result is empty  
+    //result is empty
+    #ifdef LATDIF_DEBUG
+      fprintf(stderr, "Empty result\n");
+    #endif
     LatticeUnion_Free(Head);
     return NULL;
   }
 
   LatticeUnion* tmp = Head;
-  //remove the last element of head 
+  //remove the last element of the list
   while(tmp->next->next) {
     tmp = tmp->next;
   }
@@ -2126,7 +2154,6 @@ Vector* get_pivots(Matrix* A){
       j++;
     }
   }
-  Vector_Print(stdout,P_VALUE_FMT,pivot);
 
   return pivot;
 }
