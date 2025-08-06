@@ -131,6 +131,7 @@ int First_Non_Zero(Value *p, unsigned length) {
   return ((i == length) ? -1 : i);
 } /* First_Non_Zero */
 
+// TODO: use value_alloc here to reuse data!!!
 /*
  * Allocate memory space for Vector
  */
