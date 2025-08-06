@@ -1799,6 +1799,8 @@ int intcompare(const void *a, const void *b) {
   return 0;
 } /* intcompare */
 
+// TODO: rewrite using a Vector (of Values!)
+
 // compute the prime factors of n, including n itself if it is prime.
 static factor prime_factors(int n)
 {
