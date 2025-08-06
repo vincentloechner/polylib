@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // #define LATINTER_DEBUG 1
-#define LATDIF_DEBUG 1
+// #define LATDIF_DEBUG 1
 
 typedef struct {
   int count;
@@ -11,7 +11,7 @@ typedef struct {
 
 
 static factor allfactors(int num);
-static LatticeUnion* generate_lattice_union_line(int line_nb, Vector* diag_A, Vector* diag_Inter, Lattice* Intersection, LatticeUnion *Result);
+static LatticeUnion* generate_lattice_union_line(int line_nb, Value pivotA, Vector *DiagInter, Lattice *A, Lattice* Intersection, LatticeUnion *Result);
 /*
  * Print the contents of a list of Lattices 'Head'
  */
@@ -292,8 +292,8 @@ void AffineHermite(Lattice *A, Lattice **H, Matrix **U) {
 // } /* AffineSmith */
 
 /*
- * Given a lattice 'A' and a boolean variable 'Forward', homogenise the lattice
- * if 'Forward' is True, otherwise if 'Forward' is False, dehomogenise the
+ * Given a lattice 'A' and a boolean variable 'Forward', homogenize the lattice
+ * if 'Forward' is True, otherwise if 'Forward' is False, de-homogenize the
  * lattice 'A'.
  * Algorithm:
  *            (1) If Forward == True
@@ -918,11 +918,11 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
   Head->M = Inter;
 
-  //get the diagonal coefficients of A and Inter
+  // get the diagonal coefficients of X=AHNF(A) and Inter
   Vector *diag_X = get_pivots(X);
   Vector *diag_Inter = get_pivots(Inter);
   for (int line = 0; line < Inter->NbRows; line++) {
-    Head = generate_lattice_union_line(line, diag_X, diag_Inter, Inter, Head);
+    Head = generate_lattice_union_line(line, diag_X->p[line], diag_Inter, X, Inter, Head);
   }
   
   if(!Head->next){ 
@@ -2158,23 +2158,61 @@ Vector* get_pivots(Matrix* A){
   return pivot;
 }
 
+/*
+ * Generate all different variants of the line 'line_nb' in the lattice matrix,
+ * and concatenate it to the previously generated lattices.
+ * The intersection is used as a basis reference lattice, and all variants of the
+ * corresponding line in A are generated:
+ *    if Intersection contains line *..* p 0..0 c
+ *    and the corresponding pivot of A is pA
+ *    then generate lines :  *..* p 0..0 c+pA; *..* p 0..0 c+2pA; *..* p 0..0 c+3pA; ...
+ * after that, adjust the constants of the lines below that depend on p.
+ *
+ * Concatenate the newly generated lattices including the new lines in the LatticeUnion list,
+ * in first position so the loop can continue nicely ;)
+ */
+static LatticeUnion* generate_lattice_union_line(int line_nb, Value pivotA, Vector* diagInter, Lattice *A, Lattice* Intersection, LatticeUnion *Result)
+{
+  Value cst; // loop index is a Value = iteration * pivot
+  Value iteration; // this is the iteration number
 
-static LatticeUnion* generate_lattice_union_line(int line_nb, Vector* diag_A, Vector* diag_Inter, Lattice* Intersection, LatticeUnion *Result){
-  Value cst;
   value_init(cst);
+  value_init(iteration);
   for(LatticeUnion *L = Result; L; L=L->next){
-    for(value_assign(cst,diag_A->p[line_nb]); value_lt(cst,diag_Inter->p[line_nb]); value_addto(cst, cst, diag_A->p[line_nb])){
+    for(value_assign(cst, pivotA), value_set_si(iteration, 1);
+        value_lt(cst, diagInter->p[line_nb]);
+        value_addto(cst, cst, pivotA), value_add_int(iteration, iteration, 1))
+      {
+      // allocate a new Lattice (new head of list)
       LatticeUnion* newResult = malloc(sizeof(*newResult));
-      newResult->M = Matrix_Copy(L->M);
-      newResult->next = Result;
-      value_addto(newResult->M->p[line_nb][newResult->M->NbColumns-1], 
-                  newResult->M->p[line_nb][newResult->M->NbColumns-1], cst);
+      Matrix *newLat = Matrix_Copy(L->M);
+      value_addto(newLat->p[line_nb][newLat->NbColumns-1], 
+                  newLat->p[line_nb][newLat->NbColumns-1], cst);
 
-      value_modulus(newResult->M->p[line_nb][newResult->M->NbColumns-1], 
-                    newResult->M->p[line_nb][newResult->M->NbColumns-1], diag_Inter->p[line_nb]);
+      value_modulus(newLat->p[line_nb][newLat->NbColumns-1], 
+                    newLat->p[line_nb][newLat->NbColumns-1], diagInter->p[line_nb]);
+
+      // ajust the constants below this row because they change depending on the changed multiplier above ^^
+      // if the corresponding value below the pivot (= multiplier) is not zero
+      for(int ll = line_nb+1; ll < A->NbRows; ll++) {
+        // scan the lines below searching for non-zero values
+        if(value_notzero_p(A->p[ll][line_nb])) {
+          // add this value to the constant of line ll:
+          // the multiplier  A->p[ll][line_nb] * the iteration number
+          value_addmul(newLat->p[ll][newLat->NbColumns-1], iteration, A->p[ll][line_nb]);
+          value_modulus(newLat->p[ll][newLat->NbColumns-1], 
+                        newLat->p[ll][newLat->NbColumns-1], diagInter->p[ll]);
+        }
+      }
+
+      // store and link the new lattice in first position of the list
+      newResult->M = newLat;
+      newResult->next = Result;
       Result=newResult;
     }
   }
+
   value_clear(cst);
+  value_clear(iteration);
   return Result;
 }
