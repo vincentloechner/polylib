@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // #define LATINTER_DEBUG 1
-// #define LATDIF_DEBUG 1
+#define LATDIF_DEBUG 1
 
 typedef struct {
   int count;
@@ -917,11 +917,15 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
 
   Head->M = Inter;
+  LatticeUnion *current = Head;
 
   // get the diagonal coefficients of X=AHNF(A) and Inter
   Vector *diag_X = get_pivots(X);
   Vector *diag_Inter = get_pivots(Inter);
   for (int line = 0; line < Inter->NbRows; line++) {
+    // TODO: update current or not, here.
+    // if the column below pivot is 0 take the new one as current and chain current to Head.
+    // else, update current
     Head = generate_lattice_union_line(line, diag_X->p[line], diag_Inter, X, Inter, Head);
   }
   
@@ -2178,7 +2182,17 @@ static LatticeUnion* generate_lattice_union_line(int line_nb, Value pivotA, Vect
 
   value_init(cst);
   value_init(iteration);
-  for(LatticeUnion *L = Result; L; L=L->next){
+  for(LatticeUnion *L = Result; L; L=L->next) {
+    // TODO: check if all the coefficients below the *previous* pivot are zero.
+    // if they are, you don't need to generate a specific version of each submatrix,
+    //  -> you can just generate the standard A above the modified line (and the rest below stays the intersection)
+    // -> return the new list of generated lattices and use this for next step...
+
+
+    // TODO: generate all the combinations of coef/constant that do not intersect this line of the intersection
+    // using the prime factors of the pivot, and add only those! (beware, the multiplier changes)
+
+    // now, this is the standard algorithm adding each possible alternate line to the whole list
     for(value_assign(cst, pivotA), value_set_si(iteration, 1);
         value_lt(cst, diagInter->p[line_nb]);
         value_addto(cst, cst, pivotA), value_add_int(iteration, iteration, 1))
