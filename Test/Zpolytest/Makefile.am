@@ -9,6 +9,8 @@ ZPOLYTESTS =  \
 	LatDiff2.in \
 	LatDiff3.in \
 	LatDiff5.in \
+	LatDiff7.in \
+	LatDiff8.in \
 	LatHNF1.in \
 	LatHNF2.in \
 	LatHNF3.in \
