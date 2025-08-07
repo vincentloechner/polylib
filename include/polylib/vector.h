@@ -15,6 +15,7 @@ extern void CNP(int a, int b, Value *result);
 extern void Gcd(Value a, Value b, Value *result);
 extern int First_Non_Zero(Value *p, unsigned length);
 extern Vector *Vector_Alloc(unsigned length);
+extern Vector* Vector_Realloc(unsigned newlength, Vector* V);
 extern void Vector_Free(Vector *vector);
 extern void Vector_Print(FILE *Dst, const char *Format, Vector *Vec);
 extern Vector *Vector_Read(void);

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // #define LATINTER_DEBUG 1
-// #define LATDIF_DEBUG 1
+#define LATDIF_DEBUG 1
 
 typedef struct {
   int count;
@@ -14,6 +14,7 @@ static factor allfactors(int num);
 static LatticeUnion *generate_lattice_union_line(int line_nb, Value pivotA,
     Vector* diagInter, Lattice *A, Lattice* Intersection, LatticeUnion *rest, LatticeUnion **Result);
 
+static LatticeUnion* generate_lattice_union_line(int line_nb, Value pivotA, Vector *DiagInter, Lattice *A, Lattice* Intersection, LatticeUnion *Result);
 /*
  * Print the contents of a list of Lattices 'Head'
  */
@@ -54,26 +55,6 @@ LatticeUnion *LatticeUnion_Alloc(void) {
   temp->next = NULL;
   return temp;
 } /* LatticeUnion_Alloc */
-
-/*
- * Concatenate two list of Lattices (reusing their memory)
- * Return a pointer to the new list (U1 + U2)
- */
-LatticeUnion *LU_Concat(LatticeUnion *U1, LatticeUnion *U2) {
-  LatticeUnion *tmp = U1;
-  if(! U1) {
-    return (U2);
-  }
-  if(! U2) {
-    return (U1);
-  }
-  // add U2 at the end of U1
-  while(tmp->next) {
-    tmp = tmp->next;
-  }
-  tmp->next = U2;
-  return (U1);
-}
 
 /*
  * Given two Lattices 'A' and 'B', return True if they have the same affine
@@ -163,35 +144,73 @@ Bool isLinear(Lattice *A) {
 } /* isLinear */
 
 /*
- * Return the _affine_ Hermite normal form of the _affine_ lattice 'A'.
- * Let:
- * A =  Al   a
- *      0.0  1
- * The homogeneous_first transformation moves the constant dimension first:
- * homogeneous_first(A) = A' = 1  0.0   
- *                             a  Al
- *
- * This function computes the left HNF: A' = H' . U'
- * Then moves back the constant homogeneous dimensions to the bottom right:
- * H = homogeneous_last(H) and U = homogeneous_last(U')
- * and returns H and U.
- *
- * Usage:
- * - works also on non square matrices (lattices having less rows than
- *   columns)
- * - U is not used if U = NULL
- * - U is allocated if *U = NULL.
- * - H is allocated if *H = NULL.
+ * Return the affine Hermite normal form of the affine lattice 'A'. The unique
+ * affine Hermite form if a lattice is stored in 'H' and the unimodular matrix
+ * corresponding to 'A = H . U' is stored in the matrix 'U'.
+ * OLD Algorithm :
+ *            1) Check if the Lattice is Linear or not.
+ *            2) If it is not Linear, then Homogenise the Lattice.
+ *            3) Call Hermite.
+ *            4) If the Lattice was Homogenised, the HNF H must be
+ *               Dehomogenised and also corresponding changes must
+ *               be made to the Unimodular Matrix U.
+ *            5) Return.
+ * NEW algorithm:
+ *     1) move the homogeneous dimensions first (on top-left)
+ *     2) compute left_hermite
+ *     3) move back the homogeneous dimensions (bottom-right)
+ * -> works also on non square matrices (lattices having less row than columns)
  */
 void AffineHermite(Lattice *A, Lattice **H, Matrix **U) {
 
-  // for left hermite to take the constant into account, move it on top-left:
+  // DEBUG
+  // printf("Entering AffineHermite: A= ");
+  // Matrix_Print(stdout, P_VALUE_FMT, A);
+
+  // for left hermite to include the constant, move it on top-left:
   Matrix_Move_Homogeneous_Dim_First(A);
   left_hermite(A, H, U, NULL);
   Matrix_Move_Homogeneous_Dim_Last(*H);
   if(U)
     Matrix_Move_Homogeneous_Dim_Last(*U);
   Matrix_Move_Homogeneous_Dim_Last(A); // restore A as it was
+
+  // OLD VERSION, working fine on square matrices, but not on non-square ones...
+  // Lattice *temp;
+  // Bool flag = True;
+
+  // #ifdef DOMDEBUG
+  //   FILE *fp;
+  //   fp = fopen("_debug", "a");
+  //   fprintf(fp, "\nEntered AFFINEHERMITE \n");
+  //   fclose(fp);
+  // #endif
+
+  // if (isLinear(A) == False)
+  //   temp = Homogenise(A, True);
+  // else {
+  //   flag = False;
+  //   temp = Matrix_Copy(A);
+  // }
+  // Hermite(temp, H, U);
+  // if (flag == True) {
+  //   Matrix_Free(temp);
+  //   temp = Homogenise(H[0], False);
+  //   Matrix_Free(H[0]);
+  //   H[0] = Matrix_Copy(temp);
+  //   Matrix_Free(temp);
+  //   temp = Homogenise(U[0], False);
+  //   Matrix_Free(U[0]);
+  //   U[0] = Matrix_Copy(temp);
+  // }
+  // Matrix_Free(temp);
+
+
+  // DEBUG
+  // printf("Exit AffineHermite: H = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, *H);
+  // printf("                    U = ");
+  // Matrix_Print(stdout, P_VALUE_FMT, *U);
 
   return;
 } /* AffineHermite */
@@ -275,40 +294,40 @@ void AffineHermite(Lattice *A, Lattice **H, Matrix **U) {
 //   return;
 // } /* AffineSmith */
 
-// /*
-//  * Given a lattice 'A' and a boolean variable 'Forward', homogenize the lattice
-//  * if 'Forward' is True, otherwise if 'Forward' is False, de-homogenize the
-//  * lattice 'A'.
-//  * Algorithm:
-//  *            (1) If Forward == True
-//  *                Put the last row first.
-//  *                Put the last columns first.
-//  *            (2) Else
-//  *                Put the first row last.
-//  *                Put the first column last.
-//  *            (3) Return the result.
-//  */
-// Lattice *Homogenise(Lattice *A, Bool Forward) {
+/*
+ * Given a lattice 'A' and a boolean variable 'Forward', homogenize the lattice
+ * if 'Forward' is True, otherwise if 'Forward' is False, de-homogenize the
+ * lattice 'A'.
+ * Algorithm:
+ *            (1) If Forward == True
+ *                Put the last row first.
+ *                Put the last columns first.
+ *            (2) Else
+ *                Put the first row last.
+ *                Put the first column last.
+ *            (3) Return the result.
+ */
+Lattice *Homogenise(Lattice *A, Bool Forward) {
 
-//   Lattice *result;
+  Lattice *result;
 
-// #ifdef DOMDEBUG
-//   FILE *fp;
-//   fp = fopen("_debug", "a");
-//   fprintf(fp, "\nEntered HOMOGENISE \n");
-//   fclose(fp);
-// #endif
+#ifdef DOMDEBUG
+  FILE *fp;
+  fp = fopen("_debug", "a");
+  fprintf(fp, "\nEntered HOMOGENISE \n");
+  fclose(fp);
+#endif
 
-//   result = Matrix_Copy(A);
-//   if (Forward == True) {
-//     PutColumnFirst(result, A->NbColumns - 1);
-//     PutRowFirst(result, result->NbRows - 1);
-//   } else {
-//     PutColumnLast(result, 0);
-//     PutRowLast(result, 0);
-//   }
-//   return result;
-// } /* Homogenise */
+  result = Matrix_Copy(A);
+  if (Forward == True) {
+    PutColumnFirst(result, A->NbColumns - 1);
+    PutRowFirst(result, result->NbRows - 1);
+  } else {
+    PutColumnLast(result, 0);
+    PutRowLast(result, 0);
+  }
+  return result;
+} /* Homogenise */
 
 /*
  * Given two lattices 'A' and 'B', verify if lattice 'A' is included in 'B' or
@@ -317,7 +336,7 @@ void AffineHermite(Lattice *A, Lattice **H, Matrix **U) {
  */
 Bool LatticeIncludes(Lattice *A, Lattice *B) {
 
-  Lattice *temp, *HA = NULL;
+  Lattice *temp, *HA;
   Bool flag = False;
 
 #ifdef DOMDEBUG
@@ -594,12 +613,10 @@ LatticeUnion *SplitLattice(Matrix *, Matrix *, Matrix *);
 
 /*
  * The function is transforming a lattice X in a union of lattices based on a
- * starting lattice Y.
- * OLD inefficient function, not used anymore.
- * 
+ starting lattice Y.
  * Note1: If the intersection of X and Y lattices is empty the result is identic
- * with the first argument (X) because no operation can be made. *Note2: The
- * function is available only for simple Lattices and not for a union of Lattices.
+ with the first argument (X) because no operation can be made. *Note2: The
+ function is available only for simple Lattices and not for a union of Lattices.
  *
  * Theorem : Given Two Lattices L1 and L2, (L2 subset of L1) there exists a
  *           Basis B = {b1, b2,..bn} of L1 and integers {a1, a2...,an} such
@@ -864,6 +881,8 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     fprintf(stderr, "Y = ");
     Matrix_Print(stderr, P_VALUE_FMT, Y);
   #endif
+  // allocating the lattice union
+  Head = LatticeUnion_Alloc();
 
 
   // calculate the intersection between X and Y
@@ -878,13 +897,34 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     Matrix_Print(stderr, P_VALUE_FMT, Inter);
   #endif
   if(!Inter){
-    // if empty intersection end here and return A
+    //if empty intersection return A
     Matrix_Free(Y);
     return (rest);
   }
   rest->M = Matrix_Copy(rest->M); // keep X
 
-  // get the diagonal coefficients of X and Inter (possibly not square)
+  // fprintf(stderr, "XU = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, XU);
+  // fprintf(stderr, "DiagX = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, DiagX);
+  // fprintf(stderr, "XV = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, XV);
+
+  // Matrix *DiagInter = NULL, *U = NULL, *V = NULL;
+  // AffineSmith(Inter, &U, &V, &DiagInter); // Inter = U DiagInter V
+
+  // fprintf(stderr, "U = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, U);
+  // fprintf(stderr, "DiagInter = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, DiagInter);
+  // fprintf(stderr, "V = ");
+  // Matrix_Print(stderr, P_VALUE_FMT, V);
+
+
+  Head->M = Inter;
+  LatticeUnion *current = Head;
+
+  // get the diagonal coefficients of X=AHNF(A) and Inter
   Vector *diag_X = get_pivots(X);
   Vector *diag_Inter = get_pivots(Inter);
 
@@ -923,8 +963,17 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "Empty result\n");
     #endif
+    LatticeUnion_Free(Head);
     return NULL;
   }
+
+  LatticeUnion* tmp = Head;
+  //remove the last element of the list
+  while(tmp->next->next) {
+    tmp = tmp->next;
+  }
+  LatticeUnion_Free(tmp->next);
+  tmp->next = NULL;
 
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "Raw result = ");
@@ -1824,6 +1873,38 @@ static factor prime_factors(int n)
 }
 
 
+static Vector* value_prime_factors(Value* n){
+  Vector* res = Vector_Alloc(10);
+  Value div, rest;
+  int tabsize = 0;
+  value_init(div);
+  value_init(rest);
+  value_set_si(div, 2);
+  value_assign(rest, n);
+
+  while ( value_le((value_mult(div, div)), rest) ) {
+
+    if(value_zero_p(value_mod(rest, div)))  {
+
+      if(value_eq(res->Size, tabsize)){
+        res = Vector_Realloc(res->Size*2, res);
+      }
+      value_assign(res->p[tabsize], div);
+      value_div(rest, div);
+    }
+    else
+      value_addto(div, div, value_mod(div%2));
+  }
+  if(value_notone_p(rest)){
+    if(res->Size == tabsize){
+      tabsize += 1;
+      res = Vector_Realloc(tabsize, res);
+    }
+    value_assign(res->p[res->Size++], rest);
+  }
+  return res;
+}
+
 static factor allfactors(int n)
 {
   // compute the prime decomposition (including n if it is prime)
@@ -2129,21 +2210,14 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
   value_clear(tmp);
 } /* Matrix_Move_Homogeneous_Dim_Last */
 
-/*
- * Get the pivots from affine normalized lattice A.
- * If A is not square, set the not used diagonals to 1.
- * 
- * Allocate and return a Vector of Values.
- */
-Vector* get_pivots(Matrix* A) {
+Vector* get_pivots(Matrix* A){
   Vector* pivot = Vector_Alloc(A->NbRows);
-  int j = 0;
-  for(int i = 0; i < A->NbRows ; i++) {
-    if(value_zero_p(A->p[i][j])) {
-      value_set_si(pivot->p[i], 1);
-    }
-    else {
-      value_assign(pivot->p[i], A->p[i][j]);
+  int j=0;
+  for(int i=0; i < A->NbRows ; i++) {
+    if(value_zero_p(A->p[i][j])){
+      value_set_si(pivot->p[i],1);
+    }else {
+      value_assign(pivot->p[i],A->p[i][j]);
       j++;
     }
   }
