@@ -1851,7 +1851,7 @@ static Vector* value_prime_factors(Value* n){
   value_init(div);
   value_init(rest);
   value_set_si(div, 2);
-  value_assign(rest, n);
+  value_assign(n, rest);
 
   while ( value_le((value_mult(div, div)), rest) ) {
 
@@ -1864,7 +1864,7 @@ static Vector* value_prime_factors(Value* n){
       value_div(rest, div);
     }
     else
-      value_addto(div, div, value_mod(div%2));
+      value_addto(div, div, value_mod(div, 2));
   }
   if(value_notone_p(rest)){
     if(res->Size == tabsize){
