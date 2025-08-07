@@ -454,6 +454,10 @@ static int hermite(Matrix *H, Matrix *U, Matrix *Q) {
   return rank;
 } /* Hermite */
 
+/*
+ * Right Hermite
+ * Computes H, U and Q such that: A = QH, and UA = H
+ */
 void right_hermite(Matrix *A, Matrix **Hp, Matrix **Up, Matrix **Qp) {
 
   Matrix *H, *Q, *U;
@@ -522,6 +526,10 @@ void right_hermite(Matrix *A, Matrix **Hp, Matrix **Up, Matrix **Qp) {
   return;
 } /* right_hermite */
 
+/*
+ * Left Hermite
+ * Computes H, U and Q such that: A = HQ, and AU = H
+ */
 void left_hermite(Matrix *A, Matrix **Hp, Matrix **Qp, Matrix **Up) {
 
   Matrix *H, *HT, *Q, *U;
