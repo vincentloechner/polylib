@@ -924,14 +924,6 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     #endif
   }
 
-  // // the intersection is still there, first of the rest list.
-  // LatticeUnion *tmp = rest;
-  // rest = rest->next;
-  // free(tmp->M);
-  // free(tmp);
-
-  // Result = LU_Concat(rest, Result);
-
   // ------------ END MAIN ALGO --------------------
 
   if(!Result){ 
