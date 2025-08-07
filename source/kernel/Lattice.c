@@ -11,9 +11,8 @@ typedef struct {
 
 
 static factor allfactors(int num);
-static Bool generate_lattice_union_line(int line_nb, Value pivotA,
-        Vector* diagInter, Lattice *A, Lattice* Intersection,
-        LatticeUnion *current, LatticeUnion **Result, int simplify);
+static LatticeUnion *generate_lattice_union_line(int line_nb, Value pivotA,
+    Vector* diagInter, Lattice *A, Lattice* Intersection, LatticeUnion *rest, LatticeUnion **Result);
 
 /*
  * Print the contents of a list of Lattices 'Head'
@@ -820,7 +819,6 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
  */
 LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
-  LatticeUnion *Head = NULL;
   Matrix *H, *X, *Y;
 
 #ifdef DOMDEBUG
@@ -867,11 +865,14 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     Matrix_Print(stderr, P_VALUE_FMT, Y);
   #endif
 
-  // allocate the lattice union
-  LatticeUnion *currentLU = LatticeUnion_Alloc();
 
   // calculate the intersection between X and Y
   Lattice *Inter = LatticeIntersection(X, Y);
+
+  // allocate the lattice union
+  LatticeUnion *rest = LatticeUnion_Alloc();
+  LatticeUnion *Result = NULL;
+  rest->M = X;
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "Inter = ");
     Matrix_Print(stderr, P_VALUE_FMT, Inter);
@@ -879,70 +880,45 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   if(!Inter){
     // if empty intersection end here and return A
     Matrix_Free(Y);
-    currentLU->M = X;
-    return (currentLU);
+    return (rest);
   }
-
-  // initialize the current lattice list with the intersection
-  currentLU->M = Inter;
+  rest->M = Matrix_Copy(rest->M); // keep X
 
   // get the diagonal coefficients of X and Inter (possibly not square)
   Vector *diag_X = get_pivots(X);
   Vector *diag_Inter = get_pivots(Inter);
 
 
-  // -------------- MAIN LOOP --------------------
+  // -------------- MAIN ALGO --------------------
 
 
-  // this flag is set to True if the previous line insertion had only 0s below
-  // the pivot, which means that it did not change any constant value and that
-  // the next step can be optimized without separating the various cases
-  Bool zero_below = False; // initial value = False to separate the intersection
-
-  // add the variants of each line of the intersection to the list
+  // add each matrix with the line variant to the Result
+  // and keep the intersection line variant in the rest list
   for (int line = 0; line < Inter->NbRows; line++) {
-    LatticeUnion *newLU = NULL;  // newly computed list
     #ifdef LATDIF_DEBUG
-      fprintf(stderr, "+++ Enter main loop (%d) (simplify=%d)\n", line, zero_below);
-      fprintf(stderr, "+++ Head =\n");
-      PrintLatticeUnion(stderr, P_VALUE_FMT, Head);
-      fprintf(stderr, "+++ currentLU =\n");
-      PrintLatticeUnion(stderr, P_VALUE_FMT, currentLU);
+      fprintf(stderr, "+++ Enter main loop (%d)\n", line);
+      fprintf(stderr, "+++ rest =\n");
+      PrintLatticeUnion(stderr, P_VALUE_FMT, rest);
     #endif
-    zero_below = generate_lattice_union_line(line, diag_X->p[line], diag_Inter, X, Inter,
-                                             currentLU, &newLU, zero_below);
-
+    rest = generate_lattice_union_line(line, diag_X->p[line], diag_Inter, X, Inter,
+                                       rest, &Result);
     #ifdef LATDIF_DEBUG
-      fprintf(stderr, "--- New lattices to add (simplify = %d) =\n", zero_below);
-      PrintLatticeUnion(stderr, P_VALUE_FMT, newLU);
+      fprintf(stderr, "+++ Result =\n");
+      PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
     #endif
-
-    // if the column below pivot is 0 chain the new ones to Head and keep the current ones
-    // else, add the new ones to the current ones
-    if(zero_below) {
-      // do simplify :)
-      // add newLU to Head
-      Head = LU_Concat(newLU, Head);
-    }
-    else {
-      // do not simplify:
-      // newLU is added to current, Head is unchanged
-      currentLU = LU_Concat(currentLU, newLU);
-    }
   }
 
-  // remove the intersection still in first position of currentLU
-  LatticeUnion* tmp = currentLU;
-  currentLU = tmp->next;
-  Matrix_Free(tmp->M);
-  free(tmp);
+  // // the intersection is still there, first of the rest list.
+  // LatticeUnion *tmp = rest;
+  // rest = rest->next;
+  // free(tmp->M);
+  // free(tmp);
 
-  // add current to Head
-  Head = LU_Concat(Head, currentLU);
+  // Result = LU_Concat(rest, Result);
 
-  // ------------ END MAIN LOOP --------------------
+  // ------------ END MAIN ALGO --------------------
 
-  if(!Head){ 
+  if(!Result){ 
     // result is empty
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "Empty result\n");
@@ -952,17 +928,17 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "Raw result = ");
-    if(Head)
-      PrintLatticeUnion(stderr, P_VALUE_FMT, Head);
+    if(Result)
+      PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
     else
       fprintf(stderr, "empty\n");
   #endif
 
-  if ((Head != NULL)) {
-    Head = LatticeSimplify(Head);
+  if ((Result != NULL)) {
+    Result = LatticeSimplify(Result);
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "Simplified result = ");
-      PrintLatticeUnion(stderr, P_VALUE_FMT, Head);
+      PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
     #endif
   }
   Matrix_Free(X);
@@ -970,7 +946,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   Vector_Free(diag_Inter);
   Vector_Free(diag_X);
 
-  return Head;
+  return Result;
 } /* LatticeDifference */
 
 /*
@@ -2177,57 +2153,49 @@ Vector* get_pivots(Matrix* A) {
 
 /*
  * Generate all different variants of the line 'line_nb' in the lattice matrix,
- * and concatenate it to the previously generated lattices.
+ * - add all variants to the result
+ * - replace the line of the intersection in the rest
  *
  * The intersection is used as a basis reference lattice, and all variants of the
  * corresponding line in A are generated:
- *    if Intersection contains line *..* p 0..0 c
+ *    if Intersection contains line "*..* p 0..0 c"
  *    and the corresponding pivot of A is pA
- *    then generate lines :  *..* p 0..0 c+pA; *..* p 0..0 c+2pA; *..* p 0..0 c+3pA; ...
- * after that, adjust the constants of the lines below that depend on p.
+ *    then generate new lines :  *..* p 0..0 c+pA; *..* p 0..0 c+2pA; *..* p 0..0 c+3pA; ...
+ *        (if necessary, adjust the constants of the lines below, that depend on p)
+ *    and keep line "*..* p 0..0 c" in the rest. (can be decomposed in prime factors - TODO!)
  *
- * Add the newly generated lattices including the new lines to Result,
- * do not update current.
- *
- * If simplify is True, we don't need to consider each case generated by the
- * previous step, but we can just copy the above line from the input matrix!
+ * Add all newly generated lattices (with the new lines) to Result,
  */
-static Bool generate_lattice_union_line(int line_nb, Value pivotA,
-        Vector* diagInter, Lattice *A, Lattice* Intersection,
-        LatticeUnion *current, LatticeUnion **Result, int simplify)
+static LatticeUnion *generate_lattice_union_line(int line_nb, Value pivotA,
+    Vector* diagInter, Lattice *A, Lattice* Intersection, LatticeUnion *rest, LatticeUnion **Result)
 {
   Value cst; // loop index is a Value = iteration * pivot
   Value iteration; // this is the iteration number
-  int next_simplify = True; // will stay True if only zeros below the pivot
+  LatticeUnion *newRest = rest;
 
   value_init(cst);
   value_init(iteration);
 
 
-  for(LatticeUnion *L = current; L; L=L->next) {
-    // TODO: check if all the coefficients below the *previous* pivot are zero.
-    // if they are, you don't need to generate a specific version of each submatrix,
-    //  -> you can just generate the standard A line above the modified line
-    //     (and the rest below stays the intersection)
-    // -> return the new list of generated lattices and use this for next step...
+  for(LatticeUnion *L = rest; L; L=L->next) {
 
-    // TODO: generate all the combinations of coef/constant that do not intersect this line of the intersection
-    // using the prime factors of the pivot, and add only those! (beware, the multiplier changes)
+    // Add the intersection line to the rest
+    // for now, just take the intersection line
+    for(int i = 0; i < L->M->NbColumns; i++) {
+        value_assign(L->M->p[line_nb][i], Intersection->p[line_nb][i]);
+      }
 
-    // now, this is the standard algorithm adding each possible alternate line to the whole list
+    // Add each possible alternate line to the Result
     for(value_assign(cst, pivotA), value_set_si(iteration, 1);
         value_lt(cst, diagInter->p[line_nb]);
         value_addto(cst, cst, pivotA), value_add_int(iteration, iteration, 1))
-      {
-      // allocate a new Lattice (new head of list)
-      LatticeUnion* newResult = malloc(sizeof(*newResult));
-      Matrix *newLat = Matrix_Copy(L->M);
-      if(simplify) {
-        // simplify the matrix, using the previous line from A instead of each variant
-        for(int i = 0; i < newLat->NbColumns; i++) {
-          value_assign(newLat->p[line_nb-1][i], A->p[line_nb-1][i]);
-        }
-      }
+    {
+      LatticeUnion *newResult = LatticeUnion_Alloc();
+      Matrix *newLat = Matrix_Copy(L->M); // from rest
+      // store and link the new lattice in first position of the Result list
+      newResult->M = newLat;
+      newResult->next = *Result;
+      *Result = newResult;
 
       // now update this line
       value_addto(newLat->p[line_nb][newLat->NbColumns-1], 
@@ -2241,7 +2209,6 @@ static Bool generate_lattice_union_line(int line_nb, Value pivotA,
       for(int ll = line_nb+1; ll < A->NbRows; ll++) {
         // scan the lines below searching for non-zero values
         if(value_notzero_p(A->p[ll][line_nb])) {
-          next_simplify = False;
           // add this value to the constant of line ll:
           // the multiplier  A->p[ll][line_nb] * the iteration number
           value_addmul(newLat->p[ll][newLat->NbColumns-1], iteration, A->p[ll][line_nb]);
@@ -2249,15 +2216,10 @@ static Bool generate_lattice_union_line(int line_nb, Value pivotA,
                         newLat->p[ll][newLat->NbColumns-1], diagInter->p[ll]);
         }
       }
-
-      // store and link the new lattice in first position of the Result list
-      newResult->M = newLat;
-      newResult->next = *Result;
-      *Result = newResult;
     }
   }
 
   value_clear(cst);
   value_clear(iteration);
-  return next_simplify;
+  return newRest;
 }
