@@ -14,7 +14,6 @@ static factor allfactors(int num);
 static LatticeUnion *generate_lattice_union_line(int line_nb, Value pivotA,
     Vector* diagInter, Lattice *A, Lattice* Intersection, LatticeUnion *rest, LatticeUnion **Result);
 
-static LatticeUnion* generate_lattice_union_line(int line_nb, Value pivotA, Vector *DiagInter, Lattice *A, Lattice* Intersection, LatticeUnion *Result);
 /*
  * Print the contents of a list of Lattices 'Head'
  */
@@ -881,8 +880,6 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     fprintf(stderr, "Y = ");
     Matrix_Print(stderr, P_VALUE_FMT, Y);
   #endif
-  // allocating the lattice union
-  Head = LatticeUnion_Alloc();
 
 
   // calculate the intersection between X and Y
@@ -903,27 +900,6 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   }
   rest->M = Matrix_Copy(rest->M); // keep X
 
-  // fprintf(stderr, "XU = ");
-  // Matrix_Print(stderr, P_VALUE_FMT, XU);
-  // fprintf(stderr, "DiagX = ");
-  // Matrix_Print(stderr, P_VALUE_FMT, DiagX);
-  // fprintf(stderr, "XV = ");
-  // Matrix_Print(stderr, P_VALUE_FMT, XV);
-
-  // Matrix *DiagInter = NULL, *U = NULL, *V = NULL;
-  // AffineSmith(Inter, &U, &V, &DiagInter); // Inter = U DiagInter V
-
-  // fprintf(stderr, "U = ");
-  // Matrix_Print(stderr, P_VALUE_FMT, U);
-  // fprintf(stderr, "DiagInter = ");
-  // Matrix_Print(stderr, P_VALUE_FMT, DiagInter);
-  // fprintf(stderr, "V = ");
-  // Matrix_Print(stderr, P_VALUE_FMT, V);
-
-
-  Head->M = Inter;
-  LatticeUnion *current = Head;
-
   // get the diagonal coefficients of X=AHNF(A) and Inter
   Vector *diag_X = get_pivots(X);
   Vector *diag_Inter = get_pivots(Inter);
@@ -934,7 +910,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
   // add each matrix with the line variant to the Result
   // and keep the intersection line variant in the rest list
-  for (int line = 0; line < Inter->NbRows; line++) {
+  for (int line = 0; line < Inter->NbRows-1; line++) {
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "+++ Enter main loop (%d)\n", line);
       fprintf(stderr, "+++ rest =\n");
@@ -963,17 +939,8 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "Empty result\n");
     #endif
-    LatticeUnion_Free(Head);
     return NULL;
   }
-
-  LatticeUnion* tmp = Head;
-  //remove the last element of the list
-  while(tmp->next->next) {
-    tmp = tmp->next;
-  }
-  LatticeUnion_Free(tmp->next);
-  tmp->next = NULL;
 
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "Raw result = ");
@@ -983,13 +950,13 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
       fprintf(stderr, "empty\n");
   #endif
 
-  if ((Result != NULL)) {
-    Result = LatticeSimplify(Result);
-    #ifdef LATDIF_DEBUG
-      fprintf(stderr, "Simplified result = ");
-      PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
-    #endif
-  }
+  // if ((Result != NULL)) {
+  //   Result = LatticeSimplify(Result);
+  //   #ifdef LATDIF_DEBUG
+  //     fprintf(stderr, "Simplified result = ");
+  //     PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
+  //   #endif
+  // }
   Matrix_Free(X);
   Matrix_Free(Y);
   Vector_Free(diag_Inter);
@@ -1874,35 +1841,36 @@ static factor prime_factors(int n)
 
 
 static Vector* value_prime_factors(Value* n){
-  Vector* res = Vector_Alloc(10);
-  Value div, rest;
-  int tabsize = 0;
-  value_init(div);
-  value_init(rest);
-  value_set_si(div, 2);
-  value_assign(n, rest);
+  // Vector* res = Vector_Alloc(10);
+  // Value div, rest;
+  // int tabsize = 0;
+  // value_init(div);
+  // value_init(rest);
+  // value_set_si(div, 2);
+  // value_assign(*n, rest);
 
-  while ( value_le((value_mult(div, div)), rest) ) {
+  // while ( value_le((value_mult(div, div)), rest) ) {
 
-    if(value_zero_p(value_mod(rest, div)))  {
+  //   if(value_zero_p(value_mod(rest, div)))  {
 
-      if(value_eq(res->Size, tabsize)){
-        res = Vector_Realloc(res->Size*2, res);
-      }
-      value_assign(res->p[tabsize], div);
-      value_div(rest, div);
-    }
-    else
-      value_addto(div, div, value_mod(div, 2));
-  }
-  if(value_notone_p(rest)){
-    if(res->Size == tabsize){
-      tabsize += 1;
-      res = Vector_Realloc(tabsize, res);
-    }
-    value_assign(res->p[res->Size++], rest);
-  }
-  return res;
+  //     if(value_eq(res->Size, tabsize)){
+  //       res = Vector_Realloc(res->Size*2, res);
+  //     }
+  //     value_assign(res->p[tabsize], div);
+  //     value_div(rest, div);
+  //   }
+  //   else
+  //     value_addto(div, div, value_mod(div, 2));
+  // }
+  // if(value_notone_p(rest)){
+  //   if(res->Size == tabsize){
+  //     tabsize += 1;
+  //     res = Vector_Realloc(tabsize, res);
+  //   }
+  //   value_assign(res->p[res->Size++], rest);
+  // }
+  // return res;
+  return NULL;
 }
 
 static factor allfactors(int n)
