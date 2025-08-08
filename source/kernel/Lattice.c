@@ -2,7 +2,8 @@
 #include <stdlib.h>
 
 // #define LATINTER_DEBUG 1
-#define LATDIF_DEBUG 1
+// #define LATDIF_DEBUG 1
+// #define PRIME_DEBUG 1
 
 typedef struct {
   int count;
@@ -1832,37 +1833,65 @@ static factor prime_factors(int n)
 }
 
 
-static Vector* value_prime_factors(Value* n){
-  // Vector* res = Vector_Alloc(10);
-  // Value div, rest;
-  // int tabsize = 0;
-  // value_init(div);
-  // value_init(rest);
-  // value_set_si(div, 2);
-  // value_assign(*n, rest);
+Vector* value_prime_factors(Value n){
+  #ifdef PRIME_DEBUG
+  fprintf(stderr, "\nEntering value_prime_factors: \n");
+  #endif
 
-  // while ( value_le((value_mult(div, div)), rest) ) {
+  Vector* res = Vector_Alloc(5);
+  Value div, divsq, rest, two, tmp;
+  int tabsize = 0;
+  value_init(div);
+  value_init(divsq); // div to the power of 2
+  value_init(rest);
+  value_init(two);
+  value_init(tmp);
 
-  //   if(value_zero_p(value_mod(rest, div)))  {
+  value_set_si(div, 2);
+  value_set_si(two, 2);
+  value_assign(rest, n);
 
-  //     if(value_eq(res->Size, tabsize)){
-  //       res = Vector_Realloc(res->Size*2, res);
-  //     }
-  //     value_assign(res->p[tabsize], div);
-  //     value_div(rest, div);
-  //   }
-  //   else
-  //     value_addto(div, div, value_mod(div, 2));
-  // }
-  // if(value_notone_p(rest)){
-  //   if(res->Size == tabsize){
-  //     tabsize += 1;
-  //     res = Vector_Realloc(tabsize, res);
-  //   }
-  //   value_assign(res->p[res->Size++], rest);
-  // }
-  // return res;
-  return NULL;
+  #ifdef PRIME_DEBUG
+    fprintf(stderr, "\nthe value of n:");
+    value_print(stderr, P_VALUE_FMT, n);
+    fprintf(stderr,"\n and rest:");
+    value_print(stderr, P_VALUE_FMT, rest);
+  #endif
+
+  value_multiply(divsq, div, div);
+  while(value_le(divsq, rest)) { //div*div <= rest
+    value_modulus(tmp, rest, div);
+    if(value_zero_p(tmp)) { //rest % div == 0
+
+      if(res->Size == tabsize) { // increase size if needed
+        res = Vector_Realloc(res, res->Size*2);
+      }
+      // adding div to result
+      value_assign(res->p[tabsize], div); 
+      value_division(rest, rest, div); 
+      tabsize++;
+    }
+    else{
+      if(value_eq(div, two))
+        value_set_si(div, 3);
+      else
+        value_addto(div, div, two);
+    }
+  }
+  if(value_notone_p(rest)){
+    if(res->Size == tabsize){
+      tabsize += 1;
+      res = Vector_Realloc(res, tabsize);
+    }
+    value_assign(res->p[tabsize], rest);
+  }
+  value_clear(rest);
+  value_clear(div);
+  value_clear(divsq);
+  value_clear(two);
+  value_clear(tmp);
+
+  return res;
 }
 
 static factor allfactors(int n)
@@ -2209,6 +2238,14 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, Value pivotA,
 
   value_init(cst);
   value_init(iteration);
+
+  #ifdef PRIME_DEBUG
+    fprintf(stderr, "\nprime factors of the value: ");
+    value_print(stderr, P_VALUE_FMT, pivotA);
+    fprintf(stderr, "\n");
+    Vector* res = value_prime_factors(pivotA);
+    Vector_Print(stderr, P_VALUE_FMT, res);
+  #endif
 
 
   for(LatticeUnion *L = rest; L; L=L->next) {

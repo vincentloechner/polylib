@@ -32,7 +32,7 @@ extern LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y);
 extern void Matrix_Move_Homogeneous_Dim_First(Matrix *A);
 extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
 extern Vector* get_pivots(Matrix* A);
-static Vector* value_prime_factors(Value* n);
+extern Vector* value_prime_factors(Value n);
 #if defined(__cplusplus)
 }
 #endif

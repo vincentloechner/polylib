@@ -157,7 +157,7 @@ Vector *Vector_Alloc(unsigned length) {
   return vector;
 } /* Vector_Alloc */
 
-Vector* Vector_Realloc(unsigned newlength, Vector* V){
+Vector* Vector_Realloc(Vector* V, unsigned newlength){
   V->Size = newlength;
   V->p = realloc(V, newlength);
   for (int i = V->Size; i < newlength; i++) {
