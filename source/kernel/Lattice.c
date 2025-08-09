@@ -2,8 +2,7 @@
 #include <stdlib.h>
 
 // #define LATINTER_DEBUG 1
-// #define LATDIF_DEBUG 1
-// #define PRIME_DEBUG 1
+#define LATDIF_DEBUG 1
 
 typedef struct {
   int count;
@@ -14,6 +13,7 @@ typedef struct {
 static factor allfactors(int num);
 static LatticeUnion *generate_lattice_union_line(int line_nb, Value pivotA,
     Vector* diagInter, Lattice *A, Lattice* Intersection, LatticeUnion *rest, LatticeUnion **Result);
+static Vector* value_prime_factors(Value n);
 
 /*
  * Print the contents of a list of Lattices 'Head'
@@ -1788,8 +1788,6 @@ int intcompare(const void *a, const void *b) {
   return 0;
 } /* intcompare */
 
-// TODO: rewrite using a Vector (of Values!)
-
 // compute the prime factors of n, including n itself if it is prime.
 static factor prime_factors(int n)
 {
@@ -1832,17 +1830,17 @@ static factor prime_factors(int n)
   return result;
 }
 
+/*
+ * Compute the prime factors of Value n, including n itself if it is prime.
+ * returns an allocated Vector of Values.
+ */
+static Vector* value_prime_factors(Value n) {
 
-Vector* value_prime_factors(Value n){
-  #ifdef PRIME_DEBUG
-  fprintf(stderr, "\nEntering value_prime_factors: \n");
-  #endif
-
-  Vector* res = Vector_Alloc(5);
+  Vector* res = Vector_Alloc(10);
+  int tabsize = 0; // current used size
   Value div, divsq, rest, two, tmp;
-  int tabsize = 0;
   value_init(div);
-  value_init(divsq); // div to the power of 2
+  value_init(divsq); // div square
   value_init(rest);
   value_init(two);
   value_init(tmp);
@@ -1851,45 +1849,45 @@ Vector* value_prime_factors(Value n){
   value_set_si(two, 2);
   value_assign(rest, n);
 
-  #ifdef PRIME_DEBUG
-    fprintf(stderr, "\nthe value of n:");
-    value_print(stderr, P_VALUE_FMT, n);
-    fprintf(stderr,"\n and rest:");
-    value_print(stderr, P_VALUE_FMT, rest);
-  #endif
-
   value_multiply(divsq, div, div);
-  while(value_le(divsq, rest)) { //div*div <= rest
+  while(value_le(divsq, rest)) { // div*div <= rest
     value_modulus(tmp, rest, div);
-    if(value_zero_p(tmp)) { //rest % div == 0
+    if(value_zero_p(tmp)) { // rest % div == 0
 
-      if(res->Size == tabsize) { // increase size if needed
+      if(res->Size == tabsize) { // increase vector size if needed
         res = Vector_Realloc(res, res->Size*2);
       }
-      // adding div to result
+      // add div to result
       value_assign(res->p[tabsize], div); 
       value_division(rest, rest, div); 
       tabsize++;
     }
     else{
+      // div = 2, 3, 5, 7, 9, 11, ...
       if(value_eq(div, two))
         value_set_si(div, 3);
       else
         value_addto(div, div, two);
     }
   }
-  if(value_notone_p(rest)){
+
+  // if something's left in the rest or empty vector (need at least one value), add the rest:
+  if(value_notone_p(rest) || tabsize == 0){
     if(res->Size == tabsize){
-      tabsize += 1;
-      res = Vector_Realloc(res, tabsize);
+      res = Vector_Realloc(res, res->Size+1);
     }
     value_assign(res->p[tabsize], rest);
+    tabsize++;
   }
   value_clear(rest);
   value_clear(div);
   value_clear(divsq);
   value_clear(two);
   value_clear(tmp);
+
+  // set the right size now (vector size can decrease too)
+  if(tabsize != res->Size)
+    res = Vector_Realloc(res, tabsize);
 
   return res;
 }
@@ -2239,12 +2237,13 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, Value pivotA,
   value_init(cst);
   value_init(iteration);
 
-  #ifdef PRIME_DEBUG
-    fprintf(stderr, "\nprime factors of the value: ");
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "Prime factors of the pivot (");
     value_print(stderr, P_VALUE_FMT, pivotA);
-    fprintf(stderr, "\n");
-    Vector* res = value_prime_factors(pivotA);
-    Vector_Print(stderr, P_VALUE_FMT, res);
+    fprintf(stderr, ") = ");
+    Vector* prime_factors = value_prime_factors(pivotA);
+    Vector_Print(stderr, P_VALUE_FMT, prime_factors);
+    Vector_Free(prime_factors);
   #endif
 
 

@@ -140,13 +140,13 @@ Vector *Vector_Alloc(unsigned length) {
   int i;
   Vector *vector;
 
-  vector = (Vector *)malloc(sizeof(Vector));
+  vector = malloc(sizeof(Vector));
   if (!vector) {
     errormsg1("Vector_Alloc", "outofmem", "out of memory space");
     return 0;
   }
   vector->Size = length;
-  vector->p = (Value *)malloc(length * sizeof(Value));
+  vector->p = malloc(length * sizeof(Value));
   if (!vector->p) {
     errormsg1("Vector_Alloc", "outofmem", "out of memory space");
     free(vector);
@@ -157,13 +157,22 @@ Vector *Vector_Alloc(unsigned length) {
   return vector;
 } /* Vector_Alloc */
 
+/*
+ * Change Vector length (re-allocate memory)
+ */
 Vector* Vector_Realloc(Vector* V, unsigned newlength){
-  V->Size = newlength;
-  V->p = realloc(V, newlength);
+  // EITHER: free extra values
+  for (int i = newlength; i < V->Size; i++) {
+    value_clear(V->p[i]);
+  }
+  V->p = realloc(V->p, newlength * sizeof(Value));
+  // OR: allocate new values
   for (int i = V->Size; i < newlength; i++) {
     value_init(V->p[i]);
   }
   V->Size = newlength;
+
+  // does not change V, but return for code readability
   return V;
 }
 
