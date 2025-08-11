@@ -11,9 +11,9 @@ typedef struct {
 
 
 static factor allfactors(int num);
-static LatticeUnion *generate_lattice_union_line(int line_nb, Value pivotA,
-    Vector* diagInter, Lattice *A, Lattice* Intersection, LatticeUnion *rest, LatticeUnion **Result);
-static Vector* value_prime_factors(Value n);
+static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_columns,
+    Lattice *A, Lattice* Intersection, LatticeUnion *rest, LatticeUnion **Result);
+static void get_pivots_columns(Matrix* A, int *columns);
 
 /*
  * Print the contents of a list of Lattices 'Head'
@@ -832,19 +832,25 @@ LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y) {
  * Return the Union of lattices that constitute the difference between
  * two single lattices: A - B.
  * The dimensions of A and B should be the same. 
+ * Main algorithm: compute the intersection of A and B and take it out of A
  * If the difference is empty return NULL.
+ * Allocates a LatticeUnion
  */
 LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
   Matrix *H, *X, *Y;
+  int *pivots_columns;
+  Lattice *Inter;
+  LatticeUnion *rest, *Result;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered LATTICEDIFFERENCE \n");
-  fclose(fp);
-#endif
+  #ifdef DOMDEBUG
+    FILE *fp;
+    fp = fopen("_debug", "a");
+    fprintf(fp, "\nEntered LATTICEDIFFERENCE \n");
+    fclose(fp);
+  #endif
 
+  // Checking inputs:
   if (A->NbRows != B->NbRows) {
     errormsg1("LatticeDifference", "dimincomp",
       "input lattices A and B have incompatible dimensions (rows)");
@@ -855,7 +861,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
       "input lattices A and B have incompatible dimensions (columns)");
     return NULL;
   }
-
+  // normalize and create a copy A->X
   if (! isNormalLattice(A)) {
     AffineHermite(A, &H, NULL);
     X = H;
@@ -867,43 +873,43 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
     Matrix_Free(X);
     return(NULL);
   }
-
-  if (! isNormalLattice(B)) {
-    AffineHermite(B, &H, NULL);
-    Y = H;
-  }
-  else {
-    Y = Matrix_Copy(B);
-  }
+  // no need to normalize B, it will just be used to compute
+  // the (normalized) intersection with X
+  // if (! isNormalLattice(B)) {
+  //   AffineHermite(B, &H, NULL);
+  //   Y = H;
+  // }
+  // else {
+  //   Y = Matrix_Copy(B);
+  // }
   #ifdef LATDIF_DEBUG
-    fprintf(stderr, "Entering LatDiff. X = ");
+    fprintf(stderr, "Entering LatDiff. A (normalized) = ");
     Matrix_Print(stderr, P_VALUE_FMT, X);
-    fprintf(stderr, "Y = ");
-    Matrix_Print(stderr, P_VALUE_FMT, Y);
+    fprintf(stderr, "B = ");
+    Matrix_Print(stderr, P_VALUE_FMT, B);
   #endif
 
+  // calculate the intersection between X and B
+  Inter = LatticeIntersection(X, B);
 
-  // calculate the intersection between X and Y
-  Lattice *Inter = LatticeIntersection(X, Y);
-
-  // allocate the lattice union
-  LatticeUnion *rest = LatticeUnion_Alloc();
-  LatticeUnion *Result = NULL;
-  rest->M = X;
+  rest = LatticeUnion_Alloc();
+  Result = NULL;
+  rest->M = X; // will be the return value if empty intersection
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "Inter = ");
     Matrix_Print(stderr, P_VALUE_FMT, Inter);
   #endif
   if(!Inter){
-    //if empty intersection return A
-    Matrix_Free(Y);
+    // if empty intersection return a copy of A
     return (rest);
   }
-  rest->M = Matrix_Copy(rest->M); // keep X
+  rest->M = Matrix_Copy(rest->M); // keep X safe, we need it in the following
 
-  // get the diagonal coefficients of X=AHNF(A) and Inter
-  Vector *diag_X = get_pivots(X);
-  Vector *diag_Inter = get_pivots(Inter);
+  // get the positions of the pivots of X and Inter
+  pivots_columns = malloc(sizeof(int) * A->NbRows);
+  get_pivots_columns(Inter, pivots_columns);
+  // Vector *diag_X = get_pivots(X);
+  // Vector *diag_Inter = get_pivots(Inter);
 
 
   // -------------- MAIN ALGO --------------------
@@ -917,8 +923,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
       fprintf(stderr, "+++ rest =\n");
       PrintLatticeUnion(stderr, P_VALUE_FMT, rest);
     #endif
-    rest = generate_lattice_union_line(line, diag_X->p[line], diag_Inter, X, Inter,
-                                       rest, &Result);
+    rest = generate_lattice_union_line(line, pivots_columns, X, Inter, rest, &Result);
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "+++ Result =\n");
       PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
@@ -927,22 +932,22 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
   // ------------ END MAIN ALGO --------------------
 
+  free(pivots_columns);
+  Matrix_Free(X);
+
+  // result is empty
   if(!Result){ 
-    // result is empty
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "Empty result\n");
     #endif
     return NULL;
   }
-
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "Raw result = ");
-    if(Result)
-      PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
-    else
-      fprintf(stderr, "empty\n");
+    PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
   #endif
 
+  // No need to simplify since it is already computed in minimal form :)
   // if ((Result != NULL)) {
   //   Result = LatticeSimplify(Result);
   //   #ifdef LATDIF_DEBUG
@@ -950,11 +955,6 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   //     PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
   //   #endif
   // }
-  Matrix_Free(X);
-  Matrix_Free(Y);
-  Vector_Free(diag_Inter);
-  Vector_Free(diag_X);
-
   return Result;
 } /* LatticeDifference */
 
@@ -1871,8 +1871,8 @@ static Vector* value_prime_factors(Value n) {
     }
   }
 
-  // if something's left in the rest or empty vector (need at least one value), add the rest:
-  if(value_notone_p(rest) || tabsize == 0){
+  // if something's left add the rest:
+  if(value_notone_p(rest)) {
     if(res->Size == tabsize){
       res = Vector_Realloc(res, res->Size+1);
     }
@@ -2197,99 +2197,229 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
   value_clear(tmp);
 } /* Matrix_Move_Homogeneous_Dim_Last */
 
-Vector* get_pivots(Matrix* A){
-  Vector* pivot = Vector_Alloc(A->NbRows);
-  int j=0;
+// not used anymore:
+// Vector* get_pivots(Matrix* A){
+//   Vector* pivot = Vector_Alloc(A->NbRows);
+//   int j=0;
+//   for(int i=0; i < A->NbRows ; i++) {
+//     if(value_zero_p(A->p[i][j])){
+//       value_set_si(pivot->p[i],1);
+//     }else {
+//       value_assign(pivot->p[i],A->p[i][j]);
+//       j++;
+//     }
+//   }
+//   return pivot;
+// }
+
+/*
+ * get the column numbers of the pivots.
+ * since the matrix is not necessarily square, retreive the right pivot
+ * column number for each line number.
+ * Fills the array columns, allocation by caller
+ */
+static void get_pivots_columns(Matrix* A, int *columns)
+{
+  int col = 0;
   for(int i=0; i < A->NbRows ; i++) {
-    if(value_zero_p(A->p[i][j])){
-      value_set_si(pivot->p[i],1);
-    }else {
-      value_assign(pivot->p[i],A->p[i][j]);
-      j++;
+    if(i>0 && value_zero_p(A->p[i][col])){
+      // zero in this column: take the previous one
+      columns[i] = col-1;
+    }
+    else {
+      // there's a non zero value on this column, take it and increase col.
+      columns[i] = col;
+      col++;
     }
   }
-
-  return pivot;
 }
 
 /*
- * Generate all different variants of the line 'line_nb' in the lattice matrix,
- * - add all variants to the result
- * - replace the line of the intersection in the rest
+ * Generate all variants of the line 'line_nb' in lattice matrix A
+ * - add all variants not intersecting Inter to the result
+ * - replace the corresponding line of the rest by the intersection
  *
- * The intersection is used as a basis reference lattice, and all variants of the
- * corresponding line in A are generated:
+ * The intersection line is used as a basis reference lattice, and all
+ * variants of the corresponding line in A are generated:
  *    if Intersection contains line "*..* p 0..0 c"
  *    and the corresponding pivot of A is pA
- *    then generate new lines :  *..* p 0..0 c+pA; *..* p 0..0 c+2pA; *..* p 0..0 c+3pA; ...
- *        (if necessary, adjust the constants of the lines below, that depend on p)
- *    and keep line "*..* p 0..0 c" in the rest. (can be decomposed in prime factors - TODO!)
+ *    then generate new lines :  *..* p 0..0 c+pA; *..* p 0..0 c+2pA;
+ *    *..* p 0..0 c+3pA; ...  (optim.: can be decomposed in prime factors)
  *
- * Add all newly generated lattices (with the new lines) to Result,
+ *    Adjust the constants of the lines below, that depend on p,
+ *
+ * Add all newly generated lattices (with the new lines) to Result.
  */
-static LatticeUnion *generate_lattice_union_line(int line_nb, Value pivotA,
-    Vector* diagInter, Lattice *A, Lattice* Intersection, LatticeUnion *rest, LatticeUnion **Result)
+static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_columns,
+    Lattice *A, Lattice *Intersection, LatticeUnion *rest, LatticeUnion **Result)
 {
-  Value cst; // loop index is a Value = iteration * pivot
-  Value iteration; // this is the iteration number
+  // Value cst; // loop index is a Value = iteration * pivot
+  // Value iteration; // this is the iteration number
   LatticeUnion *newRest = rest;
+  Value step, multiply, modulo, tmp;
 
-  value_init(cst);
-  value_init(iteration);
-
-  #ifdef LATDIF_DEBUG
-    fprintf(stderr, "Prime factors of the pivot (");
-    value_print(stderr, P_VALUE_FMT, pivotA);
-    fprintf(stderr, ") = ");
-    Vector* prime_factors = value_prime_factors(pivotA);
-    Vector_Print(stderr, P_VALUE_FMT, prime_factors);
-    Vector_Free(prime_factors);
-  #endif
+  value_init(step);
+  value_init(multiply);
+  value_init(modulo);
+  value_init(tmp); // for computing tests on values
 
 
+  // scan all lattices in the rest (TODO: there's only one rest, no need of a union)
   for(LatticeUnion *L = rest; L; L=L->next) {
 
-    // Add the intersection line to the rest
-    // for now, just take the intersection line
+    // Add this intersection line to the rest, so we will only consider
+    // the next lines in the following of the main loop (next line_nb)
     for(int i = 0; i < L->M->NbColumns; i++) {
         value_assign(L->M->p[line_nb][i], Intersection->p[line_nb][i]);
       }
+    // no need to update lines below the pivot here
 
-    // Add each possible alternate line to the Result
-    for(value_assign(cst, pivotA), value_set_si(iteration, 1);
-        value_lt(cst, diagInter->p[line_nb]);
-        value_addto(cst, cst, pivotA), value_add_int(iteration, iteration, 1))
-    {
-      LatticeUnion *newResult = LatticeUnion_Alloc();
-      Matrix *newLat = Matrix_Copy(L->M); // from rest
-      // store and link the new lattice in first position of the Result list
-      newResult->M = newLat;
-      newResult->next = *Result;
-      *Result = newResult;
 
-      // now update this line
-      value_addto(newLat->p[line_nb][newLat->NbColumns-1], 
-                  newLat->p[line_nb][newLat->NbColumns-1], cst);
+    // NEW VERSION:
+    // simplify directly when building
 
-      value_modulus(newLat->p[line_nb][newLat->NbColumns-1], 
-                    newLat->p[line_nb][newLat->NbColumns-1], diagInter->p[line_nb]);
+    // consider the decomposition in prime factors of the pivot:
+    // if the pivot is 15, will take out the right p%3==0/1/2 and p%5==0/1/2/3/4
+    // only one case p%15=c (the intersection) will not enter those cases :)
+    // can be empty, if p=1 then size=0 and the whole loop is skipped.
+    // if a prime factor appears multiple times, multiply: (2,2,2) -> (2,4,8)
+    Vector* prime_factors = value_prime_factors(Intersection->p[line_nb][pivots_columns[line_nb]]);
+    for(int p = 0; p < prime_factors->Size; p++) {
+      // consider the prime factor: prime_factors->p[p]
 
-      // ajust the constants below this row because they change depending on the changed multiplier above ^^
-      // if the corresponding value below the pivot (= multiplier) is not zero
-      for(int ll = line_nb+1; ll < A->NbRows; ll++) {
-        // scan the lines below searching for non-zero values
-        if(value_notzero_p(A->p[ll][line_nb])) {
-          // add this value to the constant of line ll:
-          // the multiplier  A->p[ll][line_nb] * the iteration number
-          value_addmul(newLat->p[ll][newLat->NbColumns-1], iteration, A->p[ll][line_nb]);
-          value_modulus(newLat->p[ll][newLat->NbColumns-1], 
-                        newLat->p[ll][newLat->NbColumns-1], diagInter->p[ll]);
+      // if the previous prime factor is the same:
+      // example with 2:
+      // get the cases p%4==0/1 or 2/3 after we took out i%2=0 or 1 in the previous step
+      // next step get p%8==0+hit or 4+hit (hit is a potential intersection hit constant)
+
+      // example with: 3*3*3
+      // step 0: m=3, it=1 (init=0):
+      // 3i + 0/1/2 -> if 3i+1 is the intersection, we take out 3i+0 and 3i+2.
+      // Next step will not consider 9i+0/3/6 nor 9i+2/5/8, and just scan: 
+      // step 1: m=9, it=3, (init=1):
+      // 9i + 1/4/7 -> if 9i+7 is the intersection, take out 9i+1 and 9i+4
+      // step 2: m=27, it=9, (init=7):
+      // 27i+ 7/16/25
+
+      // general case:
+      // - if same multiplier as previously:
+      //    * iterator step = previous multiplier
+      //    * multiplier = prime factor * previous multiplier
+      //   else (new multiplier):
+      //    * iteration step = 1
+      //    * multiplier = prime factor
+      // - init loop value = intersection constant % iterator step
+
+      if(p>0 && value_eq(prime_factors->p[p-1], prime_factors->p[p])) {
+        value_assign(step, multiply);
+        value_multiply(multiply, multiply, prime_factors->p[p]);
+                    // multiply = multiply*prime_factors->p[p];
+      }
+      else {
+        value_set_si(step, 1);
+        value_assign(multiply, prime_factors->p[p]);
+      }
+
+      // Iterate on each possible modulo:
+      // from a possible intersection value, to multiply, with step
+      for(value_modulus(modulo, Intersection->p[line_nb][Intersection->NbColumns-1], step);
+          value_lt(modulo, multiply);
+          value_addto(modulo, modulo, step)) {
+        // consider line: multiply * x == modulo
+        #ifdef LATDIF_DEBUG
+          fprintf(stderr, "  -> considering line: ");
+          value_print(stderr, P_VALUE_FMT, multiply);
+          fprintf(stderr, " * x == ");
+          value_print(stderr, P_VALUE_FMT, modulo);
+        #endif
+
+        value_modulus(tmp, Intersection->p[line_nb][Intersection->NbColumns-1], multiply);
+        if(value_eq(tmp, modulo)) {
+          // no need to do anything there, this modulo hits the intersection
+          // and will be considered at next loop iteration or in the rest :)
+          #ifdef LATDIF_DEBUG
+            fprintf(stderr, " -> part of the intersection, ignoring\n");
+          #endif
+        }
+        else {
+          #ifdef LATDIF_DEBUG
+            fprintf(stderr, " -> add it to result\n");
+          #endif
+          // if this line does not hit the intersection (same constant), it's not part of the intersection,
+          // add it to the result.
+          // link a copy to result, then update
+          LatticeUnion *newResult = LatticeUnion_Alloc();
+          Matrix *newLat = Matrix_Copy(L->M); // from rest
+          newResult->M = newLat;
+          newResult->next = *Result;
+          *Result = newResult;
+
+          // update this line
+          value_assign(newLat->p[line_nb][pivots_columns[line_nb]], multiply);
+          value_addto(newLat->p[line_nb][newLat->NbColumns-1], 
+                      newLat->p[line_nb][newLat->NbColumns-1], modulo);
+          value_modulus(newLat->p[line_nb][newLat->NbColumns-1], 
+                        newLat->p[line_nb][newLat->NbColumns-1], multiply);
+          
+          // update_rows_below(line_nb, pivots_columns[line_nb], newLat);
+          // ajust the constants below this row because they change depending on the changed line above
+          // IF the corresponding value below the pivot is not zero
+          for(int ll = line_nb+1; ll < A->NbRows; ll++) {
+            if(value_notzero_p(A->p[ll][pivots_columns[line_nb]])) {
+              // add this value to the constant of line ll:
+              // the multiplier  A->p[ll][pivot_column] * the iteration number
+
+              // TODO: recompute this correctly
+              // value_addmul(newLat->p[ll][newLat->NbColumns-1], iteration, A->p[ll][line_nb]);
+              // value_modulus(newLat->p[ll][newLat->NbColumns-1], 
+              //               newLat->p[ll][newLat->NbColumns-1], diagInter->p[ll]);
+            }
+          }
+
         }
       }
     }
+    
+    // // OLD VERSION:
+    // // Add each possible alternate line to the Result
+    // for(value_assign(cst, pivotA), value_set_si(iteration, 1);
+    //     value_lt(cst, diagInter->p[line_nb]);
+    //     value_addto(cst, cst, pivotA), value_add_int(iteration, iteration, 1))
+    // {
+    //   LatticeUnion *newResult = LatticeUnion_Alloc();
+    //   Matrix *newLat = Matrix_Copy(L->M); // from rest
+    //   // store and link the new lattice in first position of the Result list
+    //   newResult->M = newLat;
+    //   newResult->next = *Result;
+    //   *Result = newResult;
+
+    //   // now update this line
+    //   value_addto(newLat->p[line_nb][newLat->NbColumns-1], 
+    //               newLat->p[line_nb][newLat->NbColumns-1], cst);
+
+    //   value_modulus(newLat->p[line_nb][newLat->NbColumns-1], 
+    //                 newLat->p[line_nb][newLat->NbColumns-1], diagInter->p[line_nb]);
+
+    //   // ajust the constants below this row because they change depending on the changed line above ^^
+    //   // if the corresponding value below the pivot (= multiplier) is not zero
+    //   for(int ll = line_nb+1; ll < A->NbRows; ll++) {
+    //     // scan the lines below searching for non-zero values
+
+    //     // TODO: bug here, line_nb is not necessarily the column of the pivot (matrix can be non square)
+    //     if(value_notzero_p(A->p[ll][line_nb])) {
+    //       // add this value to the constant of line ll:
+    //       // the multiplier  A->p[ll][line_nb] * the iteration number
+    //       value_addmul(newLat->p[ll][newLat->NbColumns-1], iteration, A->p[ll][line_nb]);
+    //       value_modulus(newLat->p[ll][newLat->NbColumns-1], 
+    //                     newLat->p[ll][newLat->NbColumns-1], diagInter->p[ll]);
+    //     }
+    //   }
+    // }
   }
 
-  value_clear(cst);
-  value_clear(iteration);
+  value_clear(tmp);
+  value_clear(modulo);
+  value_clear(multiply);
+  value_clear(step);
   return newRest;
 }
