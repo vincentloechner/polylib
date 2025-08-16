@@ -18,19 +18,19 @@ D 0
 F 5
 
 # A and B are transformed to Affine HNF:
-AffineHNF A = 4 4
+A (normalized) = 4 4
    2    0    0    0
    5   15    0    0
    0    0    1    0
    0    0    0    1
 
-AffineHNF B = 4 4
+B (normalized) = 4 4
    2    0    0    0
    0    5    0    0
   52   27   66    0
    0    0    0    1
 
-# result of intersection is:
+# intersection is:
 4 4
 2    0    0    0 
 5   15    0    0 
