@@ -146,16 +146,8 @@ Bool isLinear(Lattice *A) {
 /*
  * Return the affine Hermite normal form of the affine lattice 'A'. The unique
  * affine Hermite form if a lattice is stored in 'H' and the unimodular matrix
- * corresponding to 'A = H . U' is stored in the matrix 'U'.
- * OLD Algorithm :
- *            1) Check if the Lattice is Linear or not.
- *            2) If it is not Linear, then Homogenise the Lattice.
- *            3) Call Hermite.
- *            4) If the Lattice was Homogenised, the HNF H must be
- *               Dehomogenised and also corresponding changes must
- *               be made to the Unimodular Matrix U.
- *            5) Return.
- * NEW algorithm:
+ * corresponding to 'A = H . U' is stored in the matrix 'U' (if not NULL).
+ * Algorithm:
  *     1) move the homogeneous dimensions first (on top-left)
  *     2) compute left_hermite
  *     3) move back the homogeneous dimensions (bottom-right)
@@ -2317,12 +2309,13 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
     // 27i+ 7/16/25
 
     // general case:
-    // - if same multiplier as previously:
+    // - if same primer factor as previously:
     //    * iterator step = previous multiplier
-    //    * multiplier = prime factor * previous multiplier
+    //    * multiply = prime factor * previous multiplier
     //   else (new multiplier):
-    //    * iteration step = 1 (* ratio)
-    //    * multiplier = prime factor (* ratio)
+    //    * iteration step = 1 (* A initial pivot)
+    //    * multiply = prime factor (* A initial pivot)
+    //      (A initial pivot always divides the pivot of the intersection)
     // - init loop value = intersection constant % iterator step
 
     // check if same prime factor as before
@@ -2365,68 +2358,44 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
         #endif
       }
       else {
+        // this line does not hit the intersection, add it to the result.
         #ifdef LATDIF_DEBUG
           fprintf(stderr, " -> add it to result\n");
         #endif
-        // this line does not hit the intersection, add it to the result.
 
-        // link a copy to result,
         LatticeUnion *newResult = LatticeUnion_Alloc();
         Matrix *newLat = Matrix_Copy(rest); // get a copy of rest
-        newResult->M = newLat;
+
+        // link newResult to Result,
+        newResult->M = NULL;
         newResult->next = Result;
         Result = newResult;
 
         // then update current line
+        // new pivot:
         value_assign(newLat->p[line_nb][pivot_col], multiply);
-        // TODO: modulo multiply on the coefficients before the pivot (multiply can be lower than the original value)
-        
+        // new constant:
         value_assign(newLat->p[line_nb][newLat->NbColumns-1], modulo);
-        // value_modulus(newLat->p[line_nb][newLat->NbColumns-1], 
-        //               newLat->p[line_nb][newLat->NbColumns-1], multiply);
 
         // ajust the rows below because they change depending on the changed pivot&constant above:
-        // if the coeficient below the pivot is not zero, multiply the coefficient by step (does not change if step == 1)
-        // recompute the constant: if the coeficient below the pivot is not zero
+        // if a coefficient below the pivot is not zero, multiply the coefficient by ratio
+        // recompute the constant accordingly (adding (modulo/step))   ->  * ratio ??????
         for(int ll = line_nb+1; ll < A->NbRows; ll++) {
           if(value_notzero_p(A->p[ll][pivot_col])) {
-            // // adjust the constant of line ll:
-            // // we modified Intersection[line_nb], from: (a x + c)
-            // // to: (multiply x' + d) with x' = a/multiply x and d = c + modulo
-            // // the constant changed [adding modulo].
-            // // if a line below the pivot was e x + ... + f, we changed the meaning of x and f needs to be adjusted:
-            // // add this to f: e * [modulo / step], and recompute the right modulo (e)
 
-            // TODO: this is wrong in LatDiff1 (135 = 27*5), but right in 8 and 8b!
-            value_multiply(newLat->p[ll][pivot_col], newLat->p[ll][pivot_col], step);
+            // new coefficient
+            value_multiply(newLat->p[ll][pivot_col], newLat->p[ll][pivot_col], ratio);
 
-            // value_modulus(tmp, Intersection->p[line_nb][Intersection->NbColumns-1], multiply);
-            // value_substract(tmp, modulo, tmp);
-            value_division(tmp, modulo, step); // 0/1/2/3/... one of them is the intersection
+            // new constant
+            value_division(tmp, modulo, step); // iteration number 0/1/2/3/... one of them is the intersection
+            value_multiply(tmp, tmp, A->p[ll][pivot_col]); // multiplied by old value below pivot
             value_addto(newLat->p[ll][newLat->NbColumns-1],
                         newLat->p[ll][newLat->NbColumns-1], tmp);
-            // constant: modulo the pivot of this line to stay HNF
-            value_modulus(newLat->p[ll][newLat->NbColumns-1],
-                        newLat->p[ll][newLat->NbColumns-1], newLat->p[ll][pivots_columns[ll]]);
-
-
-            // value_division(tmp, modulo, step);
-            // value_multiply(tmp, tmp, A->p[ll][pivot_col]);
-            // value_addto(newLat->p[ll][newLat->NbColumns-1], newLat->p[ll][newLat->NbColumns-1], tmp);
-
-            // value_modulus(newLat->p[ll][newLat->NbColumns-1], 
-            //               newLat->p[ll][newLat->NbColumns-1], newLat->p[ll][pivot_col]);
-
-            // old version:
-            // TODO: recompute this correctly
-            // the multiplier  A->p[ll][pivot_column] * the iteration number
-            //                                          [= modulo / step]
-            // value_addmul(newLat->p[ll][newLat->NbColumns-1], iteration, A->p[ll][line_nb]);
-            // value_modulus(newLat->p[ll][newLat->NbColumns-1], 
-            //               newLat->p[ll][newLat->NbColumns-1], diagInter->p[ll]);
-
           }
         }
+        // tranforms the new lattice back to HNF and store it into Result
+        AffineHermite(newLat, &Result->M, NULL);
+        Matrix_Free(newLat);
       }
     }
   }
