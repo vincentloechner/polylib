@@ -908,94 +908,94 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 //   return Result;
 // } /* IntegraliseLattice */
 
-/*
- * Return the simplified representation of the Z-domain 'ZDom'. It attempts to
- * convexize unions of polyhedra when they correspond to the same lattices and
- * to simplify union of lattices when they correspond to the same polyhdera.
- */
-ZPolyhedron *ZDomainSimplify(ZPolyhedron *ZDom) {
+// /*
+//  * Return the simplified representation of the Z-domain 'ZDom'. It attempts to
+//  * convexize unions of polyhedra when they correspond to the same lattices and
+//  * to simplify union of lattices when they correspond to the same polyhdera.
+//  */
+// ZPolyhedron *ZDomainSimplify(ZPolyhedron *ZDom) {
 
-  ZPolyhedron *Ztmp, *Result;
-  ForSimplify *Head, *Prev, *Curr;
-  ZPolyhedron *ZDomHead, *Emp;
+//   ZPolyhedron *Ztmp, *Result;
+//   ForSimplify *Head, *Prev, *Curr;
+//   ZPolyhedron *ZDomHead, *Emp;
 
-  if (ZDom == NULL) {
-    fprintf(stderr, "\nError in ZDomainSimplify - ZDomHead = NULL\n");
-    return NULL;
-  }
-  if (ZDom->next == NULL)
-    return (ZPolyhedron_Copy(ZDom));
-  Emp = EmptyZPolyhedron(ZDom->Lat->NbRows - 1);
-  ZDomHead = ZDomainUnion(ZDom, Emp);
-  ZPolyhedron_Free(Emp);
-  Head = NULL;
-  Ztmp = ZDomHead;
-  do {
-    Polyhedron *Img;
-    Img = DomainImage(Ztmp->P, Ztmp->Lat, MAXNOOFRAYS);
-    for (Curr = Head; Curr != NULL; Curr = Curr->next) {
-      Polyhedron *Diff1;
-      Bool flag = False;
+//   if (ZDom == NULL) {
+//     fprintf(stderr, "\nError in ZDomainSimplify - ZDomHead = NULL\n");
+//     return NULL;
+//   }
+//   if (ZDom->next == NULL)
+//     return (ZPolyhedron_Copy(ZDom));
+//   Emp = EmptyZPolyhedron(ZDom->Lat->NbRows - 1);
+//   ZDomHead = ZDomainUnion(ZDom, Emp);
+//   ZPolyhedron_Free(Emp);
+//   Head = NULL;
+//   Ztmp = ZDomHead;
+//   do {
+//     Polyhedron *Img;
+//     Img = DomainImage(Ztmp->P, Ztmp->Lat, MAXNOOFRAYS);
+//     for (Curr = Head; Curr != NULL; Curr = Curr->next) {
+//       Polyhedron *Diff1;
+//       Bool flag = False;
 
-      Diff1 = DomainDifference(Img, Curr->Pol, MAXNOOFRAYS);
-      if (emptyQ(Diff1)) {
-        Polyhedron *Diff2;
+//       Diff1 = DomainDifference(Img, Curr->Pol, MAXNOOFRAYS);
+//       if (emptyQ(Diff1)) {
+//         Polyhedron *Diff2;
 
-        Diff2 = DomainDifference(Curr->Pol, Img, MAXNOOFRAYS);
-        if (emptyQ(Diff2))
-          flag = True;
-        Domain_Free(Diff2);
-      }
-      Domain_Free(Diff1);
-      if (flag == True) {
-        LatticeUnion *temp;
+//         Diff2 = DomainDifference(Curr->Pol, Img, MAXNOOFRAYS);
+//         if (emptyQ(Diff2))
+//           flag = True;
+//         Domain_Free(Diff2);
+//       }
+//       Domain_Free(Diff1);
+//       if (flag == True) {
+//         LatticeUnion *temp;
 
-        temp = (LatticeUnion *)malloc(sizeof(LatticeUnion));
-        temp->M = (Lattice *)Matrix_Copy((Matrix *)Ztmp->Lat);
-        temp->next = Curr->LatUni;
-        Curr->LatUni = temp;
-        break;
-      }
-    }
-    if (Curr == NULL) {
-      Curr = (ForSimplify *)malloc(sizeof(ForSimplify));
-      Curr->Pol = Domain_Copy(Img);
-      Curr->LatUni = (LatticeUnion *)malloc(sizeof(LatticeUnion));
-      Curr->LatUni->M = (Lattice *)Matrix_Copy((Matrix *)Ztmp->Lat);
-      Curr->LatUni->next = NULL;
-      Curr->next = Head;
-      Head = Curr;
-    }
-    Domain_Free(Img);
-    Ztmp = Ztmp->next;
-  } while (Ztmp != NULL);
+//         temp = (LatticeUnion *)malloc(sizeof(LatticeUnion));
+//         temp->M = (Lattice *)Matrix_Copy((Matrix *)Ztmp->Lat);
+//         temp->next = Curr->LatUni;
+//         Curr->LatUni = temp;
+//         break;
+//       }
+//     }
+//     if (Curr == NULL) {
+//       Curr = (ForSimplify *)malloc(sizeof(ForSimplify));
+//       Curr->Pol = Domain_Copy(Img);
+//       Curr->LatUni = (LatticeUnion *)malloc(sizeof(LatticeUnion));
+//       Curr->LatUni->M = (Lattice *)Matrix_Copy((Matrix *)Ztmp->Lat);
+//       Curr->LatUni->next = NULL;
+//       Curr->next = Head;
+//       Head = Curr;
+//     }
+//     Domain_Free(Img);
+//     Ztmp = Ztmp->next;
+//   } while (Ztmp != NULL);
 
-  for (Curr = Head; Curr != NULL; Curr = Curr->next)
-    Curr->LatUni = LatticeSimplify(Curr->LatUni);
-  Result = NULL;
-  for (Curr = Head; Curr != NULL; Curr = Curr->next) {
-    LatticeUnion *L;
-    for (L = Curr->LatUni; L != NULL; L = L->next) {
-      Polyhedron *Preim;
-      ZPolyhedron *Zpol;
+//   for (Curr = Head; Curr != NULL; Curr = Curr->next)
+//     Curr->LatUni = LatticeSimplify(Curr->LatUni);
+//   Result = NULL;
+//   for (Curr = Head; Curr != NULL; Curr = Curr->next) {
+//     LatticeUnion *L;
+//     for (L = Curr->LatUni; L != NULL; L = L->next) {
+//       Polyhedron *Preim;
+//       ZPolyhedron *Zpol;
 
-      Preim = DomainPreimage(Curr->Pol, L->M, MAXNOOFRAYS);
-      Zpol = ZPolyhedronAlloc(L->M, Preim);
-      Zpol->next = Result;
-      Result = Zpol;
-      Domain_Free(Preim);
-    }
-  }
-  Curr = Head;
-  while (Curr != NULL) {
-    Prev = Curr;
-    Curr = Curr->next;
-    LatticeUnion_Free(Prev->LatUni);
-    Domain_Free(Prev->Pol);
-    free(Prev);
-  }
-  return Result;
-} /* ZDomainSimplify */
+//       Preim = DomainPreimage(Curr->Pol, L->M, MAXNOOFRAYS);
+//       Zpol = ZPolyhedronAlloc(L->M, Preim);
+//       Zpol->next = Result;
+//       Result = Zpol;
+//       Domain_Free(Preim);
+//     }
+//   }
+//   Curr = Head;
+//   while (Curr != NULL) {
+//     Prev = Curr;
+//     Curr = Curr->next;
+//     LatticeUnion_Free(Prev->LatUni);
+//     Domain_Free(Prev->Pol);
+//     free(Prev);
+//   }
+//   return Result;
+// } /* ZDomainSimplify */
 
 // /*
 //  * 

@@ -13,7 +13,7 @@ extern Bool isLinear(Lattice *A);
 extern LatticeUnion *LatticeDifference(Lattice *A, Lattice *B);
 extern Bool LatticeIncludes(Lattice *A, Lattice *B);
 extern Lattice *LatticeIntersection(Lattice *X, Lattice *Y);
-extern LatticeUnion *LatticeSimplify(LatticeUnion *latlist);
+// extern LatticeUnion *LatticeSimplify(LatticeUnion *latlist);
 extern LatticeUnion *LatticeUnion_Alloc(void);
 extern void LatticeUnion_Free(LatticeUnion *Head);
 extern void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head);

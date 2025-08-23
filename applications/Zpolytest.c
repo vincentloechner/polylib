@@ -226,14 +226,14 @@ int main() {
 	    isEmptyZDomain(ZB));
     break;
   
-  case 13:  /* ZDomainSimplify */
+  // case 13:  /* ZDomainSimplify */
     
-    ZA = ZPolyhedronAlloc(a, A);
-    ZA->next = ZPolyhedronAlloc(b, B);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZA);
-    ZD = ZDomainSimplify(ZA);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZD);
-    break;
+  //   ZA = ZPolyhedronAlloc(a, A);
+  //   ZA->next = ZPolyhedronAlloc(b, B);
+  //   ZDomainPrint(stdout,P_VALUE_FMT, ZA);
+  //   ZD = ZDomainSimplify(ZA);
+  //   ZDomainPrint(stdout,P_VALUE_FMT, ZD);
+  //   break;
     
   case 14:  /* EmptyZpolyhedron */
         
