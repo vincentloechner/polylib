@@ -346,6 +346,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
   // cleanup
   free(pivots_columns);
+  Matrix_Free(Inter);
   Matrix_Free(rest);
   Matrix_Free(X);
 
