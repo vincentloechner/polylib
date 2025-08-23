@@ -4,15 +4,11 @@
 // #define LATINTER_DEBUG 1
 // #define LATDIF_DEBUG 1
 
-typedef struct {
-  int count;
-  int *fac;
-} factor;
 
-
+static void get_pivots_columns(Matrix* A, int *columns);
+static int value_prime_factors(Value n, Vector **result);
 static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_columns,
     Lattice *A, Lattice *Intersection, Lattice *L, LatticeUnion *Result);
-static void get_pivots_columns(Matrix* A, int *columns);
 
 /*
  * Print the contents of a list of Lattices 'Head'
@@ -27,13 +23,11 @@ void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head) {
 } /* PrintLatticeUnion */
 
 /*
- * Free the memory allocated to a list of lattices 'Head'
+ * Free the memory allocated for a list of lattices 'Head'
  */
 void LatticeUnion_Free(LatticeUnion *Head) {
-
-  LatticeUnion *temp;
-
-  while (Head != NULL) {
+  while (Head) {
+    LatticeUnion *temp;
     temp = Head;
     Head = temp->next;
     Matrix_Free(temp->M);
@@ -42,8 +36,9 @@ void LatticeUnion_Free(LatticeUnion *Head) {
   return;
 } /* LatticeUnion_Free */
 
+
 /*
- * Allocate a heads for a list of Lattices
+ * Allocate a head for a list of Lattices
  */
 LatticeUnion *LatticeUnion_Alloc(void) {
 
@@ -55,6 +50,7 @@ LatticeUnion *LatticeUnion_Alloc(void) {
   return temp;
 } /* LatticeUnion_Alloc */
 
+
 /*
  * Return True if lattice 'A' is empty, otherwise return False.
  */
@@ -62,16 +58,91 @@ Bool isEmptyLattice(Lattice *A) {
   return(A == NULL || A->NbColumns == 0);
 } /* isEmptyLattice */
 
+
 /*
- * Return the affine Hermite normal form of the affine lattice 'A'. The unique
- * affine Hermite form if a lattice is stored in 'H' and the unimodular matrix
- * corresponding to 'A = H . U' is stored in the matrix 'U' (if not NULL).
+ * Move the constant part (last line and last row) as first line and row
+ * of the matrix.
+ * This is useful to compute a HNF and keep the affine part (as top-left
+ * non-nul result).
+ *  A =  A'  | c     ->    z | 0..0
+ *      0..0 | z           c |  A'
+ * Usage: modifies A in place.
+ */
+void Matrix_Move_Homogeneous_Dim_First(Matrix *A)
+{
+  if(A->NbRows == 0 || A->NbColumns == 0)
+    return;
+
+  Value tmp;
+  value_init(tmp);
+  // puts the last column first:
+  for(int i=0; i<A->NbRows; i++) {
+    // on row i
+    value_assign(tmp, A->p[i][A->NbColumns-1]); // tmp = last col value
+    for(int j = A->NbColumns-1; j > 0; j--) {
+      value_assign(A->p[i][j], A->p[i][j-1]);  // [j] <- [j-1]
+    }
+    value_assign(A->p[i][0], tmp);  // [0]<- tmp
+  }
+  // then puts the last row first:
+  for(int j = 0; j < A->NbColumns; j++) {
+    value_assign(tmp, A->p[A->NbRows-1][j]); // tmp = last row value
+    for(int i = A->NbRows-1; i > 0; i--) {
+      value_assign(A->p[i][j], A->p[i-1][j]); // [i] <- [i-1]
+    }
+    value_assign(A->p[0][j], tmp); // [0]<- tmp
+  }
+  value_clear(tmp);
+} /* Matrix_Move_Homogeneous_Dim_First */
+
+
+/*
+ * Moves the constant part of a transformed lattice (first line and first row)
+ * as last line and row.
+ * This is useful to convert back the affine part at bottom-right after a HNF.
+ *  A =  A'  | c     <-    z | 0..0
+ *      0..0 | z           c |  A'
+ * Usage: modifies A in place.
+ */
+void Matrix_Move_Homogeneous_Dim_Last(Matrix *A)
+{
+  if(A->NbRows == 0 || A->NbColumns == 0)
+    return;
+
+  Value tmp;
+  value_init(tmp);
+  // puts the first col in the end
+  for (int i = 0; i < A->NbRows; i++) {
+    value_assign(tmp,A->p[i][0]); // tmp = first col value
+    for (int j = 0; j < A->NbColumns-1; j++) {
+      value_assign(A->p[i][j],A->p[i][j+1]); // [i] <- [i+1]
+    }
+    value_assign(A->p[i][A->NbColumns-1],tmp); //[last] <- tmp
+  }
+  for (int j = 0; j < A->NbColumns; j++) {
+    value_assign(tmp,A->p[0][j]); // tmp first row value
+    for (int i = 0; i < A->NbRows-1; i++) {
+      value_assign(A->p[i][j],A->p[i+1][j]);
+    }
+    value_assign(A->p[A->NbRows-1][j],tmp);
+  }
+  value_clear(tmp);
+} /* Matrix_Move_Homogeneous_Dim_Last */
+
+
+/*
+ * Return the affine Hermite normal form of the affine lattice 'A'. The
+ * affine Hermite form if a lattice is stored in 'H' and the unimodular
+ * matrix corresponding to A = H U is stored in the matrix 'U' (if not NULL)
  *
  * Algorithm:
- *     1) move the homogeneous dimensions first (on top-left)
- *     2) compute left_hermite
- *     3) move back the homogeneous dimensions (bottom-right)
+ *     1) move the homogeneous dimensions first (on top-left) in A
+ *     2) compute the left_hermite of the matrix A' = H' U'
+ *     3) move back the homogeneous dimensions (bottom-right) in A, H and U.
  * Works also on non square matrices (lattices having less row than columns)
+ *
+ * U can be NULL (will be ignored)
+ * *H and *U can be NULL (will be allocated by left_hermite)
  */
 void AffineHermite(Lattice *A, Lattice **H, Matrix **U)
 {
@@ -85,6 +156,7 @@ void AffineHermite(Lattice *A, Lattice **H, Matrix **U)
 
   return;
 } /* AffineHermite */
+
 
 // /*
 //  * Given a Polylib matrix 'A' that represents an affine function, return the
@@ -320,7 +392,7 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
   for (int line = 0; line < Inter->NbRows-1; line++) {
     if(line > 0 && pivots_columns[line] == pivots_columns[line-1]) {
       // only consider the *real* pivots here,
-      // not lines below a previously treated pivot.
+      // ignore lines below a previously treated pivot.
       continue;
     }
 
@@ -352,72 +424,6 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
 
   return Result;
 } /* LatticeDifference */
-
-
-/*
- * Compute the prime factors of Value n, including n itself if it is prime.
- * reuses or allocates a Vector of Values
- * returns the number of values put into the result
- */
-static int value_prime_factors(Value n, Vector **result) {
-
-  if(!*result) {
-    // allocate if NULL
-    *result = Vector_Alloc(10);
-  }
-
-  int tabsize = 0; // current size
-  Value div, rest, two, tmp;
-  value_init(div);
-  value_init(rest);
-  value_init(two);
-  value_init(tmp); // temp variable for tests
-
-  value_set_si(div, 2);
-  value_assign(rest, n);
-  value_set_si(two, 2);
-
-  while(True) {
-    value_multiply(tmp, div, div);
-    if(value_gt(tmp, rest)) // if(div * div > rest)
-      break;                // exit while
-
-    value_modulus(tmp, rest, div);
-    if(value_zero_p(tmp)) { // if(rest % div == 0)
-
-      if((*result)->Size == tabsize) { // increase vector size if needed
-        *result = Vector_Realloc((*result), (*result)->Size*2);
-      }
-      // add div to result
-      value_assign((*result)->p[tabsize], div); 
-      tabsize++;
-
-      value_division(rest, rest, div); // rest /= div;
-    }
-    else{
-      // div = 2, 3, 5, 7, 9, 11, ...
-      if(value_eq(div, two))        //  if(div == 2)
-        value_set_si(div, 3);       //    div = 3;
-      else
-        value_addto(div, div, two); //    div += 2;
-    }
-  }
-
-  // if something's left add it to the result:
-  if(value_notone_p(rest)) {
-    if((*result)->Size == tabsize){
-      (*result) = Vector_Realloc((*result), (*result)->Size+1);
-    }
-    value_assign((*result)->p[tabsize], rest);
-    tabsize++;
-  }
-  value_clear(rest);
-  value_clear(div);
-  value_clear(two);
-  value_clear(tmp);
-
-  return (tabsize);
-}
 
 
 /*
@@ -546,79 +552,12 @@ Lattice* LatticeIntersection(Lattice* A, Lattice* B)
   return(Res);
 }
 
-/*
- * Moves the constant part (last line and last row) as first line and row
- * of the matrix.
- * This is useful to compute the HNF and keeping the affine part as top-left
- * non-nul result. The same function can be called again to get the result
- * of affine HNF.
- *  A =  A'  | c     ->    z | 0..0
- *      0..0 | z           c |  A'
- */
-void Matrix_Move_Homogeneous_Dim_First(Matrix *A) {
-  if(A->NbRows == 0 || A->NbColumns == 0)
-    return;
 
-  Value tmp;
-  value_init(tmp);
-  // puts the last column first:
-  for(int i=0; i<A->NbRows; i++) {
-    // on row i
-    value_assign(tmp, A->p[i][A->NbColumns-1]); // tmp = last col value
-    for(int j = A->NbColumns-1; j > 0; j--) {
-      value_assign(A->p[i][j], A->p[i][j-1]);  // [j] <- [j-1]
-    }
-    value_assign(A->p[i][0], tmp);  // [0]<- tmp
-  }
-  // then puts the last row first:
-  for(int j = 0; j < A->NbColumns; j++) {
-    value_assign(tmp, A->p[A->NbRows-1][j]); // tmp = last row value
-    for(int i = A->NbRows-1; i > 0; i--) {
-      value_assign(A->p[i][j], A->p[i-1][j]); // [i] <- [i-1]
-    }
-    value_assign(A->p[0][j], tmp); // [0]<- tmp
-  }
-  value_clear(tmp);
-} /* Matrix_Move_Homogeneous_Dim_First */
-
+// Utilities for LatticeDifference:
 
 /*
- * Moves the constant part on a homogenous matrix (first line and first row) as last line and last row
- * of the matrix.
- * This is useful to compute the HNF and keeping the affine part as top-left
- * non-nul result. The same function can be called again to get the result
- * of affine HNF.
- *  A =  A'  | c     ->    z | 0..0
- *      0..0 | z           c |  A'
- */
-void Matrix_Move_Homogeneous_Dim_Last(Matrix *A) {
-  if(A->NbRows == 0 || A->NbColumns == 0)
-    return;
-
-  Value tmp;
-  value_init(tmp);
-  // puts the first col in the end
-  for (int i = 0; i < A->NbRows; i++) {
-    value_assign(tmp,A->p[i][0]); // tmp = first col value
-    for (int j = 0; j < A->NbColumns-1; j++) {
-      value_assign(A->p[i][j],A->p[i][j+1]); // [i] <- [i+1]
-    }
-    value_assign(A->p[i][A->NbColumns-1],tmp); //[last] <- tmp
-  }
-  for (int j = 0; j < A->NbColumns; j++) {
-    value_assign(tmp,A->p[0][j]); // tmp first row value
-    for (int i = 0; i < A->NbRows-1; i++) {
-      value_assign(A->p[i][j],A->p[i+1][j]);
-    }
-    value_assign(A->p[A->NbRows-1][j],tmp);
-  }
-  value_clear(tmp);
-} /* Matrix_Move_Homogeneous_Dim_Last */
-
-
-/*
- * get the column numbers of the pivots.
- * since the matrix is not necessarily square, retreive the right pivot
+ * Get the column numbers of the pivots.
+ * since the matrix is not necessarily square, retrieve the right pivot
  * column number for each line number.
  * Fills the array columns (needs to be allocated by caller)
  */
@@ -640,6 +579,74 @@ static void get_pivots_columns(Matrix* A, int *columns)
 
 
 /*
+ * Compute the prime factors of Value n, including n itself if it is prime.
+ * reuses or allocates a Vector of Values
+ * returns the number of values put into the result
+ *
+ * *result is a vector of Values, that can be larger than the return value
+ */
+static int value_prime_factors(Value n, Vector **result) {
+
+  if(!*result) {
+    // allocate if NULL
+    *result = Vector_Alloc(10);
+  }
+
+  int tabsize = 0; // current size
+  Value div, rest, two, tmp;
+  value_init(div);
+  value_init(rest);
+  value_init(two);
+  value_init(tmp); // temp variable for tests
+
+  value_set_si(div, 2);
+  value_assign(rest, n);
+  value_set_si(two, 2);
+
+  while(True) {
+    value_multiply(tmp, div, div);
+    if(value_gt(tmp, rest)) // if(div * div > rest)
+      break;                // exit while
+
+    value_modulus(tmp, rest, div);
+    if(value_zero_p(tmp)) { // if(rest % div == 0)
+
+      if((*result)->Size == tabsize) { // increase vector size if needed
+        *result = Vector_Realloc((*result), (*result)->Size * 2);
+      }
+      // add div to result
+      value_assign((*result)->p[tabsize], div); 
+      tabsize++;
+
+      value_division(rest, rest, div); // rest /= div;
+    }
+    else{
+      // div = 2, 3, 5, 7, 9, 11, ...
+      if(value_eq(div, two))        //  if(div == 2)
+        value_set_si(div, 3);       //    div = 3;
+      else
+        value_addto(div, div, two); //    div += 2;
+    }
+  }
+
+  // if something's left add it to the result:
+  if(value_notone_p(rest)) {
+    if((*result)->Size == tabsize){
+      (*result) = Vector_Realloc((*result), (*result)->Size+1);
+    }
+    value_assign((*result)->p[tabsize], rest);
+    tabsize++;
+  }
+  value_clear(rest);
+  value_clear(div);
+  value_clear(two);
+  value_clear(tmp);
+
+  return (tabsize);
+}
+
+
+/*
  * Generate all variants of the line 'line_nb' in lattice matrix A
  * - add all variants not intersecting Intersection to the result
  * - replace the corresponding line of the rest by the intersection
@@ -651,9 +658,9 @@ static void get_pivots_columns(Matrix* A, int *columns)
  *    and the corresponding pivot of A is pA
  *    then generate new lines :  *..* p 0..0 c+pA; *..* p 0..0 c+2pA;
  *    *..* p 0..0 c+3pA; ...
- *   (optimized: p is decomposed in its prime factors)
+ *   (optimized: p is decomposed in prime factors)
  *
- * Adjust the lines below that depend on p
+ * Adjust the lines below (that depend on p)
  *
  * Add all newly generated lattices (with the new lines) to Result.
  */
