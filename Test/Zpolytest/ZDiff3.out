@@ -38,26 +38,6 @@ UNION ZPOLYHEDRON: Dimension 2
 
 LATTICE: 
 3 3
-   6    0    2 
-   0    1    0 
-   0    0    1 
-POLYHEDRON Dimension:2
-           Constraints:4  Equations:0  Rays:4  Lines:0
-Constraints 4 4
-Inequality: [   6    0   -1  ]
-Inequality: [  12   -3  304  ]
-Inequality: [  -6    1   -3  ]
-Inequality: [  -1    0   33  ]
-Rays 4 4
-Vertex: [   1  612  ]/6
-Vertex: [   1   24  ]/6
-Vertex: [  33  201  ]/1
-Vertex: [  99  700  ]/3
-
-UNION ZPOLYHEDRON: Dimension 2 
-
-LATTICE: 
-3 3
    6    0    4 
    0    1    0 
    0    0    1 
@@ -73,3 +53,23 @@ Vertex: [  -1  612  ]/6
 Vertex: [  -1   24  ]/6
 Vertex: [  98  603  ]/3
 Vertex: [  98  700  ]/3
+
+UNION ZPOLYHEDRON: Dimension 2 
+
+LATTICE: 
+3 3
+   6    0    2 
+   0    1    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   6    0   -1  ]
+Inequality: [  12   -3  304  ]
+Inequality: [  -6    1   -3  ]
+Inequality: [  -1    0   33  ]
+Rays 4 4
+Vertex: [   1  612  ]/6
+Vertex: [   1   24  ]/6
+Vertex: [  33  201  ]/1
+Vertex: [  99  700  ]/3

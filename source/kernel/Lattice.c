@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // #define LATINTER_DEBUG 1
-#define LATDIF_DEBUG 1
+// #define LATDIF_DEBUG 1
 
 typedef struct {
   int count;
@@ -2377,21 +2377,12 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
         // new constant:
         value_assign(newLat->p[line_nb][newLat->NbColumns-1], modulo);
 
-        // // adjust the coefficients below the changed line:
-        // // take them from the intersection!
-        // for(int cc = 0; cc < pivot_col; cc++) {
-        //   for(int ll = line_nb+1; ll < A->NbRows; ll++) {
-        //     value_assign(newLat->p[ll][cc], Intersection->p[ll][cc]);
-        //   }
-        // }
         // adjust the rows below because they change depending on the changed pivot&constant above:
         // if a coefficient below the pivot is not zero, multiply the coefficient by ratio
-        // recompute the constant accordingly (adding (modulo/step))   ->  * ratio ??????
+        // recompute the constant accordingly (adding (modulo/step))
         for(int ll = line_nb+1; ll < A->NbRows; ll++) {
           if(value_notzero_p(newLat->p[ll][pivot_col])) {
 
-            // new coefficient
-            // value_multiply(newLat->p[ll][pivot_col], newLat->p[ll][pivot_col], ratio);
             // new coefficient: set it to the coef of the intersection
             value_assign(newLat->p[ll][pivot_col], Intersection->p[ll][pivot_col]);
 
