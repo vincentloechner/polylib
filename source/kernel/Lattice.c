@@ -2377,14 +2377,23 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
         // new constant:
         value_assign(newLat->p[line_nb][newLat->NbColumns-1], modulo);
 
-        // ajust the rows below because they change depending on the changed pivot&constant above:
+        // // adjust the coefficients below the changed line:
+        // // take them from the intersection!
+        // for(int cc = 0; cc < pivot_col; cc++) {
+        //   for(int ll = line_nb+1; ll < A->NbRows; ll++) {
+        //     value_assign(newLat->p[ll][cc], Intersection->p[ll][cc]);
+        //   }
+        // }
+        // adjust the rows below because they change depending on the changed pivot&constant above:
         // if a coefficient below the pivot is not zero, multiply the coefficient by ratio
         // recompute the constant accordingly (adding (modulo/step))   ->  * ratio ??????
         for(int ll = line_nb+1; ll < A->NbRows; ll++) {
-          if(value_notzero_p(A->p[ll][pivot_col])) {
+          if(value_notzero_p(newLat->p[ll][pivot_col])) {
 
             // new coefficient
-            value_multiply(newLat->p[ll][pivot_col], newLat->p[ll][pivot_col], ratio);
+            // value_multiply(newLat->p[ll][pivot_col], newLat->p[ll][pivot_col], ratio);
+            // new coefficient: set it to the coef of the intersection
+            value_assign(newLat->p[ll][pivot_col], Intersection->p[ll][pivot_col]);
 
             // new constant
             value_division(tmp, modulo, step); // iteration number 0/1/2/3/... one of them is the intersection
@@ -2399,6 +2408,12 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
       }
     }
   }
+
+  // adjust the column below the pivot: take it from the intersection
+  for(int ll = line_nb+1; ll < A->NbRows; ll++) {
+    value_assign(rest->p[ll][pivot_col], Intersection->p[ll][pivot_col]);
+  }
+
   
   // // OLD VERSION:
   // // Add each possible alternate line to the Result
