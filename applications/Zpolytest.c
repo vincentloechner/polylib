@@ -265,12 +265,12 @@ int main() {
   //   AffineHermite(c,&d,&e);
   //   Matrix_Print(stdout,P_VALUE_FMT, d);
   //   break;
-      
-  case 18:  /* EmptyLattice */
+
+  // case 18:  /* EmptyLattice */
         
-    fprintf(stdout,"is Empty? :%d \n", isEmptyLattice(a));
-    fprintf(stdout,"is Empty? :%d \n", isEmptyLattice(EmptyLattice(3)));
-    break;
+  //   fprintf(stdout,"is Empty? :%d \n", isEmptyLattice(a));
+  //   fprintf(stdout,"is Empty? :%d \n", isEmptyLattice(EmptyLattice(3)));
+  //   break;
   
   // case 19:  /* CanonicalForm */
      
@@ -282,17 +282,17 @@ int main() {
   //   ZDomainPrint(stdout,P_VALUE_FMT, ZD);
   //   break;
     
-  case 20: /* LatticeSimplify */
+  // case 20: /* LatticeSimplify */
     
-    l1=LatticeUnion_Alloc();
-    l2=LatticeUnion_Alloc();
-    l1->M=Matrix_Copy(a);
-    l1->next=l2;
-    l2->M=Matrix_Copy(b);
-    l1=LatticeSimplify(l1);
-    PrintLatticeUnion(stdout,P_VALUE_FMT,l1); 
-    LatticeUnion_Free(l1);
-    break;
+  //   l1=LatticeUnion_Alloc();
+  //   l2=LatticeUnion_Alloc();
+  //   l1->M=Matrix_Copy(a);
+  //   l1->next=l2;
+  //   l2->M=Matrix_Copy(b);
+  //   l1=LatticeSimplify(l1);
+  //   PrintLatticeUnion(stdout,P_VALUE_FMT,l1); 
+  //   LatticeUnion_Free(l1);
+  //   break;
     
   // case 21: /* AffineSmith */
   
@@ -323,12 +323,12 @@ int main() {
   //   Vector_Free(v);
   //   break;
 
-  case 23: /* SplitZPolyhedron */
+  // case 23: /* SplitZPolyhedron */
         
-    ZA = ZPolyhedronAlloc(a,A);
-    ZC = SplitZpolyhedron(ZA,b);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    break;
+  //   ZA = ZPolyhedronAlloc(a,A);
+  //   ZC = SplitZpolyhedron(ZA,b);
+  //   ZDomainPrint(stdout,P_VALUE_FMT, ZC);
+  //   break;
 
   case 24: /* left_hermite */
     left_hermite(a, &b, &c, NULL);

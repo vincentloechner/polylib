@@ -29,7 +29,7 @@ extern ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B);
 extern ZPolyhedron *ZDomain_Copy(ZPolyhedron *Head);
 extern void ZDomain_Free(ZPolyhedron *Head);
 extern ZPolyhedron *ZPolyhedronAlloc(Lattice *Lat, Polyhedron *Poly);
-extern ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B);
+// extern ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B);
 extern void Matrix_Move_Homogeneous_Dim_First(Matrix* A);
 extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
 extern void Canonical_ZDomain(ZPolyhedron* A);

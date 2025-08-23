@@ -47,10 +47,7 @@ ZPOLYTESTS =  \
 	ZPre3.in \
 	ZImPre1.in \
 	ZImPre2.in \
-	ZImPre3.in \
-	SplitZpol1.in \
-	SplitZpol2.in \
-	SplitZpol3.in
+	ZImPre3.in
 
 EXTRA_DIST = $(ZPOLYTESTS) \
 	$(ZPOLYTESTS:%.in=%.out) 

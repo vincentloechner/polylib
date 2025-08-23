@@ -997,83 +997,83 @@ ZPolyhedron *ZDomainSimplify(ZPolyhedron *ZDom) {
   return Result;
 } /* ZDomainSimplify */
 
-/*
- * 
- *
-*/
+// /*
+//  * 
+//  *
+// */
 
-ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
+// ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
 
-  Matrix *H, *U1, *X, *Y;
-  ZPolyhedron *zpnew, *Result;
-  LatticeUnion *Head = NULL, *tempHead = NULL;
+//   Matrix *H, *U1, *X, *Y;
+//   ZPolyhedron *zpnew, *Result;
+//   LatticeUnion *Head = NULL, *tempHead = NULL;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered SplitZpolyhedron \n");
-  fclose(fp);
-#endif
+// #ifdef DOMDEBUG
+//   FILE *fp;
+//   fp = fopen("_debug", "a");
+//   fprintf(fp, "\nEntered SplitZpolyhedron \n");
+//   fclose(fp);
+// #endif
 
-  if (B->NbRows != B->NbColumns) {
-    fprintf(
-        stderr,
-        "\n SplitZpolyhedron : The Input Matrix B is not a proper Lattice \n");
-    return NULL;
-  }
+//   if (B->NbRows != B->NbColumns) {
+//     fprintf(
+//         stderr,
+//         "\n SplitZpolyhedron : The Input Matrix B is not a proper Lattice \n");
+//     return NULL;
+//   }
 
-  if (ZPol->Lat->NbRows != B->NbRows) {
-    fprintf(stderr,
-            "\nSplitZpolyhedron : The Lattice in Zpolyhedron and B have ");
-    fprintf(stderr, "incompatible dimensions \n");
-    return NULL;
-  }
+//   if (ZPol->Lat->NbRows != B->NbRows) {
+//     fprintf(stderr,
+//             "\nSplitZpolyhedron : The Lattice in Zpolyhedron and B have ");
+//     fprintf(stderr, "incompatible dimensions \n");
+//     return NULL;
+//   }
 
-  if (isNormalLattice(ZPol->Lat) != True) {
-    AffineHermite(ZPol->Lat, &H, &U1);
-    X = Matrix_Copy(H);
-    Matrix_Free(U1);
-    Matrix_Free(H);
-  } else
-    X = Matrix_Copy(ZPol->Lat);
+//   if (isNormalLattice(ZPol->Lat) != True) {
+//     AffineHermite(ZPol->Lat, &H, &U1);
+//     X = Matrix_Copy(H);
+//     Matrix_Free(U1);
+//     Matrix_Free(H);
+//   } else
+//     X = Matrix_Copy(ZPol->Lat);
 
-  if (isNormalLattice(B) != True) {
-    AffineHermite(B, &H, &U1);
-    Y = Matrix_Copy(H);
-    Matrix_Free(H);
-    Matrix_Free(U1);
-  } else
-    Y = Matrix_Copy(B);
-  if (isEmptyLattice(X)) {
-    return NULL;
-  }
+//   if (isNormalLattice(B) != True) {
+//     AffineHermite(B, &H, &U1);
+//     Y = Matrix_Copy(H);
+//     Matrix_Free(H);
+//     Matrix_Free(U1);
+//   } else
+//     Y = Matrix_Copy(B);
+//   if (isEmptyLattice(X)) {
+//     return NULL;
+//   }
 
-  Head = Lattice2LatticeUnion(X, Y);
+//   Head = Lattice2LatticeUnion(X, Y);
 
-  /* If the spliting operation can't be done the result is the original
-   * Zplyhedron. */
+//   /* If the spliting operation can't be done the result is the original
+//    * Zplyhedron. */
 
-  if (Head == NULL) {
-    Matrix_Free(X);
-    Matrix_Free(Y);
-    return ZPolyhedron_Copy(ZPol);
-  }
+//   if (Head == NULL) {
+//     Matrix_Free(X);
+//     Matrix_Free(Y);
+//     return ZPolyhedron_Copy(ZPol);
+//   }
 
-  Result = NULL;
+//   Result = NULL;
 
-  while (Head) {
-    tempHead = Head;
-    Head = Head->next;
-    zpnew = ZPolyhedronAlloc(tempHead->M, ZPol->P);
-    Result = ZDconcatenate(zpnew, Result);
-    tempHead->next = NULL;
-    Matrix_Free(tempHead->M);
-    free(tempHead);
-  }
-  Matrix_Free(X);
-  Matrix_Free(Y);
-  return Result;
-} /* SplitZpolyhedron */
+//   while (Head) {
+//     tempHead = Head;
+//     Head = Head->next;
+//     zpnew = ZPolyhedronAlloc(tempHead->M, ZPol->P);
+//     Result = ZDconcatenate(zpnew, Result);
+//     tempHead->next = NULL;
+//     Matrix_Free(tempHead->M);
+//     free(tempHead);
+//   }
+//   Matrix_Free(X);
+//   Matrix_Free(Y);
+//   return Result;
+// } /* SplitZpolyhedron */
 
 /*
  * get the matrix of equalities from a polyhedron
