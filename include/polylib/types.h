@@ -233,7 +233,7 @@ typedef struct _enumeration {
 
 
 /* *********************** LBLs **************************** */
-
+// union of lattices (or affine functions):
 typedef struct LatticeUnion {
   Matrix *M;
   struct LatticeUnion *next;

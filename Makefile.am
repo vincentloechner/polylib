@@ -199,11 +199,6 @@ verif_ehrhartgmp_CPPFLAGS = $(libpolylibgmp_la_CPPFLAGS)
 verif_ehrhartgmp_SOURCES = $(poly_src)/verif_ehrhart.c
 verif_ehrhartgmp_LDADD = libpolylibgmp.la
 
-check: tests
-
-tests: all
-	(cd Test; $(MAKE) tests)
-
 longtest: all
 	(cd Test; $(MAKE) longtest)
 

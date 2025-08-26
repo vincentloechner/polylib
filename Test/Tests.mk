@@ -7,9 +7,7 @@ tests:
 		file=`basename $$x .in`; \
 		printf "Verify file $$file... " ; \
 		$(TEST_EXE)$(TEST_BITS) < $(srcdir)/$$x > xyz; \
-		diff -w xyz $(srcdir)/$$file.out ; \
-		result=$$?; \
-		if [ "$$result" -eq "0" ]; then \
+		if diff -w xyz $(srcdir)/$$file.out ; then \
 			printf "passed\n"; \
 		else \
 			printf "\033[31mError: $$file.out is not the same\033[0m\n"; \
