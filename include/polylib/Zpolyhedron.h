@@ -1,5 +1,5 @@
-#ifndef _Zpolyhedron_h_
-#define _Zpolyhedron_h_
+#ifndef _LBL_h_
+#define _LBL_h_
 
 #if defined(__cplusplus)
 extern "C" {
@@ -7,35 +7,42 @@ extern "C" {
 
 // DEFINITIONS USED IN THOSE FUNCTIONS:
 //
-// - a ZPolyhedron is a single lattice associated to a polyhedral domain
+// - a LBL is a single lattice associated to a polyhedral domain
 //   (a polyhedral domain can be a union of polyhedra)
 //
-// - a ZDomain is a chained list of ZPolyhedra (with possibly multiple lattices;
-//   using the ->next structure element).
+// - a LBL is a chained list of ZPolyhedra
+//   (with possibly multiple lattices; using the ->next structure element)
+//   * It is an LBL according to *
+//
+// A Z-polyhedron is the intersection of an integer lattice and an integer
+// polyhedron:
+// L = { z ∈ Qd | ∃z′, z = Lz′ + l, Cz + c ≥ 0 }.
+// An LBL, or linearly bounded lattice, is the affine integer image (L, l) of an
+// integer polyhedron, called the coordinate polyhedron:
+// Z = { z = Lx + l | Cx + c ≥ 0, x ∈ Z^d }.
 
-// extern void CanonicalForm(ZPolyhedron *Zpol, ZPolyhedron **Result,
-//                           Matrix **Basis);
-extern ZPolyhedron *EmptyZPolyhedron(int dimension);
-// extern ZPolyhedron *IntegraliseLattice(ZPolyhedron *A);
-extern Bool isEmptyZDomain(ZPolyhedron *Zpol);
-extern ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B);
-extern ZPolyhedron *ZDomainImage(ZPolyhedron *A, Matrix *Func);
-extern Bool ZDomainIncludes(ZPolyhedron *A, ZPolyhedron *B);
-extern ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B);
-extern ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func);
-extern void ZDomainPrint(FILE *fp, const char *format, ZPolyhedron *A);
-// extern ZPolyhedron *ZDomainSimplify(ZPolyhedron *ZDom);
-extern ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B);
-extern ZPolyhedron *ZDomain_Copy(ZPolyhedron *Head);
-extern void ZDomain_Free(ZPolyhedron *Head);
-extern ZPolyhedron *ZPolyhedronAlloc(Lattice *Lat, Polyhedron *Poly);
-// extern ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B);
-extern void Matrix_Move_Homogeneous_Dim_First(Matrix* A);
-extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
-extern void Canonical_ZDomain(ZPolyhedron* A);
+
+extern LBL *EmptyLBL(int dimension);
+extern Bool isEmptyLBL(LBL *Zpol);
+extern LBL *LBLDifference(LBL *A, LBL *B);
+extern LBL *LBLImage(LBL *A, Matrix *Func);
+extern Bool LBLIncludes(LBL *A, LBL *B);
+extern LBL *LBLIntersection(LBL *A, LBL *B);
+extern LBL *LBLPreimage(LBL *A, Matrix *Func);
+extern void LBLPrint(FILE *fp, const char *format, LBL *A);
+extern LBL *LBLUnion(LBL *A, LBL *B);
+extern LBL *LBLCopy(LBL *Head);
+extern void LBLFree(LBL *Head);
+extern LBL *LBLAlloc(Lattice *Lat, Polyhedron *Poly);
+extern void CanonicalLBL(LBL* A);
+
+// removed:
+// extern LBL *LBLSimplify(LBL *ZDom);
+// extern LBL *SplitLBL(LBL *ZPol, Lattice *B);
+// extern LBL *IntegraliseLattice(LBL *A);
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif /* _Zpolyhedron_h_ */
+#endif /* _LBL_h_ */

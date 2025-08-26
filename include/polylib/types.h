@@ -24,6 +24,9 @@
 
 /******************* END OF USER DEFINES ***************************/
 
+
+/* ******************** global defines ************************* */
+
 #define PCHAR (FIRST_PARAMETER_NAME - 1)
 #define MAXNOOFRAYS 200
 
@@ -37,6 +40,12 @@
 #define P_VALUE_FMT "%4d "
 #else /* GNUMP */
 #define P_VALUE_FMT "%4s "
+#endif
+
+typedef enum { False = 0, True = 1 } Bool;
+
+#ifndef FOREVER
+#define FOREVER for (;;)
 #endif
 
 /* Used in lower_upper_bounds */
@@ -67,6 +76,9 @@ extern int Pol_status;
 #define POL_INTEGER (POL_HIGH_BIT | 0x0002)
 #define POL_ISSET(flags, f) ((flags & f) == f)
 
+
+/* ******************** vectors and matrices ************************* */
+
 typedef struct {
   unsigned Size;
   Value *p;
@@ -78,6 +90,9 @@ typedef struct matrix {
   Value *p_Init;
   int p_Init_size; /* needed to free the memory allocated by mpz_init */
 } Matrix;
+
+
+/* *********************** polyhedra **************************** */
 
 /* Macros to init/set/clear/test flags. */
 #define FL_INIT(l, f) (l) = (f) /* Specific flags location. */
@@ -119,8 +134,11 @@ typedef struct interval {
   ((F_ISSET(P, POL_INEQUALITIES) && P->NbEq > P->Dimension) ||                 \
    (F_ISSET(P, POL_POINTS) && P->NbRays == 0))
 
-/* Test whether P is a universe polyheron */
+/* Test whether P is a universe polyhedron */
 #define universeQ(P) (P->Dimension == P->NbBid)
+
+
+/* ******************** parametric polyhedra ************************* */
 
 typedef struct _Param_Vertex {
   Matrix *Vertex;   /* Each row is a coordinate of the vertex. The first  */
@@ -160,7 +178,8 @@ typedef struct _Param_Polyhedron {
   }                                                                            \
   }
 
-/* Data structures for pseudo-polynomial */
+
+/* ******************** pseudo-polynomials ************************* */
 
 typedef enum { polynomial, periodic, evector } enode_type;
 
@@ -187,7 +206,6 @@ typedef struct _enode {
 } enode;
 
 typedef struct _enumeration {
-
   Polyhedron *ValidityDomain; /* contraints on the parameters     */
   evalue EP;                  /* dimension = combined space       */
   struct _enumeration *next;  /* Ehrhart Polynomial, corresponding
@@ -213,25 +231,24 @@ typedef struct _enumeration {
 /*   -- it can be constructed recursively                                 */
 /*------------------------------------------------------------------------*/
 
-/* *********************** |Representing Z-Polyhedron| ******************* */
 
-typedef enum { False = 0, True = 1 } Bool;
+/* *********************** LBLs **************************** */
+
 typedef Matrix Lattice;
 typedef struct LatticeUnion {
   Lattice *M;
   struct LatticeUnion *next;
 } LatticeUnion;
 
-// The ZPolyhedron structure represents a Z-polyhedron, which is the image
-// of an integer polyhedron by an affine function ('Lat'):
-typedef struct ZPolyhedron {
+// The same LBL structure is used to represent:
+// - a single LBL or a union of LBLs,
+// - a single Z-polyhedron or a union of Z-polyhedra
+// as the image of an integer polyhedron ('P') by an affine function ('Lat')
+typedef struct _lbl {
   Lattice *Lat;
   Polyhedron *P;
-  struct ZPolyhedron *next;
-} ZPolyhedron;
+  struct _lbl *next;
+} LBL;
 
-#ifndef FOREVER
-#define FOREVER for (;;)
-#endif
 
 #endif /* _types_polylib_h_ */

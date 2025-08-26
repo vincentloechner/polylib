@@ -3,11 +3,11 @@
 
 // DEFINITIONS USED IN ALL COMMENTS BELOW:
 //
-// - a ZPolyhedron is a single lattice associated to a polyhedral domain
+// - a single LBL is a single lattice associated to a polyhedral domain
 //   (a polyhedral domain can be a union of polyhedra)
 //
-// - a ZDomain is a chained list of ZPolyhedra (with possibly multiple lattices;
-//   using the ->next structure element).
+// - an LBL is a chained list of single LBLs (with possibly multiple
+//   lattices using the ->next structure element).
 
 
 // debug this file:
@@ -19,397 +19,335 @@
   #define DIFF_DEBUG 1
 #endif
 
-static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *, ZPolyhedron *);
-static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A);
-static void ZPolyhedron_Free(ZPolyhedron *Zpol);
-static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron *, ZPolyhedron *);
-static ZPolyhedron *ZPolyhedronImage(ZPolyhedron *, Matrix *);
-static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *, Matrix *);
-static void ZPolyhedronPrint(FILE *fp, const char *format, ZPolyhedron *A);
-static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A);
-static ZPolyhedron *FindLatticePred(Lattice *L, ZPolyhedron *A);
-static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B);
-// static Bool ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B);
+static LBL *sLBL_Intersection(LBL *, LBL *);
+static LBL *sLBL_Copy(LBL *A);
+static void sLBL_Free(LBL *Zpol);
+static LBL *sLBL_Difference(LBL *, LBL *);
+static LBL *sLBL_Image(LBL *, Matrix *);
+static LBL *sLBL_Preimage(LBL *, Matrix *);
+static void sLBL_Print(FILE *fp, const char *format, LBL *A);
+static void sLBL_Canonical(LBL* A);
+static LBL *FindLatticePred(Lattice *L, LBL *A);
+static LBL *LBL_sLBL_Difference(LBL* A, LBL* B);
+// static Bool LBLIncludes(LBL *A, LBL *B);
 static int count_zeroCols (Matrix* M);
 
-typedef struct forsimplify {
-  Polyhedron *Pol;
-  LatticeUnion *LatUni;
-  struct forsimplify *next;
-} ForSimplify;
+// typedef struct forsimplify {
+//   Polyhedron *Pol;
+//   LatticeUnion *LatUni;
+//   struct forsimplify *next;
+// } ForSimplify;
+
 
 /*
- * Returns True if 'Zpol' is empty, otherwise returns False
- * ZPol can be a non-simplified list of empty ZDomain
+ * Returns True if 'A' is empty, otherwise returns False.
+ * A can be a non-simplified list of empty LBLs
  */
-Bool isEmptyZDomain(ZPolyhedron *Zpol) {
-
-  if (Zpol == NULL)
+Bool isEmptyLBL(LBL *A)
+{
+  if (A == NULL)
     return True;
-  if (emptyQ(Zpol->P)) {
+  if (emptyQ(A->P)) {
     // check the emptiness of next
-    return(isEmptyZDomain(Zpol->next));
+    return(isEmptyLBL(A->next));
   }
   return False;
-} /* isEmptyZDomain */
+} /* isEmptyLBL */
+
 
 /*
- * Given a Lattice 'Lat' and a Domain 'Domain', allocate space, and return the
- * Z-polyhedron corresponding to the image of the integer points of 'Poly'
- * by the lattice 'Lat', in canonical form (HNF, no equalities)
+ * Given a Matrix 'Lat' and a Domain 'Domain', allocate space and return
+ * the LBL corresponding to the image of the integer points of 'Poly'
+ * by the affine function 'Lat', in canonical form (HNF, no equalities in
+ * Domain).
  */
-ZPolyhedron *ZPolyhedronAlloc(Lattice *Lat, Polyhedron *Domain) {
-
-  ZPolyhedron *A;
+LBL *LBLAlloc(Lattice *Lat, Polyhedron *Domain)
+{
+  LBL *A;
 
   POL_ENSURE_FACETS(Domain);
   POL_ENSURE_VERTICES(Domain);
 
   if (Lat->NbColumns != Domain->Dimension + 1) {
-    errormsg1("ZPolyhedronAlloc", "dimincomp",
-      "the Lattice and the Polyhedron are not compatible to form a ZPolyhedron");
+    errormsg1("LBLAlloc", "dimincomp",
+      "the Lattice and the Polyhedron are not compatible to form a LBL");
     return NULL;
   }
 
-  A = malloc(sizeof(ZPolyhedron));
+  A = malloc(sizeof(LBL));
   if (!A) {
-    errormsg1("ZPolyhedronAlloc", "outofmem", "Out of Memory");
+    errormsg1("LBLAlloc", "outofmem", "Out of Memory");
     return NULL;
   }
   A->next = NULL;
   A->P = Domain_Copy(Domain);
   A->Lat = Matrix_Copy(Lat);
 
-  Canonical_ZDomain(A);
+  CanonicalLBL(A);
   return A;
-} /* ZPolyhedronAlloc */
+} /* LBLAlloc */
+
 
 /*
- * Free the memory used by the Z-domain 'Head'
+ * Free the memory used by the single LBL 'L'
+ * Internal function, users should use LBLFree.
  */
-void ZDomain_Free(ZPolyhedron *Head) {
-
-  if (Head == NULL)
+static void sLBL_Free(LBL *L)
+{
+  if (L == NULL)
     return;
-  ZDomain_Free(Head->next);
-  ZPolyhedron_Free(Head);
-} /* ZDomain_Free */
-
-/*
- * Free the memory used by the Z-polyhedron 'Zpol'
- */
-static void ZPolyhedron_Free(ZPolyhedron *Zpol) {
-
-  if (Zpol == NULL)
-    return;
-  if(Zpol->Lat)
-    Matrix_Free(Zpol->Lat);
-  if(Zpol->P)
-    Domain_Free(Zpol->P);
-  free(Zpol);
+  if(L->Lat)
+    Matrix_Free(L->Lat);
+  if(L->P)
+    Domain_Free(L->P);
+  free(L);
   return;
-} /* ZPolyhderon_Free */
+} /* sLBL_Free */
+
 
 /*
- * Return a copy of the Z-domain 'Head'
+ * Free the memory used by the LBL 'L'
  */
-ZPolyhedron *ZDomain_Copy(ZPolyhedron *Head) {
+void LBLFree(LBL *L)
+{
+  if (L == NULL)
+    return;
+  LBLFree(L->next);
+  sLBL_Free(L);
+} /* LBLFree */
 
-  ZPolyhedron *Zpol;
-  Zpol = ZPolyhedron_Copy(Head);
 
-  if (Head->next != NULL)
-    Zpol->next = ZDomain_Copy(Head->next);
+/*
+ * Return a copy of the single LBL 'A'.
+ * Internal function, users should use LBLCopy.
+ */
+static LBL *sLBL_Copy(LBL *A)
+{
+  LBL *Zpol;
+
+  Zpol = LBLAlloc(A->Lat, A->P);
   return Zpol;
-} /* ZDomain_Copy */
+} /* sLBL_Copy */
+
 
 /*
- * Return a copy of the Z-polyhedron 'A'
+ * Return a copy of the LBL 'L'
  */
-static ZPolyhedron *ZPolyhedron_Copy(ZPolyhedron *A) {
+LBL *LBLCopy(LBL *L)
+{
+  LBL *copy;
+  copy = sLBL_Copy(L);
 
-  ZPolyhedron *Zpol;
+  if (L->next != NULL)
+    copy->next = LBLCopy(L->next);
+  return copy;
+} /* LBLCopy */
 
-  Zpol = ZPolyhedronAlloc(A->Lat, A->P);
-  return Zpol;
-} /* ZPolyhedron_Copy */
 
 /*
- * Add the Z-Domain 'Zpol' as first list element to the Z-domain 'Result'
- * and return a pointer to the new Z-domain.
- * *Consumes the memory* of Result and of Zpol (no need to free) to build
- * the result.
+ * Concatenate the LBLs 'A' and 'B',
+ * and return a pointer to the new LBL.
+ * Consumes the memory of A and of B (no need to free) to build
+ * the result. Internal function only, do not use to build unions.
  */
-static ZPolyhedron *ZDconcatenate(ZPolyhedron *Zpol, ZPolyhedron *Result) {
+static LBL *LBL_concatenate(LBL *A, LBL *B)
+{
+  LBL *tmp;
 
-  if (isEmptyZDomain(Zpol)) {
-    ZDomain_Free(Zpol);
-    return Result;
+  if (isEmptyLBL(A)) {
+    LBLFree(A);
+    return (B);
   }
-  if (isEmptyZDomain(Result)) {
-    ZDomain_Free(Result);
-    return Zpol;
+  if (isEmptyLBL(B)) {
+    LBLFree(B);
+    return (A);
   }
 
-  // go to end of Zpol and concatenate Result there
-  ZPolyhedron *tmp = Zpol;
-  while(tmp->next)
-    tmp = tmp->next;
-  tmp->next = Result;
+  for(tmp = A; tmp->next; tmp = tmp->next)
+    ;
+  tmp->next = B;
   
-  return Zpol;
-} /* ZDconcatenate */
+  return (A);
+} /* LBL_concatenate */
 
 
 /*
  * Return the empty Z-polyhedron of dimension 'dimension'
+ * Lat = (0 ... 0 1)^T
+ * P = empty polyhedron of dimension 0
  */
-ZPolyhedron *EmptyZPolyhedron(int dimension) {
+LBL *EmptyLBL(int dimension)
+{
+  LBL *A;
 
-  ZPolyhedron *Zpol;
-  Lattice *E;
-  Polyhedron *P;
-
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered EMPTYZPOLYHEDRON\n");
-  fclose(fp);
-#endif
-
-  E = Matrix_Alloc(dimension+1,1);
-  for(int j=0 ; j<dimension; j++) {
-      value_set_si(E->p[0][j], 0);
+  A = malloc(sizeof(LBL));
+  if(!A) {
+    errormsg1("EmptyLBL", "outofmem", "Out of Memory");
   }
-  value_set_si(E->p[0][dimension], 1);
 
-  P = Empty_Polyhedron(0);
+  A->Lat = Matrix_Alloc(dimension+1, 1);
+  for(int j = 0 ; j < dimension; j++) {
+      value_set_si(A->Lat->p[0][j], 0);
+  }
+  value_set_si(A->Lat->p[0][dimension], 1);
 
-  Zpol = ZPolyhedronAlloc(E, P);
-  Matrix_Free((Matrix *)E);
-  Domain_Free(P);
-  return Zpol;
-} /* EmptyZPolyhedron */
+  A->P = Empty_Polyhedron(0);
+  A->next = NULL;
+
+  return (A);
+} /* EmptyLBL */
+
 
 /*
- * Given Z-domains A and B, return True if A is included in B,
+ * Given LBLs A and B, return True if A is included in B,
  * otherwise return False.
  */
-Bool ZDomainIncludes(ZPolyhedron *A, ZPolyhedron *B) {
-
+Bool LBLIncludes(LBL *A, LBL *B)
+{
   Bool ret = False;
+  LBL *diff;
 
-  #ifdef DIFF_DEBUG
-    fprintf(stderr, "entering Includes. Checking that A =");
-    ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
-    fprintf(stderr, "is included in B = ");
-    ZPolyhedronPrint(stderr, P_VALUE_FMT, B);
-  #endif
-
-  ZPolyhedron *diff;
-  diff = ZDomainDifference(A, B);
-  if(isEmptyZDomain(diff)) {
+  diff = LBLDifference(A, B);
+  if(isEmptyLBL(diff)) {
     ret = True;
   }
-  #ifdef DIFF_DEBUG
-    fprintf(stderr, "diff = ");
-    ZDomainPrint(stderr, P_VALUE_FMT, diff);
-  #endif
-  ZDomain_Free(diff);
+  LBLFree(diff);
+
   return ret;
-} /* ZDomainIncludes */
+} /* LBLIncludes */
+
 
 /*
- * Given Z-polyhedra 'A' and 'B', return True if 'A' is directly present in 'B',
- * otherwise return False
+ * Print the contents of a single LBL 'A'
  */
-// static Bool old_ZPolyhedronIncludes(ZPolyhedron *A, ZPolyhedron *B) {
+static void sLBL_Print(FILE *fp, const char *format, LBL *A)
+{
+  if (A == NULL)
+    return;
+  fprintf(fp, "LBL: Dimension %d \n", A->Lat->NbRows - 1);
+  fprintf(fp, "\nLATTICE: \n");
+  Matrix_Print(fp, format, A->Lat);
+  Polyhedron_Print(fp, format, A->P);
+  return;
+} /* sLBL_Print */
 
-//   Polyhedron *Diff = NULL;
-//   Bool retval = False;
-// #ifdef DOMDEBUG
-//   FILE *fp;
-//   fp = fopen("_debug", "a");
-//   fprintf(fp, "\nEntered ZPOLYHEDRONINCLUDES\n");
-//   fclose(fp);
-// #endif
-  
-//   // fast first check: the lattices intersect
-//   if (LatticeIncludes(A->Lat, B->Lat) == True) {
-//     Polyhedron *ImageA, *ImageB;
-
-//     // fast second check: the rational images intersect
-//     ImageA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
-//     ImageB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
-
-//     Diff = DomainDifference(ImageA, ImageB, MAXNOOFRAYS);
-//     if (emptyQ(Diff))
-//       retval = True;
-//     else
-//     {
-//       // TODO: need to compute the exact difference here in case we are missing something
-
-//     }
-//     Domain_Free(ImageA);
-//     Domain_Free(ImageB);
-//     Domain_Free(Diff);
-//   }
-//   return retval;
-// } /* ZPolyhedronIncludes */
 
 /*
- * Print the contents of a Z-domain 'A'
+ * Print the contents of an LBL 'A'
  */
-void ZDomainPrint(FILE *fp, const char *format, ZPolyhedron *A) {
-#ifdef DOMDEBUG
-  FILE *fp1;
-  fp1 = fopen("_debug", "a");
-  fprintf(fp1, "\nEntered ZDOMAINPRINT\n");
-  fclose(fp1);
-#endif
-
-  for( ; A; A=A->next) {
-    ZPolyhedronPrint(fp, format, A);
+void LBLPrint(FILE *fp, const char *format, LBL *A)
+{
+  for( ; A; A = A->next) {
+    sLBL_Print(fp, format, A);
     if(A->next)
       fprintf(fp, "\nUNION ");
   }
-} /* ZDomainPrint */
+} /* LBLPrint */
+
 
 /*
- * Print the contents of a ZPolyhderon 'A'
+ * Return the LBL union of the LBLs 'A' and 'B'. The dimensions of
+ * 'A' and 'B' must be equal.
+ * All the LBLs of the resulting union are in Canonical form.
  */
-static void ZPolyhedronPrint(FILE *fp, const char *format, ZPolyhedron *A) {
-  if (A == NULL)
-    return;
-  fprintf(fp, "ZPOLYHEDRON: Dimension %d \n", A->Lat->NbRows - 1);
-  fprintf(fp, "\nLATTICE: \n");
-  Matrix_Print(fp, format, (Matrix *)A->Lat);
-  Polyhedron_Print(fp, format, A->P);
-  return;
-} /* ZPolyhedronPrint */
-
-/*
- * Return the Z-domain union of the Z-domain 'A' and 'B'. The dimensions of the
- * Z-domains 'A' and 'B' must be equal. All the Z-polyhedra of the resulting
- * union are expected to be in Canonical forms.
- */
-ZPolyhedron *ZDomainUnion(ZPolyhedron *A, ZPolyhedron *B) {
-
-  ZPolyhedron *Result = NULL, *tempA , * tempB;
-
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered ZDOMAINUNION\n");
-  fclose(fp);
-#endif
+LBL *LBLUnion(LBL *A, LBL *B)
+{
+  LBL *Result = NULL, *tmp;
 
   // copy A and B, concatenate, Canonicalize, and return :)
 
-  tempA = ZDomain_Copy(A); 
-  tempB = ZDomain_Copy(B);
+  Result = LBL_concatenate(LBLCopy(A), LBLCopy(B));
 
-  Result = ZDconcatenate(tempA, tempB);
-  Canonical_ZDomain(Result);
+  CanonicalLBL(Result);
+
   return Result;
-} /* ZDomainUnion */
+} /* LBLUnion */
 
 /*
- * Return the Z-domain intersection of the Z-domains 'A' and 'B'.The dimensions
- * of domains 'A' and 'B' must be equal.
+ * Return the intersection of the LBLs 'A' and 'B'.
+ * The dimensions of 'A' and 'B' must be equal.
  */
-ZPolyhedron *ZDomainIntersection(ZPolyhedron *A, ZPolyhedron *B) {
-
-  ZPolyhedron *Result = NULL, *tempA = NULL, *tempB = NULL;
-
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered ZDOMAININTERSECTION\n");
-  fclose(fp);
-#endif
-
-  for (tempA = A; tempA != NULL; tempA = tempA->next)
-    for (tempB = B; tempB != NULL; tempB = tempB->next) {
-      ZPolyhedron *Zpol;
-      Zpol = ZPolyhedronIntersection(tempA, tempB);
-      Result = ZDconcatenate(Zpol, Result);
-    }
-  if (Result == NULL)
-    return EmptyZPolyhedron(A->Lat->NbRows - 1);
-
-  Canonical_ZDomain(Result);
-  return (Result);
-} /* ZDomainIntersection */
-
-/*
- * Return the Z-domain difference of the domains (A - B) in canonical form.
- * The dimensions of the Z-domains A and B must be equal. Note that the
- * difference of two Z-polyhedra is a Union of Z-polyhedra.
- * Algorithm: 
- * 
- */
-ZPolyhedron *ZDomainDifference(ZPolyhedron *A, ZPolyhedron *B) { 
-
-  ZPolyhedron *tempB;
-  ZPolyhedron *res;
-
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered ZDOMAINDIFFERENCE\n");
-  fclose(fp);
-#endif
+LBL *LBLIntersection(LBL *A, LBL *B)
+{
+  LBL *Result = NULL, *tempA = NULL, *tempB = NULL;
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
-    errormsg1("ZDomainDifference", "dimincomp", "incompatible dimensions between domains");
+    errormsg1("LBLIntersection", "dimincomp", "incompatible dimensions between domains");
+    return (NULL);
+  }
+
+  for (tempA = A; tempA; tempA = tempA->next) {
+    for (tempB = B; tempB; tempB = tempB->next) {
+      LBL *Inter;
+      Inter = sLBL_Intersection(tempA, tempB);
+      if(Inter) {
+        Result = LBL_concatenate(Inter, Result);
+      }
+    }
+  }
+
+  if (!Result)
+    return (EmptyLBL(A->Lat->NbRows - 1));
+
+  CanonicalLBL(Result);
+
+  return (Result);
+} /* LBLIntersection */
+
+
+/*
+ * Return the difference of the LBLs 'A' - 'B' in canonical form.
+ * The dimensions of 'A' and 'B' must be equal. Note that the
+ * difference of two single LBLs can be a union of LBLs
+ */
+LBL *LBLDifference(LBL *A, LBL *B)
+{ 
+  LBL *res;
+
+  if (A->Lat->NbRows != B->Lat->NbRows) {
+    errormsg1("LBLDifference", "dimincomp", "incompatible dimensions between domains");
     return (NULL);
   }
   
-  res = ZPolyhedron_Copy(A);
-  // remove all Z-polyhedra of B from Z-domain A:
-  for (tempB = B; tempB; tempB = tempB->next) {
-    ZPolyhedron *tmp;
-    tmp = ZD_ZP_Difference(res, tempB);
-    ZDomain_Free(res);
+  res = LBLCopy(A);
+  // remove all single LBLs composing B from LBL A:
+  for (LBL *tempB = B; tempB; tempB = tempB->next) {
+    LBL *tmp;
+    tmp = LBL_sLBL_Difference(res, tempB);
+    LBLFree(res);
     res = tmp;
   }
 
-  if (res == NULL)
-    return (EmptyZPolyhedron(A->Lat->NbRows - 1));
-  Canonical_ZDomain(res);
+  if (!res)
+    return (EmptyLBL(A->Lat->NbRows - 1));
+
+  CanonicalLBL(res);
 
   return (res);
-} /* ZDomainDifference */
+} /* LBLDifference */
 
 /*
- * Return the image of the Z-domain 'A' under the invertible, affine, rational
- * transformation function 'Func'. The matrix representing the function 'Func'
- * must be non-singular and the number of rows of the function must be equal
- * to the number of rows in the matrix representing the lattice of 'A'.
- * Note:: Image((Z1 U Z2),F) = Image(Z1,F) U Image(Z2 U F).
+ * Return the image of the LBL 'A' under the affine transformation function
+ * 'Func'. The number of columns of the function must be equal to the number
+ * of rows in the matrix representing the lattice of 'A'.
+ * Note:: Image((Z1 U Z2), F) = Image(Z1,F) U Image(Z2 U F).
  */
-ZPolyhedron *ZDomainImage(ZPolyhedron *A, Matrix *Func) {
+LBL *LBLImage(LBL *A, Matrix *Func)
+{
+  LBL *Result = NULL;
 
-  ZPolyhedron *Result = NULL;
-
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered ZDOMAINIMAGE\n");
-  fclose(fp);
-#endif
-
-  for (ZPolyhedron *temp = A; temp; temp = temp->next) {
-    ZPolyhedron *Zpol;
-    Zpol = ZPolyhedronImage(temp, Func);
-    Result = ZDconcatenate(Zpol, Result);
+  for (LBL *temp = A; temp; temp = temp->next) {
+    LBL *Im;
+    Im = sLBL_Image(temp, Func);
+    Result = LBL_concatenate(Im, Result);
   }
   if (Result == NULL)
-    return EmptyZPolyhedron(A->Lat->NbRows - 1);
-  Canonical_ZDomain(Result);
+    return EmptyLBL(A->Lat->NbRows - 1);
+
+  CanonicalLBL(Result);
+
   return Result;
-} /* ZDomainImage */
+} /* LBLImage */
 
 /*
  * Return the preimage of the Z-domain 'A' under the invertible, affine, ratio-
@@ -417,58 +355,47 @@ ZPolyhedron *ZDomainImage(ZPolyhedron *A, Matrix *Func) {
  * the function 'Func' must be equal to the number of rows of the matrix repr-
  * senting the lattice of 'A'.
  */
-ZPolyhedron *ZDomainPreimage(ZPolyhedron *A, Matrix *Func) {
+LBL *LBLPreimage(LBL *A, Matrix *Func) {
 
-  ZPolyhedron *Result = NULL;
+  LBL *Result = NULL;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered ZDOMAINPREIMAGE\n");
-  fclose(fp);
-#endif
-
-  for (ZPolyhedron *temp = A; temp; temp = temp->next) {
-    ZPolyhedron *Zpol;
-    Zpol = ZPolyhedronPreimage(temp, Func);
-    Result = ZDconcatenate(Zpol, Result);
+  for (LBL *temp = A; temp; temp = temp->next) {
+    LBL *Zpol;
+    Zpol = sLBL_Preimage(temp, Func);
+    Result = LBL_concatenate(Zpol, Result);
   }
 
   if (Result == NULL)
-    return (EmptyZPolyhedron(Func->NbColumns - 1));
+    return (EmptyLBL(Func->NbColumns - 1));
 
-  Canonical_ZDomain(Result);
+  CanonicalLBL(Result);
   return Result;
-} /* ZDomainPreimage */
+} /* LBLPreimage */
 
 /*
- * Return the Z-polyhedron intersection of the Z-polyhedra 'A' and 'B'.
- * We are based on the intersection of the two lattices of the polyhedra, named LInter.
- * If LInter is empty, we return the empty Zpolyhedron.
+ * Return the LBL intersection of the single-LBLs 'A' and 'B'.
+ * The result is always a single LBL.
+ * 
+ * Algo based on the intersection of the two lattices of the polyhedra, named LInter.
+ * If LInter is empty, we return NULL.
  * Otherwise, we calculate the intersection of the polyhedral images of A and B (PInter).
  * We calculate the Preimage of PInter by LInter and finally we allocate the result,
- * a Zpolyhedron allocated in canonical form.
+ * an LBL allocated in canonical form.
  *
- *  /!\ USAGE: A and B contain a single Lattice, but can contain a polyhedral domain.
+ * USAGE: A and B first Lattice considered only (no chained list),
+ *        but can contain a polyhedral domain.
  */
-static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
+static LBL *sLBL_Intersection(LBL *A, LBL *B) {
 
-  ZPolyhedron *Result = NULL;
+  LBL *Result = NULL;
   Lattice *LInter;
   Polyhedron *PInter, *ImageA, *ImageB, *PreImage;
-
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered ZPOLYHEDRONINTERSECTION\n");
-  fclose(fp);
-#endif
 
   LInter = LatticeIntersection(A->Lat, B->Lat);
 
   if (isEmptyLattice(LInter)) {
     Matrix_Free(LInter);
-    return (EmptyZPolyhedron(A->Lat->NbRows - 1));
+    return (NULL);
   }
 
   // TODO: this can be an over-approximation! -> need to handle LBLs!
@@ -478,10 +405,10 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
   PInter = DomainIntersection(ImageA, ImageB, MAXNOOFRAYS);
 
   if (emptyQ(PInter))
-    Result = EmptyZPolyhedron(LInter->NbRows - 1);
+    Result = NULL;
   else {
     PreImage = DomainPreimage(PInter, LInter, MAXNOOFRAYS);
-    Result = ZPolyhedronAlloc(LInter, PreImage);
+    Result = LBLAlloc(LInter, PreImage);
     Domain_Free(PreImage);
   }
 
@@ -490,77 +417,75 @@ static ZPolyhedron *ZPolyhedronIntersection(ZPolyhedron *A, ZPolyhedron *B) {
   Domain_Free(ImageB);
   Domain_Free(ImageA);
 
-  return Result;
-} /* ZPolyhedronIntersection */
+  return (Result);
+} /* sLBL_Intersection */
 
 
 /*
- * Return the difference A - B, between a ZDomain A and a ZPolyhedron B.
- * A can contain a list of lattices, B has a single lattice.
+ * Return the difference A - B
+ * between a (union of) LBL(s) 'A' and a single LBL 'B'.
  * Algo: remove B from each part of A, and build a list of the result.
  *
- * /!\ USAGE: only the first lattice of B is considered (no list/Zdomains),
+ * USAGE: only the first lattice of B is considered
+ *       (even if next is not NULL).
  * Creates a new allocated ZDomain, not necessarily in canonical form
  */
-static ZPolyhedron *ZD_ZP_Difference(ZPolyhedron* A, ZPolyhedron* B) {
-  ZPolyhedron *Result = NULL;
+static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
+{
+  LBL *Result = NULL;
 
-  for(ZPolyhedron *zp = A; zp; zp = zp->next) {
-    ZPolyhedron *diff;
+  for(LBL *zp = A; zp; zp = zp->next) {
+    LBL *diff;
 
-    diff = ZPolyhedronDifference(zp, B);
+    diff = sLBL_Difference(zp, B);
     // concatenate diff and result (not canonical)
-    Result = ZDconcatenate(diff, Result);
+    Result = LBL_concatenate(diff, Result);
   }
 
   // Result contains every piece of the solution,
-  // but it is not necessarily in canonical form (will be handled be callee)
+  // but it is not necessarily in canonical form (will be done be callee)
   return Result;
-}
+} /* LBL_sLBL_Difference */
+
 
 /*
- * Return the difference of two Z-polyhedra A and B.
- * inspired from the method Gautam describes in his thesis,
+ * Return the difference of two single LBLs A and B.
+ * Inspired from the method Gautam describes in his thesis,
  * modified to handle LBLs.
- * A and B are Zpolyhedra, but the return value is a ZDomain!
- * Creates a new allocated ZDomain
+ * A and B are single LBLs, but the return value can be a union of LBLs!
+ * Creates a new allocated LBL union
  *
- * /!\ USAGE: only the first lattice of A and B is considered (no list/Zdomains),
- *            but A and B can contain a coordinate polyhedral domain (in ->Pol).
+ * USAGE: only the first lattice of A and B is considered (no union),
+ *        but A and B can contain a coordinate polyhedral domain (in ->P).
+ * Internal function, users should use LBLDifference.
  */
 
-static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron* A, ZPolyhedron* B) {
-  ZPolyhedron *Result = NULL, *Final_Result; // ZDomains
-  ZPolyhedron *Ainter, *Binter; // ZPolyhedra
+static LBL *sLBL_Difference(LBL* A, LBL* B) {
+  LBL *Result = NULL, *Final_Result; // ZDomains
+  LBL *Ainter, *Binter; // ZPolyhedra
   LatticeUnion *LatDiff;
   Polyhedron *imA, *imB, *preimA, *ImDiff, *ImInter; // polyhedral domains
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
-    errormsg1("ZPolyhedronDifference", "dimincomp", "incompatible dimensions");
+    errormsg1("sLBL_Difference", "dimincomp", "incompatible dimensions");
     return(NULL);
   }
-  #ifdef DIFF_DEBUG
-    fprintf(stderr, "-------Entering ZPDifference-------\nA = ");
-    ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
-    fprintf(stderr, "and B = ");
-    ZPolyhedronPrint(stderr, P_VALUE_FMT, B);
-  #endif
 
   // treat the simple case where the Zpolyhedra do not intersect
   // the exact intersection Binter will be reused later
-  Binter = ZPolyhedronIntersection(A, B);
-  if(isEmptyZDomain(Binter)) {
+  Binter = LBLIntersection(A, B);
+  if(isEmptyLBL(Binter)) {
     // if B does not intersect A, return A.
     #ifdef DIFF_DEBUG
       fprintf(stderr, "Binter=(A inter B) is empty, so B does not intersect A, we return A\n");
     #endif
-    ZPolyhedron_Free(Binter);
-    return(ZPolyhedron_Copy(A));
+    LBLFree(Binter);
+    return(LBLCopy(A));
   }
 
   // Separate the computation in 3 phases:
   // 0. compute the difference of the image polyhedra P_A \ P_B (=temp) and
-  //    add it to the solution Zpolyhedron (using lattice L_A).
+  //    add it to the solution LBL (using lattice L_A).
   //    This is an over-approximation of A (but not B)
   // 1. compute the rest where the intersection of P_A and P_B have same
   //    dimensions
@@ -580,10 +505,10 @@ static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron* A, ZPolyhedron* B) {
     Polyhedron *RedPolyDiff;
     RedPolyDiff = DomainPreimage(ImDiff, A->Lat, MAXNOOFRAYS);
     // NOTICE: this is an over-approximation of A
-    Result = ZPolyhedronAlloc(A->Lat, RedPolyDiff);
+    Result = LBLAlloc(A->Lat, RedPolyDiff);
     #ifdef DIFF_DEBUG
       fprintf(stderr, "Adding this to the temporary result: ");
-      ZDomainPrint(stderr, P_VALUE_FMT, Result);
+      LBLPrint(stderr, P_VALUE_FMT, Result);
     #endif
     Domain_Free(RedPolyDiff);
   }
@@ -595,9 +520,11 @@ static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron* A, ZPolyhedron* B) {
     Polyhedron_Print(stderr, P_VALUE_FMT, ImInter);
   #endif
   
+  // TODO: can be simplified, Ainter not really needed!
+
   // compute the part of A that intersects the hull of B in the image space
   preimA = DomainPreimage(ImInter, A->Lat, MAXNOOFRAYS);
-  Ainter = ZPolyhedronAlloc(A->Lat, preimA);
+  Ainter = LBLAlloc(A->Lat, preimA);
   // NOTICE: this Ainter can be a over-approximation of A
 
   Domain_Free(preimA);
@@ -609,9 +536,9 @@ static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron* A, ZPolyhedron* B) {
   #ifdef DIFF_DEBUG
     fprintf(stderr, "-- [STEP1] now we compute the intersection on same lattice dimensions\n");
     fprintf(stderr, "Ainter = ");
-    ZPolyhedronPrint(stderr, P_VALUE_FMT, Ainter);
+    LBLPrint(stderr, P_VALUE_FMT, Ainter);
     fprintf(stderr, "and Binter = ");
-    ZPolyhedronPrint(stderr, P_VALUE_FMT, Binter);
+    LBLPrint(stderr, P_VALUE_FMT, Binter);
   #endif
 
   // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of same dimensions
@@ -624,7 +551,7 @@ static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron* A, ZPolyhedron* B) {
   // [STEP 1 of Gautam]:
   // Add all Z-polyhedra applying the (list of) lattice difference on ImInter
   for(LatticeUnion *tmp = LatDiff; tmp; tmp = tmp->next) {
-    ZPolyhedron *Ztmp;
+    LBL *Ztmp;
     #ifdef DIFF_DEBUG
       fprintf(stderr, "Considering Lat diff: ");
       Matrix_Print(stderr, P_VALUE_FMT, tmp->M);
@@ -645,74 +572,72 @@ static ZPolyhedron *ZPolyhedronDifference(ZPolyhedron* A, ZPolyhedron* B) {
   }
 
   Domain_Free(ImInter);
-  ZPolyhedron_Free(Ainter);
-  ZPolyhedron_Free(Binter);
+  LBLFree(Ainter);
+  LBLFree(Binter);
 
-  if(Result == NULL) {
+  if(!Result) {
     #ifdef DIFF_DEBUG
       fprintf(stderr, "-- result = (NULL)\n");
     #endif
-    return(EmptyZPolyhedron(A->Lat->NbRows - 1));
+    return(NULL);
   }
 
   #ifdef DIFF_DEBUG
     fprintf(stderr, "-- temporary over-approximation of result = ");
-    ZPolyhedronPrint(stderr, P_VALUE_FMT, Result);
+    LBLPrint(stderr, P_VALUE_FMT, Result);
   #endif
   // intersect the result with A to get the exact LBL.
-  Final_Result = ZDomainIntersection(Result, A);
-  ZDomain_Free(Result);
+  Final_Result = LBLIntersection(Result, A);
+  LBLFree(Result);
 
   return(Final_Result);
 
-} /* ZPolyhedronDifference */
-
+} /* sLBL_Difference */
 
 
 /*
- * Return the image of the Z-polyhedron 'ZPol' under the invertible, affine,
- * rational transformation function 'Func'. 
+ * Return the image of the single LBL 'A' under the affine function 'Func'
  * 
  * Algorithm:
  * - Multiply Lat by Func,
  * - Canonicalize the result (done in ZPAlloc)
  */
-static ZPolyhedron *ZPolyhedronImage(ZPolyhedron *ZPol, Matrix *Func) {
-
+static LBL *sLBL_Image(LBL *A, Matrix *Func)
+{
   Matrix *newL;
-  ZPolyhedron *result;
+  LBL *result;
 
-  if ((Func->NbColumns != ZPol->Lat->NbRows)) {
-    errormsg1("ZPolyhedronImage", "dimincomp", "Incompatible dimensions");
+  if ((Func->NbColumns != A->Lat->NbRows)) {
+    errormsg1("sLBL_Image", "dimincomp", "Incompatible dimensions");
     return NULL;
   }
 
-  newL = Matrix_Alloc(Func->NbRows, ZPol->Lat->NbColumns);
-  Matrix_Product(Func, ZPol->Lat, newL);
-  result = ZPolyhedronAlloc(newL, ZPol->P);
+  newL = Matrix_Alloc(Func->NbRows, A->Lat->NbColumns);
+  Matrix_Product(Func, A->Lat, newL);
+  result = LBLAlloc(newL, A->P);
 
   Matrix_Free(newL);
   return(result);
-} /* ZPolyhedronImage */
+} /* sLBL_Image */
 
 /*
- * Return the preimage of the Z-polyhedron 'Zpol' under an affine
+ * Return the preimage of the single LBL 'Z' under an affine
  * transformation function 'G'. The number of rows of matrix 'G' must
  * be equal to the number of rows of the matrix representing the
- * lattice of Zpol
+ * lattice of Z.
  * Algorithm:
- * - build the Z-polyhedron { z' | Lz = Gz', z \in Zpol.P },
- * - remove z by normalizing the result (remove equalities)
+ * - build the LBL { z' | Lz = Gz', z \in A->P },
+ * - remove z by normalizing the result
  */
-static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
-
-  ZPolyhedron *Result;
+static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
+{
+  LBL *Result;
   Polyhedron *P, *newP;
   Matrix *Con;
 
   if(G->NbRows != Z->Lat->NbRows) {
     // G z' = L z
-    errormsg1("ZPolyhedronPreimage", "dimincomp", "incompatible dimensions");
+    errormsg1("sLBLPreimage", "dimincomp", "incompatible dimensions");
     return(NULL);
   }
 
@@ -773,116 +698,21 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
   Matrix_Free(Con);
   Domain_Free(newP);
 
-  Result = ZPolyhedronAlloc(newL, P);
+  Result = LBLAlloc(newL, P);
   Domain_Free(P);
   Matrix_Free(newL);
 
   return(Result);
-} /* ZPolyhedronPreimage */
+} /* sLBLPreimage */
 
-// /*
-//  * Return the Z-polyhderon 'Zpol' in canonical form: 'Result' (for the Z-poly-
-//  * hedron in canonical form) and Basis 'Basis' (for the basis with respect to
-//  * which 'Result' is in canonical form.
-//  */
-// void CanonicalForm(ZPolyhedron *Zpol, ZPolyhedron **Result, Matrix **Basis) {
-
-//   Matrix *B1 = NULL, *B2 = NULL, *T1, *B2inv;
-//   int i, l1, l2;
-//   Value tmp;
-//   Polyhedron *Image, *ImageP;
-//   Matrix *H, *U, *temp, *Hprime, *Uprime, *T2;
-
-// #ifdef DOMDEBUG
-//   FILE *fp;
-//   fp = fopen("_debug", "a");
-//   fprintf(fp, "\nEntered CANONICALFORM\n");
-//   fclose(fp);
-// #endif
-
-//   if (isEmptyZDomain(Zpol)) {
-//     Basis[0] = Identity(Zpol->Lat->NbRows);
-//     Result[0] = ZDomain_Copy(Zpol);
-//     return;
-//   }
-//   value_init(tmp);
-//   l1 = FindHermiteBasisofDomain(Zpol->P, &B1);
-//   Image = DomainImage(Zpol->P, Zpol->Lat, MAXNOOFRAYS);
-//   l2 = FindHermiteBasisofDomain(Image, &B2);
-
-//   if (l1 != l2)
-//     fprintf(stderr, "In CNF : Something wrong with the Input Zpolyhedra \n");
-
-//   B2inv = Matrix_Alloc(B2->NbRows, B2->NbColumns);
-//   temp = Matrix_Copy(B2);
-//   Matrix_Inverse(temp, B2inv);
-//   Matrix_Free(temp);
-
-//   temp = Matrix_Alloc(B2inv->NbRows, Zpol->Lat->NbColumns);
-//   T1 = Matrix_Alloc(temp->NbRows, B1->NbColumns);
-//   Matrix_Product(B2inv, Zpol->Lat, temp);
-//   Matrix_Product(temp, B1, T1);
-//   Matrix_Free(temp);
-
-//   T2 = ChangeLatticeDimension(T1, l1);
-//   temp = ChangeLatticeDimension(T2, T2->NbRows + 1);
-
-//   /* Adding the affine part */
-//   for (i = 0; i < l1; i++)
-//     value_assign(temp->p[i][temp->NbColumns - 1], T1->p[i][T1->NbColumns - 1]);
-
-//   AffineHermite(temp, &H, &U);
-//   Hprime = ChangeLatticeDimension(H, Zpol->Lat->NbRows);
-
-//   /* Exchanging the Affine part */
-//   for (i = 0; i < l1; i++) {
-//     value_assign(tmp, Hprime->p[i][Hprime->NbColumns - 1]);
-//     value_assign(Hprime->p[i][Hprime->NbColumns - 1],
-//                  Hprime->p[i][H->NbColumns - 1]);
-//     value_assign(Hprime->p[i][H->NbColumns - 1], tmp);
-//   }
-//   Uprime = ChangeLatticeDimension(U, Zpol->Lat->NbRows);
-
-//   /* Exchanging the Affine part */
-//   for (i = 0; i < l1; i++) {
-//     value_assign(tmp, Uprime->p[i][Uprime->NbColumns - 1]);
-//     value_assign(Uprime->p[i][Uprime->NbColumns - 1],
-//                  Uprime->p[i][U->NbColumns - 1]);
-//     value_assign(Uprime->p[i][U->NbColumns - 1], tmp);
-//   }
-//   Polyhedron_Free(Image);
-//   Matrix_Free(B2inv);
-//   B2inv = Matrix_Alloc(B1->NbRows, B1->NbColumns);
-//   Matrix_Inverse(B1, B2inv);
-//   ImageP = DomainImage(Zpol->P, B2inv, MAXNOOFRAYS);
-//   Matrix_Free(B2inv);
-//   Image = DomainImage(ImageP, Uprime, MAXNOOFRAYS);
-//   Domain_Free(ImageP);
-//   Result[0] = ZPolyhedronAlloc(Hprime, Image);
-//   Basis[0] = Matrix_Copy(B2);
-
-//   /* Free the memory used */
-//   Polyhedron_Free(Image);
-//   Matrix_Free(B1);
-//   Matrix_Free(B2);
-//   Matrix_Free(temp);
-//   Matrix_Free(T1);
-//   Matrix_Free(T2);
-//   Matrix_Free(H);
-//   Matrix_Free(U);
-//   Matrix_Free(Hprime);
-//   Matrix_Free(Uprime);
-//   value_clear(tmp);
-//   return;
-// } /* CanonicalForm */
 
 // /*
 //  * Given a Z-polyhedron 'A' in which the Lattice is not integral, return the
 //  * Z-polyhedron which contains all the integral points in the input lattice.
 //  */
-// ZPolyhedron *IntegraliseLattice(ZPolyhedron *A) {
+// LBL *IntegraliseLattice(LBL *A) {
 
-//   ZPolyhedron *Result;
+//   LBL *Result;
 //   Lattice *M = NULL, *Id;
 //   Polyhedron *Im = NULL, *Preim = NULL;
 
@@ -897,10 +727,10 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 //   Id = Identity(A->Lat->NbRows);
 //   M = LatticeImage(Id, A->Lat);
 //   if (isEmptyLattice(M))
-//     Result = EmptyZPolyhedron(A->Lat->NbRows - 1);
+//     Result = EmptyLBL(A->Lat->NbRows - 1);
 //   else {
 //     Preim = DomainPreimage(Im, M, MAXNOOFRAYS);
-//     Result = ZPolyhedronAlloc(M, Preim);
+//     Result = LBLAlloc(M, Preim);
 //   }
 //   Matrix_Free(M);
 //   Domain_Free(Im);
@@ -913,21 +743,21 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 //  * convexize unions of polyhedra when they correspond to the same lattices and
 //  * to simplify union of lattices when they correspond to the same polyhdera.
 //  */
-// ZPolyhedron *ZDomainSimplify(ZPolyhedron *ZDom) {
+// LBL *ZDomainSimplify(LBL *ZDom) {
 
-//   ZPolyhedron *Ztmp, *Result;
+//   LBL *Ztmp, *Result;
 //   ForSimplify *Head, *Prev, *Curr;
-//   ZPolyhedron *ZDomHead, *Emp;
+//   LBL *ZDomHead, *Emp;
 
 //   if (ZDom == NULL) {
 //     fprintf(stderr, "\nError in ZDomainSimplify - ZDomHead = NULL\n");
 //     return NULL;
 //   }
 //   if (ZDom->next == NULL)
-//     return (ZPolyhedron_Copy(ZDom));
-//   Emp = EmptyZPolyhedron(ZDom->Lat->NbRows - 1);
-//   ZDomHead = ZDomainUnion(ZDom, Emp);
-//   ZPolyhedron_Free(Emp);
+//     return (LBL_Copy(ZDom));
+//   Emp = EmptyLBL(ZDom->Lat->NbRows - 1);
+//   ZDomHead = LBLUnion(ZDom, Emp);
+//   LBL_Free(Emp);
 //   Head = NULL;
 //   Ztmp = ZDomHead;
 //   do {
@@ -977,10 +807,10 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 //     LatticeUnion *L;
 //     for (L = Curr->LatUni; L != NULL; L = L->next) {
 //       Polyhedron *Preim;
-//       ZPolyhedron *Zpol;
+//       LBL *Zpol;
 
 //       Preim = DomainPreimage(Curr->Pol, L->M, MAXNOOFRAYS);
-//       Zpol = ZPolyhedronAlloc(L->M, Preim);
+//       Zpol = LBLAlloc(L->M, Preim);
 //       Zpol->next = Result;
 //       Result = Zpol;
 //       Domain_Free(Preim);
@@ -1002,29 +832,29 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 //  *
 // */
 
-// ZPolyhedron *SplitZpolyhedron(ZPolyhedron *ZPol, Lattice *B) {
+// LBL *SplitLBL(LBL *ZPol, Lattice *B) {
 
 //   Matrix *H, *U1, *X, *Y;
-//   ZPolyhedron *zpnew, *Result;
+//   LBL *zpnew, *Result;
 //   LatticeUnion *Head = NULL, *tempHead = NULL;
 
 // #ifdef DOMDEBUG
 //   FILE *fp;
 //   fp = fopen("_debug", "a");
-//   fprintf(fp, "\nEntered SplitZpolyhedron \n");
+//   fprintf(fp, "\nEntered SplitLBL \n");
 //   fclose(fp);
 // #endif
 
 //   if (B->NbRows != B->NbColumns) {
 //     fprintf(
 //         stderr,
-//         "\n SplitZpolyhedron : The Input Matrix B is not a proper Lattice \n");
+//         "\n SplitLBL : The Input Matrix B is not a proper Lattice \n");
 //     return NULL;
 //   }
 
 //   if (ZPol->Lat->NbRows != B->NbRows) {
 //     fprintf(stderr,
-//             "\nSplitZpolyhedron : The Lattice in Zpolyhedron and B have ");
+//             "\nSplitLBL : The Lattice in LBL and B have ");
 //     fprintf(stderr, "incompatible dimensions \n");
 //     return NULL;
 //   }
@@ -1056,7 +886,7 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 //   if (Head == NULL) {
 //     Matrix_Free(X);
 //     Matrix_Free(Y);
-//     return ZPolyhedron_Copy(ZPol);
+//     return LBL_Copy(ZPol);
 //   }
 
 //   Result = NULL;
@@ -1064,7 +894,7 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 //   while (Head) {
 //     tempHead = Head;
 //     Head = Head->next;
-//     zpnew = ZPolyhedronAlloc(tempHead->M, ZPol->P);
+//     zpnew = LBLAlloc(tempHead->M, ZPol->P);
 //     Result = ZDconcatenate(zpnew, Result);
 //     tempHead->next = NULL;
 //     Matrix_Free(tempHead->M);
@@ -1073,7 +903,7 @@ static ZPolyhedron *ZPolyhedronPreimage(ZPolyhedron *Z, Matrix *G) {
 //   Matrix_Free(X);
 //   Matrix_Free(Y);
 //   return Result;
-// } /* SplitZpolyhedron */
+// } /* SplitLBL */
 
 /*
  * get the matrix of equalities from a polyhedron
@@ -1110,10 +940,10 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
 } /* same_equalities */
 
 /*
- * Remove the equalities from (A->Lat, A->P).
+ * Remove the equalities from A->P in the single LBL A.
  * In place. A->P is a domain.
  */
-static void ZP_Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
+static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
 {
   // if A->P has equalities, remove them and spread the lattice
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
@@ -1177,15 +1007,15 @@ static void ZP_Remove_Equalities(ZPolyhedron *A, Matrix *Equalities)
       fprintf(stderr, "P has no equalities.\n");
     #endif
   }
-} /* ZP_Remove_Equalities */
+} /* sLBL_Remove_Equalities */
 
 /*
- * Set the lattice to normal form in (A->Lat, A->P).
+ * Set the affine function A->Lat to normal form in single LBL 'A'.
  * In place. A->P is a domain.
  */
-static void ZP_Lat_Normalize(ZPolyhedron *A)
+static void sLBL_Lat_Normalize(LBL *A)
 {
-    // check if A->Lat is in Hermite form
+  // check if A->Lat is in Hermite form
   if(!isNormalLattice(A->Lat)) {
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "A is not HNF\n");
@@ -1227,16 +1057,18 @@ static void ZP_Lat_Normalize(ZPolyhedron *A)
       fprintf(stderr, "A is HNF.\n");
     #endif
   }
-}
+} /* sLBL_Lat_Normalize */
+
 
 /*
  * Remove the columns of zeros from A->Lat.
  * In place. A->P is a domain.
  */
-static void ZP_Lat_Remove_Zeros(ZPolyhedron *A)
+static void sLBL_Lat_Remove_Zeros(LBL *A)
 {
   // TODO: this is the naive version,
   // need to consider integer existential variable elimination and dark shadow!
+
   Polyhedron *NewP;
   int nbZeros = count_zeroCols(A->Lat);
   if(nbZeros) {
@@ -1270,26 +1102,26 @@ static void ZP_Lat_Remove_Zeros(ZPolyhedron *A)
     Matrix_Free(A->Lat);
     A->Lat = NewL;
     #ifdef CANONICAL_DEBUG
-      ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
+      LBLPrint(stderr, P_VALUE_FMT, A);
     #endif
   }
-}
+} /* ZP_Lat_Remove_Zeros */
 
 
 /*
- * The function takes a Zpolyhedron 
- * --- containing a domain (list of polyhedra), and a single lattice ---
- * and modifies it in place to be in canonical form as described by Gautam
- * (A->Lat in HNF and no equalities in A->P)
+ * The function takes the head of LBL 'A'
+ * --- single lattice function, domain (list of polyhedra) ---
+ * and modifies it in place to be in canonical form (A->Lat in HNF and no
+ * equalities in A->P)
  * IN PLACE: modifies A itself
  * 
- * WARNING: this function transforms a Zpolyhedron into a Zdomain: it may
- * add new ZPolyhedra to the ZDomain (list of ZPolyhedra) just after A
+ * WARNING: this function modifies the head single LBL of A to build a union:
+ * it may add or remove the LBLs stored in A->next
  */
-static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
-  
-  #ifdef CANONICAL_DEBUG
-  fprintf(stderr, "Entering CanonicalZPGautam\n");
+static void sLBL_Canonical(LBL* A)
+{
+    #ifdef CANONICAL_DEBUG
+  fprintf(stderr, "Entering sLBL_Canonical\n");
   fprintf(stderr, "--------- Input Lat: ");
   Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
   fprintf(stderr, "--------- Input P: ");
@@ -1314,7 +1146,7 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
       // if there is something else after an empty ZP, need to replace the
       // current ZP with the next ZP.
       // Replace A with next and free A->next
-      ZPolyhedron *remove;
+      LBL *remove;
       remove = A->next;
       Domain_Free(A->P);
       Matrix_Free(A->Lat);
@@ -1323,16 +1155,17 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
       A->next = remove->next;
       free(remove);
 
-      // now, canonicalize the (new) current ZP itself:
-      Canonical_ZPolyhedron_Gautam(A);
+      // now, canonicalize the (new) current ZP itself
+      // (since the caller will not rescan it!):
+      sLBL_Canonical(A);
 
       return;
     }
 
     // A is empty and alone.
     // Verify that it is canonical and return.
-    int dimension = A->Lat->NbRows;
     if(A->P->Dimension > 0) {
+      int dimension = A->Lat->NbRows;
       Domain_Free(A->P);
       Matrix_Free(A->Lat);
       A->P = Empty_Polyhedron(0);
@@ -1344,8 +1177,8 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     }
 
     #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "We return the empty ZPolyhedron: ");
-      ZPolyhedronPrint(stderr, P_VALUE_FMT, A);
+      fprintf(stderr, "Returning, A is empty: ");
+      LBLPrint(stderr, P_VALUE_FMT, A);
     #endif
     return;
   }
@@ -1354,11 +1187,11 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
 
   // change P such that all polyhedra in this list have the same set of equalities,
   // that is, the equalities of the first one.
-  // all the other ones are added to a new ZPolyhedron, linked to (ZDomain) A in A->next
+  // all the other ones are added to a new LBL, linked to LBL A in A->next
   #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Checking for equalites in P\n");
   #endif
-  ZPolyhedron *new = NULL;
+  LBL *new = NULL;
   Matrix * Equalities = get_equalities(A->P); // get eq from the first one
   Polyhedron *nextpp, *prevpp = A->P;
 
@@ -1386,102 +1219,56 @@ static void Canonical_ZPolyhedron_Gautam(ZPolyhedron* A) {
     new->next = A->next;
     A->next = new;
   }
-  
-  // REMOVE EQUALITIES FROM A->P
-  ZP_Remove_Equalities(A, Equalities);
-
+    // Now we can safely remove all equalities from A->P
+  sLBL_Remove_Equalities(A, Equalities);
   Matrix_Free(Equalities);
 
-
-  // this was useful if for some reason the homogeneous dimension spread
-  // to something different than 1... (bottom right value of Lat matrix)
-  // seems impossible with Hermite(homogeneous_dim_first(Ker(Eq)))
-#ifdef I_THINK_THAT_THIS_IS_NOT_NECESSARY
-  // Check if the constant part (last column of Lat) is normal (simplified by its gcd)
-  // if not, divide it by the gcd, and compute the new polyhedron P' = image(T, P) with
-  // T = Id   0
-  //      0  gcd
-  Value gcd;
-  value_init(gcd);
-  // calul gcd sur la dernière colonne
-  value_absolute(gcd,A->Lat->p[0][A->Lat->NbColumns-1]);
-  // value_print(stderr, P_VALUE_FMT, gcd);
-  for (int i = 1; i < A->Lat->NbRows; i++){
-    Gcd(gcd,A->Lat->p[i][A->Lat->NbColumns-1],&gcd);
-  }
-
-  // si gcd != 1 faire la simplification
-  if (value_notone_p(gcd)) {
-    // diviser la dernière colonne de A->Lat (en place)
-    for (int i = 0; i < A->Lat->NbRows; i++)
-    {
-      value_division(A->Lat->p[i][A->Lat->NbColumns-1], A->Lat->p[i][A->Lat->NbColumns-1], gcd);
-    }
-    // et construire T, puis faire l'image par T de A->P
-    Matrix *T = Identity(A->P->Dimension + 1); // ajouter la constante (gcd) en bas à droite
-    for (int i = 0; i < T->NbColumns; i++){
-      for (int j = 0; j < T->NbColumns; j++){
-        if (i==j){
-          value_set_si(T->p[i][j],1);
-        }
-        else{
-          value_set_si(T->p[i][j],0);
-        } 
-      }  
-    }
-    value_assign(T->p[T->NbRows-1][T->NbColumns-1],gcd);
-    Polyhedron* tmp=Polyhedron_Image(A->P,T,MAXNOOFRAYS);
-    Matrix_Free(T);
-    Polyhedron_Free(A->P);
-    A->P=tmp;
-  }
-  value_clear(gcd);
-#endif
-
-
   // Normalize the affine lattice A->Lat
-  ZP_Lat_Normalize(A);
+  sLBL_Lat_Normalize(A);
 
   // Remove the columns of zeros from A->Lat
-  ZP_Lat_Remove_Zeros(A);
+  sLBL_Lat_Remove_Zeros(A);
 
   return;
-} /* Canonical_ZPolyhedron_Gautam */
+} /* sLBL_Canonical */
+
 
 /*
- * The function takes a ZDomain
- * (single or multiple lattices and single or multiple polyhedra)
- * and transforms it into a canonical form of the ZDomain as described
- * by Gautam:
+ * The function takes an LBL 'A' and transforms it into its canonical form:
  *  - all lattices in HNF, and
- *  -  no equalities in all polyhedral domains.
+ *  - no equalities in all polyhedral domains.
  * Performs the operation IN PLACE (modifies A)
+ * 
+ * USAGE NOTICE:
+ * If A is a real LBL and not a Z-polyhedron, there will remain zero-columns
+ * on the right of the lattice matrice(s).
+ * To transform a union of LBLs into a union of Z-polyhedra, you need to
+ * call LBL2ZDomain().
  */
-void Canonical_ZDomain(ZPolyhedron *A) {
+void CanonicalLBL(LBL *A) {
 
-  // here, just transform every ZPolyhedron of the list individually
-  // careful, this may add a new ZPolyhedron to the list A itself
-  // (after zp) but they will be scanned by this loop :)
-  for(ZPolyhedron *zp = A; zp; zp = zp->next) {
-    Canonical_ZPolyhedron_Gautam(zp);
+  // here, just transform every LBL of the list individually
+  // careful, this may add a new LBL to the list A itself
+  // (after tmp) but they will be scanned by this loop :)
+  for(LBL *tmp = A; tmp; tmp = tmp->next) {
+    sLBL_Canonical(tmp);
   }
 
-  // check if Ztmp->Lat is present twice in Result, and
-  // if it is, add this polyhedron to the existing one
-  // and remove the second reference
-  for(ZPolyhedron *zp = A; zp; zp = zp->next) {
-    ZPolyhedron *ZZ;
-    if((ZZ = FindLatticePred(zp->Lat, zp))) {
-      ZPolyhedron *remove;
+  // check if a Lat is present twice in A, and if it is, union this
+  // polyhedron to the existing one and remove the second reference
+  for(LBL *tmp = A; tmp; tmp = tmp->next) {
+    LBL *ZZ;
+    if((ZZ = FindLatticePred(tmp->Lat, tmp))) {
+      LBL *remove;
       Polyhedron *nextpp;
-      // add all polyhedra of the domain ZZ->next->P to zp
+      // add all polyhedra of the domain ZZ->next->P to tmp
       // consumes ZZ->next->P.
       Polyhedron *pp = ZZ->next->P;
       while(pp) {
         nextpp = pp->next;
         pp->next = NULL;
         // this consumes pp, so need to get next before
-        zp->P = AddPolyToDomain(pp, zp->P);
+        tmp->P = AddPolyToDomain(pp, tmp->P);
         pp = nextpp;
       }
       // remove ZZ->next by changing the linked list
@@ -1492,15 +1279,16 @@ void Canonical_ZDomain(ZPolyhedron *A) {
       free(remove);
     }
   }
-} /* Canonical_ZDomain */
+} /* CanonicalLBL */
+
 
 /*
- * Find if a given lattice is present in a zpolyhedron.
- * Returns the address of the ***previous*** zpolyhedron (such that ZZ->next->Lat == L),
+ * Find if a given lattice is present in a LBL.
+ * Returns the address of the ***previous*** LBL (such that ZZ->next->Lat == L),
  * NULL if not found
  */
-static ZPolyhedron *FindLatticePred(Lattice *L, ZPolyhedron *A) {
-  ZPolyhedron* tmp;
+static LBL *FindLatticePred(Lattice *L, LBL *A) {
+  LBL* tmp;
 
   for(tmp = A; tmp->next; tmp=tmp->next) {
     if(sameLattice(L, tmp->next->Lat)) {
@@ -1510,9 +1298,14 @@ static ZPolyhedron *FindLatticePred(Lattice *L, ZPolyhedron *A) {
   return (NULL);
 } /* FindLatticePred */
 
-int count_zeroCols (Matrix* M){
-  int nb=0;
 
+/*
+ * count the number of columns of zeros on the right of the linear part
+ * of a lattice function
+ */
+static int count_zeroCols (Matrix* M)
+{
+  int nb=0;
   for (int j = M->NbColumns-2 ; j >= 0; j--) {
     Bool isZero=True;
     for (int i = 0; i < M->NbRows; i++) {

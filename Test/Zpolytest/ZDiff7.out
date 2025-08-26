@@ -1,4 +1,4 @@
-ZPOLYHEDRON: Dimension 2 
+LBL: Dimension 2 
 
 LATTICE: 
 3 2
@@ -14,7 +14,7 @@ Rays 2 3
 Vertex: [   1  ]/1
 Vertex: [  10  ]/1
 
-UNION ZPOLYHEDRON: Dimension 2 
+UNION LBL: Dimension 2 
 
 LATTICE: 
 3 3
@@ -46,7 +46,7 @@ Vertex: [   1    6  ]/1
 Vertex: [   1   10  ]/1
 Vertex: [  10   10  ]/1
 
-UNION ZPOLYHEDRON: Dimension 2 
+UNION LBL: Dimension 2 
 
 LATTICE: 
 3 2
@@ -62,7 +62,7 @@ Rays 2 3
 Vertex: [  -1  ]/6
 Vertex: [   8  ]/3
 
-UNION ZPOLYHEDRON: Dimension 2 
+UNION LBL: Dimension 2 
 
 LATTICE: 
 3 2

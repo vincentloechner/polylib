@@ -15,12 +15,12 @@ int main () {
   
   Matrix *a, *b; 
   Polyhedron *P;
-  ZPolyhedron *Z1, *Z2, *Z3, *Z4;
+  LBL *Z1, *Z2, *Z3, *Z4;
   
   a = Matrix_Read ();
   b = Matrix_Read ();
   P = Constraints2Polyhedron (b, 200);
-  Z1 = ZPolyhedronAlloc (a, P);
+  Z1 = LBLAlloc (a, P);
   
   Matrix_Free (a);
   Matrix_Free (b);
@@ -29,26 +29,26 @@ int main () {
   a = Matrix_Read ();
   b = Matrix_Read ();
   P = Constraints2Polyhedron (b, 200);
-  Z2 = ZPolyhedronAlloc (a, P);
+  Z2 = LBLAlloc (a, P);
   
   Matrix_Free (a); 
   Matrix_Free (b); 
   Domain_Free (P);
   
-  Z3 = ZDomainIntersection (Z1, Z2);
+  Z3 = LBLIntersection (Z1, Z2);
   printf ("\nZ3 = Z1 and Z2");
-  ZDomainPrint(stdout,P_VALUE_FMT, Z3);
+  LBLPrint(stdout,P_VALUE_FMT, Z3);
 
   a = Matrix_Read ();
-  Z4 = ZDomainImage (Z1, a);
+  Z4 = LBLImage (Z1, a);
   printf ("\nZ4 = image (Z1 by a)");
-  ZDomainPrint (stdout,P_VALUE_FMT, Z4);
+  LBLPrint (stdout,P_VALUE_FMT, Z4);
 
   Matrix_Free (a);
-  ZDomain_Free (Z1);
-  ZDomain_Free (Z2);
-  ZDomain_Free (Z3);
-  ZDomain_Free (Z4);
+  LBLFree (Z1);
+  LBLFree (Z2);
+  LBLFree (Z3);
+  LBLFree (Z4);
   
   return 0;
 } /* main */
