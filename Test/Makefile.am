@@ -1,8 +1,7 @@
 EXTRA_DIST = cases old others
 SUBDIRS = Zpolytest general pp ehrhart ehrhart_union ranking
 
-check-am:
-	@(cd $(top_builddir); make all)
+check: all
 	@for BITS in $(ALL_BITS); do \
 	    printf "\n------------------ Performing tests (bits=$$BITS) ------------------\n"; \
 	    for d in $(SUBDIRS); do \
