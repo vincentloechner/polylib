@@ -22,6 +22,6 @@ tests:
 	fi
 
 EXTRA_DIST = $(TEST_FILES) \
-	$(TEST_FILES:%.in=%.out) 
+	$(TEST_FILES:%.in=%.out)
 
 CLEANFILES=xyz
