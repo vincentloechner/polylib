@@ -234,9 +234,8 @@ typedef struct _enumeration {
 
 /* *********************** LBLs **************************** */
 
-typedef Matrix Lattice;
 typedef struct LatticeUnion {
-  Lattice *M;
+  Matrix *M;
   struct LatticeUnion *next;
 } LatticeUnion;
 
@@ -245,7 +244,7 @@ typedef struct LatticeUnion {
 // - a single Z-polyhedron or a union of Z-polyhedra
 // as the image of an integer polyhedron ('P') by an affine function ('Lat')
 typedef struct _lbl {
-  Lattice *Lat;
+  Matrix *Lat;
   Polyhedron *P;
   struct _lbl *next;
 } LBL;

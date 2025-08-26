@@ -8,7 +8,7 @@
 static void get_pivots_columns(Matrix* A, int *columns);
 static int value_prime_factors(Value n, Vector **result);
 static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_columns,
-    Lattice *A, Lattice *Intersection, Lattice *L, LatticeUnion *Result);
+    Matrix *A, Matrix *Intersection, Matrix *L, LatticeUnion *Result);
 
 /*
  * Print the contents of a list of Lattices 'Head'
@@ -44,7 +44,7 @@ LatticeUnion *LatticeUnion_Alloc(void) {
 
   LatticeUnion *temp;
 
-  temp = (LatticeUnion *)malloc(sizeof(LatticeUnion));
+  temp = malloc(sizeof(LatticeUnion));
   temp->M = NULL;
   temp->next = NULL;
   return temp;
@@ -54,7 +54,7 @@ LatticeUnion *LatticeUnion_Alloc(void) {
 /*
  * Return True if lattice 'A' is empty, otherwise return False.
  */
-Bool isEmptyLattice(Lattice *A) {
+Bool isEmptyLattice(Matrix *A) {
   return(A == NULL || A->NbColumns == 0);
 } /* isEmptyLattice */
 
@@ -144,7 +144,7 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A)
  * U can be NULL (will be ignored)
  * *H and *U can be NULL (will be allocated by left_hermite)
  */
-void AffineHermite(Lattice *A, Lattice **H, Matrix **U)
+void AffineHermite(Matrix *A, Matrix **H, Matrix **U)
 {
   // for left hermite to include the constant, move it on top-left:
   Matrix_Move_Homogeneous_Dim_First(A);
@@ -170,10 +170,10 @@ void AffineHermite(Lattice *A, Lattice **H, Matrix **U)
 //  *               U and V.
 //  *           4) Bring Delta into AffineSmith Form.
 //  */
-// void AffineSmith(Lattice *A, Lattice **U, Lattice **V, Lattice **Diag) {
+// void AffineSmith(Matrix *A, Matrix **U, Matrix **V, Matrix **Diag) {
 
-//   Lattice *temp;
-//   Lattice *Uinv;
+//   Matrix *temp;
+//   Matrix *Uinv;
 //   int i, j;
 //   Value sum, quo, rem;
 
@@ -243,9 +243,9 @@ void AffineHermite(Lattice *A, Lattice **H, Matrix **U)
  * not. If 'A' is included in 'B' the 'A' intersection 'B', will be 'A'. So,
  * compute 'A' intersection 'B' and check if it is the same as 'A'.
  */
-Bool LatticeIncludes(Lattice *A, Lattice *B) {
+Bool LatticeIncludes(Matrix *A, Matrix *B) {
 
-  Lattice *temp, *HA;
+  Matrix *temp, *HA;
   Bool flag = False;
 
 #ifdef DOMDEBUG
@@ -275,18 +275,11 @@ Bool LatticeIncludes(Lattice *A, Lattice *B) {
  * matrices. If they are equal, the function returns True, else it returns
  * False.
  */
-Bool sameLattice(Lattice *A, Lattice *B) {
+Bool sameLattice(Matrix *A, Matrix *B) {
 
-  Lattice *HA, *HB;
+  Matrix *HA, *HB;
   int i, j;
   Bool result = True;
-
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered SAME LATTICE \n");
-  fclose(fp);
-#endif
 
   if(A->NbRows != B->NbRows || A->NbColumns != B->NbColumns)
     return (False);
@@ -315,11 +308,11 @@ Bool sameLattice(Lattice *A, Lattice *B) {
  * If the difference is empty return NULL.
  * Allocates a LatticeUnion
  */
-LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
+LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
 
   Matrix *H, *X;
   int *pivots_columns;
-  Lattice *Inter, *rest;
+  Matrix *Inter, *rest;
   LatticeUnion *Result = NULL;
 
   // Checking inputs:
@@ -455,9 +448,9 @@ LatticeUnion *LatticeDifference(Lattice *A, Lattice *B) {
  * if the number above r is not 1 then the intersection is not integer
  * (there is no solution to the intersection)
  */
-Lattice* LatticeIntersection(Lattice* A, Lattice* B)
+Matrix* LatticeIntersection(Matrix* A, Matrix* B)
 {
-  Lattice *Tmp, *H, *Res;
+  Matrix *Tmp, *H, *Res;
   if(A->NbRows != B->NbRows){
     errormsg1("LatticeIntersection", "dimincomp", "incompatible dimensions!");
     return NULL;
@@ -667,7 +660,7 @@ static int value_prime_factors(Value n, Vector **result) {
  * Add all newly generated lattices to Result, and return the new Result.
  */
 static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_columns,
-            Lattice *A, Lattice *Intersection, Lattice *rest, LatticeUnion *Result)
+            Matrix *A, Matrix *Intersection, Matrix *rest, LatticeUnion *Result)
 {
   Value step, multiply, modulo, ratio, tmp;
   Vector *prime_factors = NULL; // Vector of Values, reuse memory several times (from previous step).

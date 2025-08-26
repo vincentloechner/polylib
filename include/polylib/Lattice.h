@@ -5,18 +5,18 @@
 extern "C" {
 #endif
 
-extern void AffineHermite(Lattice *A, Lattice **H, Matrix **U);
-// extern void AffineSmith(Lattice *A, Lattice **U, Lattice **V, Lattice **Diag);
+extern void AffineHermite(Matrix *A, Matrix **H, Matrix **U);
+// extern void AffineSmith(Matrix *A, Matrix **U, Matrix **V, Matrix **Diag);
 // extern LatticeUnion *LatticeSimplify(LatticeUnion *latlist);
 extern int intcompare(const void *a, const void *b);
-extern Bool isEmptyLattice(Lattice *A);
-extern LatticeUnion *LatticeDifference(Lattice *A, Lattice *B);
-extern Bool LatticeIncludes(Lattice *A, Lattice *B);
-extern Lattice *LatticeIntersection(Lattice *X, Lattice *Y);
+extern Bool isEmptyLattice(Matrix *A);
+extern LatticeUnion *LatticeDifference(Matrix *A, Matrix *B);
+extern Bool LatticeIncludes(Matrix *A, Matrix *B);
+extern Matrix *LatticeIntersection(Matrix *X, Matrix *Y);
 extern LatticeUnion *LatticeUnion_Alloc(void);
 extern void LatticeUnion_Free(LatticeUnion *Head);
 extern void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head);
-extern Bool sameLattice(Lattice *A, Lattice *B);
+extern Bool sameLattice(Matrix *A, Matrix *B);
 extern void Matrix_Move_Homogeneous_Dim_First(Matrix *A);
 extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
 extern Vector* get_pivots(Matrix* A);

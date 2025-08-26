@@ -5,41 +5,44 @@
 extern "C" {
 #endif
 
-// DEFINITIONS USED IN THOSE FUNCTIONS:
+// DEFINITIONS:
+// - a 'single LBL' is a single affine integer function (as the matrix Lat)
+//   associated to a polyhedral domain P (a polyhedral domain can be a union
+//   of polyhedra). As such, it represents the set of all points:
+//      {x = Lat z with z \in P and z \in Z^d}
 //
-// - a LBL is a single lattice associated to a polyhedral domain
-//   (a polyhedral domain can be a union of polyhedra)
+// - the name 'LBL' is used to define a union of LBLs, as a chained list of
+//   LBLs (with possibly multiple different lattices). All user exposed
+//   functions manipulate unions of LBLs by default.
 //
-// - a LBL is a chained list of ZPolyhedra
-//   (with possibly multiple lattices; using the ->next structure element)
-//   * It is an LBL according to *
+// - a 'Z-polyhedron' is the intersection of an integer lattice and an integer
+//   polyhedron. A Z-polyhedron *is* also a specific single LBL and can be
+//   represented as such.
 //
-// A Z-polyhedron is the intersection of an integer lattice and an integer
-// polyhedron:
-// L = { z ∈ Qd | ∃z′, z = Lz′ + l, Cz + c ≥ 0 }.
-// An LBL, or linearly bounded lattice, is the affine integer image (L, l) of an
-// integer polyhedron, called the coordinate polyhedron:
-// Z = { z = Lx + l | Cx + c ≥ 0, x ∈ Z^d }.
+// - a 'Z-domain' is a union of Z-polyhedra.
+//
+// All those objects are represented using the same data structure (LBL *),
+// so the functions have explicit names depending on what they handle.
 
 
+extern LBL *LBLAlloc(Matrix *Lat, Polyhedron *Poly);
+extern void LBLFree(LBL *Head);
+extern void LBLPrint(FILE *fp, const char *format, LBL *A);
+extern LBL *LBLCopy(LBL *Head);
 extern LBL *EmptyLBL(int dimension);
 extern Bool isEmptyLBL(LBL *Zpol);
-extern LBL *LBLDifference(LBL *A, LBL *B);
-extern LBL *LBLImage(LBL *A, Matrix *Func);
+extern LBL *LBLUnion(LBL *A, LBL *B);
 extern Bool LBLIncludes(LBL *A, LBL *B);
 extern LBL *LBLIntersection(LBL *A, LBL *B);
+extern LBL *LBLDifference(LBL *A, LBL *B);
+extern LBL *LBLImage(LBL *A, Matrix *Func);
 extern LBL *LBLPreimage(LBL *A, Matrix *Func);
-extern void LBLPrint(FILE *fp, const char *format, LBL *A);
-extern LBL *LBLUnion(LBL *A, LBL *B);
-extern LBL *LBLCopy(LBL *Head);
-extern void LBLFree(LBL *Head);
-extern LBL *LBLAlloc(Lattice *Lat, Polyhedron *Poly);
 extern void CanonicalLBL(LBL* A);
 
 // removed:
 // extern LBL *LBLSimplify(LBL *ZDom);
-// extern LBL *SplitLBL(LBL *ZPol, Lattice *B);
-// extern LBL *IntegraliseLattice(LBL *A);
+// extern LBL *SplitLBL(LBL *ZPol, Matrix *B);
+// extern LBL *IntegraliseMatrix(LBL *A);
 
 #if defined(__cplusplus)
 }

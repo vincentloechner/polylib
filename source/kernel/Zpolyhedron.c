@@ -8,6 +8,8 @@
 //
 // - an LBL is a chained list of single LBLs (with possibly multiple
 //   lattices using the ->next structure element).
+//
+// See Zpolyhedron.h for more information
 
 
 // debug this file:
@@ -27,7 +29,7 @@ static LBL *sLBL_Image(LBL *, Matrix *);
 static LBL *sLBL_Preimage(LBL *, Matrix *);
 static void sLBL_Print(FILE *fp, const char *format, LBL *A);
 static void sLBL_Canonical(LBL* A);
-static LBL *FindLatticePred(Lattice *L, LBL *A);
+static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL* A, LBL* B);
 // static Bool LBLIncludes(LBL *A, LBL *B);
 static int count_zeroCols (Matrix* M);
@@ -56,12 +58,12 @@ Bool isEmptyLBL(LBL *A)
 
 
 /*
- * Given a Matrix 'Lat' and a Domain 'Domain', allocate space and return
+ * Given a matrix 'Lat' and a domain 'Domain', allocate space and return
  * the LBL corresponding to the image of the integer points of 'Poly'
  * by the affine function 'Lat', in canonical form (HNF, no equalities in
  * Domain).
  */
-LBL *LBLAlloc(Lattice *Lat, Polyhedron *Domain)
+LBL *LBLAlloc(Matrix *Lat, Polyhedron *Domain)
 {
   LBL *A;
 
@@ -123,10 +125,7 @@ void LBLFree(LBL *L)
  */
 static LBL *sLBL_Copy(LBL *A)
 {
-  LBL *Zpol;
-
-  Zpol = LBLAlloc(A->Lat, A->P);
-  return Zpol;
+  return (LBLAlloc(A->Lat, A->P));
 } /* sLBL_Copy */
 
 
@@ -388,7 +387,7 @@ LBL *LBLPreimage(LBL *A, Matrix *Func) {
 static LBL *sLBL_Intersection(LBL *A, LBL *B) {
 
   LBL *Result = NULL;
-  Lattice *LInter;
+  Matrix *LInter;
   Polyhedron *PInter, *ImageA, *ImageB, *PreImage;
 
   LInter = LatticeIntersection(A->Lat, B->Lat);
@@ -713,7 +712,7 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
 // LBL *IntegraliseLattice(LBL *A) {
 
 //   LBL *Result;
-//   Lattice *M = NULL, *Id;
+//   Matrix *M = NULL, *Id;
 //   Polyhedron *Im = NULL, *Preim = NULL;
 
 // #ifdef DOMDEBUG
@@ -780,18 +779,18 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
 //       if (flag == True) {
 //         LatticeUnion *temp;
 
-//         temp = (LatticeUnion *)malloc(sizeof(LatticeUnion));
-//         temp->M = (Lattice *)Matrix_Copy((Matrix *)Ztmp->Lat);
+//         temp = malloc(sizeof(LatticeUnion));
+//         temp->M = Matrix_Copy(Ztmp->Lat);
 //         temp->next = Curr->LatUni;
 //         Curr->LatUni = temp;
 //         break;
 //       }
 //     }
 //     if (Curr == NULL) {
-//       Curr = (ForSimplify *)malloc(sizeof(ForSimplify));
+//       Curr = malloc(sizeof(ForSimplify));
 //       Curr->Pol = Domain_Copy(Img);
-//       Curr->LatUni = (LatticeUnion *)malloc(sizeof(LatticeUnion));
-//       Curr->LatUni->M = (Lattice *)Matrix_Copy((Matrix *)Ztmp->Lat);
+//       Curr->LatUni = malloc(sizeof(LatticeUnion));
+//       Curr->LatUni->M = Matrix_Copy(Ztmp->Lat);
 //       Curr->LatUni->next = NULL;
 //       Curr->next = Head;
 //       Head = Curr;
@@ -832,7 +831,7 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
 //  *
 // */
 
-// LBL *SplitLBL(LBL *ZPol, Lattice *B) {
+// LBL *SplitLBL(LBL *ZPol, Matrix *B) {
 
 //   Matrix *H, *U1, *X, *Y;
 //   LBL *zpnew, *Result;
@@ -1287,7 +1286,7 @@ void CanonicalLBL(LBL *A) {
  * Returns the address of the ***previous*** LBL (such that ZZ->next->Lat == L),
  * NULL if not found
  */
-static LBL *FindLatticePred(Lattice *L, LBL *A) {
+static LBL *FindLatticePred(Matrix *L, LBL *A) {
   LBL* tmp;
 
   for(tmp = A; tmp->next; tmp=tmp->next) {
