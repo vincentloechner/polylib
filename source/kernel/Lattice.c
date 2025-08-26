@@ -647,8 +647,8 @@ static int value_prime_factors(Value n, Vector **result) {
 
 
 /*
- * Generate all variants of the line 'line_nb' in lattice matrix A
- * - add all variants not intersecting Intersection to the result
+ * Generate all variants of the pivot on line 'line_nb' in lattice matrix A
+ * - add all variants not intersecting Intersection to Result
  * - replace the corresponding line of the rest by the intersection
  * - replace the corresponding column of the rest by the intersection
 *
@@ -660,9 +660,11 @@ static int value_prime_factors(Value n, Vector **result) {
  *    *..* p 0..0 c+3pA; ...
  *   (optimized: p is decomposed in prime factors)
  *
- * Adjust the lines below (that depend on p)
+ * Adjust the lines below (that need to be updated since p changes):
+ *   - coefficients below the pivot p
+ *   - constants for the non-zero coefficients
  *
- * Add all newly generated lattices (with the new lines) to Result.
+ * Add all newly generated lattices to Result, and return the new Result.
  */
 static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_columns,
             Lattice *A, Lattice *Intersection, Lattice *rest, LatticeUnion *Result)
@@ -703,24 +705,20 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
   // if the "pivot" is 15, will take out the right p%3==0/1/2 and p%5==0/1/2/3/4
   // only one case p%15=c (the intersection) will not enter these (combination of) cases :)
   // can be empty, if p=1 then size=0 and the whole loop is skipped.
-  // if a prime factor appears multiple times, multiply it: (2,2,2) -> (2,4,8)
-  num_factors = value_prime_factors(ratio, &prime_factors);  // prime factors of pivot (ratio).
+  // if a prime factor appears multiple times, multiply-accumulate: (2,2,2) -> (2,4,8)
+  num_factors = value_prime_factors(ratio, &prime_factors);  // prime factors of pivot ratio.
 
+  // scan the prime factors: prime_factors->p[p].
   for(int p = 0; p < num_factors; p++) {
-    // consider the prime factor: prime_factors->p[p]
-
     // if the previous prime factor is the same:
-    // example with 2:
-    // get the cases p%4==0/1 and 2/3 after we took out i%2=0 or 1 in the previous step
-    // next step get p%8==0+hit or 4+hit (hit is a potential intersection hit constant)
-
     // example with: 3*3*3
-    // step 0: m=3, it=1 (init=0):
-    // 3i + 0/1/2 -> if 3i+1 is the intersection, take out 3i+0 and 3i+2 (add to result).
-    // Next step will not consider 3 * this (so 9i+0/3/6 and 9i+2/5/8), and just scan this:
-    // step 1: m=9, it=3, (init=1):
+    // - step 0: m=3, it=1 (init=0):
+    // 3i + 0/1/2 -> if 3i+1 is the intersection, take out 3i+0 and 3i+2
+    // (add to result).
+    // Next step will not consider 3 * these (so 9i+0/3/6 and 9i+2/5/8).
+    // - step 1: m=9, it=3, (init=1):
     // 9i + 1/4/7 -> if 9i+7 is the intersection, take out 9i+1 and 9i+4
-    // step 2: m=27, it=9, (init=7):
+    // - step 2: m=27, it=9, (init=7):
     // 27i+ 7/16/25
 
     // general case:
@@ -728,14 +726,12 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
     //    * iterator step = previous multiplier
     //    * multiply = prime factor * previous multiplier
     //   else (new multiplier):
-    //    * iteration step = 1 (* A initial pivot)
-    //    * multiply = prime factor (* A initial pivot)
-    //      (A initial pivot always divides the pivot of the intersection)
-    // - init loop value = intersection constant % iterator step
-
-    // check if same prime factor as before
+    //    * iteration step = 1 (* initial pivot of A)
+    //    * multiply = prime factor (* initial pivot of A)
+    //      (initial pivot of A always divides the pivot of the intersection)
     if(p>0 && value_eq(prime_factors->p[p-1], prime_factors->p[p])) {
       value_assign(step, multiply);
+                  // step = multiply (from previous iteration)
       value_multiply(multiply, multiply, prime_factors->p[p]);
                   // multiply = multiply*prime_factors->p[p];
     }
@@ -752,7 +748,8 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
     #endif
 
     // Iterate on each possible 'modulo':
-    // from a possible intersection value, to 'multiply', with 'step'
+    // from a possible intersection value, to 'multiply', with step 'step'
+    // -> init loop value = intersection constant % iterator step
     for(value_modulus(modulo, Intersection->p[line_nb][Intersection->NbColumns-1], step);
         value_lt(modulo, multiply);
         value_addto(modulo, modulo, step)) {
@@ -767,55 +764,52 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
       value_modulus(tmp, Intersection->p[line_nb][Intersection->NbColumns-1], multiply);
       if(value_eq(tmp, modulo)) {
         // no need to do anything there, this modulo hits the intersection
-        // and will be considered at next loop iteration or in the rest :)
+        // and will be considered in the rest :)
         #ifdef LATDIF_DEBUG
           fprintf(stderr, " -> part of the intersection, ignoring\n");
         #endif
       }
       else {
+        LatticeUnion *newResult;
         // this line does not hit the intersection, add it to the result.
         #ifdef LATDIF_DEBUG
           fprintf(stderr, " -> add it to result\n");
         #endif
 
-        LatticeUnion *newResult = LatticeUnion_Alloc();
         Matrix *newLat = Matrix_Copy(rest); // get a copy of rest
-
-        // link newResult to Result,
-        newResult->M = NULL;
-        newResult->next = Result;
-        Result = newResult;
-
-        // then update current line
-        // new pivot:
+        // and update current line. New pivot:
         value_assign(newLat->p[line_nb][pivot_col], multiply);
-        // new constant:
+        // New constant:
         value_assign(newLat->p[line_nb][newLat->NbColumns-1], modulo);
 
-        // adjust the rows below because they change depending on the changed pivot&constant above:
-        // if a coefficient below the pivot is not zero, multiply the coefficient by ratio
-        // recompute the constant accordingly (adding (modulo/step))
+        // adjust the rows below: they change depending on the changed pivot
+        // and constant: if a coefficient below the pivot is not zero, set
+        // it to the intersection coef., and recompute the constant
+        // accordingly (adding (modulo/step))
         for(int ll = line_nb+1; ll < A->NbRows; ll++) {
           if(value_notzero_p(newLat->p[ll][pivot_col])) {
-
-            // new coefficient: set it to the coef of the intersection
+            // new coefficient: set it to the one of the intersection
             value_assign(newLat->p[ll][pivot_col], Intersection->p[ll][pivot_col]);
-
-            // new constant
-            value_division(tmp, modulo, step); // iteration number 0/1/2/3/... one of them is the intersection
-            value_multiply(tmp, tmp, A->p[ll][pivot_col]); // multiplied by old value below pivot
-            value_addto(newLat->p[ll][newLat->NbColumns-1],
-                        newLat->p[ll][newLat->NbColumns-1], tmp);
+            // adjust constant:
+            value_division(tmp, modulo, step); // iteration number 0/1/2/...
+            value_addmul(newLat->p[ll][newLat->NbColumns-1],
+                         tmp, A->p[ll][pivot_col]); // multiplied by pivot A
           }
         }
-        // tranforms the new lattice back to HNF and store it into Result
+
+        // link newResult to Result
+        newResult = LatticeUnion_Alloc();
+        newResult->M = NULL; // set by Hermite
+        newResult->next = Result;
+        Result = newResult;
+        // transforms the new lattice to HNF and store it into Result
         AffineHermite(newLat, &Result->M, NULL);
         Matrix_Free(newLat);
       }
     }
   }
 
-  // adjust the column below the pivot: take it from the intersection
+  // adjust the column below the pivot in rest (from the intersection)
   for(int ll = line_nb+1; ll < A->NbRows; ll++) {
     value_assign(rest->p[ll][pivot_col], Intersection->p[ll][pivot_col]);
   }
@@ -828,5 +822,6 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
   value_clear(modulo);
   value_clear(multiply);
   value_clear(step);
+
   return (Result);
 } /* generate_lattice_union_line */
