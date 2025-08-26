@@ -1,11 +1,9 @@
 #
 # $Id: Makefile.am,v 1.8 2005/10/20 11:35:25 verdoolaege Exp $
+# Modified: Vincent Loechner, 2025
 #
 
-OBJ_DIR = $(top_builddir)
-
-
-EHRHART_BASE =  \
+EHRHART_32 =  \
 	0D.in \
 	0D2.in \
 	8hedron.in \
@@ -45,48 +43,26 @@ EHRHART_BASE =  \
 	t4.in\
 	tpar.in
 
-EHRHART_EXTRA=bart8.in isnm2.in e16.in esum.in t12.in
+# those extra tests need 64 bits or GMP precision
+EHRHART_ALL = \
+	$(EHRHART_32) \
+	bart8.in \
+	isnm2.in \
+	e16.in \
+	esum.in \
+	t12.in
 
-EHRHART=$(EHRHART_BASE) $(EHRHART_EXTRA)
+EXTRA_DIST = $(EHRHART_ALL)
 
-EXTRA_DIST = $(EHRHART)
+TEST_EXE = $(top_builddir)/testehrhart
+TEST_FILES = `if test $(TEST_BITS) = 32 ; then echo $(EHRHART_32) ; else echo $(EHRHART_ALL) ; fi `
 
-# not using %.in GNU extension
-dist-hook:
-	for pl_file in $(EHRHART) ; do test -f $(distdir)/`basename $$pl_file .in`.out || cp -p $(srcdir)/`basename $$pl_file .in`.out $(distdir) ; done
-
-# not using filter-out gnu extension
-EHRHART_TESTS = `if test $(TEST_BITS) = 32 ; then echo $(EHRHART_BASE) ; else echo $(EHRHART) ; fi `
-
-tests:
-	@failedtest=0; \
-	failedtestnames=""; \
-	for x in $(EHRHART_TESTS) ; do \
-		file=`basename $$x .in`; \
-		printf "Verify file $$file... " ; \
-		$(OBJ_DIR)/testehrhart$(TEST_BITS) < $(srcdir)/$$x > xyz; \
-		diff -w xyz $(srcdir)/$$file.out ; \
-		result=$$?; \
-		if [ "$$result" -eq "0" ]; then \
-			printf "passed\n"; \
-		else \
-			printf "\033[31mError: $$file.out is not the same\033[0m\n"; \
-			failedtest=`expr $$failedtest + 1`; \
-			failedtestnames="$$failedtestnames:$$file"; \
-	    fi; \
-	done ; \
-	if [ $$failedtest != 0 ]; then \
-		echo "\033[31m$$failedtest tests failed\033[0m"; \
-		echo "These tests failed: $$failedtestnames:"; \
-		exit 1; \
-	else \
-		echo "Test Ehrhart works correctly"; \
-	fi
+include ../Tests.mk
 
 
+# Extra in Ehrhart: check the correctness of some initial polynomials
 longtest:
-	@for x in $(EHRHART_TESTS) ; do \
+	@for x in $(TEST_FILES) ; do \
 		echo "Verify Ehrhart for $$x"; \
-		$(OBJ_DIR)/verif_ehrhart$(TEST_BITS) < $(srcdir)/$$x ;\
+		$(top_builddir)/verif_ehrhart$(TEST_BITS) < $(srcdir)/$$x ;\
 	done ;
-CLEANFILES=xyz

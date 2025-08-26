@@ -1,10 +1,10 @@
 #
 # $Id: Makefile.am,v 1.2 2005/10/20 11:35:25 verdoolaege Exp $
+# Modified: Vincent Loechner, 2025
 #
 
-OBJ_DIR = $(top_builddir)
-
-ZPOLYTESTS =  \
+TEST_EXE = $(top_builddir)/Zpolytest
+TEST_FILES =  \
 	LatDiff1.in \
 	LatDiff2.in \
 	LatDiff3.in \
@@ -49,33 +49,4 @@ ZPOLYTESTS =  \
 	ZImPre2.in \
 	ZImPre3.in
 
-EXTRA_DIST = $(ZPOLYTESTS) \
-	$(ZPOLYTESTS:%.in=%.out) 
-
-
-tests:
-	@failedtest=0; \
-	failedtestnames=""; \
-	for x in $(ZPOLYTESTS) ; do \
-		file=`basename $$x .in`; \
-		printf "Verify file $$file... " ; \
-		$(OBJ_DIR)/Zpolytest$(TEST_BITS) < $(srcdir)/$$x > xyz; \
-		diff -w xyz $(srcdir)/$$file.out ; \
-		result=$$?; \
-		if [ "$$result" -eq "0" ]; then \
-			printf "passed\n"; \
-		else \
-			printf "\033[31mError: $$file.out is not the same\033[0m\n"; \
-			failedtest=`expr $$failedtest + 1`; \
-			failedtestnames="$$failedtestnames:$$file"; \
-	    fi; \
-	done ; \
-	if [ $$failedtest != 0 ]; then \
-		echo "\033[31m$$failedtest tests failed\033[0m"; \
-		echo "These tests failed: $$failedtestnames:"; \
-		exit 1; \
-	else \
-		echo "Test Zpolytest works correctly"; \
-	fi
-
-CLEANFILES=xyz
+include ../Tests.mk
