@@ -205,7 +205,7 @@ tests: all
 	(cd Test; $(MAKE) tests)
 
 longtest: all
-	(cd Test; $(MAKE) long_tests)
+	(cd Test; $(MAKE) longtest)
 
 # Make the 'javadoc' style documentation
 document:

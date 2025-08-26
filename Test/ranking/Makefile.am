@@ -12,21 +12,28 @@ EXTRA_DIST = $(RANKING) \
 
 tests:
 	@failedtest=0; \
+	failedtestnames=""; \
 	for x in $(RANKING) ; do \
-		echo "Verify file $$x" ; \
-		$(OBJ_DIR)/ehrhart_ranking$(TEST_BITS) < $(srcdir)/$$x >xyz; \
-		diff -w xyz $(srcdir)/`basename $$x .in`.out ; \
+		file=`basename $$x .in`; \
+		printf "Verify file $$file... " ; \
+		$(OBJ_DIR)/ehrhart_ranking$(TEST_BITS) < $(srcdir)/$$x > xyz; \
+		diff -w xyz $(srcdir)/$$file.out ; \
 		result=$$?; \
-		if [ "$$result" -eq "1" ]; then \
-			echo "Error: $$x is not the same"; \
-			failedtest=`expr $$failedtest + 1`; \
+		if [ "$$result" -eq "0" ]; then \
+			printf "passed\n"; \
 		else \
-			echo "$$x passed"; \
-	        fi; \
+			printf "\033[31mError: $$file.out is not the same\033[0m\n"; \
+			failedtest=`expr $$failedtest + 1`; \
+			failedtestnames="$$failedtestnames:$$file"; \
+	    fi; \
 	done ; \
-        if [ $$failedtest != 0 ]; then \
-		echo "$$failedtest tests failed"; \
+	if [ $$failedtest != 0 ]; then \
+		echo "\033[31m$$failedtest tests failed\033[0m"; \
+		echo "These tests failed: $$failedtestnames:"; \
+		exit 1; \
 	else \
-	        echo "Test ehrhart_ranking works correctly"; \
-        fi
+		echo "Test ehrhart_ranking works correctly"; \
+	fi
+
+
 CLEANFILES=xyz

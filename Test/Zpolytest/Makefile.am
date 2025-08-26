@@ -52,30 +52,30 @@ ZPOLYTESTS =  \
 EXTRA_DIST = $(ZPOLYTESTS) \
 	$(ZPOLYTESTS:%.in=%.out) 
 
-TEST=$(ZPOLYTESTS:%.in=%.tested) 
 
 tests:
 	@failedtest=0; \
 	failedtestnames=""; \
 	for x in $(ZPOLYTESTS) ; do \
 		file=`basename $$x .in`; \
-		/bin/echo -n "Verify file $$file... " ; \
+		printf "Verify file $$file... " ; \
 		$(OBJ_DIR)/Zpolytest$(TEST_BITS) < $(srcdir)/$$x > xyz; \
 		diff -w xyz $(srcdir)/$$file.out ; \
 		result=$$?; \
 		if [ "$$result" -eq "0" ]; then \
-			/bin/echo "$$out passed"; \
+			printf "passed\n"; \
 		else \
-			/bin/echo "Error: $$file.out is not the same"; \
+			printf "\033[31mError: $$file.out is not the same\033[0m\n"; \
 			failedtest=`expr $$failedtest + 1`; \
 			failedtestnames="$$failedtestnames:$$file"; \
 	    fi; \
 	done ; \
 	if [ $$failedtest != 0 ]; then \
-		/bin/echo "$$failedtest tests failed"; \
-		/bin/echo "These tests failed: $$failedtestnames:"; \
+		echo "\033[31m$$failedtest tests failed\033[0m"; \
+		echo "These tests failed: $$failedtestnames:"; \
+		exit 1; \
 	else \
-		/bin/echo "Test Zpolytest works correctly"; \
+		echo "Test Zpolytest works correctly"; \
 	fi
 
 CLEANFILES=xyz

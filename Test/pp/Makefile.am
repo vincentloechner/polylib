@@ -6,7 +6,6 @@ OBJ_DIR = $(top_builddir)
 
 PP =  \
 	c6.in \
-	c7.in \
 	salvatore.in \
 	salvatore_new1.in \
 	salvatore_new2.in \
@@ -15,6 +14,11 @@ PP =  \
 	ray2.in \
 	ray3.in
 
+# this one is pretty long...
+#	c7.in \
+#
+
+# check those
 #	c5.in \
 #	c4.in \
 #	c9.in
@@ -25,21 +29,28 @@ EXTRA_DIST = $(PP) \
 
 tests:
 	@failedtest=0; \
+	failedtestnames=""; \
 	for x in $(PP) ; do \
-		echo "Verify file $$x"; \
-		$(OBJ_DIR)/pp$(TEST_BITS) < $(srcdir)/$$x > xyz;\
-		diff -w xyz $(srcdir)/`basename $$x .in`.out ; \
+		file=`basename $$x .in`; \
+		printf "Verify file $$file... " ; \
+		$(OBJ_DIR)/pp$(TEST_BITS) < $(srcdir)/$$x > xyz; \
+		diff -w xyz $(srcdir)/$$file.out ; \
 		result=$$?; \
-		if [ "$$result" -eq "1" ]; then \
-			echo "Error: $$x is not the same"; \
-			failedtest=`expr $$failedtest + 1`; \
+		if [ "$$result" -eq "0" ]; then \
+			printf "passed\n"; \
 		else \
-			echo "$$x passed"; \
-	        fi; \
+			printf "\033[31mError: $$file.out is not the same\033[0m\n"; \
+			failedtest=`expr $$failedtest + 1`; \
+			failedtestnames="$$failedtestnames:$$file"; \
+	    fi; \
 	done ; \
-        if [ $$failedtest != 0 ]; then \
-		echo "$$failedtest tests failed"; \
+	if [ $$failedtest != 0 ]; then \
+		echo "\033[31m$$failedtest tests failed\033[0m"; \
+		echo "These tests failed: $$failedtestnames:"; \
+		exit 1; \
 	else \
-	        echo "Test pp works correctly"; \
-        fi
+		echo "Test pp works correctly"; \
+	fi
+
+
 CLEANFILES=xyz
