@@ -6,9 +6,6 @@ extern "C" {
 #endif
 
 extern void AffineHermite(Matrix *A, Matrix **H, Matrix **U);
-// extern void AffineSmith(Matrix *A, Matrix **U, Matrix **V, Matrix **Diag);
-// extern LatticeUnion *LatticeSimplify(LatticeUnion *latlist);
-extern int intcompare(const void *a, const void *b);
 extern Bool isEmptyLattice(Matrix *A);
 extern LatticeUnion *LatticeDifference(Matrix *A, Matrix *B);
 extern Bool LatticeIncludes(Matrix *A, Matrix *B);
@@ -19,7 +16,13 @@ extern void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head);
 extern Bool sameLattice(Matrix *A, Matrix *B);
 extern void Matrix_Move_Homogeneous_Dim_First(Matrix *A);
 extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
+extern Bool isNormalLattice(Matrix *A);
 extern Vector* get_pivots(Matrix* A);
+
+// removed:
+// extern void AffineSmith(Matrix *A, Matrix **U, Matrix **V, Matrix **Diag);
+// extern LatticeUnion *LatticeSimplify(LatticeUnion *latlist);
+
 #if defined(__cplusplus)
 }
 #endif

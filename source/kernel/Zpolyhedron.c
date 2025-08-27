@@ -1,15 +1,17 @@
 #include <polylib/polylib.h>
 #include <stdlib.h>
 
-// DEFINITIONS USED IN ALL COMMENTS BELOW:
+// DEFINITIONS USED BELOW:
 //
-// - a single LBL is a single lattice associated to a polyhedral domain
-//   (a polyhedral domain can be a union of polyhedra)
+// - a single LBL (sLBL function prefix) is a single lattice associated to
+//   a polyhedral domain - can be a union of polyhedra
 //
-// - an LBL is a chained list of single LBLs (with possibly multiple
-//   lattices using the ->next structure element).
+// - an LBL is a chained list of single LBLs, with possibly multiple
+//   different lattices using the ->next structure element.
 //
-// See Zpolyhedron.h for more information
+// They use the same type (LBL *), but next is not used in the first case.
+//
+// See the header of Zpolyhedron.h for more information
 
 
 // debug this file:
@@ -18,7 +20,7 @@
   #define LAT_TEST 1
   #define CANONICAL_DEBUG 1
   #define INTERSECTION_DEBUG 1
-  #define DIFF_DEBUG 1
+  #define DIFFERENCE_DEBUG 1
 #endif
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
@@ -31,7 +33,6 @@ static void sLBL_Print(FILE *fp, const char *format, LBL *A);
 static void sLBL_Canonical(LBL* A);
 static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL* A, LBL* B);
-// static Bool LBLIncludes(LBL *A, LBL *B);
 static int count_zeroCols (Matrix* M);
 
 // typedef struct forsimplify {
@@ -480,7 +481,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   Binter = LBLIntersection(A, B); // reused below
   if(isEmptyLBL(Binter)) {
     // if B does not intersect A, return A.
-    #ifdef DIFF_DEBUG
+    #ifdef DIFFERENCE_DEBUG
       fprintf(stderr, "Binter=(A inter B) is empty, so B does not intersect A, we return A\n");
     #endif
     LBLFree(Binter);
@@ -499,7 +500,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
   ImDiff = DomainDifference(imA, imB, MAXNOOFRAYS);
-  #ifdef DIFF_DEBUG
+  #ifdef DIFFERENCE_DEBUG
     fprintf(stderr, "ImDiff (hull of A that does not cover B) = ");
     Polyhedron_Print(stderr, P_VALUE_FMT, ImDiff);
   #endif
@@ -510,7 +511,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
     RedPolyDiff = DomainPreimage(ImDiff, A->Lat, MAXNOOFRAYS);
     // NOTICE: this is an over-approximation of A
     Result = LBLAlloc(A->Lat, RedPolyDiff);
-    #ifdef DIFF_DEBUG
+    #ifdef DIFFERENCE_DEBUG
       fprintf(stderr, "Adding this to the temporary result: ");
       LBLPrint(stderr, P_VALUE_FMT, Result);
     #endif
@@ -519,7 +520,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
 
   // compute the images intersection of A and B
   ImInter = DomainIntersection(imA, imB, MAXNOOFRAYS);
-  #ifdef DIFF_DEBUG
+  #ifdef DIFFERENCE_DEBUG
     fprintf(stderr, "ImInter (hull of A inter B) = ");
     Polyhedron_Print(stderr, P_VALUE_FMT, ImInter);
   #endif
@@ -537,7 +538,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   Domain_Free(imB);
 
   // now Ainter and Binter have same lattices and polyhedra dimensions
-  #ifdef DIFF_DEBUG
+  #ifdef DIFFERENCE_DEBUG
     fprintf(stderr, "-- [STEP1] now we compute the intersection on same lattice dimensions\n");
     fprintf(stderr, "Ainter = ");
     LBLPrint(stderr, P_VALUE_FMT, Ainter);
@@ -547,7 +548,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
 
   // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of same dimensions
   LatDiff = LatticeDifference(Ainter->Lat, Binter->Lat); 
-  #ifdef DIFF_DEBUG
+  #ifdef DIFFERENCE_DEBUG
     if(!LatDiff)
       fprintf(stderr, "Empty Lattice difference\n");
   #endif
@@ -556,7 +557,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   // Add all Z-polyhedra applying the (list of) lattice difference on ImInter
   for(LatticeUnion *tmp = LatDiff; tmp; tmp = tmp->next) {
     LBL *Ztmp;
-    #ifdef DIFF_DEBUG
+    #ifdef DIFFERENCE_DEBUG
       fprintf(stderr, "Considering Lat diff: ");
       Matrix_Print(stderr, P_VALUE_FMT, tmp->M);
     #endif
@@ -580,13 +581,13 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   LBLFree(Binter);
 
   if(!Result) {
-    #ifdef DIFF_DEBUG
+    #ifdef DIFFERENCE_DEBUG
       fprintf(stderr, "-- result = (NULL)\n");
     #endif
     return(NULL);
   }
 
-  #ifdef DIFF_DEBUG
+  #ifdef DIFFERENCE_DEBUG
     fprintf(stderr, "-- temporary over-approximation of result = ");
     LBLPrint(stderr, P_VALUE_FMT, Result);
   #endif
@@ -944,7 +945,7 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
 } /* same_equalities */
 
 /*
- * Remove the equalities from A->P in the single LBL A.
+ * Try to remove the equalities from A->P in the single LBL A.
  * In place. A->P is a domain.
  */
 static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
@@ -1128,34 +1129,33 @@ static void sLBL_Lat_Remove_Zeros(LBL *A)
  */
 static void sLBL_Canonical(LBL* A)
 {
-    #ifdef CANONICAL_DEBUG
-  fprintf(stderr, "Entering sLBL_Canonical\n");
-  fprintf(stderr, "--------- Input Lat: ");
-  Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
-  fprintf(stderr, "--------- Input P: ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "Entering sLBL_Canonical\n");
+    fprintf(stderr, "--------- Input Lat: ");
+    Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+    fprintf(stderr, "--------- Input P: ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
   #endif
   
   if (A->P->Dimension+1 != A->Lat->NbColumns) {
-    errormsg1("Polyhedron_Image", "dimincomp", "incompatible dimensions");
+    errormsg1("sLBL_Canonical", "dimincomp", "incompatible dimensions");
     return;
   }
 
-  // if the polyhedron is empty
+  // if A is empty
   if(emptyQ(A->P)) {
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "The polyhedron is empty\n");
     #endif
 
     if(A->next) {
+      // if there is something else after an empty ZP, need to replace the
+      // current ZP with the next ZP: replace A with next and free A->next
+      LBL *remove = A->next;
+
       #ifdef CANONICAL_DEBUG
         fprintf(stderr, "... But the next one is not\n");
       #endif
-      // if there is something else after an empty ZP, need to replace the
-      // current ZP with the next ZP.
-      // Replace A with next and free A->next
-      LBL *remove;
-      remove = A->next;
       Domain_Free(A->P);
       Matrix_Free(A->Lat);
       A->P = remove->P;
@@ -1189,26 +1189,31 @@ static void sLBL_Canonical(LBL* A)
       LBLPrint(stderr, P_VALUE_FMT, A);
     #endif
     return;
-  }
+  }  // end if A is empty
 
-  // A->next will be treated separately by the callee
 
-  // change P such that all polyhedra in this list have the same set of equalities,
-  // that is, the equalities of the first one.
-  // all the other ones are added to a new LBL, linked to LBL A in A->next
+  // change P such that all polyhedra in this domain have the same set of
+  // equalities, that is, the equalities of the first one.
+  // all the other ones are added to a new LBL, linked to LBL A (in A->next)
+  // A->next will be treated at next step by the caller
   #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Checking for equalites in P\n");
   #endif
   LBL *new = NULL;
   Matrix * Equalities = get_equalities(A->P); // get eq from the first one
-  Polyhedron *nextpp, *prevpp = A->P;
+  Polyhedron *nextpp, *prevpp = A->P; // keep a ref to the previous to relink
 
   for(Polyhedron *pp = A->P->next; pp; prevpp = pp, pp = nextpp) {
-    // check that the equalities of pp->Constraints are the same as the ones of matrix Equalities.
+    // check that the equalities of pp->Constraints are the same as the ones
+    // of matrix Equalities.
     if(!same_equalities(Equalities, pp)) {
-      // here, get pp out.
+      // if not, get pp out.
       if(!new) {
         new = malloc(sizeof(*new));
+        if (!new) {
+          errormsg1("sLBL_Canonical", "outofmem", "Out of Memory");
+          return;
+        }
         new->P = NULL;
         new->Lat = Matrix_Copy(A->Lat);
       }
@@ -1227,7 +1232,9 @@ static void sLBL_Canonical(LBL* A)
     new->next = A->next;
     A->next = new;
   }
-    // Now we can safely remove all equalities from A->P
+  // Now all polyhedra of domain A->P have the same equalities
+
+  // We can try to remove some equalities from A->P
   sLBL_Remove_Equalities(A, Equalities);
   Matrix_Free(Equalities);
 
@@ -1235,7 +1242,7 @@ static void sLBL_Canonical(LBL* A)
   sLBL_Lat_Normalize(A);
 
   // Remove the columns of zeros from A->Lat
-  sLBL_Lat_Remove_Zeros(A);
+  // sLBL_Lat_Remove_Zeros(A);
 
   return;
 } /* sLBL_Canonical */

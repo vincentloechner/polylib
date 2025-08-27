@@ -16,8 +16,8 @@ tests:
 	    fi; \
 	done ; \
 	if [ $$failedtest != 0 ]; then \
-		echo "\033[31m$$failedtest tests failed\033[0m"; \
-		echo "These tests failed: $$failedtestnames:"; \
+		printf "\033[31m** $$failedtest tests failed **\033[0m  "; \
+		echo "$$failedtestnames:"; \
 		exit 1; \
 	fi
 

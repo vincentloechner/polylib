@@ -131,6 +131,71 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A)
 
 
 /*
+ * Check if the matrix 'A' is in affine Hermite normal form.
+ */
+Bool isNormalLattice(Matrix *A)
+{
+  // check if:
+  // - first element of column (= pivot) greater than zero
+  // - all elements left of pivot lower than pivot.
+  //
+  // Do this on the homogeneous lattice (last line/column is first)
+  // 
+  // Example:
+  //    1 0 0 0
+  //    * 0 0 0
+  //    < + 0 0
+  //    < < + 0
+  //    * * * 0
+  // all < of a line are lower than the + (pivot) of this line
+  // * is anything.
+  // a column of zero is valid on the right of L.
+
+  int previous_nnl = -1;
+
+  if(value_notone_p(A->p[A->NbRows-1][A->NbColumns-1])) {
+    // the bottom right value should be 1.
+    return (False);
+  }
+
+  // Matrix_Move_Homogeneous_Dim_First(A);
+  for (int j = 0; j < A->NbColumns - 1; j++) {
+    // consider column j
+
+    int nnl; // position of the pivot (non-null line)
+
+    // find the line number of the first non-null element
+    for(nnl = 1; nnl<A->NbRows; nnl++) {
+      if(value_notzero_p(A->p[nnl][j]))
+        break;
+    }
+
+    if(nnl == A->NbRows) {
+      // column of zeros, continue.
+      previous_nnl = nnl;
+      continue;
+    }
+    if(nnl <= previous_nnl) {
+      // there is a non-zero value higher than expected
+      return(False);
+    }
+    previous_nnl = nnl;
+
+    // check that the values left of pivot are lower than pivot
+    for(int i = 0; i < j; i++) {
+      if (value_ge(A->p[nnl][i], A->p[nnl][j])) {
+        return False;
+      }
+    }
+    // check that the constant (should be left of pivot) is lower
+    if (value_ge(A->p[nnl][A->NbColumns-1], A->p[nnl][j])) {
+      return False;
+    }
+  }
+  return True;
+} /* isNormalLattice */
+
+/*
  * Return the affine Hermite normal form of the affine lattice 'A'. The
  * affine Hermite form if a lattice is stored in 'H' and the unimodular
  * matrix corresponding to A = H U is stored in the matrix 'U' (if not NULL)

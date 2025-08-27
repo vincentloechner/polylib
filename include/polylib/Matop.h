@@ -13,7 +13,6 @@ extern void ExchangeColumns(Matrix *M, int Column1, int Column2);
 extern void ExchangeRows(Matrix *M, int Row1, int Row2);
 // extern int findHermiteBasis(Matrix *M, Matrix **Result);
 extern Matrix *Identity(unsigned size);
-extern Bool isNormalLattice(Matrix *A);
 extern Bool isIntegral(Matrix *A);
 extern Value *Lcm(Value i, Value j);
 extern Matrix *Matrix_Copy(Matrix const *Src);

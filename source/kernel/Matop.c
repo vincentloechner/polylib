@@ -133,59 +133,6 @@ Bool isIntegral(Matrix *A) {
   return True;
 } /* isIntegral */
 
-/*
- * Check if the matrix 'A' is in Hermite normal form and has no zero columns, or not.
- */
-Bool isNormalLattice(Matrix *A) {
-
-// matrix in HNF:
-// - first element of column (= pivot) greater than zero
-// - all elements left of pivot lower than pivot.
-//
-// Example:
-//    + 0 0 0
-//    * 0 0 0
-//    < + 0 0
-//    < < + 0
-//    * * * 0
-// all < of a line are lower than the +
-// * is anything.
-// a column of zero is valid by the definition of HNF, but for the sake of uniqueness,
-// we don't want to store such lattices.
-// the function return False when there is a column of zeroes.
-
-  int previous_nnl = -1;
-
-  Matrix_Move_Homogeneous_Dim_First(A);
-  for (int j = 0; j < A->NbColumns; j++) {
-    // consider column j
-    int nnl; // first non-null row number
-
-    // find the line number of the first non-null element
-    for(nnl = 0; nnl<A->NbRows; nnl++) {
-      if(value_notzero_p(A->p[nnl][j]))
-        break;
-    }
-
-    if(nnl <= previous_nnl || nnl == A->NbRows)
-    {
-      // there is a non-zero value higher than expected, or a zero column
-      Matrix_Move_Homogeneous_Dim_Last(A);
-      return(False);
-    }
-    previous_nnl = nnl;
-
-    for(int i = 0; i < j; i++) {
-      // check that the values left of pivot are lower than the pivot
-      if (value_ge(A->p[nnl][i], A->p[nnl][j])) {
-        Matrix_Move_Homogeneous_Dim_Last(A);
-        return False;
-      }
-    }
-  }
-  Matrix_Move_Homogeneous_Dim_Last(A);
-  return True;
-} /* isNormalLattice */
 
 /*
  * Remove the row 'Rownumber' and place it at the end of the matrix 'X'
@@ -359,7 +306,7 @@ Matrix *RemoveColumn(Matrix *M, int Columnnumber) {
 } /* RemoveColumn */
 
 // /*
-//  * Given a Matrix M of dimesnion n * l and rank l1, find a unimodular matrix
+//  * Given a Matrix M of dimension n * l and rank l1, find a unimodular matrix
 //  * 'Result' such that the Vector Space spanned by M is the subset of the vector
 //  * Space spanned by the first l1 Rows of Result. The function returns the rank
 //  * l1 and the Matrix Result.
