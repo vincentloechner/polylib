@@ -23,7 +23,7 @@
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
-static void sLBL_Free(LBL *Zpol);
+static void sLBL_Free(LBL *L);
 static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBL_Image(LBL *, Matrix *);
 static LBL *sLBL_Preimage(LBL *, Matrix *);
@@ -359,9 +359,9 @@ LBL *LBLPreimage(LBL *A, Matrix *Func) {
   LBL *Result = NULL;
 
   for (LBL *temp = A; temp; temp = temp->next) {
-    LBL *Zpol;
-    Zpol = sLBL_Preimage(temp, Func);
-    Result = LBL_concatenate(Zpol, Result);
+    LBL *B;
+    B = sLBL_Preimage(temp, Func);
+    Result = LBL_concatenate(B, Result);
   }
 
   if (Result == NULL)
@@ -373,15 +373,15 @@ LBL *LBLPreimage(LBL *A, Matrix *Func) {
 
 /*
  * Return the LBL intersection of the single-LBLs 'A' and 'B'.
- * The result is always a single LBL.
+ * The result is always a single LBL, NULL if empty.
  * 
- * Algo based on the intersection of the two lattices of the polyhedra, named LInter.
+ * LInter is the intersection of the two lattices of A and B.
  * If LInter is empty, we return NULL.
- * Otherwise, we calculate the intersection of the polyhedral images of A and B (PInter).
- * We calculate the Preimage of PInter by LInter and finally we allocate the result,
- * an LBL allocated in canonical form.
+ * Otherwise, we calculate PInter = intersection of the rational hulls of
+ * A and B. We calculate P = Preimage of PInter by LInter and finally we
+ * build the result LBL (Linter, P), in canonical form.
  *
- * USAGE: A and B first Lattice considered only (no chained list),
+ * USAGE: A and B's first Lattice considered only (no chained list),
  *        but can contain a polyhedral domain.
  */
 static LBL *sLBL_Intersection(LBL *A, LBL *B) {
@@ -397,11 +397,16 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
     return (NULL);
   }
 
-  // TODO: this can be an over-approximation! -> need to handle LBLs!
-  
   ImageA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   ImageB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
   PInter = DomainIntersection(ImageA, ImageB, MAXNOOFRAYS);
+  // Although PInter can be an over approximation (a rational convex hull of
+  // the resulting LBL), its preimage by LInter will constrain it to be the
+  // right LBL, including potential "holes".
+  // TODO: proof ^^
+  // this does not work when there are columns of zeros in Linter!
+  // equalities will be removed from the result :(
+  // need to build explicitly.
 
   if (emptyQ(PInter))
     Result = NULL;
@@ -427,7 +432,7 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
  *
  * USAGE: only the first lattice of B is considered
  *       (even if next is not NULL).
- * Creates a new allocated ZDomain, not necessarily in canonical form
+ * Creates a new allocated LBL, not necessarily in canonical form
  */
 static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
 {
@@ -437,7 +442,7 @@ static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
     LBL *diff;
 
     diff = sLBL_Difference(zp, B);
-    // concatenate diff and result (not canonical)
+    // simple concatenate of diff and result (not canonical)
     Result = LBL_concatenate(diff, Result);
   }
 
@@ -459,9 +464,10 @@ static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
  * Internal function, users should use LBLDifference.
  */
 
-static LBL *sLBL_Difference(LBL* A, LBL* B) {
-  LBL *Result = NULL, *Final_Result; // ZDomains
-  LBL *Ainter, *Binter; // ZPolyhedra
+static LBL *sLBL_Difference(LBL* A, LBL* B)
+{
+  LBL *Result = NULL, *Final_Result; // U. of LBLs
+  LBL *Ainter, *Binter; // single LBL
   LatticeUnion *LatDiff;
   Polyhedron *imA, *imB, *preimA, *ImDiff, *ImInter; // polyhedral domains
 
@@ -470,9 +476,8 @@ static LBL *sLBL_Difference(LBL* A, LBL* B) {
     return(NULL);
   }
 
-  // treat the simple case where the Zpolyhedra do not intersect
-  // the exact intersection Binter will be reused later
-  Binter = LBLIntersection(A, B);
+  // treat the simple case where the LBLs do not intersect
+  Binter = LBLIntersection(A, B); // reused below
   if(isEmptyLBL(Binter)) {
     // if B does not intersect A, return A.
     #ifdef DIFF_DEBUG
@@ -944,6 +949,10 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
  */
 static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
 {
+  // TODO:
+  // DOES NOT WORK: it spreads the coordinate polyhedron along the 
+  // removed dimensions!
+
   // if A->P has equalities, remove them and spread the lattice
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
     Matrix *ker, *H = NULL, *NewL;
@@ -1214,7 +1223,7 @@ static void sLBL_Canonical(LBL* A)
     }
   }
   if(new) {
-    // include new in the ZDomain list A
+    // include new in the LBL list A
     new->next = A->next;
     A->next = new;
   }
@@ -1283,8 +1292,9 @@ void CanonicalLBL(LBL *A) {
 
 /*
  * Find if a given lattice is present in a LBL.
- * Returns the address of the ***previous*** LBL (such that ZZ->next->Lat == L),
- * NULL if not found
+ * Returns the address of the *previous* LBL
+ * (such that ZZ->next->Lat == L).
+ * NULL if not found.
  */
 static LBL *FindLatticePred(Matrix *L, LBL *A) {
   LBL* tmp;
@@ -1318,4 +1328,20 @@ static int count_zeroCols (Matrix* M)
     nb++;
   }
   return nb;
+}
+
+/*
+ * Build a union of Z-domains from a union of LBLs.
+ * 
+ * The resulting Z-domain union lattices do not contain any zero columns.
+ * 
+ * The result is proved to be finite, but can pretty easily explode in
+ * complexity, for example with a very pointy initial LBL
+ * -- take something based on (2^16 x - (2^16-1) y) for example.
+ */
+LBL *LBL2ZDomain(LBL *A)
+{
+  // TODO: eliminate existential variables :)
+
+  return (NULL);
 }
