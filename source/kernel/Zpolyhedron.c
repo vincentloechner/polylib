@@ -953,8 +953,10 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
   // TODO:
   // DOES NOT WORK: it spreads the coordinate polyhedron along the 
   // removed dimensions!
+  // AND: removes the constraints on dimensions that need to be
+  // integer checked!
 
-  // if A->P has equalities, remove them and spread the lattice
+  // if A->P has equalities, try to remove them and spread the lattice
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
     Matrix *ker, *H = NULL, *NewL;
 
@@ -987,7 +989,7 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     // TODO: CHECK THAT THIS IS CORRECT!
 
     // if the bottom right value of H is not one, this means that
-    // the transformation matrix is not integer
+    // the transformation matrix is not integer but rational.
     // just make it integer and do not bother about never taken
     // rational values.
     value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);

@@ -217,6 +217,11 @@ int main() {
     ZA = LBLAlloc(a, A);
     ZC = LBLPreimage(ZA, b);
     ZD = LBLImage(ZC, b);
+
+    printf("PreIm(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    printf("Im(PreIm(A)) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
     // ZD should be included in ZA
     fprintf(stdout,
       "The image of the preimage is included in the original Z-polyhedron (should always be true)? %d\n",

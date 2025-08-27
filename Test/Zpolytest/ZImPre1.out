@@ -1,2 +1,40 @@
+PreIm(A) = LBL: Dimension 2 
+
+LATTICE: 
+3 3
+   1    0    0 
+   0    2    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  100  ]
+Inequality: [  -1    0  100  ]
+Inequality: [   1    0   -1  ]
+Inequality: [   0    1   -1  ]
+Rays 4 4
+Vertex: [   1  100  ]/1
+Vertex: [ 100  100  ]/1
+Vertex: [ 100    1  ]/1
+Vertex: [   1    1  ]/1
+Im(PreIm(A)) = LBL: Dimension 2 
+
+LATTICE: 
+3 3
+   1    0    0 
+   0    2    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  100  ]
+Inequality: [  -1    0  100  ]
+Inequality: [   1    0   -1  ]
+Inequality: [   0    1   -1  ]
+Rays 4 4
+Vertex: [   1  100  ]/1
+Vertex: [ 100  100  ]/1
+Vertex: [ 100    1  ]/1
+Vertex: [   1    1  ]/1
 The image of the preimage is included in the original Z-polyhedron (should always be true)? 1
-The image of the preimage is exactly the original Z-polyhedron? 0
+The image of the preimage is exactly the original Z-polyhedron? 1

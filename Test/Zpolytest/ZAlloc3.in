@@ -1,8 +1,8 @@
-# just a ZAlloc and check that the result is in HNF
+# ZAlloc of a pointy polyhedron, projected on i
 
 M 1
 
-# projection along i
+# projection along j
 2 3
 1 0 0
 0 0 1
