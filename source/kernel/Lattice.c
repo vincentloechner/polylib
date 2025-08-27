@@ -158,14 +158,13 @@ Bool isNormalLattice(Matrix *A)
     return (False);
   }
 
-  // Matrix_Move_Homogeneous_Dim_First(A);
   for (int j = 0; j < A->NbColumns - 1; j++) {
     // consider column j
 
     int nnl; // position of the pivot (non-null line)
 
     // find the line number of the first non-null element
-    for(nnl = 1; nnl<A->NbRows; nnl++) {
+    for(nnl = 0; nnl<A->NbRows; nnl++) {
       if(value_notzero_p(A->p[nnl][j]))
         break;
     }

@@ -42,13 +42,13 @@
  * so we have: M.K = 0
  */
 Matrix *int_ker(Matrix *M) {
-  Matrix *U, *Q, *H, *H2, *K = NULL;
+  Matrix *U, *H, *H2, *K = NULL;
   int rk;
 
   if (dbgCompParm)
     show_matrix(M);
   /* eliminate redundant rows : UM = H*/
-  right_hermite(M, &H, &Q, &U);
+  right_hermite(M, &H, NULL, &U);
   for (rk = H->NbRows - 1; (rk >= 0) && Vector_IsZero(H->p[rk], H->NbColumns);
        rk--)
     ;
@@ -62,17 +62,15 @@ Matrix *int_ker(Matrix *M) {
      is inferior to the number n of variables */
   if (M->NbColumns <= rk) {
     Matrix_Free(H);
-    Matrix_Free(Q);
     Matrix_Free(U);
     K = Matrix_Alloc(M->NbColumns, 0);
     return K;
   }
   Matrix_Free(U);
-  Matrix_Free(Q);
-  /* fool left_hermite  by giving NbRows =rank of M*/
+  /* fool left_hermite  by giving NbRows = rank of M*/
   H->NbRows = rk;
   /* computes MU = [H 0] */
-  left_hermite(H, &H2, &Q, &U);
+  left_hermite(H, &H2, NULL, &U);
   if (dbgCompParmMore) {
     printf("-- Int. Kernel -- \n");
     show_matrix(M);
@@ -88,7 +86,6 @@ Matrix *int_ker(Matrix *M) {
   /* clean up */
   Matrix_Free(H2);
   Matrix_Free(U);
-  Matrix_Free(Q);
   return K;
 } /* int_ker */
 

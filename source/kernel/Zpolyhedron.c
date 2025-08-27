@@ -22,6 +22,7 @@
   #define INTERSECTION_DEBUG 1
   #define DIFFERENCE_DEBUG 1
 #endif
+  #define CANONICAL_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -439,10 +440,10 @@ static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
 {
   LBL *Result = NULL;
 
-  for(LBL *zp = A; zp; zp = zp->next) {
+  for(LBL *z = A; z; z = z->next) {
     LBL *diff;
 
-    diff = sLBL_Difference(zp, B);
+    diff = sLBL_Difference(z, B);
     // simple concatenate of diff and result (not canonical)
     Result = LBL_concatenate(diff, Result);
   }
@@ -605,7 +606,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
  * 
  * Algorithm:
  * - Multiply Lat by Func,
- * - Canonicalize the result (done in ZPAlloc)
+ * - Canonicalize the result (done by LBLAlloc)
  */
 static LBL *sLBL_Image(LBL *A, Matrix *Func)
 {
@@ -916,7 +917,7 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
  */
 static Matrix *get_equalities(Polyhedron *P)
 {
-  // Eq is the matrix of linear equations of P (including the constant)
+  // Eq is the matrix of equations of P (including the constant)
   Matrix* Eq = Matrix_Alloc(P->NbEq, P->Dimension+1);
   // get equalities (first rows of P->Constraint)
   for(int i=0; i<P->NbEq; i++) {
@@ -951,9 +952,7 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
 static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
 {
   // TODO:
-  // DOES NOT WORK: it spreads the coordinate polyhedron along the 
-  // removed dimensions!
-  // AND: removes the constraints on dimensions that need to be
+  // DOES NOT WORK: removes the constraints on dimensions that need to be
   // integer checked!
 
   // if A->P has equalities, try to remove them and spread the lattice
@@ -967,7 +966,7 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
       Matrix_Print(stderr, P_VALUE_FMT, Equalities);
     #endif
 
-    // compute Ker(Eq)
+    // compute Ker(Eq).
     ker = int_ker(Equalities);
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "ker of eq: ");
@@ -978,6 +977,7 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     left_hermite(ker, &H, NULL, NULL);
     Matrix_Move_Homogeneous_Dim_Last(H);
     Matrix_Free(ker);
+    // We know that: Eq . H = Eq . Ker(Eq) = 0
 
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "Matrix H: ");
@@ -990,15 +990,14 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
 
     // if the bottom right value of H is not one, this means that
     // the transformation matrix is not integer but rational.
-    // just make it integer and do not bother about never taken
-    // rational values.
+    // just make it integer to eliminate rational points.
     value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
 
     // NewL = L . H
     NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
     Matrix_Product(A->Lat, H, NewL);
     // NewP = H^{-1} . P
-    Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
+    Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);   // TODO: wrong since H is not unimodular!
 
     // update A
     Domain_Free(A->P);
@@ -1116,7 +1115,7 @@ static void sLBL_Lat_Remove_Zeros(LBL *A)
       LBLPrint(stderr, P_VALUE_FMT, A);
     #endif
   }
-} /* ZP_Lat_Remove_Zeros */
+} /* sLBL_Lat_Remove_Zeros */
 
 
 /*
@@ -1151,8 +1150,8 @@ static void sLBL_Canonical(LBL* A)
     #endif
 
     if(A->next) {
-      // if there is something else after an empty ZP, need to replace the
-      // current ZP with the next ZP: replace A with next and free A->next
+      // if there is something else after an empty LBL, need to replace the
+      // current LBL with the next LBL: replace A with next and free A->next
       LBL *remove = A->next;
 
       #ifdef CANONICAL_DEBUG
@@ -1165,7 +1164,7 @@ static void sLBL_Canonical(LBL* A)
       A->next = remove->next;
       free(remove);
 
-      // now, canonicalize the (new) current ZP itself
+      // now, canonicalize the (new) current LBL itself
       // (since the caller will not rescan it!):
       sLBL_Canonical(A);
 

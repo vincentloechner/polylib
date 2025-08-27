@@ -13,10 +13,10 @@ Inequality: [  -1    0  100  ]
 Inequality: [   1    0   -1  ]
 Inequality: [   0    1   -1  ]
 Rays 4 4
-Vertex: [   1  100  ]/1
-Vertex: [ 100  100  ]/1
 Vertex: [ 100    1  ]/1
 Vertex: [   1    1  ]/1
+Vertex: [   1  100  ]/1
+Vertex: [ 100  100  ]/1
 Im(PreIm(A)) = LBL: Dimension 2 
 
 LATTICE: 
@@ -32,9 +32,9 @@ Inequality: [  -1    0  100  ]
 Inequality: [   1    0   -1  ]
 Inequality: [   0    1   -1  ]
 Rays 4 4
-Vertex: [   1  100  ]/1
-Vertex: [ 100  100  ]/1
 Vertex: [ 100    1  ]/1
 Vertex: [   1    1  ]/1
+Vertex: [   1  100  ]/1
+Vertex: [ 100  100  ]/1
 The image of the preimage is included in the original Z-polyhedron (should always be true)? 1
 The image of the preimage is exactly the original Z-polyhedron? 1
