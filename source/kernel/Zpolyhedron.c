@@ -226,9 +226,15 @@ static void sLBL_Print(FILE *fp, const char *format, LBL *A)
   if (A == NULL)
     return;
   fprintf(fp, "LBL: Dimension %d \n", A->Lat->NbRows - 1);
-  fprintf(fp, "\nLATTICE: \n");
-  Matrix_Print(fp, format, A->Lat);
-  Polyhedron_Print(fp, format, A->P);
+
+  if(emptyQ(A->P)) {
+    fprintf(fp, "\n<empty>>\n");
+  }
+  else {
+    fprintf(fp, "\nLATTICE: \n");
+    Matrix_Print(fp, format, A->Lat);
+    Polyhedron_Print(fp, format, A->P);
+  }
   return;
 } /* sLBL_Print */
 
