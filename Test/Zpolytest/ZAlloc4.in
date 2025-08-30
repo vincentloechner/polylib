@@ -1,0 +1,21 @@
+# example of Iooss 2010, version 1 (version 2 in ZAlloc5.in)
+
+M 1
+
+4 3
+1 0 0
+0 1 0
+0 0 0
+0 0 1
+
+D 1
+
+3 4
+1  0  1  0  # y >= 0
+1  1 -4  0  # x >= 4y
+1 -1  4  4  # 4 − x ≥ 4y
+
+
+# ZAlloc test
+F 100
+
