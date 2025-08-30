@@ -22,7 +22,7 @@
   #define INTERSECTION_DEBUG 1
   #define DIFFERENCE_DEBUG 1
 #endif
-  // #define CANONICAL_DEBUG 1
+  #define CANONICAL_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -960,7 +960,8 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
 static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
 {
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
-    Matrix *ker, *H = NULL, *NewL;
+    Matrix *ker=NULL, *H = NULL, *NewL;
+    Matrix *eq_hermite = NULL, *eq_U = NULL;
 
     // remove equalities in domain P and change Lat to spread the original space
     #ifdef CANONICAL_DEBUG
@@ -969,16 +970,25 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
       Matrix_Print(stderr, P_VALUE_FMT, Equalities);
     #endif
 
-    // compute Ker(Eq).
-    ker = int_ker(Equalities);
+    // compute the kernel of Equalities matrix.
+    left_hermite(Equalities, &eq_hermite, NULL, &eq_U);
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "hermite eq = ");
+      Matrix_Print(stderr, P_VALUE_FMT, eq_hermite);
+      fprintf(stderr, "hermite U = ");
+      Matrix_Print(stderr, P_VALUE_FMT, eq_U);
+      #endif
+    // the kernel of Equalities is the last n-NbEq columns of eq_U
+    Matrix_subMatrix(eq_U, 0, A->P->NbEq, eq_U->NbRows, eq_U->NbColumns, &ker);
+    Matrix_Free(eq_hermite);
+    Matrix_Free(eq_U);
+
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "ker of eq: ");
       Matrix_Print(stderr, P_VALUE_FMT, ker);
     #endif
     
-    Matrix_Move_Homogeneous_Dim_First(ker);
-    left_hermite(ker, &H, NULL, NULL);
-    Matrix_Move_Homogeneous_Dim_Last(H);
+    AffineHermite(ker, &H, NULL);
     Matrix_Free(ker);
     // We know that: Eq . H = Eq . Ker(Eq) = 0
 
@@ -990,16 +1000,39 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     #endif
 
     // TODO: complete the matrix such that it is full row
-    //       with Id on the right ???
-    // or not, just with 1's in the right rows...?
+    //       with (0..0 1 0..0)^T columns on the right ???
+    // is that right? is that enough?
 
-
+    
     // TODO: CHECK THAT THIS IS CORRECT!
     // if the bottom right value of H is not one, this means that
     // the transformation matrix is not integer but rational.
     // just make it integer to eliminate rational points.
     // (see ZImPre3 for an example where this is necessary)
     value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
+
+
+    // #ifdef CANONICAL_DEBUG
+    // {
+    //   Value det;
+    //   value_init(det);
+    //   value_set_si(det, 1);
+    //   // check if the invariant factor is 1
+    //   for (int col = 0; col < H->NbColumns - 1; col++) {
+    //     int lin;
+    //     for(lin = 0; lin<H->NbRows-1; lin++) {
+    //       if(value_notzero_p(H->p[lin][col])) {
+    //           value_multiply(det, det, H->p[lin][col]);
+    //         break;
+    //       }
+    //     }
+    //   }
+    //   fprintf(stderr, "invariant factor = ");
+    //   value_print(stderr, P_VALUE_FMT, det);
+    //   fprintf(stderr, "\n");
+    //   value_clear(det);
+    // }
+    // #endif
 
 
     // NewL = L . H
