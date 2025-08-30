@@ -135,11 +135,16 @@ void Matrix_Move_Homogeneous_Dim_Last(Matrix *A)
  */
 Bool isNormalLattice(Matrix *A)
 {
-  // check if:
+  // Check the affine-homogeneous lattice (last line/column is first):
+  // Let A =  L   l
+  //         0..0 1
+  //
+  // A' =  0..0 1
+  //         L  l
+  //
+  // check if A' verifies:
   // - first element of column (= pivot) greater than zero
   // - all elements left of pivot lower than pivot.
-  //
-  // Do this on the homogeneous lattice (last line/column is first)
   // 
   // Example:
   //    1 0 0 0
@@ -159,39 +164,43 @@ Bool isNormalLattice(Matrix *A)
   }
 
   for (int j = 0; j < A->NbColumns - 1; j++) {
-    // consider column j
-
-    int nnl; // position of the pivot (non-null line)
+    // consider column j of L
+    int nnl; // line number of the pivot (non-null line)
 
     // find the line number of the first non-null element
     for(nnl = 0; nnl<A->NbRows; nnl++) {
       if(value_notzero_p(A->p[nnl][j]))
         break;
     }
-
     if(nnl == A->NbRows) {
-      // column of zeros, continue.
+      // this is a column of zeros, valid, just continue.
       previous_nnl = nnl;
       continue;
     }
     if(nnl <= previous_nnl) {
-      // there is a non-zero value higher than expected
+      // there is a non-zero value higher than the previous column
       return(False);
     }
     previous_nnl = nnl;
 
+    // The pivot is: A->p[nnl][j]
+    // check that the pivot is positive
+    if(value_neg_p(A->p[nnl][j])) {
+      return(False);
+    }
+
     // check that the values left of pivot are lower than pivot
     for(int i = 0; i < j; i++) {
       if (value_ge(A->p[nnl][i], A->p[nnl][j])) {
-        return False;
+        return(False);
       }
     }
-    // check that the constant (should be left of pivot) is lower
+    // check that the constant in l is lower than pivot
     if (value_ge(A->p[nnl][A->NbColumns-1], A->p[nnl][j])) {
-      return False;
+      return(False);
     }
   }
-  return True;
+  return(True);
 } /* isNormalLattice */
 
 /*

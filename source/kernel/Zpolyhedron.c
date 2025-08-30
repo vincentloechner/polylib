@@ -22,7 +22,6 @@
   #define INTERSECTION_DEBUG 1
   #define DIFFERENCE_DEBUG 1
 #endif
-  // #define CANONICAL_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -957,11 +956,6 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
  */
 static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
 {
-  // TODO:
-  // DOES NOT WORK: removes the constraints on dimensions that need to be
-  // integer checked!
-
-  // if A->P has equalities, try to remove them and spread the lattice
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
     Matrix *ker, *H = NULL, *NewL;
 
@@ -992,12 +986,18 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
 
+    // TODO: complete the matrix such that it is full row
+    //       with Id on the bottom right ???
+    // or not, just with 1's in the right columns...
+    // or add the equalities?
+
     // TODO: CHECK THAT THIS IS CORRECT!
 
     // if the bottom right value of H is not one, this means that
     // the transformation matrix is not integer but rational.
     // just make it integer to eliminate rational points.
     value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
+
 
     // NewL = L . H
     NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
@@ -1008,6 +1008,7 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     // update A
     Domain_Free(A->P);
     Matrix_Free(A->Lat);
+
     A->P = NewP;
     A->Lat = NewL;
     Matrix_Free(H);
@@ -1074,6 +1075,61 @@ static void sLBL_Lat_Normalize(LBL *A)
     #endif
   }
 } /* sLBL_Lat_Normalize */
+
+
+/*
+ * A is empty, check if A has no successor in the list and is canonical.
+ * Can relink A->next to current A if needed, and returns True.
+ * returns False if A->next did not change.
+ * In place.
+ */
+static Bool sLBL_Verify_Empty(LBL *A)
+{
+  // A is empty
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "Empty LBL\n");
+  #endif
+
+  // if there is something linked to an empty LBL, need to replace the
+  // current LBL with the next LBL: replace A with next and free A->next
+  if(A->next) {
+    LBL *nextA = A->next;
+
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "... But the next one is not empty, relinking\n");
+    #endif
+    Domain_Free(A->P);
+    Matrix_Free(A->Lat);
+    A->P = nextA->P;
+    A->Lat = nextA->Lat;
+    A->next = nextA->next;
+    free(nextA);
+
+    // A changed
+    return(True);
+  }
+
+  // A is empty and alone.
+  // Verify that it is canonical and return.
+  if(A->P->Dimension > 0) {
+    int dimension = A->Lat->NbRows;
+    Domain_Free(A->P);
+    Matrix_Free(A->Lat);
+    A->P = Empty_Polyhedron(0);
+    A->Lat = Matrix_Alloc(dimension, 1);
+    for(int j=0 ; j < dimension-1; j++) {
+      value_set_si(A->Lat->p[0][j], 0);
+    }
+    value_set_si(A->Lat->p[0][dimension-1], 1);
+  }
+
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "Returning, A is empty: ");
+    LBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
+
+  return(False);
+}
 
 
 /*
@@ -1149,55 +1205,14 @@ static void sLBL_Canonical(LBL* A)
     return;
   }
 
-  // if A is empty
   if(emptyQ(A->P)) {
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "The polyhedron is empty\n");
-    #endif
-
-    if(A->next) {
-      // if there is something else after an empty LBL, need to replace the
-      // current LBL with the next LBL: replace A with next and free A->next
-      LBL *remove = A->next;
-
-      #ifdef CANONICAL_DEBUG
-        fprintf(stderr, "... But the next one is not\n");
-      #endif
-      Domain_Free(A->P);
-      Matrix_Free(A->Lat);
-      A->P = remove->P;
-      A->Lat = remove->Lat;
-      A->next = remove->next;
-      free(remove);
-
-      // now, canonicalize the (new) current LBL itself
+    if(sLBL_Verify_Empty(A)) {
+      // head was empty and has been replaced (with next).
+      // need to canonicalize the (new) current LBL itself
       // (since the caller will not rescan it!):
       sLBL_Canonical(A);
-
-      return;
     }
-
-    // A is empty and alone.
-    // Verify that it is canonical and return.
-    if(A->P->Dimension > 0) {
-      int dimension = A->Lat->NbRows;
-      Domain_Free(A->P);
-      Matrix_Free(A->Lat);
-      A->P = Empty_Polyhedron(0);
-      A->Lat = Matrix_Alloc(dimension, 1);
-      for(int j=0 ; j < dimension-1; j++) {
-        value_set_si(A->Lat->p[0][j], 0);
-      }
-      value_set_si(A->Lat->p[0][dimension-1], 1);
-    }
-
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "Returning, A is empty: ");
-      LBLPrint(stderr, P_VALUE_FMT, A);
-    #endif
-    return;
-  }  // end if A is empty
-
+  }
 
   // change P such that all polyhedra in this domain have the same set of
   // equalities, that is, the equalities of the first one.
@@ -1244,6 +1259,17 @@ static void sLBL_Canonical(LBL* A)
   // We can try to remove some equalities from A->P
   sLBL_Remove_Equalities(A, Equalities);
   Matrix_Free(Equalities);
+
+  // check that the result is not empty after removing equalities
+  // (example ZAlloc1b.in needs that)
+  if(emptyQ(A->P)) {
+    if(sLBL_Verify_Empty(A)) {
+      // head was empty and has been replaced (with next).
+      // need to canonicalize the (new) current LBL itself
+      // (since the caller will not rescan it!):
+      sLBL_Canonical(A);
+    }
+  }
 
   // Normalize the affine lattice A->Lat
   sLBL_Lat_Normalize(A);

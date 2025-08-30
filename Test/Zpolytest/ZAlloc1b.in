@@ -9,9 +9,9 @@ M 1
 
 D 1
 
-# polyhedron with an equality
+# polyhedron with an equality, rational solution
 3 4
-0  0  1 -1
+0  0  2 -1 # j = 1/2! -> becomes empty, need to recanonicalize
 1  1  0  0
 1 -1  0 10
 
