@@ -22,6 +22,7 @@
   #define INTERSECTION_DEBUG 1
   #define DIFFERENCE_DEBUG 1
 #endif
+  // #define CANONICAL_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -207,6 +208,8 @@ Bool LBLIncludes(LBL *A, LBL *B)
   Bool ret = False;
   LBL *diff;
 
+  // TODO: can we do better on ZDomains?
+
   diff = LBLDifference(A, B);
   if(isEmptyLBL(diff)) {
     ret = True;
@@ -316,7 +319,7 @@ LBL *LBLDifference(LBL *A, LBL *B)
   }
   
   res = LBLCopy(A);
-  // remove all single LBLs composing B from LBL A:
+  // remove all single LBLs composing B from a copy of A:
   for (LBL *tempB = B; tempB; tempB = tempB->next) {
     LBL *tmp;
     tmp = LBL_sLBL_Difference(res, tempB);
@@ -411,9 +414,9 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
   // the resulting LBL), its preimage by LInter will constrain it to be the
   // right LBL, including potential "holes".
   // TODO: proof ^^
-  // this does not work when there are columns of zeros in Linter!
-  // equalities will be removed from the result :(
-  // need to build explicitly.
+  // (??) does this work when there are columns of zeros in Linter?
+  // will equalities be removed from the result?
+  // if it does not, need to build explicitly.
 
   if (emptyQ(PInter))
     Result = NULL;
@@ -987,15 +990,15 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     #endif
 
     // TODO: complete the matrix such that it is full row
-    //       with Id on the bottom right ???
-    // or not, just with 1's in the right columns...
-    // or add the equalities?
+    //       with Id on the right ???
+    // or not, just with 1's in the right rows...?
+
 
     // TODO: CHECK THAT THIS IS CORRECT!
-
     // if the bottom right value of H is not one, this means that
     // the transformation matrix is not integer but rational.
     // just make it integer to eliminate rational points.
+    // (see ZImPre3 for an example where this is necessary)
     value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
 
 
