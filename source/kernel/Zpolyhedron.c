@@ -977,11 +977,18 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
       Matrix_Print(stderr, P_VALUE_FMT, eq_hermite);
       fprintf(stderr, "hermite U = ");
       Matrix_Print(stderr, P_VALUE_FMT, eq_U);
-      #endif
+    #endif
+
+    // if we are using full Eq_U, then H is always = Id since this spreads the whole space.
+    // ker = eq_U;
+
     // the kernel of Equalities is the last NbColumns - NbEq columns of eq_U
     Matrix_subMatrix(eq_U, 0, A->P->NbEq, eq_U->NbRows, eq_U->NbColumns, &ker);
-    Matrix_Free(eq_hermite);
     Matrix_Free(eq_U);
+    Matrix_Free(eq_hermite);
+    // but some equalities there cannot be removed since they lose the integer property.
+    // TODO: check which ones can be removed.
+
 
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "ker of eq: ");
@@ -992,6 +999,7 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     Matrix_Free(ker);
     // We know that: Eq . H = Eq . Ker(Eq) = 0
 
+
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "Matrix H: ");
       Matrix_Print(stderr, P_VALUE_FMT, H);
@@ -1000,20 +1008,36 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     #endif
 
     // TODO: complete the matrix
-    //       with (0..0 1 0..0)^T columns on the right ???
     // to avoid eliminating non integer variables.
 
-    // or: take the full eq_U matrix above, and remove only columns that can be removed without eliminating non-integer (...?)
+    // alternative to consider: take the full eq_U matrix above, and remove only columns that can be removed without eliminating non-integer (...?)
 
-    // [such that it is full row]
-    // is that right? is that enough?
-
+    // // TRYING: completing H with Id:
+    //       [with (0..0 1 0..0)^T columns on the right]
+    // Matrix *HH = Matrix_Alloc(H->NbRows, H->NbRows);
+    // for(int i = 0; i < HH->NbRows; i++) {
+    //   for(int j = 0; j < HH->NbColumns; j++) {
+    //     if(j < H->NbColumns - 1) {
+    //       value_assign(HH->p[i][j], H->p[i][j]);
+    //     }
+    //     else if(j == HH->NbColumns-1) {
+    //       value_assign(HH->p[i][j], H->p[i][H->NbColumns-1]);
+    //     }
+    //     else if(i == j) {
+    //       value_set_si(HH->p[i][j], 1);
+    //     }
+    //     else {
+    //       value_set_si(HH->p[i][j], 0);
+    //     }
+    //   }
+    // }
+    // Matrix_Free(H);
     
-    // TODO: CHECK THAT THIS IS CORRECT
-    // if the bottom right value of H is not one, this means that
-    // the transformation matrix is not integer but rational.
-    // just make it integer to eliminate rational points.
-    // (see ZImPre3 for an example where this is necessary)
+    // // TODO: CHECK THAT THIS IS CORRECT
+    // // if the bottom right value of H is not one, this means that
+    // // the transformation matrix is not integer but rational.
+    // // just make it integer to eliminate rational points.
+    // // (see ZImPre3 for an example where this is necessary)
     value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
 
 
