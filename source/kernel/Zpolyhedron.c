@@ -1009,8 +1009,8 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
 
     // TODO: complete the matrix
     // to avoid eliminating non integer variables.
+    // put columns of zeroes on the right of H here
 
-    // alternative to consider: take the full eq_U matrix above, and remove only columns that can be removed without eliminating non-integer (...?)
 
     // // TRYING: completing H with Id:
     //       [with (0..0 1 0..0)^T columns on the right]
@@ -1044,6 +1044,8 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     // NewL = L . H
     NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
     Matrix_Product(A->Lat, H, NewL);
+
+    // TODO: here, transform the columns of zeros of H to Id so we keep the equalities :)
     // NewP = H^{-1} . P
     Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
     // TODO: check that is that correct. H is not unimodular!
