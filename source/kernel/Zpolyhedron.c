@@ -970,7 +970,7 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
       Matrix_Print(stderr, P_VALUE_FMT, Equalities);
     #endif
 
-    // compute the kernel of Equalities matrix.
+    // compute the kernel of Equalities matrix using Hermite:
     left_hermite(Equalities, &eq_hermite, NULL, &eq_U);
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "hermite eq = ");
@@ -978,7 +978,7 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
       fprintf(stderr, "hermite U = ");
       Matrix_Print(stderr, P_VALUE_FMT, eq_U);
       #endif
-    // the kernel of Equalities is the last n-NbEq columns of eq_U
+    // the kernel of Equalities is the last NbColumns - NbEq columns of eq_U
     Matrix_subMatrix(eq_U, 0, A->P->NbEq, eq_U->NbRows, eq_U->NbColumns, &ker);
     Matrix_Free(eq_hermite);
     Matrix_Free(eq_U);
@@ -999,12 +999,17 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
 
-    // TODO: complete the matrix such that it is full row
+    // TODO: complete the matrix
     //       with (0..0 1 0..0)^T columns on the right ???
+    // to avoid eliminating non integer variables.
+
+    // or: take the full eq_U matrix above, and remove only columns that can be removed without eliminating non-integer (...?)
+
+    // [such that it is full row]
     // is that right? is that enough?
 
     
-    // TODO: CHECK THAT THIS IS CORRECT!
+    // TODO: CHECK THAT THIS IS CORRECT
     // if the bottom right value of H is not one, this means that
     // the transformation matrix is not integer but rational.
     // just make it integer to eliminate rational points.
@@ -1012,41 +1017,21 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
 
 
-    // #ifdef CANONICAL_DEBUG
-    // {
-    //   Value det;
-    //   value_init(det);
-    //   value_set_si(det, 1);
-    //   // check if the invariant factor is 1
-    //   for (int col = 0; col < H->NbColumns - 1; col++) {
-    //     int lin;
-    //     for(lin = 0; lin<H->NbRows-1; lin++) {
-    //       if(value_notzero_p(H->p[lin][col])) {
-    //           value_multiply(det, det, H->p[lin][col]);
-    //         break;
-    //       }
-    //     }
-    //   }
-    //   fprintf(stderr, "invariant factor = ");
-    //   value_print(stderr, P_VALUE_FMT, det);
-    //   fprintf(stderr, "\n");
-    //   value_clear(det);
-    // }
-    // #endif
-
-
     // NewL = L . H
     NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
     Matrix_Product(A->Lat, H, NewL);
     // NewP = H^{-1} . P
-    Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);   // TODO: wrong since H is not unimodular!
+    Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
+    // TODO: check that is that correct. H is not unimodular!
+    // idea: take the zero-columns of NewL and flatten NewP along those dimensions (?)
+    // -> just make them = 0 since preimage stretched the polyhedron along the whole dimension.
 
     // update A
     Domain_Free(A->P);
     Matrix_Free(A->Lat);
-
     A->P = NewP;
     A->Lat = NewL;
+
     Matrix_Free(H);
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New Lat: ");
