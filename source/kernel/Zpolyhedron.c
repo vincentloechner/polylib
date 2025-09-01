@@ -986,20 +986,16 @@ static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
     // the kernel of Equalities is the last (NbEq) columns of ker
     //            -----NbEq------
     // ker = *..* k_0..k_{NbEq-1} c
-    // move them left, and fill the right columns with zeros in matrix ker,
-    // which becomes:
+    // move them left, matrix ker becomes:
     //       -----NbEq------
-    // ker = k_0..k_{NbEq-1} 0 ... 0 c
+    // ker = k_0..k_{NbEq-1} c *..*
     for(int i = 0; i < ker->NbRows; i++) {
-      for(int j = 0; j < ker->NbColumns; j++) {
-        if(j < ker->NbColumns - A->P->NbEq - 1) {
-          value_assign(ker->p[i][j], ker->p[i][j + A->P->NbEq]);
-        }
-        else if(j != ker->NbColumns - 1) {
-          value_set_si(ker->p[i][j], 0);
-        }
+      for(int j = 0; j < ker->NbColumns - A->P->NbEq; j++) {
+        value_assign(ker->p[i][j], ker->p[i][j + A->P->NbEq]);
       }
     }
+    // set the right number of columns
+    ker->NbColumns = ker->NbColumns - A->P->NbEq;
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "ker of Eq: ");
       Matrix_Print(stderr, P_VALUE_FMT, ker);
@@ -1033,12 +1029,25 @@ static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
     // NewL = L . H
     NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
     Matrix_Product(A->Lat, H, NewL);
+    #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "New Lat: ");
+      Matrix_Print(stderr, P_VALUE_FMT, NewL);
+    #endif
 
-    // Transform the columns of zeros of H to Id so we keep the
-    // equalities in the transformed domain :)
-    for(int j = A->P->NbEq; j < H->NbColumns - 1; j++) {
-      value_set_si(H->p[j][j], 1);
-    }
+    // THIS IS NOT NECESSARY:
+    // // Transform the columns of zeros of H to 1's so we keep the
+    // // equalities in the transformed domain :)
+    // for(int i = 0; i < H->NbRows-1; i++) {
+    //   for(int j = A->P->NbEq; j < H->NbColumns - 1; j++) {
+    //     // if(i==j)
+    //       value_set_si(H->p[i][j], 1);  
+    //   }
+    // }
+    // #ifdef CANONICAL_DEBUG
+    //   fprintf(stderr, "New matrix H (for preimage): ");
+    //   Matrix_Print(stderr, P_VALUE_FMT, H);
+    // #endif
+
     // NewP = H^{-1} . P
     Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
     // TODO: check that is that correct. H is not unimodular?!
@@ -1051,8 +1060,6 @@ static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
 
     Matrix_Free(H);
     #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "New Lat: ");
-      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
       fprintf(stderr, "New P: ");
       Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
     #endif
@@ -1184,11 +1191,32 @@ static void sLBL_Lat_Remove_Zeros(LBL *A)
 
   // Could use DomainConstraintSimplify() to eliminate obvious empty case
 
+
   Polyhedron *NewP;
   int nbZeros = count_zeroCols(A->Lat);
   if(nbZeros) {
+    // check which dimensions can be eliminated
+    Bool *elim = malloc(sizeof(Bool)*nbZeros); // dimensions to eliminate
+    int nbelim = 0; // number of dimensions to eliminate
+
+    for(int dim = 0; dim < nbZeros; dim++) {
+      int position = dim + A->Lat->NbColumns - nbZeros;
+      elim[dim] = True;
+      // if there is an equality with a coefficient different than +/- 1,
+      // the dimension cannot be eliminated
+      for(int j = 0; j < A->P->NbEq; j++) {
+        if(value_notone_p(A->P->Constraint[j][position]) &&
+            value_notmone_p(A->P->Constraint[j][position]) ) {
+          elim[dim] = False;
+          break;
+        }
+      }
+    }
+
+
+    // Now transform the domain
     Matrix *Transformation;
-    Transformation = Matrix_Alloc(A->Lat->NbColumns - nbZeros,
+    Transformation = Matrix_Alloc(A->Lat->NbColumns - nbelim,
                                   A->Lat->NbColumns);
     // Id on top-left
     for (int  i = 0; i < Transformation->NbRows; i++) {
@@ -1330,7 +1358,7 @@ static void sLBL_Canonical(LBL* A)
 
   // Remove the columns of zeros from A->Lat
   // do the projection along those dimensions, verify integer non-emptyness
-  sLBL_Lat_Remove_Zeros(A);
+  // sLBL_Lat_Remove_Zeros(A);
 
   return;
 } /* sLBL_Canonical */
