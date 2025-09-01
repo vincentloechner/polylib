@@ -1,0 +1,19 @@
+# an infinite band with no integer solution in it
+
+M 1
+
+3 3
+1 0 0
+0 1 0
+0 0 1
+
+D 1
+
+2 4
+1  2  2  -1  # 2i +2j >= 1
+1  -4 -4  3  # 4i+4j <= 3
+
+
+# ZAlloc test
+F 100
+
