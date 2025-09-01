@@ -314,7 +314,8 @@ LBL *LBLDifference(LBL *A, LBL *B)
   LBL *res;
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
-    errormsg1("LBLDifference", "dimincomp", "incompatible dimensions between domains");
+    errormsg1("LBLDifference", "dimincomp",
+        "incompatible dimensions between domains");
     return (NULL);
   }
   
@@ -491,7 +492,8 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   if(isEmptyLBL(Binter)) {
     // if B does not intersect A, return A.
     #ifdef DIFFERENCE_DEBUG
-      fprintf(stderr, "Binter=(A inter B) is empty, so B does not intersect A, we return A\n");
+      fprintf(stderr,
+      "Binter=(A inter B) is empty, so B does not intersect A, we return A\n");
     #endif
     LBLFree(Binter);
     return(LBLCopy(A));
@@ -548,14 +550,16 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
 
   // now Ainter and Binter have same lattices and polyhedra dimensions
   #ifdef DIFFERENCE_DEBUG
-    fprintf(stderr, "-- [STEP1] now we compute the intersection on same lattice dimensions\n");
+    fprintf(stderr,
+      "-- [STEP1] now we compute the intersection on same lattice dimensions\n");
     fprintf(stderr, "Ainter = ");
     LBLPrint(stderr, P_VALUE_FMT, Ainter);
     fprintf(stderr, "and Binter = ");
     LBLPrint(stderr, P_VALUE_FMT, Binter);
   #endif
 
-  // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of same dimensions
+  // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of
+  // same dimensions
   LatDiff = LatticeDifference(Ainter->Lat, Binter->Lat); 
   #ifdef DIFFERENCE_DEBUG
     if(!LatDiff)
@@ -578,7 +582,8 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
 
     Result = Ztmp;
   }
-  // free LatticeUnion remaining memory (M has been reused as a lattice of Result)
+  // free LatticeUnion remaining memory (M has been reused as a lattice of
+  // Result)
   while(LatDiff) {
     LatticeUnion *next = LatDiff->next;
     free(LatDiff);
@@ -705,7 +710,8 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
       value_oppose(Con->p[i][j+dp-1+1], Z->Lat->p[i][j]);
     }
     // substract constant l from g
-    value_substract(Con->p[i][Con->NbColumns-1], Con->p[i][Con->NbColumns-1], Z->Lat->p[i][Z->Lat->NbColumns-1]);
+    value_substract(Con->p[i][Con->NbColumns-1],
+              Con->p[i][Con->NbColumns-1], Z->Lat->p[i][Z->Lat->NbColumns-1]);
   }
 
   P = DomainAddConstraints(newP, Con, MAXNOOFRAYS);
@@ -963,7 +969,7 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     Matrix *ker=NULL, *H = NULL, *NewL;
     Matrix *eq_hermite = NULL, *eq_U = NULL;
 
-    // remove equalities in domain P and change Lat to spread the original space
+    // remove equalities in domain P and change Lat to spread the same space
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "P has equalities\n");
       fprintf(stderr, "Equality matrix (including constants): ");
@@ -979,14 +985,16 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
       Matrix_Print(stderr, P_VALUE_FMT, eq_U);
     #endif
 
-    // if we are using full Eq_U, then H is always = Id since this spreads the whole space.
+    // if we are using full Eq_U, then H is always = Id since this spreads the
+    // whole space.
     // ker = eq_U;
 
     // the kernel of Equalities is the last NbColumns - NbEq columns of eq_U
     Matrix_subMatrix(eq_U, 0, A->P->NbEq, eq_U->NbRows, eq_U->NbColumns, &ker);
     Matrix_Free(eq_U);
     Matrix_Free(eq_hermite);
-    // but some equalities there cannot be removed since they lose the integer property.
+    // but some equalities there cannot be removed since they lose the integer
+    // property.
     // TODO: check which ones can be removed.
 
 
@@ -1045,12 +1053,15 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
     Matrix_Product(A->Lat, H, NewL);
 
-    // TODO: here, transform the columns of zeros of H to Id so we keep the equalities :)
+    // TODO: here, transform the columns of zeros of H to Id so we keep the
+    // equalities :)
     // NewP = H^{-1} . P
     Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
     // TODO: check that is that correct. H is not unimodular!
-    // idea: take the zero-columns of NewL and flatten NewP along those dimensions (?)
-    // -> just make them = 0 since preimage stretched the polyhedron along the whole dimension.
+    // idea: take the zero-columns of NewL and flatten NewP along those
+    // dimensions (?)
+    // -> just make them = 0 since preimage stretched the polyhedron along
+    // the whole dimension.
 
     // update A
     Domain_Free(A->P);
@@ -1191,7 +1202,8 @@ static void sLBL_Lat_Remove_Zeros(LBL *A)
   Polyhedron *NewP;
   int nbZeros = count_zeroCols(A->Lat);
   if(nbZeros) {
-    Matrix* Transformation = Matrix_Alloc(A->Lat->NbColumns-nbZeros, A->Lat->NbColumns);
+    Matrix *Transformation;
+    Transformation = Matrix_Alloc(A->Lat->NbColumns-nbZeros, A->Lat->NbColumns);
     for (int  i = 0; i < Transformation->NbRows; i++) {
       for (int j = 0; j < Transformation->NbColumns; j++) {
         if(i==j && i!=Transformation->NbRows-1) {
@@ -1202,7 +1214,9 @@ static void sLBL_Lat_Remove_Zeros(LBL *A)
         }
       }
     }
-    value_set_si(Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1], 1);
+    value_set_si(
+      Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],
+      1);
 
     NewP = DomainImage(A->P, Transformation, MAXNOOFRAYS);
     Domain_Free(A->P);

@@ -227,7 +227,8 @@ int main() {
       "The image of the preimage is included in the original Z-polyhedron (should always be true)? %d\n",
 	    LBLIncludes(ZD, ZA));
     ZB = LBLDifference(ZA, ZD);
-    fprintf(stdout,"The image of the preimage is exactly the original Z-polyhedron? %d\n",
+    fprintf(stdout,
+      "The image of the preimage is exactly the original Z-polyhedron? %d\n",
 	    isEmptyLBL(ZB));
     break;
   
@@ -360,7 +361,9 @@ int main() {
     Matrix_Print(stdout, P_VALUE_FMT, b);
     break;
 
-  case 29: // split lattice a according to a list of pieces to intersect or not b (used in difference)
+  case 29:
+    // split lattice a according to a list of pieces to intersect or not b
+    // (used in difference)
     // Matrix *d, *e, *f;
     // AffineSmith(a, NULL, NULL, &c);
     // AffineSmith(b, NULL, NULL, &d);

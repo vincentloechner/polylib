@@ -7,10 +7,12 @@
 
 static void get_pivots_columns(Matrix* A, int *columns);
 static int value_prime_factors(Value n, Vector **result);
-static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_columns,
-    Matrix *A, Matrix *Intersection, Matrix *L, LatticeUnion *Result);
+static LatticeUnion *generate_lattice_union_line(
+  int line_nb, int *pivots_columns, Matrix *A, Matrix *Intersection, Matrix *L,
+  LatticeUnion *Result);
 
-/*
+
+  /*
  * Print the contents of a list of Lattices 'Head'
  */
 void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head) {
@@ -468,7 +470,8 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
       Matrix_Print(stderr, P_VALUE_FMT, rest);
     #endif
 
-    Result = generate_lattice_union_line(line, pivots_columns, X, Inter, rest, Result);
+    Result = generate_lattice_union_line(line, pivots_columns, X, Inter,
+                rest, Result);
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "+++ Intermediate result =\n");
       PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
@@ -604,7 +607,8 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
   Res = Matrix_Alloc(A->NbRows, nbcol);
   for (int i = 0; i < Res->NbRows; i++) {
     for (int j = 0; j < Res->NbColumns; j++) {
-        value_assign(Res->p[i][j], H->p[i + H->NbRows - Res->NbRows][j + H->NbColumns - Res->NbColumns]);
+        value_assign(Res->p[i][j],
+          H->p[i + H->NbRows - Res->NbRows][j + H->NbColumns - Res->NbColumns]);
     }
   }
   Matrix_Free(H);
@@ -736,7 +740,8 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
             Matrix *A, Matrix *Intersection, Matrix *rest, LatticeUnion *Result)
 {
   Value step, multiply, modulo, ratio, tmp;
-  Vector *prime_factors = NULL; // Vector of Values, reuse memory several times (from previous step).
+  Vector *prime_factors = NULL; // Vector of Values, reuse memory several times
+                                // (from previous step).
   int num_factors;
   int pivot_col = pivots_columns[line_nb];
 
@@ -756,8 +761,9 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
   }
   // no need to update the constant of lines below the pivot here
 
-  // get the ratio between A and rest, to be used as multiplier for every generated new line
-  value_division(ratio, rest->p[line_nb][pivot_col], A->p[line_nb][pivot_col]); // diag inter / diag A
+  // get the ratio between A and rest, to be used as multiplier for every
+  // generated new line
+  value_division(ratio, rest->p[line_nb][pivot_col], A->p[line_nb][pivot_col]);
 
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "Considering line %d. Rest pivot = ", line_nb);
@@ -767,12 +773,16 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
     fprintf(stderr, "\n");
   #endif
 
-  // consider the decomposition in prime factors of the "pivot" = ratio (inters. pivot / A pivot):
+  // consider the decomposition in prime factors of the "pivot" = ratio
+  // (inters. pivot / A pivot):
   // if the "pivot" is 15, will take out the right p%3==0/1/2 and p%5==0/1/2/3/4
-  // only one case p%15=c (the intersection) will not enter these (combination of) cases :)
+  // only one case p%15=c (the intersection) will not enter these (combination
+  // of) cases :)
   // can be empty, if p=1 then size=0 and the whole loop is skipped.
-  // if a prime factor appears multiple times, multiply-accumulate: (2,2,2) -> (2,4,8)
-  num_factors = value_prime_factors(ratio, &prime_factors);  // prime factors of pivot ratio.
+  // if a prime factor appears multiple times, multiply-accumulate:
+  // (2,2,2) -> (2,4,8)
+  num_factors = value_prime_factors(ratio, &prime_factors);
+                                          // prime factors of pivot ratio.
 
   // scan the prime factors: prime_factors->p[p].
   for(int p = 0; p < num_factors; p++) {
@@ -827,7 +837,8 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
         value_print(stderr, P_VALUE_FMT, modulo);
       #endif
 
-      value_modulus(tmp, Intersection->p[line_nb][Intersection->NbColumns-1], multiply);
+      value_modulus(tmp, Intersection->p[line_nb][Intersection->NbColumns-1],
+                    multiply);
       if(value_eq(tmp, modulo)) {
         // no need to do anything there, this modulo hits the intersection
         // and will be considered in the rest :)
@@ -855,7 +866,8 @@ static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_column
         for(int ll = line_nb+1; ll < A->NbRows; ll++) {
           if(value_notzero_p(newLat->p[ll][pivot_col])) {
             // new coefficient: set it to the one of the intersection
-            value_assign(newLat->p[ll][pivot_col], Intersection->p[ll][pivot_col]);
+            value_assign(newLat->p[ll][pivot_col],
+                         Intersection->p[ll][pivot_col]);
             // adjust constant:
             value_division(tmp, modulo, step); // iteration number 0/1/2/...
             value_addmul(newLat->p[ll][newLat->NbColumns-1],
