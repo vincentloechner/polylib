@@ -960,16 +960,19 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
 } /* same_equalities */
 
 /*
- * Try to remove the equalities from A->P in the single LBL A.
- * In place. A->P is a domain.
+ * Try to simplify the equalities from A->P, in the single LBL A.
+ * In place. A->P is a domain (all polyhedra have the same set of equalities).
+ * 
+ * Puts columns of zeros on the right of A->Lat so that those dimensions can
+ * be projected out (at next step).
  */
-static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
+static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
 {
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
-    Matrix *ker=NULL, *H = NULL, *NewL;
-    Matrix *eq_hermite = NULL, *eq_U = NULL;
+    Matrix *H = NULL, *NewL;
+    Matrix *eq_hermite = NULL, *ker = NULL;
 
-    // remove equalities in domain P and change Lat to spread the same space
+    // simplify Lat with the equalities of domain P
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "P has equalities\n");
       fprintf(stderr, "Equality matrix (including constants): ");
@@ -977,91 +980,68 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
     #endif
 
     // compute the kernel of Equalities matrix using Hermite:
-    left_hermite(Equalities, &eq_hermite, NULL, &eq_U);
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "hermite eq = ");
-      Matrix_Print(stderr, P_VALUE_FMT, eq_hermite);
-      fprintf(stderr, "hermite U = ");
-      Matrix_Print(stderr, P_VALUE_FMT, eq_U);
-    #endif
-
-    // if we are using full Eq_U, then H is always = Id since this spreads the
-    // whole space.
-    // ker = eq_U;
-
-    // the kernel of Equalities is the last NbColumns - NbEq columns of eq_U
-    Matrix_subMatrix(eq_U, 0, A->P->NbEq, eq_U->NbRows, eq_U->NbColumns, &ker);
-    Matrix_Free(eq_U);
+    left_hermite(Equalities, &eq_hermite, NULL, &ker);
     Matrix_Free(eq_hermite);
-    // but some equalities there cannot be removed since they lose the integer
-    // property.
-    // TODO: check which ones can be removed.
 
-
+    // the kernel of Equalities is the last (NbEq) columns of ker
+    //            -----NbEq------
+    // ker = *..* k_0..k_{NbEq-1} c
+    // move them left, and fill the right columns with zeros in matrix ker,
+    // which becomes:
+    //       -----NbEq------
+    // ker = k_0..k_{NbEq-1} 0 ... 0 c
+    for(int i = 0; i < ker->NbRows; i++) {
+      for(int j = 0; j < ker->NbColumns; j++) {
+        if(j < ker->NbColumns - A->P->NbEq - 1) {
+          value_assign(ker->p[i][j], ker->p[i][j + A->P->NbEq]);
+        }
+        else if(j != ker->NbColumns - 1) {
+          value_set_si(ker->p[i][j], 0);
+        }
+      }
+    }
     #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "ker of eq: ");
+      fprintf(stderr, "ker of Eq: ");
       Matrix_Print(stderr, P_VALUE_FMT, ker);
     #endif
-    
+
+    // Compute H = affine HNF of ker:
     AffineHermite(ker, &H, NULL);
     Matrix_Free(ker);
     // We know that: Eq . H = Eq . Ker(Eq) = 0
-
-
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "Matrix H: ");
       Matrix_Print(stderr, P_VALUE_FMT, H);
-      fprintf(stderr, "Lattice of A: ");
-      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
 
-    // TODO: complete the matrix
-    // to avoid eliminating non integer variables.
-    // put columns of zeroes on the right of H here
+    // TODO: CHECK THAT THIS IS CORRECT
+    // if the bottom right value of H is not one, this means that
+    // the transformation matrix is not integer but rational.
+    // just make it integer to eliminate rational points.
+    // (see ZImPre3 for an example where this is necessary)
+    // value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
 
-
-    // // TRYING: completing H with Id:
-    //       [with (0..0 1 0..0)^T columns on the right]
-    // Matrix *HH = Matrix_Alloc(H->NbRows, H->NbRows);
-    // for(int i = 0; i < HH->NbRows; i++) {
-    //   for(int j = 0; j < HH->NbColumns; j++) {
-    //     if(j < H->NbColumns - 1) {
-    //       value_assign(HH->p[i][j], H->p[i][j]);
-    //     }
-    //     else if(j == HH->NbColumns-1) {
-    //       value_assign(HH->p[i][j], H->p[i][H->NbColumns-1]);
-    //     }
-    //     else if(i == j) {
-    //       value_set_si(HH->p[i][j], 1);
-    //     }
-    //     else {
-    //       value_set_si(HH->p[i][j], 0);
-    //     }
-    //   }
-    // }
-    // Matrix_Free(H);
-    
-    // // TODO: CHECK THAT THIS IS CORRECT
-    // // if the bottom right value of H is not one, this means that
-    // // the transformation matrix is not integer but rational.
-    // // just make it integer to eliminate rational points.
-    // // (see ZImPre3 for an example where this is necessary)
-    value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
-
+    // TODO: verify that.
+    // The result is just empty in this case...
+    if(value_notone_p(H->p[H->NbRows-1][H->NbColumns-1])) {
+      Matrix_Free(H);
+      Domain_Free(A->P);
+      A->P = NULL;  // will be fixed by caller
+      return;
+    }
 
     // NewL = L . H
     NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
     Matrix_Product(A->Lat, H, NewL);
 
-    // TODO: here, transform the columns of zeros of H to Id so we keep the
-    // equalities :)
+    // Transform the columns of zeros of H to Id so we keep the
+    // equalities in the transformed domain :)
+    for(int j = A->P->NbEq; j < H->NbColumns - 1; j++) {
+      value_set_si(H->p[j][j], 1);
+    }
     // NewP = H^{-1} . P
     Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
-    // TODO: check that is that correct. H is not unimodular!
-    // idea: take the zero-columns of NewL and flatten NewP along those
-    // dimensions (?)
-    // -> just make them = 0 since preimage stretched the polyhedron along
-    // the whole dimension.
+    // TODO: check that is that correct. H is not unimodular?!
 
     // update A
     Domain_Free(A->P);
@@ -1082,7 +1062,7 @@ static void sLBL_Remove_Equalities(LBL *A, Matrix *Equalities)
       fprintf(stderr, "P has no equalities.\n");
     #endif
   }
-} /* sLBL_Remove_Equalities */
+} /* sLBL_Simplify_Equalities */
 
 /*
  * Set the affine function A->Lat to normal form in single LBL 'A'.
@@ -1169,7 +1149,7 @@ static Bool sLBL_Verify_Empty(LBL *A)
 
   // A is empty and alone.
   // Verify that it is canonical and return.
-  if(A->P->Dimension > 0) {
+  if(!A->P || A->P->Dimension > 0) {
     int dimension = A->Lat->NbRows;
     Domain_Free(A->P);
     Matrix_Free(A->Lat);
@@ -1193,17 +1173,24 @@ static Bool sLBL_Verify_Empty(LBL *A)
 /*
  * Remove the columns of zeros from A->Lat.
  * In place. A->P is a domain.
+ * 
+ * This is equivalent to removing an existential variable: need to verify that
+ * there is an integer solution in case this removes an equality
  */
 static void sLBL_Lat_Remove_Zeros(LBL *A)
 {
-  // TODO: this is the naive version,
-  // need to consider integer existential variable elimination and dark shadow!
+  // TODO: need to consider integer existential variable elimination and dark
+  // shadow!
+
+  // Could use DomainConstraintSimplify() to eliminate obvious empty case
 
   Polyhedron *NewP;
   int nbZeros = count_zeroCols(A->Lat);
   if(nbZeros) {
     Matrix *Transformation;
-    Transformation = Matrix_Alloc(A->Lat->NbColumns-nbZeros, A->Lat->NbColumns);
+    Transformation = Matrix_Alloc(A->Lat->NbColumns - nbZeros,
+                                  A->Lat->NbColumns);
+    // Id on top-left
     for (int  i = 0; i < Transformation->NbRows; i++) {
       for (int j = 0; j < Transformation->NbColumns; j++) {
         if(i==j && i!=Transformation->NbRows-1) {
@@ -1214,6 +1201,7 @@ static void sLBL_Lat_Remove_Zeros(LBL *A)
         }
       }
     }
+    // 1 on bottom-right
     value_set_si(
       Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],
       1);
@@ -1222,18 +1210,22 @@ static void sLBL_Lat_Remove_Zeros(LBL *A)
     Domain_Free(A->P);
     A->P = NewP;
     Matrix_Free(Transformation);
-    Matrix* NewL = Matrix_Alloc(A->Lat->NbRows,A->Lat->NbColumns-nbZeros);
+
+    // Take the first columns of Lat
+    Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, A->Lat->NbColumns-nbZeros);
     for (int  i = 0; i < NewL->NbRows; i++) {
       for (int j = 0; j < NewL->NbColumns; j++) {
         if(j < NewL->NbColumns-1) {
-          value_assign(NewL->p[i][j],A->Lat->p[i][j]);
-        }else{
-          value_assign(NewL->p[i][j],A->Lat->p[i][A->Lat->NbColumns-1]);
+          value_assign(NewL->p[i][j], A->Lat->p[i][j]);
+        }
+        else {
+          value_assign(NewL->p[i][j], A->Lat->p[i][A->Lat->NbColumns-1]);
         }
       }
     }
     Matrix_Free(A->Lat);
     A->Lat = NewL;
+
     #ifdef CANONICAL_DEBUG
       LBLPrint(stderr, P_VALUE_FMT, A);
     #endif
@@ -1317,13 +1309,14 @@ static void sLBL_Canonical(LBL* A)
   }
   // Now all polyhedra of domain A->P have the same equalities
 
-  // We can try to remove some equalities from A->P
-  sLBL_Remove_Equalities(A, Equalities);
+  // We can simplify the equalities from A->P to set columns of zeros on the
+  // right of matrix Lat
+  sLBL_Simplify_Equalities(A, Equalities);
   Matrix_Free(Equalities);
 
   // check that the result is not empty after removing equalities
   // (example ZAlloc1b.in needs that)
-  if(emptyQ(A->P)) {
+  if(!A->P) {
     if(sLBL_Verify_Empty(A)) {
       // head was empty and has been replaced (with next).
       // need to canonicalize the (new) current LBL itself
@@ -1336,7 +1329,8 @@ static void sLBL_Canonical(LBL* A)
   sLBL_Lat_Normalize(A);
 
   // Remove the columns of zeros from A->Lat
-  // sLBL_Lat_Remove_Zeros(A);
+  // do the projection along those dimensions, verify integer non-emptyness
+  sLBL_Lat_Remove_Zeros(A);
 
   return;
 } /* sLBL_Canonical */
