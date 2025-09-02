@@ -19,3 +19,5 @@ D 1
 
 # ZAlloc test
 F 100
+
+# j can be eliminated, but careful, i goes from 0 to 110
