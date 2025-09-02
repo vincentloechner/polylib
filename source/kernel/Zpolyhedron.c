@@ -221,33 +221,20 @@ Bool LBLIncludes(LBL *A, LBL *B)
 
 
 /*
- * Print the contents of a single LBL 'A'
- */
-static void sLBL_Print(FILE *fp, const char *format, LBL *A)
-{
-  if (A == NULL)
-    return;
-  fprintf(fp, "LBL: Dimension %d \n", A->Lat->NbRows - 1);
-
-  if(emptyQ(A->P)) {
-    fprintf(fp, "\n<empty>>\n");
-  }
-  else {
-    fprintf(fp, "\nLATTICE: \n");
-    Matrix_Print(fp, format, A->Lat);
-    Polyhedron_Print(fp, format, A->P);
-  }
-  return;
-} /* sLBL_Print */
-
-
-/*
  * Print the contents of an LBL 'A'
  */
 void LBLPrint(FILE *fp, const char *format, LBL *A)
 {
   for( ; A; A = A->next) {
-    sLBL_Print(fp, format, A);
+    fprintf(fp, "LBL: Dimension %d \n", A->Lat->NbRows - 1);
+    if(emptyQ(A->P)) {
+      fprintf(fp, "\n<empty>>\n");
+    }
+    else {
+      fprintf(fp, "\nLATTICE: \n");
+      Matrix_Print(fp, format, A->Lat);
+      Polyhedron_Print(fp, format, A->P);
+    }
     if(A->next)
       fprintf(fp, "\nUNION ");
   }
@@ -960,13 +947,13 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
 } /* same_equalities */
 
 /*
- * Try to simplify the equalities from A->P, in the single LBL A.
+ * Simplify the equalities from A->P, in the single LBL A.
  * In place. A->P is a domain (all polyhedra have the same set of equalities).
  * 
- * Puts columns of zeros on the right of A->Lat so that those dimensions can
- * be projected out (at next step).
+ * Modifies A->Lat and A->P.
+ * Returns True if A is modified
  */
-static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
+static Bool sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
 {
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
     Matrix *H = NULL, *NewL;
@@ -1010,7 +997,7 @@ static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
       Matrix_Print(stderr, P_VALUE_FMT, H);
     #endif
 
-    // TODO: CHECK THAT THIS IS CORRECT
+    // previous method was:
     // if the bottom right value of H is not one, this means that
     // the transformation matrix is not integer but rational.
     // just make it integer to eliminate rational points.
@@ -1018,56 +1005,43 @@ static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
     // value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
 
     // TODO: verify that.
-    // The result is just empty in this case...
+    // The result is just empty when the bottom-right value of H is not one!
     if(value_notone_p(H->p[H->NbRows-1][H->NbColumns-1])) {
-      Matrix_Free(H);
       Domain_Free(A->P);
       A->P = NULL;  // will be fixed by caller
-      return;
     }
+    else {
+      // NewL = L . H
+      NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
+      Matrix_Product(A->Lat, H, NewL);
 
-    // NewL = L . H
-    NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
-    Matrix_Product(A->Lat, H, NewL);
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "New Lat: ");
-      Matrix_Print(stderr, P_VALUE_FMT, NewL);
-    #endif
+      // NewP = H^{-1} . P
+      Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
+      // H is not necessarily unimodular, but it has multiplied Lat: this
+      // newP could have less points than the original one, which is correct
+      // since some non-integer solutions to the equalities have been removed.
 
-    // THIS IS NOT NECESSARY:
-    // // Transform the columns of zeros of H to 1's so we keep the
-    // // equalities in the transformed domain :)
-    // for(int i = 0; i < H->NbRows-1; i++) {
-    //   for(int j = A->P->NbEq; j < H->NbColumns - 1; j++) {
-    //     // if(i==j)
-    //       value_set_si(H->p[i][j], 1);  
-    //   }
-    // }
-    // #ifdef CANONICAL_DEBUG
-    //   fprintf(stderr, "New matrix H (for preimage): ");
-    //   Matrix_Print(stderr, P_VALUE_FMT, H);
-    // #endif
-
-    // NewP = H^{-1} . P
-    Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
-    // TODO: check that is that correct. H is not unimodular?!
-
-    // update A
-    Domain_Free(A->P);
-    Matrix_Free(A->Lat);
-    A->P = NewP;
-    A->Lat = NewL;
+      // update A
+      Domain_Free(A->P);
+      Matrix_Free(A->Lat);
+      A->P = NewP;
+      A->Lat = NewL;
+    }
 
     Matrix_Free(H);
     #ifdef CANONICAL_DEBUG
+      fprintf(stderr, "New Lat: ");
+      Matrix_Print(stderr, P_VALUE_FMT, NewL);
       fprintf(stderr, "New P: ");
       Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
     #endif
+    return(True);
   }
   else { // P contains no equalities
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "P has no equalities.\n");
     #endif
+    return(False);
   }
 } /* sLBL_Simplify_Equalities */
 
@@ -1119,6 +1093,12 @@ static void sLBL_Lat_Normalize(LBL *A)
       fprintf(stderr, "A is HNF.\n");
     #endif
   }
+  
+  // if A->Lat has empty columns on the right, and that they that do not
+  // appear in the constraints of P, then P is under-constrained. If we add
+  // an equality to P it can be simplified just automatically :)
+  
+
 } /* sLBL_Lat_Normalize */
 
 
@@ -1128,7 +1108,7 @@ static void sLBL_Lat_Normalize(LBL *A)
  * returns False if A->next did not change.
  * In place.
  */
-static Bool sLBL_Verify_Empty(LBL *A)
+static Bool sLBL_Remove_Empty(LBL *A)
 {
   // A is empty
   #ifdef CANONICAL_DEBUG
@@ -1182,7 +1162,7 @@ static Bool sLBL_Verify_Empty(LBL *A)
  * In place. A->P is a domain.
  * 
  * This is equivalent to removing an existential variable: need to verify that
- * there is an integer solution in case this removes an equality
+ * there is an integer solution in the removed dimension
  */
 static void sLBL_Lat_Remove_Zeros(LBL *A)
 {
@@ -1273,6 +1253,7 @@ static void sLBL_Lat_Remove_Zeros(LBL *A)
  */
 static void sLBL_Canonical(LBL* A)
 {
+  int simplified;
   #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Entering sLBL_Canonical\n");
     fprintf(stderr, "--------- Input Lat: ");
@@ -1286,8 +1267,16 @@ static void sLBL_Canonical(LBL* A)
     return;
   }
 
+  // Normalize the affine lattice A->Lat (can update A->P)
+  sLBL_Lat_Normalize(A);
+
+  // simplify non-integer constraints such that they intersect at least one
+  // integer point (to avoid infinite empty integer polyhedra for example)
+  A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
+
+  // check emptyness
   if(emptyQ(A->P)) {
-    if(sLBL_Verify_Empty(A)) {
+    if(sLBL_Remove_Empty(A)) {
       // head was empty and has been replaced (with next).
       // need to canonicalize the (new) current LBL itself
       // (since the caller will not rescan it!):
@@ -1337,24 +1326,15 @@ static void sLBL_Canonical(LBL* A)
   }
   // Now all polyhedra of domain A->P have the same equalities
 
-  // We can simplify the equalities from A->P to set columns of zeros on the
-  // right of matrix Lat
-  sLBL_Simplify_Equalities(A, Equalities);
+  // We can remove the equalities from A->P
+  simplified = sLBL_Simplify_Equalities(A, Equalities);
   Matrix_Free(Equalities);
 
-  // check that the result is not empty after removing equalities
-  // (example ZAlloc1b.in needs that)
-  if(!A->P) {
-    if(sLBL_Verify_Empty(A)) {
-      // head was empty and has been replaced (with next).
-      // need to canonicalize the (new) current LBL itself
-      // (since the caller will not rescan it!):
-      sLBL_Canonical(A);
-    }
+  // If some equalities were eliminated start again from scratch!
+  // (Lat and P changed and could be further simplified)
+  if(!A->P || simplified) {
+    sLBL_Canonical(A);
   }
-
-  // Normalize the affine lattice A->Lat
-  sLBL_Lat_Normalize(A);
 
   // Remove the columns of zeros from A->Lat
   // do the projection along those dimensions, verify integer non-emptyness

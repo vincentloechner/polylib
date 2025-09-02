@@ -9,7 +9,7 @@ POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
 Inequality: [  -1   20  ]
-Inequality: [   2  -21  ]
+Inequality: [   1  -11  ]
 Rays 2 3
-Vertex: [  21  ]/2
+Vertex: [  11  ]/1
 Vertex: [  20  ]/1
