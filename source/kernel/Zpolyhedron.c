@@ -1045,6 +1045,119 @@ static Bool sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
   }
 } /* sLBL_Simplify_Equalities */
 
+
+/*
+ * compute the dark shadow of polyhedron P along dimension dim
+ * (projected along dim).
+ * 
+ * consider P a single polyhedron, even if P->next is set
+ */
+static Polyhedron *dark_shadow(Polyhedron *P, int dim)
+{
+  // check if that dimension is constrained in P
+  // - if it is not constrained, just add an equality {i_dim = 0}.
+  // - if it is positive constrained,
+  //   scan all positive constraints on i_dim of the form:
+  //     {... + alpha . i_col + ... + c >= 0}, with alpha > 0
+  //   and add this constraint to P:
+  //     {... + alpha . i_col + ... + c + alpha-1} >= 0
+  // - if negative constrained do the opposite
+  //   (take the smallest between them)
+
+  Matrix *constraints; // new constraints to be added to P
+
+  return (NULL);
+}
+
+/*
+ * compute the exact shadow of domain P along dimension dim.
+ * 
+ * P is a domain
+ */
+static Polyhedron *exact_shadow(Polyhedron *P, int dim)
+{
+  Matrix *T; // transformation: Id without the dim column
+  T = Matrix_Alloc(P->Dimension + 1, P->Dimension);
+  Vector_Set(T->p_Init, 0, T->p_Init_size);
+  for(int i = 0; i < P->Dimension; i++) {
+    if(i >= dim) {
+      value_set_si(T->p[i+1][i], 1);
+    }
+    else {
+      value_set_si(T->p[i][i], 1);
+    }
+  }
+
+  return (NULL);
+}
+
+/*
+ * Check that the zero columns of lattice A->Lat have one single integer
+ * point in A->P as predecessor.
+ * 
+ * case 1. If A->Lat has empty columns on the right, and that they that do not
+ * appear in the constraints of A->P, then A->P is under-constrained. We just
+ * add an equality to P and it will get simplified automatically :)
+ * case 2. If there are more than one integer point in A->P that map to the
+ * same point by the A->Lat function, the redundant ones need to be eliminated
+ * 
+ */
+static void sLBL_Simplify_Zero_Dimensions(LBL *A)
+{
+  // scan the zero columns on the right of A->Lat
+  for (int col = A->Lat->NbColumns-2 ; col >= 0; col--) {
+    int i;
+    for (i = 0; i < A->Lat->NbRows; i++) {
+      if (value_notzero_p(A->Lat->p[i][col])) {
+        break;
+      }
+    }
+    if(i == A->Lat->NbRows) {
+      // col is empty
+      // check if that dimension (corresponding to variable i_col) is
+      // constrained in all polyhedra of domain A->P.
+      // - if it is not constrained, just add an equality {i_col = 0}.
+      // - if it is positive constrained, set the thickness to one:
+      //   scan all positive constraints on i_col of the form:
+      //     {... + alpha . i_col + ... >= 0}, with alpha > 0
+      //   and add this constraint to P:
+      //     {... + alpha . i_col + ... + alpha-1} <= 0 (oppose!)
+      // - TODO: if it is not positive constrained but only negative
+      //   constrained, what to do?
+      // - what if there is a conflict between different members of the union?
+
+      // easier method:
+      // build the domain transformed to start at i_col = 0 (each constraint
+      // of each polyhedron)
+      // then add constraint i_col <= 1.
+      // does not work, non unimodular transformation.
+
+      // solution 3: compute the dark shadow and the exact shadow.
+      // if dark shadow projection is in exact shadow: can project
+      // else: keep
+
+      // TODO: what if some polyhedra of the union can be projected and others
+      // cannot? should we separate them?
+      Polyhedron *dark = NULL;
+      for(Polyhedron *pp = A->P; pp; pp = pp->next) {
+        int pos_constrained = 0, // number of alpha's > 0
+            neg_constrained = 0, // number of alpha's < 0
+            eq_constrained = 0;  // equality (both pos and neg), keep
+        dark = AddPolyToDomain(dark_shadow(pp, col), dark);
+      }
+      // project P exactly and verify if dark covers exact = project(P)
+      // -> then remove row
+      Polyhedron *exact = exact_shadow(A->P, col);
+
+    }
+    else {
+      // non empty column, everything on the left is also non empty, exit.
+      break;
+    }
+  }
+
+}
+
 /*
  * Set the affine function A->Lat to normal form in single LBL 'A'.
  * In place. A->P is a domain.
@@ -1094,11 +1207,6 @@ static void sLBL_Lat_Normalize(LBL *A)
     #endif
   }
   
-  // if A->Lat has empty columns on the right, and that they that do not
-  // appear in the constraints of P, then P is under-constrained. If we add
-  // an equality to P it can be simplified just automatically :)
-  
-
 } /* sLBL_Lat_Normalize */
 
 
@@ -1267,8 +1375,11 @@ static void sLBL_Canonical(LBL* A)
     return;
   }
 
-  // Normalize the affine lattice A->Lat (can update A->P)
+  // Normalize the affine lattice A->Lat (can also update A->P)
   sLBL_Lat_Normalize(A);
+
+  // Check that A->P does not have multiple z mapping to the same point Lat z
+  sLBL_Simplify_Zero_Dimensions(A);
 
   // simplify non-integer constraints such that they intersect at least one
   // integer point (to avoid infinite empty integer polyhedra for example)
@@ -1415,13 +1526,13 @@ static LBL *FindLatticePred(Matrix *L, LBL *A) {
  * count the number of columns of zeros on the right of the linear part
  * of a lattice function
  */
-static int count_zeroCols (Matrix* M)
+static int count_zeroCols(Matrix* M)
 {
-  int nb=0;
-  for (int j = M->NbColumns-2 ; j >= 0; j--) {
-    Bool isZero=True;
-    for (int i = 0; i < M->NbRows; i++) {
-      if (value_notzero_p(M->p[i][j])){
+  int nb = 0;
+  for (int j = M->NbColumns-2; j >= 0; j--) {
+    Bool isZero = True;
+    for(int i = 0; i < M->NbRows; i++) {
+      if(value_notzero_p(M->p[i][j])) {
         isZero=False;
         break;
       }

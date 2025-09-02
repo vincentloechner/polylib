@@ -246,13 +246,11 @@ Vector *Vector_Read() {
  */
 void Vector_Set(Value *p, int n, unsigned length) {
 
-  Value *cp;
   int i;
 
-  cp = p;
   for (i = 0; i < length; i++) {
-    value_set_si(*cp, n);
-    cp++;
+    value_set_si(*p, n);
+    p++;
   }
   return;
 } /* Vector_Set */
