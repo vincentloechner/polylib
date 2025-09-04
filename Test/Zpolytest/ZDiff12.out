@@ -1,0 +1,76 @@
+A - B = LBL: Dimension 2
+
+LATTICE:
+3 3
+   2    0    0 
+   0    2    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1   -1  ]
+Inequality: [   1    0   20  ]
+Inequality: [  -1    0   20  ]
+Inequality: [   0    1   20  ]
+Rays 4 4
+Vertex: [  20   -1  ]/1
+Vertex: [ -20   -1  ]/1
+Vertex: [ -20  -20  ]/1
+Vertex: [  20  -20  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0    1   -1  ]
+Inequality: [   1    0   20  ]
+Inequality: [  -1    0   20  ]
+Inequality: [   0   -1   20  ]
+Rays 4 4
+Vertex: [  20    1  ]/1
+Vertex: [ -20    1  ]/1
+Vertex: [ -20   20  ]/1
+Vertex: [  20   20  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0   -1  ]
+Inequality: [   1    0   20  ]
+Inequality: [   0    1   20  ]
+Inequality: [   0   -1   20  ]
+Rays 4 4
+Vertex: [ -20  -20  ]/1
+Vertex: [  -1  -20  ]/1
+Vertex: [  -1   20  ]/1
+Vertex: [ -20   20  ]/1
+
+
+B - A = LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  -41  ]
+Inequality: [  -1  100  ]
+Rays 2 3
+Vertex: [  41  ]/1
+Vertex: [ 100  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   2    1 
+   0    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1    0  ]
+Inequality: [  -1   19  ]
+Rays 2 3
+Vertex: [   0  ]/1
+Vertex: [  19  ]/1

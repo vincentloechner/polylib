@@ -494,6 +494,10 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
   return Result;
 } /* LatticeDifference */
 
+// void left_hermite(Matrix *M, Matrix **Hp, Matrix **Qp, Matrix **Up)
+//  |A  B| . |Ul Ur| =  M U = H = |D    0  |  <- |A B| Ur = 0
+//  |A  0|                        |X  inter|  <- A Ur(top) = inter
+// (then do the preimage of P by U(part))
 
 /*
  * Compute the intersection between two lattices.
@@ -501,25 +505,25 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
  *
  * Algorithm:
  * Let:
- *  A =   A' | a      B =   B' | b
- *      0..0 | 1          0..0 | 1
+ *  A =   A' | a      B =   B'  | b
+ *      0..0 | 1           0..0 | 1
  * 
  * Build matrix Tmp as:
- *   1     0...0 |   1      0...0
- *   a      A'   |   b       B'
- * --------------+----------------
- *   1     0...0 |    0 ..    0
- *   a      A'   |    0 ..    0
+ *   1   0...0 |   1    0...0
+ *   a    A'   |   b     B'
+ * ------------+--------------
+ *   1   0...0 |    0 .. 0
+ *   a    A'   |    0 .. 0
  * 
  * Then computes H = left Hermite of Tmp
  * H is of the form:
- * H =   D  |   0             D is a square matrix
+ * H =   D  |     0            D is a square matrix
  *     -----+-----------
  *       X  |  1 0 ... 0
  *          |  r    R
  * 
- * with   R    r
- *      0...0  1   being our result
+ * with   R   | r
+ *      0...0 | 1   being our result
  *
  * if the number above r is not 1 then the intersection is not integer
  * (there is no solution to the intersection)

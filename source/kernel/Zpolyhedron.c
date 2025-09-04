@@ -226,12 +226,12 @@ Bool LBLIncludes(LBL *A, LBL *B)
 void LBLPrint(FILE *fp, const char *format, LBL *A)
 {
   for( ; A; A = A->next) {
-    fprintf(fp, "LBL: Dimension %d \n", A->Lat->NbRows - 1);
+    fprintf(fp, "LBL: Dimension %d\n", A->Lat->NbRows - 1);
     if(emptyQ(A->P)) {
       fprintf(fp, "\n<empty>>\n");
     }
     else {
-      fprintf(fp, "\nLATTICE: \n");
+      fprintf(fp, "\nLATTICE:\n");
       Matrix_Print(fp, format, A->Lat);
       Polyhedron_Print(fp, format, A->P);
     }
@@ -268,7 +268,8 @@ LBL *LBLIntersection(LBL *A, LBL *B)
   LBL *Result = NULL, *tempA = NULL, *tempB = NULL;
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
-    errormsg1("LBLIntersection", "dimincomp", "incompatible dimensions between domains");
+    errormsg1("LBLIntersection", "dimincomp",
+      "incompatible dimensions between domains");
     return (NULL);
   }
 
@@ -373,14 +374,18 @@ LBL *LBLPreimage(LBL *A, Matrix *Func) {
  * Return the LBL intersection of the single-LBLs 'A' and 'B'.
  * The result is always a single LBL, NULL if empty.
  * 
- * LInter is the intersection of the two lattices of A and B.
- * If LInter is empty, we return NULL.
- * Otherwise, we calculate PInter = intersection of the rational hulls of
- * A and B. We calculate P = Preimage of PInter by LInter and finally we
- * build the result LBL (Linter, P), in canonical form.
- *
  * USAGE: A and B's first Lattice considered only (no chained list),
  *        but can contain a polyhedral domain.
+ * 
+ * Algorithm:
+ * - IF the input LBLs are Z-Polyhedra, we can simply compute:
+ *    LInter is the intersection of the two lattices AL and BL.
+ *    Compute PI = the intersection of the images of AP by AL, and BP by BL
+ *    Build the result Z-polyhedron (Linter, preimage of PI by Linter)
+ * - ELSE:
+ *    build explicit equalities between points of A and B and simplify.
+ *      build the LBL { AL z | AL z = BL z', z \in AP, z' \in BP },
+ *      and remove z' by normalizing the result
  */
 static LBL *sLBL_Intersection(LBL *A, LBL *B) {
 
@@ -389,37 +394,62 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
   Polyhedron *PInter, *ImageA, *ImageB, *PreImage;
 
   LInter = LatticeIntersection(A->Lat, B->Lat);
-
   if (isEmptyLattice(LInter)) {
     Matrix_Free(LInter);
     return (NULL);
   }
 
-  ImageA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
-  ImageB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
-  PInter = DomainIntersection(ImageA, ImageB, MAXNOOFRAYS);
-  // Although PInter can be an over approximation (a rational convex hull of
-  // the resulting LBL), its preimage by LInter will constrain it to be the
-  // right LBL, including potential "holes".
-  // TODO: proof ^^
-  // (??) does this work when there are columns of zeros in Linter?
-  // will equalities be removed from the result?
-  // if it does not, need to build explicitly.
+  if(count_zeroCols(A->Lat) == 0 && count_zeroCols(B->Lat) == 0)
+  {
+    // This works only IF there are no columns of zeros in the input LBLs:
+    // they are Z-polyhedra
 
-  if (emptyQ(PInter))
-    Result = NULL;
+    ImageA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
+    ImageB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
+    PInter = DomainIntersection(ImageA, ImageB, MAXNOOFRAYS);
+    if (emptyQ(PInter))
+      Result = NULL;
+    else {
+      PreImage = DomainPreimage(PInter, LInter, MAXNOOFRAYS);
+      Result = LBLAlloc(LInter, PreImage);
+      Domain_Free(PreImage);
+    }
+
+    Matrix_Free(LInter);
+    Domain_Free(PInter);
+    Domain_Free(ImageB);
+    Domain_Free(ImageA);
+    return (Result);
+  }
   else {
-    PreImage = DomainPreimage(PInter, LInter, MAXNOOFRAYS);
-    Result = LBLAlloc(LInter, PreImage);
-    Domain_Free(PreImage);
+    Matrix *newL;
+    Matrix_Free(LInter);
+
+// *************************************************
+// TODO!!!
+// is there a unimodular matrix that transforms A into LInter
+// and another one transforming B into LInter ????
+// *************************************************
+
+    // build the LBL { AL z | AL z = BL z', z \in AP, z' \in BP },
+    //          z     z'   cst
+    // newL =   AL |  0   | Al |
+    //           0 |  0   | 1  |
+    newL = Matrix_Alloc(A->Lat->NbRows, A->Lat->NbColumns + B->Lat->NbColumns - 1);
+    for(int i = 0; i < newL->NbRows; i++) {
+      for(int j = 0; j < newL->NbColumns; j++) {
+        if(j == i && i != newL->NbRows-1) { // left diagonal
+          value_set_si(newL->p[i][j], 1);
+        }
+        else {
+          value_set_si(newL->p[i][j], 0);
+        }
+      }
+    }
+    value_set_si(newL->p[newL->NbRows-1][newL->NbColumns-1], 1);
+  
   }
 
-  Matrix_Free(LInter);
-  Domain_Free(PInter);
-  Domain_Free(ImageB);
-  Domain_Free(ImageA);
-
-  return (Result);
 } /* sLBL_Intersection */
 
 
@@ -632,7 +662,7 @@ static LBL *sLBL_Image(LBL *A, Matrix *Func)
  * be equal to the number of rows of the matrix representing the
  * lattice of Z.
  * Algorithm:
- * - build the LBL { z' | Lz = Gz', z \in A->P },
+ * - build the LBL { z' | L z = G z', z \in A->P, z' free},
  * - remove z by normalizing the result
  */
 static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
