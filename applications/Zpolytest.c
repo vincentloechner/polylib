@@ -189,7 +189,7 @@ int main() {
     ZD = LBLDifference(ZB, ZA);
     printf("A - B = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
-    printf("B - A = ");
+    printf("\n\nB - A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZD);
     break;
     
