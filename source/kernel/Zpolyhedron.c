@@ -1046,14 +1046,17 @@ static Bool sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
 } /* sLBL_Simplify_Equalities */
 
 
+// TODO: what about higher dimensions than dim? Take into account or not ?
+// (probably yes)
+
 /*
  * compute the inside of polyhedron P that can be projected (along dim) to
  * get the dark shadow.
  * 
  * consider P a single polyhedron, even if P->next is set.
- * update is set to True if the original polyhedron should be updated
+ * returns NULL if dark shadow = exact shadow.
  */
-static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim, Bool *update)
+static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
 {
   // check if that dimension is constrained in P
   // - if it is not constrained, just add an equality {i_dim = 0}.
@@ -1079,48 +1082,44 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim, Bool *update)
   // count constraints on this variable (dim)
   for(int c = 0; c < P->NbConstraints; c++) {
     if(value_zero_p(P->Constraint[c][dim+1])) {
+      // alpha = 0
       continue;
     }
     if(value_zero_p(P->Constraint[c][0])) {
+      // should not happen, equalities have been removed before
       eq_constrained++;
     }
-    else if(value_pos_p(P->Constraint[c][dim+1])) {
+    else if(value_pos_p(P->Constraint[c][dim+1]) &&
+      value_notone_p(P->Constraint[c][dim+1])) {
+      // alpha > 1 (strict)
       pos_constrained++;
     }
-    else { //if(value_neg_p(P->Constraint[c][dim]))
+    else if(value_neg_p(P->Constraint[c][dim+1]) &&
+      value_notmone_p(P->Constraint[c][dim+1])) {
+      // alpha < -1 (strict)
       neg_constrained++;
     }
   }
 
-  *update = False; // do not update P in caller by default
-  if(eq_constrained + pos_constrained + neg_constrained == 0) {
-    // not constrained at all, add equality {i_dim=0}
-
-    // update P in caller, this can take advantage of equality removal later
-    *update = True;
-    return(result);
-  }
-  else if(pos_constrained + neg_constrained == 0) {
-    // only equality constrained, can be safely ignored :)
-    result = Polyhedron_Copy(P);
+  if(eq_constrained > 0 || pos_constrained == 0 || neg_constrained == 0) {
+    // one side is integer (or open to infinite), can be safely ignored :)
+    return(NULL);
   }
   else {
+    // pos_constrained > 0 and neg_constrained > 0.
     Matrix *extra;
     int nb_extra = 0;
-    if(pos_constrained > 0) {
-      // pos_constrained (can be eq_constrained and neg_constrained too)
+    if(pos_constrained < neg_constrained) {
+      // consider it pos_constrained (less extra to add)
       extra = Matrix_Alloc(pos_constrained, P->Dimension + 2);
       // add extra constraints on positive ones
       for(int c = 0; c < P->NbConstraints; c++) {
-        if(value_zero_p(P->Constraint[c][dim+1])) {
-          continue;
-        }
-        if(value_zero_p(P->Constraint[c][0])) {
-          // ignore equality, it is constrained already
+        if(value_zero_p(P->Constraint[c][dim+1]) ||
+          value_zero_p(P->Constraint[c][0])) {
           continue;
         }
         if(value_pos_p(P->Constraint[c][dim+1]) &&
-           value_notone_p(P->Constraint[c][dim+1])) { // alpha > 1 (strict)
+          value_notone_p(P->Constraint[c][dim+1])) { // alpha > 1 (strict)
           // from constraint:
           // {... + alpha . i_dim + ... + c >= 0}
           // add constraint:
@@ -1136,16 +1135,11 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim, Bool *update)
         }
       }
     }
-    else { // if(neg_constrained > 0)
-      // not pos_constrained, but only neg constrained (can be eq_constrained)
-      // pos_constrained (can be eq_constrained and neg_constrained too)
+    else { // neg_constrained
       extra = Matrix_Alloc(neg_constrained, P->Dimension + 2);
       for(int c = 0; c < P->NbConstraints; c++) {
-        if(value_zero_p(P->Constraint[c][dim+1])) {
-          continue;
-        }
-        if(value_zero_p(P->Constraint[c][0])) {
-          // ignore equality, it is constrained already
+        if(value_zero_p(P->Constraint[c][dim+1]) ||
+          value_zero_p(P->Constraint[c][0])) {
           continue;
         }
         if(value_neg_p(P->Constraint[c][dim+1]) &&
@@ -1176,15 +1170,23 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim, Bool *update)
   return (result);
 }
 
+
+// TODO: check if all above dimensions should also be projected, or not ?!
+
 /*
- * compute the shadow of domain P along dimension dim.
+ * compute the projection of domain P along dimension dim.
  * 
  * P is a domain
  */
-static Polyhedron *domain_exact_shadow(Polyhedron *P, int dim)
+static Polyhedron *domain_project(Polyhedron *P, int dim)
 {
   Matrix *T; // transformation: Id without the dim column
   Polyhedron *image;
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "Entering exact shadow -dimension %d- of:", dim);
+    Polyhedron_Print(stderr, P_VALUE_FMT, P);
+  #endif
+
   T = Matrix_Alloc(P->Dimension, P->Dimension + 1);
   Vector_Set(T->p_Init, 0, T->p_Init_size);
   for(int i = 0; i < P->Dimension; i++) {
@@ -1195,17 +1197,11 @@ static Polyhedron *domain_exact_shadow(Polyhedron *P, int dim)
       value_set_si(T->p[i][i], 1);
     }
   }
-  #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "computing exact shadow of domain: ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, P);
-    fprintf(stderr, "Image by: ");
-    Matrix_Print(stderr, P_VALUE_FMT, T);
-  #endif
 
   image = DomainImage(P, T, MAXNOOFRAYS);
   Matrix_Free(T);
   #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "result: ");
+    fprintf(stderr, "projected result: ");
     Polyhedron_Print(stderr, P_VALUE_FMT, image);
   #endif
 
@@ -1258,23 +1254,37 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
       // else: keep
 
       // TODO: what if some polyhedra of the union can be projected and others
-      // cannot? should we separate them?
-      // -> use update to include equalities (to be updated later on)
+      // cannot? should we separate them or just stay at the domain level?
       Polyhedron *dark = NULL;
       for(Polyhedron *pp = A->P; pp; pp = pp->next) {
-        Bool update; // a flag that tells if pp should be updated or not
-        Polyhedron *pp_inside = polyhedron_dark_source(pp, col, &update);
-        Polyhedron *pp_shadow = domain_exact_shadow(pp_inside, col);
+        Polyhedron *pp_inside, *pp_shadow;
+
+        pp_inside = polyhedron_dark_source(pp, col);
+        if(pp_inside) {
+          pp_shadow = domain_project(pp_inside, col);
+        }
+        else {
+          Polyhedron *ppnext = pp->next;
+          pp->next = NULL;
+          pp_shadow = domain_project(pp, col);
+          pp->next = ppnext;
+        }
         dark = AddPolyToDomain(pp_shadow, dark);
-        Polyhedron_Free(pp_inside);
+        if(pp_inside) {
+          Polyhedron_Free(pp_inside);
+        }
       }
-      // project P exactly and verify if dark covers exact = project(P)
-      // -> then remove row
-      Polyhedron *exact = domain_exact_shadow(A->P, col);
+      // compute exact projection of P and check if dark covers exact:
+      Polyhedron *exact = domain_project(A->P, col);
       Polyhedron *diff;
       diff = DomainDifference(exact, dark, MAXNOOFRAYS);
+
+      // is this useful? removes obvious integer empty solutions.
+      diff = DomainConstraintSimplify(diff, MAXNOOFRAYS);
+      // TODO: should check if diff has no integer solution... ???
+
       if(emptyQ(diff)) {
-        // if exact - dark = 0, project :)
+        // if exact - dark = 0, can project :)
         Matrix *newL;
         Domain_Free(A->P);
         A->P = exact;
@@ -1287,6 +1297,7 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
         Domain_Free(exact);
       }
       Domain_Free(diff);
+      Domain_Free(dark);
     }
     else {
       // non empty column, everything on the left is also non empty, exit.

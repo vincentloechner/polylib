@@ -6,7 +6,7 @@ M 2
   2 0 
   0 1
 
-# affine function (i, j) -> i
+# affine function (i) -> (i, i)
 3 2
   1 0
   1 0
