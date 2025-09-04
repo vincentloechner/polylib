@@ -14,6 +14,6 @@ M 2
   0 0 1
 
 D 0
-F 27
+F 3
 
 # result should be empty since there are no integer solutions in y

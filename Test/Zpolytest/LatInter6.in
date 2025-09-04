@@ -16,7 +16,7 @@ M 2
 
 D 0
 
-F 27
+F 3
 
 # (image) y and z intersect, so the resulting lattice is of smaller dimension!
 # result should be:
