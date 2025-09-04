@@ -16,7 +16,7 @@ M 2
 #readDom["{i,j| 1<= i,j<=10}"]
 D 1
 
-# a very pointy cone : i=0 then holes till i=29/30, then holes, etc...
+# a very pointy cone : i=0 then holes till i=29/30, then some holes, etc...
 3 4
 1  1  0 0
 # 1 -1  0 1000
