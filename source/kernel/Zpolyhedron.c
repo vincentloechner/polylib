@@ -21,6 +21,7 @@
   #define INTERSECTION_DEBUG 1
   #define DIFFERENCE_DEBUG 1
 #endif
+#define DIFFERENCE_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -605,9 +606,10 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   }
 
   // Separate the computation in 3 phases:
-  // 0. compute the difference of the image polyhedra P_A \ P_B (=temp) and
-  //    add it to the solution LBL (using lattice L_A).
-  //    This is an over-approximation of A (but not B)
+  // 0. compute the difference of the image polyhedra P_A \ P_B (=ImDiff) and
+  //    add it to the solution LBL (with lattice L_A).
+  //    This can be an over-approximation of A if A->Lat has zero columns
+  //    (but not of B)
   // 1. compute the rest where the intersection of P_A and P_B have same
   //    dimensions
   // 2. intersect the result with A to get rid of the over-approximations
@@ -621,11 +623,11 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
     Polyhedron_Print(stderr, P_VALUE_FMT, ImDiff);
   #endif
 
-  // Add (A->Lat, A - hull(B)) to the result:
+  // Add (A->Lat, A->P - hull(B)) to the result:
   if (!emptyQ(ImDiff)) {
     Polyhedron *RedPolyDiff;
     RedPolyDiff = DomainPreimage(ImDiff, A->Lat, MAXNOOFRAYS);
-    // NOTICE: this is an over-approximation of A
+    // NOTICE: this can be an over-approximation of A
     Result = LBLAlloc(A->Lat, RedPolyDiff);
     #ifdef DIFFERENCE_DEBUG
       fprintf(stderr, "Adding this to the temporary result: ");
@@ -671,6 +673,11 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
       fprintf(stderr, "Empty Lattice difference\n");
   #endif
 
+  // TODO: consider the intersection of lattices, where some points of lattice
+  // B->Lat could have no integer antecedent in B->P (???) and should be kept
+  // in the result A - B
+
+
   // [STEP 1 of Gautam]:
   // Add all Z-polyhedra applying the (list of) lattice difference on ImInter
   for(LatticeUnion *tmp = LatDiff; tmp; tmp = tmp->next) {
@@ -710,7 +717,8 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
     fprintf(stderr, "-- temporary over-approximation of result = ");
     LBLPrint(stderr, P_VALUE_FMT, Result);
   #endif
-  // intersect the result with A to get the exact LBL.
+  // intersect the result with A to get the exact LBL in case there was an
+  // over-approximation before.
   Final_Result = LBLIntersection(Result, A);
   LBLFree(Result);
 

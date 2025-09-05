@@ -396,11 +396,12 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
       "input lattices A and B have incompatible dimensions (rows)");
     return NULL;
   }
-  if (A->NbColumns != B->NbColumns) {
-    errormsg1("LatticeDifference", "dimincomp",
-      "input lattices A and B have incompatible dimensions (columns)");
-    return NULL;
-  }
+  // NbColumn can be different if there is a column of zero in one of them
+  // if (A->NbColumns != B->NbColumns) {
+  //   errormsg1("LatticeDifference", "dimincomp",
+  //     "input lattices A and B have incompatible dimensions (columns)");
+  //   return NULL;
+  // }
   // normalize and create a copy A->X
   if (! isNormalLattice(A)) {
     AffineHermite(A, &H, NULL);
