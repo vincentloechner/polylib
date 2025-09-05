@@ -494,10 +494,11 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
   return Result;
 } /* LatticeDifference */
 
-// void left_hermite(Matrix *M, Matrix **Hp, Matrix **Qp, Matrix **Up)
-//  |A  B| . |Ul Ur| =  M U = H = |D    0  |  <- |A B| Ur = 0
-//  |A  0|                        |X  inter|  <- A Ur(top) = inter
-// (then do the preimage of P by U(part))
+// Tried to use this, but Urt has zero columns too :(
+// use: left_hermite(Matrix *M, Matrix **Hp, Matrix **Qp, Matrix **Up)
+//  |A  B| . |Ult Urt| =  M U = H = |D    0  |
+//  |A  0|   |Ulb Urb|              |X  inter|  <- A Urt = inter
+// (then do the preimage of P by Urt)
 
 /*
  * Compute the intersection between two lattices.
@@ -574,10 +575,16 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
   }
   #ifdef LATINTER_DEBUG
     fprintf(stderr,"H init = ");
-    Matrix_Print(stderr,P_VALUE_FMT, Tmp);
+    Matrix_Print(stderr, P_VALUE_FMT, Tmp);
   #endif
 
+  // // TRIED:
+  // Matrix *U = NULL;
+  // left_hermite(Tmp, &H, NULL, &U);
+
   left_hermite(Tmp, &H, NULL, NULL);
+
+  
 
   #ifdef LATINTER_DEBUG
     fprintf(stderr,"\nH = ");
@@ -620,6 +627,15 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
   #ifdef LATINTER_DEBUG
     fprintf(stderr, "\nLatticeIntersection result = ");
     Matrix_Print(stderr, P_VALUE_FMT, Res);
+    // // TRIED:
+    // // Get Urt such that: A Urt = Res
+    // Matrix *Urt = NULL;
+    // Matrix_Print(stdout, P_VALUE_FMT, U);
+    // fprintf(stderr,"A Urt = Inter.\n Urt = ");
+    // Matrix_subMatrix(U, 0, U->NbColumns-Res->NbColumns, Res->NbRows, U->NbColumns, &Urt);
+    // Matrix_Move_Homogeneous_Dim_Last(Urt);
+    // Matrix_Print(stdout, P_VALUE_FMT, Urt);
+
     fprintf(stderr,"---Exiting LatInter---\n\n");
   #endif
 

@@ -17,12 +17,10 @@
 // debug this file:
 // #define DEBUG
 #ifdef DEBUG
-  #define LAT_TEST 1
   #define CANONICAL_DEBUG 1
   #define INTERSECTION_DEBUG 1
   #define DIFFERENCE_DEBUG 1
 #endif
-  #define CANONICAL_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -30,7 +28,6 @@ static void sLBL_Free(LBL *L);
 static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBL_Image(LBL *, Matrix *);
 static LBL *sLBL_Preimage(LBL *, Matrix *);
-static void sLBL_Print(FILE *fp, const char *format, LBL *A);
 static void sLBL_Canonical(LBL* A);
 static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL* A, LBL* B);
@@ -248,7 +245,7 @@ void LBLPrint(FILE *fp, const char *format, LBL *A)
  */
 LBL *LBLUnion(LBL *A, LBL *B)
 {
-  LBL *Result = NULL, *tmp;
+  LBL *Result = NULL;
 
   // copy A and B, concatenate, Canonicalize, and return :)
 
@@ -370,12 +367,22 @@ LBL *LBLPreimage(LBL *A, Matrix *Func) {
   return Result;
 } /* LBLPreimage */
 
+
+void sLBL_Print(FILE *out, char *fmt, LBL *A)
+{
+  LBL *next = A->next;
+  A->next=NULL;
+  LBLPrint(out, fmt, A);
+  A->next = next;
+}
+
+
 /*
  * Return the LBL intersection of the single-LBLs 'A' and 'B'.
  * The result is always a single LBL, NULL if empty.
  * 
  * USAGE: A and B's first Lattice considered only (no chained list),
- *        but can contain a polyhedral domain.
+ *        but can contain a polyhedral domain in ->P.
  * 
  * Algorithm:
  * - IF the input LBLs are Z-Polyhedra, we can simply compute:
@@ -393,15 +400,22 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
   Matrix *LInter;
   Polyhedron *PInter, *ImageA, *ImageB, *PreImage;
 
+  #ifdef INTERSECTION_DEBUG
+    fprintf(stderr, "entering sLBL_Intersection\nA = ");
+    sLBL_Print(stderr, P_VALUE_FMT, A);
+    fprintf(stderr, "B = ");
+    sLBL_Print(stderr, P_VALUE_FMT, B);
+  #endif
   LInter = LatticeIntersection(A->Lat, B->Lat);
   if (isEmptyLattice(LInter)) {
     Matrix_Free(LInter);
     return (NULL);
   }
 
-  if(count_zeroCols(A->Lat) == 0 && count_zeroCols(B->Lat) == 0)
+  if(count_zeroCols(A->Lat) == 0 && count_zeroCols(B->Lat) == 0 &&
+    count_zeroCols(LInter) == 0)
   {
-    // This works only IF there are no columns of zeros in the input LBLs:
+    // This works only IF there are no columns of zeros in the LBLs:
     // they are Z-polyhedra
 
     ImageA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
@@ -419,35 +433,109 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
     Domain_Free(PInter);
     Domain_Free(ImageB);
     Domain_Free(ImageA);
+    #ifdef INTERSECTION_DEBUG
+      fprintf(stderr, "Z-polyhedra, simplified intersection = ");
+      sLBL_Print(stderr, P_VALUE_FMT, Result);
+    #endif
+
     return (Result);
   }
   else {
-    Matrix *newL;
+    // build the LBL { AL z | AL z = BL z', z \in AP, z' \in BP }
+
+    int extra_max_rows = 0, extra_B_row = A->Lat->NbRows - 1;
+    Matrix *newL, *extra;
+    Polyhedron *newP = NULL, *AP_aligned;
     Matrix_Free(LInter);
 
-// *************************************************
-// TODO!!!
-// is there a unimodular matrix that transforms A into LInter
-// and another one transforming B into LInter ????
-// *************************************************
-
-    // build the LBL { AL z | AL z = BL z', z \in AP, z' \in BP },
     //          z     z'   cst
     // newL =   AL |  0   | Al |
-    //           0 |  0   | 1  |
+    //           0 |  0   | 1  |   <- this row is in AL already
     newL = Matrix_Alloc(A->Lat->NbRows, A->Lat->NbColumns + B->Lat->NbColumns - 1);
     for(int i = 0; i < newL->NbRows; i++) {
       for(int j = 0; j < newL->NbColumns; j++) {
-        if(j == i && i != newL->NbRows-1) { // left diagonal
-          value_set_si(newL->p[i][j], 1);
+        if(j < A->Lat->NbColumns - 1) { // left AL
+          value_assign(newL->p[i][j], A->Lat->p[i][j]);
+        }
+        else if(j == newL->NbColumns - 1) {
+          value_assign(newL->p[i][j], A->Lat->p[i][A->Lat->NbColumns - 1]);
         }
         else {
           value_set_si(newL->p[i][j], 0);
         }
       }
     }
-    value_set_si(newL->p[newL->NbRows-1][newL->NbColumns-1], 1);
+
+    // newP:
+
+    // scan the polyhedra of domains A->P and B->P, and build their constraints
+    // intersections.
+    // Build the constraints:
+    //  0/1    z      z'      cst
+    //  ap0    AP      0       Ap     # from A->P    -> AP_aligned
+    //   0     AL     -BL      Al-Bl  # equalities   \ extra
+    //  bp0    0      BP       Bp     # from B->P    /
+    
+    // start with a domain of the right dimension (expand dimension of A)
+    AP_aligned = align_context(A->P, A->P->Dimension + B->P->Dimension,
+      MAXNOOFRAYS);
+    // extra will be the matrix containing the extra constraints (including
+    // equalities: AL z = BL z', initialized once)
+    for(Polyhedron *BP = B->P; BP; BP = BP->next) {
+      if(A->Lat->NbRows + B->P->NbConstraints > extra_max_rows) {
+        extra_max_rows = A->Lat->NbRows + B->P->NbConstraints;
+      }
+    }
+    extra = Matrix_Alloc(extra_max_rows, AP_aligned->Dimension + 2);
+    // initialize |0 AL  -BL  constant| in extra
+    for(int row = 0; row < extra_B_row; row++) {
+      value_set_si(extra->p[row][0], 0); // equality
+      Vector_Copy  (&A->Lat->p[row][0], &extra->p[row][1],
+        A->Lat->NbColumns - 1);
+      Vector_Oppose(&B->Lat->p[row][0], &extra->p[row][A->Lat->NbColumns],
+        B->Lat->NbColumns - 1);
+      value_substract(extra->p[row][extra->NbColumns - 1],
+        A->Lat->p[row][A->Lat->NbColumns - 1],
+        B->Lat->p[row][B->Lat->NbColumns - 1]);
+    }
+    // scan the intersections and build union newP
+    for(Polyhedron *AP = AP_aligned; AP; AP = AP->next) {
+      for(Polyhedron *BP = B->P; BP; BP = BP->next) {
+        Polyhedron *P;
+        // complement extra with the Constraints of BP
+        for(int con = 0; con < BP->NbConstraints; con++) {
+          // 0/1 bp0
+          value_assign(extra->p[extra_B_row + con][0], BP->Constraint[con][0]);
+          // constraint BP + constant Bp
+          Vector_Copy(&BP->Constraint[con][1],
+            &extra->p[extra_B_row + con][A->Lat->NbColumns],
+            BP->Dimension + 1);
+        }
+        extra->NbRows = extra_B_row + B->P->NbConstraints;
+        #ifdef INTERSECTION_DEBUG
+          fprintf(stderr, "extra = ");
+          Matrix_Print(stderr, P_VALUE_FMT, extra);
+        #endif
   
+        P = AddConstraints(&extra->p[0][0], extra->NbRows,
+          AP_aligned, MAXNOOFRAYS);
+        newP = AddPolyToDomain(P, newP); // consumes P and newP
+      }
+    }
+    Matrix_Free(extra);
+    Domain_Free(AP_aligned);
+
+    // Use newL and newP to build result
+    Result = LBLAlloc(newL, newP);
+    Matrix_Free(newL);
+    Domain_Free(newP);
+    #ifdef INTERSECTION_DEBUG
+      fprintf(stderr, "Manual built intersection = ");
+      sLBL_Print(stderr, P_VALUE_FMT, Result);
+    #endif
+
+
+    return(Result);
   }
 
 } /* sLBL_Intersection */
@@ -1101,7 +1189,6 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
   int pos_constrained = 0, // number of alpha's > 0
       neg_constrained = 0, // number of alpha's < 0
       eq_constrained = 0;  // equality (both pos and neg), keep
-  Matrix *constraints; // new constraints to be added to P
   Polyhedron *result;
 
   #ifdef CANONICAL_DEBUG
@@ -1195,6 +1282,7 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
       Matrix_Print(stderr, P_VALUE_FMT, extra);
     #endif
     result = AddConstraints(extra->p[0], nb_extra, P, MAXNOOFRAYS);
+    Matrix_Free(extra);
   }
 
   return (result);

@@ -80,6 +80,9 @@ void Matrix_Free(Matrix *Mat) {
 
 } /* Matrix_Free */
 
+/*
+ * Increase number of lines of matrix 'Mat', in place.
+ */
 void Matrix_Extend(Matrix *Mat, unsigned NbRows) {
   Value *p, **q;
   int i;

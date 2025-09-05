@@ -18,6 +18,7 @@ print("A contains", len(A), "points")
 print("B contains", len(B), "points")
 print("diff=A-B contains", len(diff), "points")
 
+print("diff=B-A contains", len(B-A), "points")
 
 ZP = set()
 # A - B = LBL: Dimension 2

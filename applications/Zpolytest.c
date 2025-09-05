@@ -12,7 +12,7 @@ char s[128];
 int main() {
   
   Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *g;
-  LatticeUnion *l1, *l2, *temp;
+  LatticeUnion *l1, *l2;
   Polyhedron *A=NULL, *B=NULL, *C=NULL, *D;
   LBL *ZA=NULL, *ZB=NULL, *ZC=NULL, *ZD=NULL;
   int  nbPol, nbMat, func;
