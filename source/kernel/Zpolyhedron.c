@@ -1554,6 +1554,8 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
         Matrix *newL;
         Domain_Free(A->P);
         A->P = exact;
+
+// TODO: should create a new LBL here
         // remove column from A->Lat
         newL = RemoveColumn(A->Lat, col);
         Matrix_Free(A->Lat);
