@@ -251,6 +251,15 @@ int main() {
 	    LBLIncludes(ZB, ZA));
     break;
   
+  case 16:  /* LBLComplement */
+  
+    ZA = LBLAlloc(a, A);
+    ZB = LBLComplement(ZA);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    printf("Complement(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+    break;
 
   // case 18:  /* EmptyLattice */
         

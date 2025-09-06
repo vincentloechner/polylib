@@ -20,8 +20,9 @@
   #define CANONICAL_DEBUG 1
   #define INTERSECTION_DEBUG 1
   #define DIFFERENCE_DEBUG 1
+  #define COMP_DEBUG 1
 #endif
-#define DIFFERENCE_DEBUG 1
+#define COMP_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -569,6 +570,140 @@ static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
 } /* LBL_sLBL_Difference */
 
 
+// TODO:
+LBL *LBLComplement(LBL *A)
+{
+  // Let L = A->Lat, P = A->P.
+  // complement(A) = Universe() - A = union of:
+  //   - LBL (Z^d, not hull(A))
+  //   - LBL ((Z^d - L), universe polyhedron)
+  //   - holes of A -> how to compute these????
+  //       = L z' such that there exist no z in A->P such that L z' = L z
+  //       = {L . z' | L z' != L z, z \in P, AND z INTEGER }
+  //       = {L . z' | L z' > L z, z \in P } union
+  //         {L . z' | L z' < L z, z \in P }
+  //             + integer z -> need something similar to exact shadow
+  //     if L invertible -> empty.
+
+  // we could also just build:
+  //   - { Id z' | z' != L z, z in P }
+  // does this work??
+  // (?) no because missing condition: z INTEGER
+  // but yes because LBLAlloc will ensure no rational points are eliminated,
+  // and keep inequalities and zero columns in Lat if necessary.
+
+  // Build this:
+  //    { z' | L z > z', z in P } union
+  //    { z' | z' < L z, z in P }
+
+  // more exactly:
+  //   (Id  0)  (z')  |  (-Id  L) . (z') !=  0,   (z') in P_extended
+  //            (z )  |             (z )          (z )
+  // z' has L->NbRows dimension
+
+  LBL *Result;
+  Polyhedron *PResult = NULL;
+  Matrix *ZId = NULL;
+  Matrix *extra; // extra constraints (allocated once, reused)
+  int nb_col = A->Lat->NbColumns + A->Lat->NbRows - 1; // new lattice nb col
+  int nb_rows = A->Lat->NbRows; // nb lattice nb rows
+  #ifdef COMP_DEBUG
+  fprintf(stderr, "Entering LBLComplement. A = ");
+  LBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
+
+  ZId = Matrix_Alloc(nb_rows, nb_col);
+  for(int i = 0; i < nb_rows; i++) {
+    for(int j = 0; j < nb_col; j++) {
+      if((i == j && i != nb_rows-1) || (j == nb_col-1 && i == nb_rows-1))
+        value_set_si(ZId->p[i][j], 1);
+      else
+        value_set_si(ZId->p[i][j], 0);
+    }
+  }
+  #ifdef COMP_DEBUG
+  fprintf(stderr, "ZId = ");
+  Matrix_Print(stderr, P_VALUE_FMT, ZId);
+  #endif
+  extra = Matrix_Alloc(nb_rows, nb_col + 1); // PResult constraints dim.
+
+  for(Polyhedron *AP = A->P; AP; AP=AP->next) {
+    Polyhedron *Pextended;
+
+    Pextended = align_context(AP, AP->Dimension + nb_rows - 1, MAXNOOFRAYS);
+    #ifdef COMP_DEBUG
+    fprintf(stderr, "Pextended = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, Pextended);
+    #endif
+
+    // build constraints z' > L z, pos is the number of equalities (first):
+    //     z'(above pos) = L z (above pos)
+    //     z'_pos <= L z_pos (-1 for strict)
+    for(int pos = 0; pos < A->Lat->NbRows - 1; pos++) {
+      Polyhedron *P;
+      // constraints above pos have been initialized correctly already.
+
+      // POSITIVE: (-Id  L) (z' z)^T > 0 (>= 1. --> -1 on line)
+      // inequality
+      value_set_si(extra->p[pos][0], 1);
+      // L (linear part)
+      Vector_Copy(&A->Lat->p[pos][0], &extra->p[pos][nb_rows],
+        A->Lat->NbColumns-1);
+      // -Id
+      Vector_Set(&extra->p[pos][1], 0, nb_rows-1);
+      value_set_si(extra->p[pos][pos+1], -1); // (-1) * z'_pos
+      // constant - 1
+      value_sub_int(extra->p[pos][extra->NbColumns-1],
+        A->Lat->p[pos][A->Lat->NbColumns-1], 1);
+      #ifdef COMP_DEBUG
+      fprintf(stderr, "extra = ");
+      Matrix_Print(stderr, P_VALUE_FMT, extra);
+      #endif
+      P = AddConstraints(extra->p[0], pos+1, Pextended, MAXNOOFRAYS);
+      #ifdef COMP_DEBUG
+      fprintf(stderr, "Adding P = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, P);
+      #endif
+      PResult = AddPolyToDomain(P, PResult);
+
+      // NEGATIVE: (Id  -L) (z' z)^T > 0 (>= 1. --> -1 on line)
+      // inequality
+      value_set_si(extra->p[pos][0], 1);
+      // -L (linear part)
+      Vector_Oppose(&A->Lat->p[pos][0], &extra->p[pos][nb_rows],
+        A->Lat->NbColumns-1);
+      // Id
+      value_set_si(extra->p[pos][pos+1], 1); // (1) * z'_pos
+      // -constant - 1
+      value_oppose(extra->p[pos][extra->NbColumns-1],
+        A->Lat->p[pos][A->Lat->NbColumns-1]);
+      value_sub_int(extra->p[pos][extra->NbColumns-1],
+        extra->p[pos][extra->NbColumns-1], 1);
+      #ifdef COMP_DEBUG
+      fprintf(stderr, "extra = ");
+      Matrix_Print(stderr, P_VALUE_FMT, extra);
+      #endif
+      P = AddConstraints(extra->p[0], pos+1, Pextended, MAXNOOFRAYS);
+      #ifdef COMP_DEBUG
+      fprintf(stderr, "Adding P = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, P);
+      #endif
+      PResult = AddPolyToDomain(P, PResult);
+
+      // TRANSFORM THE INEQUALITY INTO AN EQUALITY (set constant right)
+      value_set_si(extra->p[pos][0], 0);
+      value_oppose(extra->p[pos][extra->NbColumns-1],
+        A->Lat->p[pos][A->Lat->NbColumns-1]);
+    }
+  }
+  #ifdef COMP_DEBUG
+  fprintf(stderr, "PResult below. Trying to LBLAlloc next\n");
+  Polyhedron_Print(stderr, P_VALUE_FMT, PResult);
+  #endif
+  Result = LBLAlloc(ZId, PResult);
+  return (Result);
+}
+
 /*
  * Return the difference of two single LBLs A and B.
  * Inspired from the method Gautam describes in his thesis,
@@ -580,7 +715,6 @@ static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
  *        but A and B can contain a coordinate polyhedral domain (in ->P).
  * Internal function, users should use LBLDifference.
  */
-
 static LBL *sLBL_Difference(LBL* A, LBL* B)
 {
   LBL *Result = NULL, *Final_Result; // U. of LBLs
@@ -611,8 +745,10 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   //    This can be an over-approximation of A if A->Lat has zero columns
   //    (but not of B)
   // 1. compute the rest where the intersection of P_A and P_B have same
-  //    dimensions
+  //    dimensions (required for lattice difference)
   // 2. intersect the result with A to get rid of the over-approximations
+
+  // Similar to computing (complement(B))  \inter  A
 
   // [STEP 0 (includes Gautam's Step 2)]
   imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
@@ -743,6 +879,10 @@ static LBL *sLBL_Image(LBL *A, Matrix *Func)
     errormsg1("sLBL_Image", "dimincomp", "Incompatible dimensions");
     return NULL;
   }
+
+  // if there is an eliminated column of zeros in the result:
+  // LBLAlloc will ensure that eliminated points in the projection
+  // are integer.
 
   newL = Matrix_Alloc(Func->NbRows, A->Lat->NbColumns);
   Matrix_Product(Func, A->Lat, newL);

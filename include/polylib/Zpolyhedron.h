@@ -44,6 +44,7 @@ extern LBL *LBLIntersection(LBL *A, LBL *B);
 extern LBL *LBLDifference(LBL *A, LBL *B);
 extern LBL *LBLImage(LBL *A, Matrix *Func);
 extern LBL *LBLPreimage(LBL *A, Matrix *Func);
+extern LBL *LBLComplement(LBL *A);
 
 // All above functions always return a canonical LBL.
 // The CanonicalLBL() function is exposed to the user to enable transforming
