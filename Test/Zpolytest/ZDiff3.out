@@ -1,6 +1,6 @@
-A - B = LBL: Dimension 2 
+A - B = LBL: Dimension 2
 
-LATTICE: 
+LATTICE:
 3 3
    2    0    0 
    0    1    0 
@@ -9,54 +9,46 @@ POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
 Inequality: [  -4    3 -301  ]
+Inequality: [   2   -1  100  ]
 Inequality: [   1    0   -1  ]
 Inequality: [  -1    0  100  ]
-Inequality: [   2   -1  100  ]
 Rays 4 4
-Vertex: [ 300  701  ]/3
 Vertex: [   3  305  ]/3
 Vertex: [   1  102  ]/1
 Vertex: [ 100  300  ]/1
+Vertex: [ 300  701  ]/3
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   2   -1  100  ]
+Inequality: [   1    0   -1  ]
+Inequality: [  -2    1   -1  ]
+Inequality: [  -1    0    2  ]
+Rays 4 4
+Vertex: [   1  102  ]/1
+Vertex: [   1    3  ]/1
+Vertex: [   2    5  ]/1
+Vertex: [   2  104  ]/1
 
-UNION LBL: Dimension 2 
+UNION LBL: Dimension 2
 
-LATTICE: 
+LATTICE:
 3 2
-   0    2 
+   0  200 
    1    0 
    0    1 
 POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [  -1  102  ]
-Inequality: [   1   -3  ]
+Inequality: [   1 -201  ]
+Inequality: [  -1  300  ]
 Rays 2 3
-Vertex: [   3  ]/1
-Vertex: [ 102  ]/1
+Vertex: [ 300  ]/1
+Vertex: [ 201  ]/1
 
-UNION LBL: Dimension 2 
+UNION LBL: Dimension 2
 
-LATTICE: 
-3 3
-   6    0    4 
-   0    1    0 
-   0    0    1 
-POLYHEDRON Dimension:2
-           Constraints:4  Equations:0  Rays:4  Lines:0
-Constraints 4 4
-Inequality: [  -6    1   -5  ]
-Inequality: [   1    0    0  ]
-Inequality: [   4   -1  102  ]
-Inequality: [  -1    0   32  ]
-Rays 4 4
-Vertex: [   0    5  ]/1
-Vertex: [   0  102  ]/1
-Vertex: [  32  230  ]/1
-Vertex: [  32  197  ]/1
-
-UNION LBL: Dimension 2 
-
-LATTICE: 
+LATTICE:
 3 3
    6    0    2 
    0    1    0 
@@ -64,20 +56,40 @@ LATTICE:
 POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
-Inequality: [  -6    1   -3  ]
-Inequality: [  -1    0   33  ]
-Inequality: [   1    0   -1  ]
 Inequality: [   4   -1  101  ]
+Inequality: [   1    0   -1  ]
+Inequality: [  -6    1   -3  ]
+Inequality: [  -1    0   32  ]
 Rays 4 4
-Vertex: [   1    9  ]/1
-Vertex: [  33  201  ]/1
-Vertex: [  33  233  ]/1
 Vertex: [   1  105  ]/1
+Vertex: [   1    9  ]/1
+Vertex: [  32  195  ]/1
+Vertex: [  32  229  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 3
+   6    0    4 
+   0    1    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   4   -1  102  ]
+Inequality: [  -1    0   32  ]
+Inequality: [  -6    1   -5  ]
+Inequality: [   1    0   -1  ]
+Rays 4 4
+Vertex: [  32  197  ]/1
+Vertex: [  32  230  ]/1
+Vertex: [   1  106  ]/1
+Vertex: [   1   11  ]/1
 
 
-B - A = LBL: Dimension 2 
+B - A = LBL: Dimension 2
 
-LATTICE: 
+LATTICE:
 3 3
    3    0    0 
    0    1    0 
@@ -95,19 +107,35 @@ Vertex: [ 100  201  ]/1
 UNION POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
-Inequality: [   1    0  -67  ]
+Inequality: [   2   -1  100  ]
 Inequality: [  -2    1   -1  ]
 Inequality: [  -1    0  100  ]
-Inequality: [   2   -1  100  ]
+Inequality: [   1    0  -67  ]
 Rays 4 4
 Vertex: [ 100  201  ]/1
-Vertex: [  67  135  ]/1
-Vertex: [  67  234  ]/1
 Vertex: [ 100  300  ]/1
+Vertex: [  67  234  ]/1
+Vertex: [  67  135  ]/1
 
-UNION LBL: Dimension 2 
+UNION LBL: Dimension 2
 
-LATTICE: 
+LATTICE:
+3 2
+   0    3 
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1   -3  ]
+Inequality: [  -1  102  ]
+Rays 2 3
+Vertex: [ 102  ]/1
+Vertex: [   3  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
 3 3
    6    0    3 
    0    1    0 
@@ -116,11 +144,11 @@ POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
 Inequality: [  -6    1   -4  ]
-Inequality: [   1    0    0  ]
 Inequality: [   4   -1  102  ]
+Inequality: [   1    0   -1  ]
 Inequality: [  -1    0   32  ]
 Rays 4 4
-Vertex: [   0    4  ]/1
-Vertex: [   0  102  ]/1
+Vertex: [   1   10  ]/1
+Vertex: [   1  106  ]/1
 Vertex: [  32  230  ]/1
 Vertex: [  32  196  ]/1

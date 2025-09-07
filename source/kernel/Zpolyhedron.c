@@ -587,30 +587,35 @@ static LBL *sLBLComplement(LBL *A)
 {
   LBL *Result = NULL;
   Polyhedron *Univ, *hullA, *comp_hullA;
-  Matrix *Id;
   LatticeUnion *LatDiff;
   #ifdef COMP_DEBUG
-  fprintf(stderr, "Entering sLBLComplement. A = ");
+  fprintf(stderr, "\nEntering sLBLComplement. A = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
-
+  
   // step 1: hull of complement(A)
   hullA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   Univ = Universe_Polyhedron(hullA->Dimension);
   comp_hullA = DomainDifference(Univ, hullA, MAXNOOFRAYS);
-  Id = Identity_Matrix(comp_hullA->Dimension + 1);
   if (!emptyQ(comp_hullA)) {
+    Matrix *Id;
+    Id = Identity_Matrix(comp_hullA->Dimension + 1);
     Result = LBLAlloc(Id, comp_hullA);
+    Matrix_Free(Id);
     #ifdef COMP_DEBUG
-      fprintf(stderr, "Adding hull complement: ");
-      LBLPrint(stderr, P_VALUE_FMT, Result);
+    fprintf(stderr, "Adding hull complement: ");
+    LBLPrint(stderr, P_VALUE_FMT, Result);
     #endif
   }
   Domain_Free(comp_hullA);
   Domain_Free(Univ);
 
   // step 2: lattice differences on hullA
-  LatDiff = LatticeDifference(Id, A->Lat);
+  LatDiff = LatticeDifference(NULL, A->Lat);
+  #ifdef COMP_DEBUG
+  fprintf(stderr, "\nLatDiff: ");
+  PrintLatticeUnion(stderr, P_VALUE_FMT, LatDiff);
+  #endif
   // Add all Z-polyhedra to Result, applying the list of lattices on hullA
   for(LatticeUnion *lat = LatDiff; lat; lat = lat->next) {
     LBL *Ztmp;
@@ -619,9 +624,15 @@ static LBL *sLBLComplement(LBL *A)
     Matrix_Print(stderr, P_VALUE_FMT, lat->M);
     #endif
     Ztmp = malloc(sizeof(*Ztmp));
-    Ztmp->next = Result;
     Ztmp->Lat = lat->M;
     Ztmp->P = DomainPreimage(hullA, lat->M, MAXNOOFRAYS);
+    Ztmp->P = DomainConstraintSimplify(Ztmp->P, MAXNOOFRAYS);
+    #ifdef COMP_DEBUG
+    Ztmp->next = NULL;
+    fprintf(stderr, "Adding: ");
+    LBLPrint(stderr, P_VALUE_FMT, Ztmp);
+    #endif
+    Ztmp->next = Result;
     Result = Ztmp;
   }
   // free LatticeUnion remaining memory (M has been reused as a lattice of

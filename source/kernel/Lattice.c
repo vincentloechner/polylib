@@ -20,7 +20,7 @@ void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head) {
   LatticeUnion *temp;
 
   for (temp = Head; temp != NULL; temp = temp->next)
-    Matrix_Print(fp, format, (Matrix *)temp->M);
+    Matrix_Print(fp, format, temp->M);
   return;
 } /* PrintLatticeUnion */
 
@@ -378,10 +378,12 @@ Bool sameLattice(Matrix *A, Matrix *B) {
 /*
  * Return the Union of lattices that constitute the difference between
  * two single lattices: A - B.
+ * 
+ * if A = NULL it's the universe.
  * The dimensions of A and B should be the same. 
  * Main algorithm: compute the intersection of A and B and take it out of A
  * If the difference is empty return NULL.
- * Allocates a LatticeUnion
+ * Allocates a LatticeUnion.
  */
 LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
 
@@ -391,26 +393,45 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
   LatticeUnion *Result = NULL;
 
   // Checking inputs:
-  if (A->NbRows != B->NbRows) {
-    errormsg1("LatticeDifference", "dimincomp",
-      "input lattices A and B have incompatible dimensions (rows)");
-    return NULL;
-  }
-  // NbColumn can be different if there is a column of zero in one of them
-  // if (A->NbColumns != B->NbColumns) {
-  //   errormsg1("LatticeDifference", "dimincomp",
-  //     "input lattices A and B have incompatible dimensions (columns)");
-  //   return NULL;
-  // }
-  // normalize and create a copy A->X
-  if (! isNormalLattice(A)) {
-    AffineHermite(A, &H, NULL);
-    X = H;
+  if(!A) {
+    A = Matrix_Copy(B);
+    // set X to 1 in pivots positions (keep last column untouched
+    // -> it will be normalized)
+    for(int j = 0; j < A->NbColumns-1; j++) {
+      int i;
+      // pivot to 1
+      for(i = 0; i < A->NbRows; i++) {
+        if(value_notzero_p(A->p[i][j])) {
+          value_set_si(A->p[i][j], 1);
+          break;
+        }
+      }
+      // and zeros below
+      for(i = i+1; i < A->NbRows; i++) {
+        value_set_si(A->p[i][j], 0);
+      }
+    }
+    // AffineHermite(A, &X, NULL);
+    // Matrix_Free(A);
+    X = A;
   }
   else {
-    X = Matrix_Copy(A);
+    if (A->NbRows != B->NbRows) {
+      errormsg1("LatticeDifference", "dimincomp",
+        "input lattices A and B have incompatible dimensions (rows)");
+      return NULL;
+    }
+    // NbColumn can be different if there is a column of zero in one of them
+
+    if(! isNormalLattice(A)) {
+      AffineHermite(A, &H, NULL);
+      X = H;
+    }
+    else {
+      X = Matrix_Copy(A);
+    }
   }
-  if (isEmptyLattice(X)) {
+  if(isEmptyLattice(X)) {
     Matrix_Free(X);
     return(NULL);
   }
@@ -452,7 +473,7 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
   // (Intersection on first line(s)/column(s), X on bottom-right)
   rest = Matrix_Copy(X);
   // get the positions of the pivots of (X and) Inter
-  pivots_columns = malloc(sizeof(int) * A->NbRows);
+  pivots_columns = malloc(sizeof(int) * X->NbRows);
   get_pivots_columns(Inter, pivots_columns);
 
   // -------------- MAIN LOOP --------------------

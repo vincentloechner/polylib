@@ -21,7 +21,7 @@ D 2
 3 4
     1 1 0 -1
     1 -1 0 20
-    0 0 -1 5 # j = 5!
+    0 0 -1 5 # j = 5! equality, reduced.
 
 # ZP diff
 F 9

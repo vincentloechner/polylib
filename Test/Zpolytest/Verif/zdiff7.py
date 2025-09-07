@@ -9,36 +9,22 @@ def ZP2D(lattice, i_inf, i_sup, j_inf, j_sup):
 
 A = ZP2D("(2*i, j)", "1", "10", "1", "10")
 B = ZP2D("(3*i, j)", "1", "20", "5", "5")
+print("A contains", len(A), "points")
+print("B contains", len(B), "points")
+
+# A - B
 diff = A - B
+print("diff = A-B contains", len(diff), "points")
 
-print("A contient", len(A), "points")
-print("B contient", len(B), "points")
-print("diff=A-B contient", len(diff), "points")
+ZP = set()
+ZP = ZP.union(ZP2D("(2*i, j)", "1", "10", "1", "4"))
+ZP = ZP.union(ZP2D("(2*i, j)", "1", "10", "6", "10"))
+ZP = ZP.union(ZP2D("(2*i, j)", "1", "2", "1", "10"))
+ZP = ZP.union(ZP2D("(20, j)", "1", "1", "1", "10"))
+ZP = ZP.union(ZP2D("(6*i+2, 5)", "1", "2", "1", "1"))
+ZP = ZP.union(ZP2D("(6*i+4, 5)", "1", "2", "1", "1"))
 
-# ZP1 = set()
-# ZP2 = ZP2D("(6*i+2, j)", "0", "33", "6*i+3", "6*i+102")
-# ZP3 = ZP2D("(6*i, j)", "1/3", "100/3", "(12*i+301)/3", "6*i+100")
-# ZP4 = ZP2D("(6*i+4, j)", "-1/3", "98/3", "6*i+5", "6*i+104")
-ZP1 = ZP2D("(2*i, j)", "1", "10", "1", "4")
-ZP2 = ZP2D("(2*i, j)", "1", "10", "6", "10")
-ZP3 = ZP2D("(2,j)", "0" , "0" , "1" , "10")
-ZP4 = ZP2D("(6*i+2,5)", "1/6" , "3" , "0" , "0")
-ZP5 = ZP2D("(6*i+4,5)", "-1/6" , "8/3" , "0" , "0")
-# ZP3 = ZP2D("(6*i+2, j)", "1/6", "33", "6*i+3", "(12*i+304)/3")
-# ZP4 = ZP2D("(6*i+4, j)", "-1/6", "98/3", "6*i+5", "(12*i+308)/3")
-
-
-
-ZP = set().union(ZP1,ZP2, ZP3,ZP4, ZP5)
-
-print("len(ZP1) =", len(ZP1))
-print("len(ZP2) =", len(ZP2))
-print("len(ZP3) =", len(ZP3))
-print("len(ZP4) =", len(ZP4))
-print("len(ZP5) =", len(ZP5))
 print("len(ZP) =", len(ZP))
-
-
 if len(ZP - diff) == 0:
   print("ZP is in diff")
 else:
@@ -50,3 +36,25 @@ if len(diff - ZP) == 0:
 else:
   print("Missing points:")
   print(diff - ZP)
+
+# B - A
+diff2 = B - A
+print("diff2 = B-A contains", len(diff2), "points")
+
+YP = set()
+YP = YP.union(ZP2D("(3*i, 5)", "7", "20", "1", "1"))
+YP = YP.union(ZP2D("(3, 5)", "1", "1", "1", "1"))
+YP = YP.union(ZP2D("(6*i+3, 5)", "1", "2", "1", "1"))
+
+print("len(ZP) =", len(YP))
+if len(YP - diff2) == 0:
+  print("YP is in diff2")
+else:
+  print("Points that should not be there:")
+  print(YP - diff2)
+
+if len(diff2 - YP) == 0:
+  print("diff2 is in YP")
+else:
+  print("Missing points:")
+  print(diff2 - YP)
