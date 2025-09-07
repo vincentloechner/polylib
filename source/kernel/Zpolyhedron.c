@@ -570,157 +570,114 @@ static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
 } /* LBL_sLBL_Difference */
 
 
-// TODO:
-LBL *LBLComplement(LBL *A)
+/*
+ * Compute the complement of LBL A: all points z such that z is not in A.
+ *
+ * Algorithm:
+ * Let L = A->Lat, P = A->P.
+ * complement(A) = Universe() - A = union of:
+ *   1- LBL (Z^d, complement hull(A))
+ *   2- LBL ((Z^d - L), hull(A)) ---- or ((Z^d - L), universe())
+ *   3- holes of A
+ *      if L has no zero columns -> empty
+ *      = L z' such that there exist no z in A->P such that L z' = L z
+ *      -> need exact shadow
+ */
+static LBL *sLBLComplement(LBL *A)
 {
-  // Let L = A->Lat, P = A->P.
-  // complement(A) = Universe() - A = union of:
-  //   - LBL (Z^d, not hull(A))
-  //   - LBL ((Z^d - L), universe polyhedron)
-  //   - holes of A -> how to compute these????
-  //       = L z' such that there exist no z in A->P such that L z' = L z
-  //       = {L . z' | L z' != L z, z \in P, AND z INTEGER }
-  //       = {L . z' | L z' > L z, z \in P } union
-  //         {L . z' | L z' < L z, z \in P }
-  //             + integer z -> need something similar to exact shadow
-  //     if L invertible -> empty.
-
-  // we could also just build:
-  //   - { Id z' | z' != L z, z in P }
-  // does this work??
-  // (?) no because missing condition: z INTEGER
-  // but yes because LBLAlloc will ensure no rational points are eliminated,
-  // and keep inequalities and zero columns in Lat if necessary.
-
-  // Build this:
-  //    { z' | L z > z', z in P } union
-  //    { z' | z' < L z, z in P }
-
-  // more exactly:
-  //   (Id  0)  (z')  |  (-Id  L) . (z') !=  0,   (z') in P_extended
-  //            (z )  |             (z )          (z )
-  // z' has L->NbRows dimension
-
-  LBL *Result;
-  Polyhedron *PResult = NULL;
-  Matrix *ZId = NULL;
-  Matrix *extra; // extra constraints (allocated once, reused)
-  int nb_col = A->Lat->NbColumns + A->Lat->NbRows - 1; // new lattice nb col
-  int nb_rows = A->Lat->NbRows; // nb lattice nb rows
+  LBL *Result = NULL;
+  Polyhedron *Univ, *hullA, *comp_hullA;
+  Matrix *Id;
+  LatticeUnion *LatDiff;
   #ifdef COMP_DEBUG
-  fprintf(stderr, "Entering LBLComplement. A = ");
+  fprintf(stderr, "Entering sLBLComplement. A = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
 
-  ZId = Matrix_Alloc(nb_rows, nb_col);
-  for(int i = 0; i < nb_rows; i++) {
-    for(int j = 0; j < nb_col; j++) {
-      if((i == j && i != nb_rows-1) || (j == nb_col-1 && i == nb_rows-1))
-        value_set_si(ZId->p[i][j], 1);
-      else
-        value_set_si(ZId->p[i][j], 0);
-    }
-  }
-  #ifdef COMP_DEBUG
-  fprintf(stderr, "ZId = ");
-  Matrix_Print(stderr, P_VALUE_FMT, ZId);
-  #endif
-  extra = Matrix_Alloc(nb_rows, nb_col + 1); // PResult constraints dim.
-
-  for(Polyhedron *AP = A->P; AP; AP=AP->next) {
-    Polyhedron *Pextended;
-
-    Pextended = align_context(AP, AP->Dimension + nb_rows - 1, MAXNOOFRAYS);
+  // step 1: hull of complement(A)
+  hullA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
+  Univ = Universe_Polyhedron(hullA->Dimension);
+  comp_hullA = DomainDifference(Univ, hullA, MAXNOOFRAYS);
+  Id = Identity_Matrix(comp_hullA->Dimension + 1);
+  if (!emptyQ(comp_hullA)) {
+    Result = LBLAlloc(Id, comp_hullA);
     #ifdef COMP_DEBUG
-    fprintf(stderr, "Pextended = ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, Pextended);
+      fprintf(stderr, "Adding hull complement: ");
+      LBLPrint(stderr, P_VALUE_FMT, Result);
     #endif
-
-    // build constraints z' > L z, pos is the number of equalities (first):
-    //     z'(above pos) = L z (above pos)
-    //     z'_pos <= L z_pos (-1 for strict)
-    for(int pos = 0; pos < A->Lat->NbRows - 1; pos++) {
-      Polyhedron *P;
-      // constraints above pos have been initialized correctly already.
-
-      // POSITIVE: (-Id  L) (z' z)^T > 0 (>= 1. --> -1 on line)
-      // inequality
-      value_set_si(extra->p[pos][0], 1);
-      // L (linear part)
-      Vector_Copy(&A->Lat->p[pos][0], &extra->p[pos][nb_rows],
-        A->Lat->NbColumns-1);
-      // -Id
-      Vector_Set(&extra->p[pos][1], 0, nb_rows-1);
-      value_set_si(extra->p[pos][pos+1], -1); // (-1) * z'_pos
-      // constant - 1
-      value_sub_int(extra->p[pos][extra->NbColumns-1],
-        A->Lat->p[pos][A->Lat->NbColumns-1], 1);
-      #ifdef COMP_DEBUG
-      fprintf(stderr, "extra = ");
-      Matrix_Print(stderr, P_VALUE_FMT, extra);
-      #endif
-      P = AddConstraints(extra->p[0], pos+1, Pextended, MAXNOOFRAYS);
-      #ifdef COMP_DEBUG
-      fprintf(stderr, "Adding P = ");
-      Polyhedron_Print(stderr, P_VALUE_FMT, P);
-      #endif
-      PResult = AddPolyToDomain(P, PResult);
-
-      // NEGATIVE: (Id  -L) (z' z)^T > 0 (>= 1. --> -1 on line)
-      // inequality
-      value_set_si(extra->p[pos][0], 1);
-      // -L (linear part)
-      Vector_Oppose(&A->Lat->p[pos][0], &extra->p[pos][nb_rows],
-        A->Lat->NbColumns-1);
-      // Id
-      value_set_si(extra->p[pos][pos+1], 1); // (1) * z'_pos
-      // -constant - 1
-      value_oppose(extra->p[pos][extra->NbColumns-1],
-        A->Lat->p[pos][A->Lat->NbColumns-1]);
-      value_sub_int(extra->p[pos][extra->NbColumns-1],
-        extra->p[pos][extra->NbColumns-1], 1);
-      #ifdef COMP_DEBUG
-      fprintf(stderr, "extra = ");
-      Matrix_Print(stderr, P_VALUE_FMT, extra);
-      #endif
-      P = AddConstraints(extra->p[0], pos+1, Pextended, MAXNOOFRAYS);
-      #ifdef COMP_DEBUG
-      fprintf(stderr, "Adding P = ");
-      Polyhedron_Print(stderr, P_VALUE_FMT, P);
-      #endif
-      PResult = AddPolyToDomain(P, PResult);
-
-      // TRANSFORM THE INEQUALITY INTO AN EQUALITY (set constant right)
-      value_set_si(extra->p[pos][0], 0);
-      value_oppose(extra->p[pos][extra->NbColumns-1],
-        A->Lat->p[pos][A->Lat->NbColumns-1]);
-    }
   }
-  #ifdef COMP_DEBUG
-  fprintf(stderr, "PResult below. Trying to LBLAlloc next\n");
-  Polyhedron_Print(stderr, P_VALUE_FMT, PResult);
-  #endif
-  Result = LBLAlloc(ZId, PResult);
+  Domain_Free(comp_hullA);
+  Domain_Free(Univ);
+
+  // step 2: lattice differences on hullA
+  LatDiff = LatticeDifference(Id, A->Lat);
+  // Add all Z-polyhedra to Result, applying the list of lattices on hullA
+  for(LatticeUnion *lat = LatDiff; lat; lat = lat->next) {
+    LBL *Ztmp;
+    #ifdef DIFFERENCE_DEBUG
+    fprintf(stderr, "Considering Lat diff: ");
+    Matrix_Print(stderr, P_VALUE_FMT, lat->M);
+    #endif
+    Ztmp = malloc(sizeof(*Ztmp));
+    Ztmp->next = Result;
+    Ztmp->Lat = lat->M;
+    Ztmp->P = DomainPreimage(hullA, lat->M, MAXNOOFRAYS);
+    Result = Ztmp;
+  }
+  // free LatticeUnion remaining memory (M has been reused as a lattice of
+  // Result)
+  while(LatDiff) {
+    LatticeUnion *next = LatDiff->next;
+    free(LatDiff);
+    LatDiff = next;
+  }
+
+  // step 3: holes
+  // TODO!
+
+  CanonicalLBL(Result);
   return (Result);
-}
+} /* sLBLComplement */
+
+
+/*
+ * complement of LBL A.
+ *
+ * Intersection of the complements of the single LBLs of A
+ */
+LBL *LBLComplement(LBL *A)
+{
+  LBL *Result;
+  Result = sLBLComplement(A);
+  for(LBL *tmp = A->next; tmp; tmp = tmp->next) {
+    LBL *comp, *inter;
+    comp = sLBLComplement(tmp);
+    inter = LBLIntersection(Result, comp);
+    LBLFree(Result);
+    Result = inter;
+  }
+
+  return(Result);
+} /* LBLComplement */
+
 
 /*
  * Return the difference of two single LBLs A and B.
- * Inspired from the method Gautam describes in his thesis,
- * modified to handle LBLs.
  * A and B are single LBLs, but the return value can be a union of LBLs!
  * Creates a new allocated LBL union
  *
  * USAGE: only the first lattice of A and B is considered (no union),
  *        but A and B can contain a coordinate polyhedral domain (in ->P).
  * Internal function, users should use LBLDifference.
+ * 
+ * Algorithm:
+ * -> New version: compute A inter complement(B).
+ * -> Former version inspired from the method Gautam describes in his thesis,
+ * modified to handle LBLs.
  */
 static LBL *sLBL_Difference(LBL* A, LBL* B)
 {
-  LBL *Result = NULL, *Final_Result; // U. of LBLs
-  LBL *Ainter, *Binter; // single LBL
-  LatticeUnion *LatDiff;
-  Polyhedron *imA, *imB, *preimA, *ImDiff, *ImInter; // polyhedral domains
+  LBL *Result, *Binter, *Bcomp;
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
     errormsg1("sLBL_Difference", "dimincomp", "incompatible dimensions");
@@ -739,127 +696,137 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
     return(LBLCopy(A));
   }
 
-  // Separate the computation in 3 phases:
-  // 0. compute the difference of the image polyhedra P_A \ P_B (=ImDiff) and
-  //    add it to the solution LBL (with lattice L_A).
-  //    This can be an over-approximation of A if A->Lat has zero columns
-  //    (but not of B)
-  // 1. compute the rest where the intersection of P_A and P_B have same
-  //    dimensions (required for lattice difference)
-  // 2. intersect the result with A to get rid of the over-approximations
+  // // Separate the computation in 3 phases:
+  // // 0. compute the difference of the image polyhedra P_A \ P_B (=ImDiff) and
+  // //    add it to the solution LBL (with lattice L_A).
+  // //    This can be an over-approximation of A if A->Lat has zero columns
+  // //    (but not of B)
+  // // 1. compute the rest where the intersection of P_A and P_B have same
+  // //    dimensions (required for lattice difference)
+  // // 2. intersect the result with A to get rid of the over-approximations
 
-  // Similar to computing (complement(B))  \inter  A
+  // LBL *Result = NULL, *Final_Result; // U. of LBLs
+  // LBL *Ainter, *Binter; // single LBL
+  // LatticeUnion *LatDiff;
+  // Polyhedron *imA, *imB, *preimA, *ImDiff, *ImInter; // polyhedral domains
 
-  // [STEP 0 (includes Gautam's Step 2)]
-  imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
-  imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
-  ImDiff = DomainDifference(imA, imB, MAXNOOFRAYS);
-  #ifdef DIFFERENCE_DEBUG
-    fprintf(stderr, "ImDiff (hull of A that does not cover B) = ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, ImDiff);
-  #endif
+  // // [STEP 0 (includes Gautam's Step 2)]
+  // imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
+  // imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
+  // ImDiff = DomainDifference(imA, imB, MAXNOOFRAYS);
+  // #ifdef DIFFERENCE_DEBUG
+  //   fprintf(stderr, "ImDiff (hull of A that does not cover B) = ");
+  //   Polyhedron_Print(stderr, P_VALUE_FMT, ImDiff);
+  // #endif
 
-  // Add (A->Lat, A->P - hull(B)) to the result:
-  if (!emptyQ(ImDiff)) {
-    Polyhedron *RedPolyDiff;
-    RedPolyDiff = DomainPreimage(ImDiff, A->Lat, MAXNOOFRAYS);
-    // NOTICE: this can be an over-approximation of A
-    Result = LBLAlloc(A->Lat, RedPolyDiff);
-    #ifdef DIFFERENCE_DEBUG
-      fprintf(stderr, "Adding this to the temporary result: ");
-      LBLPrint(stderr, P_VALUE_FMT, Result);
-    #endif
-    Domain_Free(RedPolyDiff);
-  }
+  // // Add (A->Lat, A->P - hull(B)) to the result:
+  // if (!emptyQ(ImDiff)) {
+  //   Polyhedron *RedPolyDiff;
+  //   RedPolyDiff = DomainPreimage(ImDiff, A->Lat, MAXNOOFRAYS);
+  //   // NOTICE: this can be an over-approximation of A
+  //   Result = LBLAlloc(A->Lat, RedPolyDiff);
+  //   #ifdef DIFFERENCE_DEBUG
+  //     fprintf(stderr, "Adding this to the temporary result: ");
+  //     LBLPrint(stderr, P_VALUE_FMT, Result);
+  //   #endif
+  //   Domain_Free(RedPolyDiff);
+  // }
 
-  // compute the images intersection of A and B
-  ImInter = DomainIntersection(imA, imB, MAXNOOFRAYS);
-  #ifdef DIFFERENCE_DEBUG
-    fprintf(stderr, "ImInter (hull of A inter B) = ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, ImInter);
-  #endif
+  // // compute the images intersection of A and B
+  // ImInter = DomainIntersection(imA, imB, MAXNOOFRAYS);
+  // #ifdef DIFFERENCE_DEBUG
+  //   fprintf(stderr, "ImInter (hull of A inter B) = ");
+  //   Polyhedron_Print(stderr, P_VALUE_FMT, ImInter);
+  // #endif
   
-  // TODO: can be simplified, Ainter not really needed!
+  // // TODO: can be simplified, Ainter not really needed!
 
-  // compute the part of A that intersects the hull of B in the image space
-  preimA = DomainPreimage(ImInter, A->Lat, MAXNOOFRAYS);
-  Ainter = LBLAlloc(A->Lat, preimA);
-  // NOTICE: this Ainter can be a over-approximation of A
+  // // compute the part of A that intersects the hull of B in the image space
+  // preimA = DomainPreimage(ImInter, A->Lat, MAXNOOFRAYS);
+  // Ainter = LBLAlloc(A->Lat, preimA);
+  // // NOTICE: this Ainter can be a over-approximation of A
 
-  Domain_Free(preimA);
-  Domain_Free(ImDiff);
-  Domain_Free(imA);
-  Domain_Free(imB);
+  // Domain_Free(preimA);
+  // Domain_Free(ImDiff);
+  // Domain_Free(imA);
+  // Domain_Free(imB);
 
-  // now Ainter and Binter have same lattices and polyhedra dimensions
-  #ifdef DIFFERENCE_DEBUG
-    fprintf(stderr,
-      "-- [STEP1] now we compute the intersection on same lattice dimensions\n");
-    fprintf(stderr, "Ainter = ");
-    LBLPrint(stderr, P_VALUE_FMT, Ainter);
-    fprintf(stderr, "and Binter = ");
-    LBLPrint(stderr, P_VALUE_FMT, Binter);
-  #endif
+  // // now Ainter and Binter have same lattices and polyhedra dimensions
+  // #ifdef DIFFERENCE_DEBUG
+  //   fprintf(stderr,
+  //     "-- [STEP1] now we compute the intersection on same lattice dimensions\n");
+  //   fprintf(stderr, "Ainter = ");
+  //   LBLPrint(stderr, P_VALUE_FMT, Ainter);
+  //   fprintf(stderr, "and Binter = ");
+  //   LBLPrint(stderr, P_VALUE_FMT, Binter);
+  // #endif
 
-  // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of
-  // same dimensions
-  LatDiff = LatticeDifference(Ainter->Lat, Binter->Lat); 
-  #ifdef DIFFERENCE_DEBUG
-    if(!LatDiff)
-      fprintf(stderr, "Empty Lattice difference\n");
-  #endif
+  // // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of
+  // // same dimensions
+  // LatDiff = LatticeDifference(Ainter->Lat, Binter->Lat); 
+  // #ifdef DIFFERENCE_DEBUG
+  //   if(!LatDiff)
+  //     fprintf(stderr, "Empty Lattice difference\n");
+  // #endif
 
-  // TODO: consider the intersection of lattices, where some points of lattice
-  // B->Lat could have no integer antecedent in B->P (???) and should be kept
-  // in the result A - B
+  // // [STEP 1 of Gautam]:
+  // // Add all Z-polyhedra applying the (list of) lattice difference on ImInter
+  // for(LatticeUnion *tmp = LatDiff; tmp; tmp = tmp->next) {
+  //   LBL *Ztmp;
+  //   #ifdef DIFFERENCE_DEBUG
+  //     fprintf(stderr, "Considering Lat diff: ");
+  //     Matrix_Print(stderr, P_VALUE_FMT, tmp->M);
+  //   #endif
+  //   Ztmp = malloc(sizeof(*Ztmp));
+  //   Ztmp->next = Result;
+  //   Ztmp->Lat = tmp->M;
+  //   Ztmp->P = DomainPreimage(ImInter, tmp->M, MAXNOOFRAYS);
+  //   // NOTICE: this can be an over-approximation of A (but not of B)
+
+  //   Result = Ztmp;
+  // }
+  // // free LatticeUnion remaining memory (M has been reused as a lattice of
+  // // Result)
+  // while(LatDiff) {
+  //   LatticeUnion *next = LatDiff->next;
+  //   free(LatDiff);
+  //   LatDiff = next;
+  // }
+
+  // // TODO: also consider the intersection of lattices, where some points of
+  // // lattice B->Lat could have no integer antecedent in B->P and should
+  // // be kept in the result A - B:
+  // // Add the holes of B (that can be included in A but not in B).
 
 
-  // [STEP 1 of Gautam]:
-  // Add all Z-polyhedra applying the (list of) lattice difference on ImInter
-  for(LatticeUnion *tmp = LatDiff; tmp; tmp = tmp->next) {
-    LBL *Ztmp;
-    #ifdef DIFFERENCE_DEBUG
-      fprintf(stderr, "Considering Lat diff: ");
-      Matrix_Print(stderr, P_VALUE_FMT, tmp->M);
-    #endif
-    Ztmp = malloc(sizeof(*Ztmp));
-    Ztmp->next = Result;
-    Ztmp->Lat = tmp->M;
-    Ztmp->P = DomainPreimage(ImInter, tmp->M, MAXNOOFRAYS);
-    // NOTICE: this can be an over-approximation of the exact LBL
+  // Domain_Free(ImInter);
+  // LBLFree(Ainter);
+  // LBLFree(Binter);
 
-    Result = Ztmp;
-  }
-  // free LatticeUnion remaining memory (M has been reused as a lattice of
-  // Result)
-  while(LatDiff) {
-    LatticeUnion *next = LatDiff->next;
-    free(LatDiff);
-    LatDiff = next;
-  }
+  // if(!Result) {
+  //   #ifdef DIFFERENCE_DEBUG
+  //     fprintf(stderr, "-- result = (NULL)\n");
+  //   #endif
+  //   return(NULL);
+  // }
 
-  Domain_Free(ImInter);
-  LBLFree(Ainter);
+  // #ifdef DIFFERENCE_DEBUG
+  //   fprintf(stderr, "-- temporary over-approximation of result = ");
+  //   LBLPrint(stderr, P_VALUE_FMT, Result);
+  // #endif
+  // // intersect the result with A to get the exact LBL in case there was an
+  // // over-approximation of A before.
+  // Final_Result = LBLIntersection(Result, A);
+  // LBLFree(Result);
+  // return(Final_Result);
+
+  Bcomp = sLBLComplement(Binter);
+  Result = LBLIntersection(Bcomp, A);
+
   LBLFree(Binter);
+  LBLFree(Bcomp);
 
-  if(!Result) {
-    #ifdef DIFFERENCE_DEBUG
-      fprintf(stderr, "-- result = (NULL)\n");
-    #endif
-    return(NULL);
-  }
-
-  #ifdef DIFFERENCE_DEBUG
-    fprintf(stderr, "-- temporary over-approximation of result = ");
-    LBLPrint(stderr, P_VALUE_FMT, Result);
-  #endif
-  // intersect the result with A to get the exact LBL in case there was an
-  // over-approximation before.
-  Final_Result = LBLIntersection(Result, A);
-  LBLFree(Result);
-
-  return(Final_Result);
-
+  return(Result);
 } /* sLBL_Difference */
 
 
@@ -1313,30 +1280,30 @@ static Bool sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
 
 
 // TODO: what about higher dimensions than dim? Take into account or not ?
-// (probably yes)
+// -> project all higher dimensions or just the current one?
 
 /*
  * compute the inside of polyhedron P that can be projected (along dim) to
  * get the dark shadow.
  * 
  * consider P a single polyhedron, even if P->next is set.
- * returns NULL if dark shadow = exact shadow.
+ * return NULL if dark == input P
  */
 static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
 {
   // check if that dimension is constrained in P
-  // - if it is not constrained, just add an equality {i_dim = 0}.
+  // - if it is not constrained, ignore.
   // - if it is positive constrained,
   //   scan all positive constraints on i_dim of the form:
   //     {... + alpha . i_dim + ... + c >= 0}, with alpha > 0
   //   and add this constraint to P:
   //     {... + alpha . i_dim + ... + c + alpha-1 >= 0}
   // - if negative constrained do the opposite
-  //   (take the smallest between them)
+  //   (take the smallest number of constraints between them)
 
-  int pos_constrained = 0, // number of alpha's > 0
-      neg_constrained = 0, // number of alpha's < 0
-      eq_constrained = 0;  // equality (both pos and neg), keep
+  int pos_constrained = 0, // number of alpha's > 1
+      neg_constrained = 0, // number of alpha's < -1
+      eq_constrained = 0;  // equality (both pos and neg)
   Polyhedron *result;
 
   #ifdef CANONICAL_DEBUG
@@ -1344,7 +1311,7 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
     fprintf(stderr, "Polyhedron: ");
     Polyhedron_Print(stderr, P_VALUE_FMT, P);
   #endif
-  // count constraints on this variable (dim)
+  // count constraints abs(alpha) > 1 on this variable (dim)
   for(int c = 0; c < P->NbConstraints; c++) {
     if(value_zero_p(P->Constraint[c][dim+1])) {
       // alpha = 0
@@ -1367,7 +1334,8 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
   }
 
   if(eq_constrained > 0 || pos_constrained == 0 || neg_constrained == 0) {
-    // one side is integer (or open to infinite), can be safely ignored :)
+    // at least one side of the polyhedron is integer or open to infinite,
+    // so the dark source is just equal to P
     return(NULL);
   }
   else {
@@ -1437,8 +1405,6 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
 }
 
 
-// TODO: check if all above dimensions should also be projected, or not ?!
-
 /*
  * compute the projection of domain P along dimension dim.
  * 
@@ -1475,18 +1441,17 @@ static Polyhedron *domain_project(Polyhedron *P, int dim)
 }
 
 /*
- * Check that the zero columns of lattice A->Lat have one single integer
- * point in A->P as predecessor.
+ * Check that the zero columns of lattice A->Lat can be eliminated through
+ * projection.
  * 
- * case 1. If A->Lat has empty columns on the right, and that they that do not
- * appear in the constraints of A->P, then A->P is under-constrained. We just
- * add an equality to P and it will get simplified automatically :)
- * case 2. If there are more than one integer point in A->P that map to the
- * same point by the A->Lat function, the redundant ones need to be eliminated
- * 
+ * Eliminate only if exact shadow == dark shadow along each dimension.
  */
 static void sLBL_Simplify_Zero_Dimensions(LBL *A)
 {
+  #ifdef CANONICAL_DEBUG
+  fprintf(stderr, "Entering sLBL_Simplify_Zero_Dimensions\n");
+  #endif
+
   // scan the zero columns on the right of A->Lat
   for (int col = A->Lat->NbColumns-2 ; col >= 0; col--) {
     int i;
@@ -1497,29 +1462,17 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
     }
     if(i == A->Lat->NbRows) {
       // col is empty
-      // check if that dimension (corresponding to variable i_col) is
-      // constrained in all polyhedra of domain A->P.
-      // - if it is not constrained, just add an equality {i_col = 0}.
-      // - if it is positive constrained, set the thickness to one:
-      //   scan all positive constraints on i_col of the form:
-      //     {... + alpha . i_col + ... >= 0}, with alpha > 0
-      //   and add this constraint to P:
-      //     {... + alpha . i_col + ... + alpha-1} <= 0 (oppose!)
-      // - TODO: if it is not positive constrained but only negative
-      //   constrained, what to do?
-      // - what if there is a conflict between different members of the union?
 
-      // easier method:
-      // build the domain transformed to start at i_col = 0 (each constraint
-      // of each polyhedron)
+      // An idea to solve this was to build the domain transformed to start
+      //  at i_col = 0 (for each constraint of each polyhedron)
       // then add constraint i_col <= 1.
-      // does not work, non unimodular transformation.
+      // but it does not work, it would be a non unimodular transformation.
 
-      // solution 3: compute the dark shadow and the exact shadow.
+      // solution 2: compute the dark shadow and the exact shadow.
       // if dark shadow projection is in exact shadow: can project
       // else: keep
 
-      // TODO: what if some polyhedra of the union can be projected and others
+      // TODO: what if some polyhedra of the union can be simplified and others
       // cannot? should we separate them or just stay at the domain level?
       Polyhedron *dark = NULL;
       for(Polyhedron *pp = A->P; pp; pp = pp->next) {
@@ -1545,23 +1498,30 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
       Polyhedron *diff;
       diff = DomainDifference(exact, dark, MAXNOOFRAYS);
 
-      // is this useful? removes obvious integer empty solutions.
-      diff = DomainConstraintSimplify(diff, MAXNOOFRAYS);
-      // TODO: should check if diff has no integer solution... ???
+      if(! emptyQ(diff)) {
+        // is this useful? removes obvious integer-empty solutions.
+        diff = DomainConstraintSimplify(diff, MAXNOOFRAYS);
+        // TODO: should check if diff has no integer solution... ???
+      }
 
       if(emptyQ(diff)) {
         // if exact - dark = 0, can project :)
         Matrix *newL;
+        #ifdef CANONICAL_DEBUG
+        fprintf(stderr, "Exact == Dark. Removing column %d of Lat\n", col);
+        #endif
+
         Domain_Free(A->P);
         A->P = exact;
-
-// TODO: should create a new LBL here
         // remove column from A->Lat
         newL = RemoveColumn(A->Lat, col);
         Matrix_Free(A->Lat);
         A->Lat = newL;
       }
       else {
+        #ifdef CANONICAL_DEBUG
+        fprintf(stderr, "Exact != Dark. Keeping column %d of Lat\n", col);
+        #endif
         Domain_Free(exact);
       }
       Domain_Free(diff);
@@ -1572,7 +1532,9 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
       break;
     }
   }
-
+  #ifdef CANONICAL_DEBUG
+  fprintf(stderr, "Exiting sLBL_Simplify_Zero_Dimensions\n");
+  #endif
 }
 
 /*
@@ -1814,13 +1776,13 @@ static void sLBL_Canonical(LBL* A)
   // all the other ones are added to a new LBL, linked to LBL A (in A->next)
   // A->next will be treated at next step by the caller
   #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Checking for equalites in P\n");
+  fprintf(stderr, "Checking for equalites in P\n");
   #endif
   LBL *new = NULL;
-  Matrix * Equalities = get_equalities(A->P); // get eq from the first one
+  Matrix *Equalities = get_equalities(A->P); // get eq from the first one
   Polyhedron *nextpp, *prevpp = A->P; // keep a ref to the previous to relink
 
-  for(Polyhedron *pp = A->P->next; pp; prevpp = pp, pp = nextpp) {
+  for(Polyhedron *pp = A->P->next; pp; pp = nextpp) {
     // check that the equalities of pp->Constraints are the same as the ones
     // of matrix Equalities.
     if(!same_equalities(Equalities, pp)) {
@@ -1835,19 +1797,28 @@ static void sLBL_Canonical(LBL* A)
         new->Lat = Matrix_Copy(A->Lat);
       }
       // remove pp from the list A->P, and get the right next iteration
-      nextpp = prevpp->next = pp->next;
+      prevpp->next = pp->next;
       // add pp to new->P
+      // new->P = AddPolyToDomain(pp, new->P);
       pp->next = new->P;
-      new->P = AddPolyToDomain(pp, new->P);
+      new->P = pp;
+      nextpp = prevpp->next;
     }
     else {
-      nextpp = pp->next; // next polyhedron of the domain
+      nextpp = pp->next;  // next polyhedron of the domain
+      prevpp = pp;        // keep a pointer to the previous to relink
     }
   }
   if(new) {
     // include new in the LBL list A
     new->next = A->next;
     A->next = new;
+    #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "Unified equalites in A->P!\n - First A->P = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+    fprintf(stderr, " - A Next ->P = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, A->next->P);
+    #endif
   }
   // Now all polyhedra of domain A->P have the same equalities
 
