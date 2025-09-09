@@ -33,6 +33,7 @@ static void sLBL_Canonical(LBL* A);
 static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL* A, LBL* B);
 static int count_zeroCols (Matrix* M);
+static LBL *compute_holes(LBL *A);
 
 // typedef struct forsimplify {
 //   Polyhedron *Pol;
@@ -592,7 +593,7 @@ static LBL *sLBLComplement(LBL *A)
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   
-  // step 1: hull of complement(A)
+  // step 1: complement of hull(A)
   hullA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   Univ = Universe_Polyhedron(hullA->Dimension);
   comp_hullA = DomainDifference(Univ, hullA, MAXNOOFRAYS);
@@ -609,7 +610,7 @@ static LBL *sLBLComplement(LBL *A)
   Domain_Free(comp_hullA);
   Domain_Free(Univ);
 
-  // step 2: lattice differences on hullA
+  // step 2: lattice differences (not L) on hullA
   LatDiff = LatticeDifference(NULL, A->Lat);
   #ifdef COMP_DEBUG
   fprintf(stderr, "\nLatDiff: ");
@@ -622,10 +623,12 @@ static LBL *sLBLComplement(LBL *A)
     fprintf(stderr, "Considering Lat diff: ");
     Matrix_Print(stderr, P_VALUE_FMT, lat->M);
     #endif
-    Ztmp = malloc(sizeof(*Ztmp));
+    Ztmp = malloc(sizeof(LBL));
     Ztmp->Lat = lat->M;
     Ztmp->P = DomainPreimage(hullA, lat->M, MAXNOOFRAYS);
-    Ztmp->P = DomainConstraintSimplify(Ztmp->P, MAXNOOFRAYS);
+    // remove obvious simplification?
+    // -> not necessary since preimage by integer function.
+    // Ztmp->P = DomainConstraintSimplify(Ztmp->P, MAXNOOFRAYS);
     #ifdef COMP_DEBUG
     Ztmp->next = NULL;
     fprintf(stderr, "Adding: ");
@@ -641,9 +644,15 @@ static LBL *sLBLComplement(LBL *A)
     free(LatDiff);
     LatDiff = next;
   }
+  Domain_Free(hullA);
 
   // step 3: holes
-  // TODO!
+  // TODO: add the holes of A, with lattice L.
+  if(count_zeroCols(A->Lat)) {
+    // there are potential holes
+    LBL *holes = compute_holes(A);
+    Result = LBL_concatenate(Result, holes);
+  }
 
   CanonicalLBL(Result);
   return (Result);
@@ -1247,8 +1256,8 @@ static Bool sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
     // (see ZImPre3 for an example where this is necessary)
     // value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
 
-    // TODO: verify that.
-    // The result is just empty when the bottom-right value of H is not one!
+    // The result is just empty (because it is rational) when the bottom-right
+    // value of H is not one.
     if(value_notone_p(H->p[H->NbRows-1][H->NbColumns-1])) {
       Domain_Free(A->P);
       A->P = NULL;  // will be fixed by caller
@@ -1288,9 +1297,6 @@ static Bool sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
   }
 } /* sLBL_Simplify_Equalities */
 
-
-// TODO: what about higher dimensions than dim? Take into account or not ?
-// -> project all higher dimensions or just the current one?
 
 /*
  * compute the inside of polyhedron P that can be projected (along dim) to
@@ -1412,13 +1418,13 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
   }
 
   return (result);
-}
+} /* polyhedron_dark_source */
 
 
 /*
  * compute the projection of domain P along dimension dim.
  * 
- * P is a domain
+ * P is a polyhedral domain
  */
 static Polyhedron *domain_project(Polyhedron *P, int dim)
 {
@@ -1448,7 +1454,83 @@ static Polyhedron *domain_project(Polyhedron *P, int dim)
   #endif
 
   return (image);
-}
+} /* domain_project */
+
+
+/*
+ * compute the dark shadow of domain P projected along dimension dim.
+ * 
+ * P is a polyhedral domain
+ */
+static Polyhedron *domain_dark_shadow(Polyhedron *P, int dim)
+{
+  Polyhedron *dark = NULL;
+  for(Polyhedron *pp = P; pp; pp = pp->next) {
+    Polyhedron *pp_inside, *pp_shadow;
+
+    pp_inside = polyhedron_dark_source(pp, dim);
+    if(pp_inside) {
+      pp_shadow = domain_project(pp_inside, dim);
+    }
+    else {
+      Polyhedron *ppnext = pp->next;
+      pp->next = NULL;
+      pp_shadow = domain_project(pp, dim);
+      pp->next = ppnext;
+    }
+    dark = AddPolyToDomain(pp_shadow, dark);
+    if(pp_inside) {
+      Polyhedron_Free(pp_inside);
+    }
+  }
+  return(dark);
+} /* domain_dark_shadow */
+
+
+/*
+ * Compute the LBL of the holes of LBL A.
+ *
+ * Algo:
+ * - compute the domain (exact shadow - dark shadow)
+ * - scan the integer points of the result and verify for each point:
+ *      if there is an integer point in the origin intersection with the LBL
+ *      add it to the polyhedral domain not_a_hole
+ * - return the LBL (Id, (exact shadow - dark shadow) - not_a_hole)
+ */
+static LBL *compute_holes(LBL *A)
+{
+  Polyhedron *exact, *dark;
+  Polyhedron *rest = A->P; // exact shadow - dark shadow (polyhedral domain)
+
+  for(int col = A->Lat->NbColumns-2; col >= 0; col--) {
+    Polyhedron *d, *e; // dark and exact shadows after eliminating col
+
+    d = domain_dark_shadow(rest, col);
+    e = domain_project(rest, col);
+    if(rest != A->P)
+      Domain_Free(rest); // no longer need the previous rest
+    rest = DomainDifference(e, d, MAXNOOFRAYS);  // new rest = e - d
+    Domain_Free(e);
+    Domain_Free(d);
+  }
+
+  // rest is the polyhedral domain (exact - dark)
+
+  // TODO: finish writing this.
+
+
+
+
+  
+  // just a test
+  Matrix *Id = NULL;
+  LBL *result;
+  Matrix_identity(rest->Dimension + 1, &Id);
+  result = LBLAlloc(Id, rest);
+  Matrix_Free(Id);
+  return(result);
+} /* compute_holes */
+
 
 /*
  * Check that the zero columns of lattice A->Lat can be eliminated through
@@ -1458,6 +1540,7 @@ static Polyhedron *domain_project(Polyhedron *P, int dim)
  */
 static void sLBL_Simplify_Zero_Dimensions(LBL *A)
 {
+  Bool modified = False; // True if something was projected
   #ifdef CANONICAL_DEBUG
   fprintf(stderr, "Entering sLBL_Simplify_Zero_Dimensions\n");
   #endif
@@ -1474,7 +1557,7 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
       // col is empty
 
       // An idea to solve this was to build the domain transformed to start
-      //  at i_col = 0 (for each constraint of each polyhedron)
+      // at i_col = 0 (for each constraint of each polyhedron)
       // then add constraint i_col <= 1.
       // but it does not work, it would be a non unimodular transformation.
 
@@ -1482,27 +1565,10 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
       // if dark shadow projection is in exact shadow: can project
       // else: keep
 
-      // TODO: what if some polyhedra of the union can be simplified and others
+      // What if some polyhedra of the union can be simplified and others
       // cannot? should we separate them or just stay at the domain level?
-      Polyhedron *dark = NULL;
-      for(Polyhedron *pp = A->P; pp; pp = pp->next) {
-        Polyhedron *pp_inside, *pp_shadow;
-
-        pp_inside = polyhedron_dark_source(pp, col);
-        if(pp_inside) {
-          pp_shadow = domain_project(pp_inside, col);
-        }
-        else {
-          Polyhedron *ppnext = pp->next;
-          pp->next = NULL;
-          pp_shadow = domain_project(pp, col);
-          pp->next = ppnext;
-        }
-        dark = AddPolyToDomain(pp_shadow, dark);
-        if(pp_inside) {
-          Polyhedron_Free(pp_inside);
-        }
-      }
+      // TODO: for now, stay at the domain level.
+      Polyhedron *dark = domain_dark_shadow(A->P, col);
       // compute exact projection of P and check if dark covers exact:
       Polyhedron *exact = domain_project(A->P, col);
       Polyhedron *diff;
@@ -1527,6 +1593,12 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
         newL = RemoveColumn(A->Lat, col);
         Matrix_Free(A->Lat);
         A->Lat = newL;
+        if(col != A->Lat->NbColumns-2) {
+          // one of the "inside" columns was eliminated, check at the end if
+          // one of the outside one can be eliminated now... (call the function
+          // again)
+          modified = True;
+        }
       }
       else {
         #ifdef CANONICAL_DEBUG
@@ -1545,6 +1617,11 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
   #ifdef CANONICAL_DEBUG
   fprintf(stderr, "Exiting sLBL_Simplify_Zero_Dimensions\n");
   #endif
+  if(modified) {
+    // an inside column was eliminated, we can try again if another one
+    // (that has been scaned before) can be eliminated.
+    sLBL_Simplify_Zero_Dimensions(A);
+  }
 }
 
 /*
@@ -1654,88 +1731,84 @@ static Bool sLBL_Remove_Empty(LBL *A)
 }
 
 
-/*
- * Remove the columns of zeros from A->Lat.
- * In place. A->P is a domain.
- * 
- * This is equivalent to removing an existential variable: need to verify that
- * there is an integer solution in the removed dimension
- */
-static void sLBL_Lat_Remove_Zeros(LBL *A)
-{
-  // TODO: need to consider integer existential variable elimination and dark
-  // shadow!
+// previous method, not considering existential integer variables...
+// /*
+//  * Remove the columns of zeros from A->Lat.
+//  * In place. A->P is a domain.
+//  * 
+//  * This is equivalent to removing an existential variable: need to verify that
+//  * there is an integer solution in the removed dimension
+//  */
+// static void sLBL_Lat_Remove_Zeros(LBL *A)
+// {
+//   // Could use DomainConstraintSimplify() to eliminate obvious empty case
 
-  // Could use DomainConstraintSimplify() to eliminate obvious empty case
+//   Polyhedron *NewP;
+//   int nbZeros = count_zeroCols(A->Lat);
+//   if(nbZeros) {
+//     // check which dimensions can be eliminated
+//     Bool *elim = malloc(sizeof(Bool)*nbZeros); // dimensions to eliminate
+//     int nbelim = 0; // number of dimensions to eliminate
 
+//     for(int dim = 0; dim < nbZeros; dim++) {
+//       int position = dim + A->Lat->NbColumns - nbZeros;
+//       elim[dim] = True;
+//       // if there is an equality with a coefficient different than +/- 1,
+//       // the dimension cannot be eliminated
+//       for(int j = 0; j < A->P->NbEq; j++) {
+//         if(value_notone_p(A->P->Constraint[j][position]) &&
+//             value_notmone_p(A->P->Constraint[j][position]) ) {
+//           elim[dim] = False;
+//           break;
+//         }
+//       }
+//     }
 
-  Polyhedron *NewP;
-  int nbZeros = count_zeroCols(A->Lat);
-  if(nbZeros) {
-    // check which dimensions can be eliminated
-    Bool *elim = malloc(sizeof(Bool)*nbZeros); // dimensions to eliminate
-    int nbelim = 0; // number of dimensions to eliminate
+//     // Now transform the domain
+//     Matrix *Transformation;
+//     Transformation = Matrix_Alloc(A->Lat->NbColumns - nbelim,
+//                                   A->Lat->NbColumns);
+//     // Id on top-left
+//     for (int  i = 0; i < Transformation->NbRows; i++) {
+//       for (int j = 0; j < Transformation->NbColumns; j++) {
+//         if(i==j && i!=Transformation->NbRows-1) {
+//           value_set_si(Transformation->p[i][j], 1);
+//         }
+//         else {
+//           value_set_si(Transformation->p[i][j], 0);
+//         }
+//       }
+//     }
+//     // 1 on bottom-right
+//     value_set_si(
+//       Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],
+//       1);
 
-    for(int dim = 0; dim < nbZeros; dim++) {
-      int position = dim + A->Lat->NbColumns - nbZeros;
-      elim[dim] = True;
-      // if there is an equality with a coefficient different than +/- 1,
-      // the dimension cannot be eliminated
-      for(int j = 0; j < A->P->NbEq; j++) {
-        if(value_notone_p(A->P->Constraint[j][position]) &&
-            value_notmone_p(A->P->Constraint[j][position]) ) {
-          elim[dim] = False;
-          break;
-        }
-      }
-    }
+//     NewP = DomainImage(A->P, Transformation, MAXNOOFRAYS);
+//     Domain_Free(A->P);
+//     A->P = NewP;
+//     Matrix_Free(Transformation);
 
+//     // Take the first columns of Lat
+//     Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, A->Lat->NbColumns-nbZeros);
+//     for (int  i = 0; i < NewL->NbRows; i++) {
+//       for (int j = 0; j < NewL->NbColumns; j++) {
+//         if(j < NewL->NbColumns-1) {
+//           value_assign(NewL->p[i][j], A->Lat->p[i][j]);
+//         }
+//         else {
+//           value_assign(NewL->p[i][j], A->Lat->p[i][A->Lat->NbColumns-1]);
+//         }
+//       }
+//     }
+//     Matrix_Free(A->Lat);
+//     A->Lat = NewL;
 
-    // Now transform the domain
-    Matrix *Transformation;
-    Transformation = Matrix_Alloc(A->Lat->NbColumns - nbelim,
-                                  A->Lat->NbColumns);
-    // Id on top-left
-    for (int  i = 0; i < Transformation->NbRows; i++) {
-      for (int j = 0; j < Transformation->NbColumns; j++) {
-        if(i==j && i!=Transformation->NbRows-1) {
-          value_set_si(Transformation->p[i][j], 1);
-        }
-        else {
-          value_set_si(Transformation->p[i][j], 0);
-        }
-      }
-    }
-    // 1 on bottom-right
-    value_set_si(
-      Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],
-      1);
-
-    NewP = DomainImage(A->P, Transformation, MAXNOOFRAYS);
-    Domain_Free(A->P);
-    A->P = NewP;
-    Matrix_Free(Transformation);
-
-    // Take the first columns of Lat
-    Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, A->Lat->NbColumns-nbZeros);
-    for (int  i = 0; i < NewL->NbRows; i++) {
-      for (int j = 0; j < NewL->NbColumns; j++) {
-        if(j < NewL->NbColumns-1) {
-          value_assign(NewL->p[i][j], A->Lat->p[i][j]);
-        }
-        else {
-          value_assign(NewL->p[i][j], A->Lat->p[i][A->Lat->NbColumns-1]);
-        }
-      }
-    }
-    Matrix_Free(A->Lat);
-    A->Lat = NewL;
-
-    #ifdef CANONICAL_DEBUG
-      LBLPrint(stderr, P_VALUE_FMT, A);
-    #endif
-  }
-} /* sLBL_Lat_Remove_Zeros */
+//     #ifdef CANONICAL_DEBUG
+//       LBLPrint(stderr, P_VALUE_FMT, A);
+//     #endif
+//   }
+// } /* sLBL_Lat_Remove_Zeros */
 
 
 /*

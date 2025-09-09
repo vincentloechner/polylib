@@ -392,6 +392,9 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
   Matrix *Inter, *rest;
   LatticeUnion *Result = NULL;
 
+  if(B->NbRows == 1) {
+    return(NULL);
+  }
   // Checking inputs:
   if(!A) {
     Value gcd;
@@ -464,7 +467,7 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
 
   // calculate the intersection between X and B
   Inter = LatticeIntersection(X, B);
-  if(!Inter){
+  if(!Inter) {
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "Empty intersection, returning A\n");
     #endif
@@ -477,6 +480,14 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
     fprintf(stderr, "Inter = ");
     Matrix_Print(stderr, P_VALUE_FMT, Inter);
   #endif
+
+  // if Inter has only one column, there is a problem in the loop:
+  // line 0 would have no pivot.
+  if(Inter->NbColumns == 1) {
+    Matrix_Free(Inter);
+    Matrix_Free(X);
+    return(NULL);
+  }
 
   // Prepare for main loop:
   // rest will be the rest of the lattice X to be treated

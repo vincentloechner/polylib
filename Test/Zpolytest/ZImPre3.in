@@ -1,6 +1,6 @@
-# in this example, removing the equalities gets a rational bottom right
-# coefficient in the result, which is expected since no odd value (from
-# the function) can map to an even value of the ZP
+# in this example, removing the equalities in the preimage gets a rational
+# bottom right coefficient in the result, which is expected since no odd value
+# (from the function) can map to an even value of the ZP
 
 M 2
 # Lattice

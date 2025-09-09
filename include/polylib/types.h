@@ -234,19 +234,19 @@ typedef struct _enumeration {
 
 /* *********************** LBLs **************************** */
 // union of lattices (or affine functions):
-typedef struct LatticeUnion {
+typedef struct lattice_union {
   Matrix *M;
-  struct LatticeUnion *next;
+  struct lattice_union *next;
 } LatticeUnion;
 
 // The same LBL structure is used to represent:
 // - a single LBL or a union of LBLs,
 // - a single Z-polyhedron or a union of Z-polyhedra
 // as the image of an integer polyhedron ('P') by an affine function ('Lat')
-typedef struct _lbl {
+typedef struct lbl {
   Matrix *Lat;
   Polyhedron *P;
-  struct _lbl *next;
+  struct lbl *next;
 } LBL;
 
 
