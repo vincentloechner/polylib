@@ -21,7 +21,9 @@
   #define INTERSECTION_DEBUG 1
   #define DIFFERENCE_DEBUG 1
   #define COMP_DEBUG 1
+  #define HOLES_DEBUG 1
 #endif
+#define HOLES_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -1499,22 +1501,40 @@ static Polyhedron *domain_dark_shadow(Polyhedron *P, int dim)
  */
 static LBL *compute_holes(LBL *A)
 {
-  Polyhedron *exact, *dark;
-  Polyhedron *rest = A->P; // exact shadow - dark shadow (polyhedral domain)
+  int nbzeros;
+  Polyhedron *exact = A->P, *dark = A->P; // initialize with P then project
+  Polyhedron *rest; // exact shadow - dark shadow (polyhedral domain)
 
-  for(int col = A->Lat->NbColumns-2; col >= 0; col--) {
+  #ifdef HOLES_DEBUG
+  fprintf(stderr, "Entering ompute holes. A = ");
+  LBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
+  nbzeros = count_zeroCols(A->Lat);
+  for(int z = 0; z < nbzeros; z++) {
+    int col = A->Lat->NbColumns - 2 - z;
     Polyhedron *d, *e; // dark and exact shadows after eliminating col
 
-    d = domain_dark_shadow(rest, col);
-    e = domain_project(rest, col);
-    if(rest != A->P)
-      Domain_Free(rest); // no longer need the previous rest
-    rest = DomainDifference(e, d, MAXNOOFRAYS);  // new rest = e - d
-    Domain_Free(e);
-    Domain_Free(d);
+    d = domain_dark_shadow(dark, col);
+    e = domain_project(exact, col);
+    if(exact != A->P) {
+      Domain_Free(exact); // no longer need the previous rest
+      Domain_Free(dark); // no longer need the previous rest
+    }
+    dark = d;
+    exact = e;
   }
-
+  #ifdef HOLES_DEBUG
+  fprintf(stderr, "Dark Shadow = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, dark);
+  fprintf(stderr, "Exact Shadow = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, exact);
+  #endif
+  rest = DomainDifference(exact, dark, MAXNOOFRAYS);
   // rest is the polyhedral domain (exact - dark)
+  #ifdef HOLES_DEBUG
+  fprintf(stderr, "exact - dark = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, rest);
+  #endif
 
   // TODO: finish writing this.
 

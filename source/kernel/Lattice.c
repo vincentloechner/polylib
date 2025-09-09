@@ -575,16 +575,16 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
 Matrix* LatticeIntersection(Matrix* A, Matrix* B)
 {
   Matrix *Tmp, *H, *Res;
-  if(A->NbRows != B->NbRows){
-    errormsg1("LatticeIntersection", "dimincomp", "incompatible dimensions!");
-    return NULL;
-  }
   #ifdef LATINTER_DEBUG
   fprintf(stderr,"---Entering LatInter---\nMatrix A = ");
   Matrix_Print(stderr, P_VALUE_FMT, A);
   fprintf(stderr,"Matrix B = ");
   Matrix_Print(stderr, P_VALUE_FMT, B);
   #endif
+  if(A->NbRows != B->NbRows){
+    errormsg1("LatticeIntersection", "dimincomp", "incompatible dimensions!");
+    return NULL;
+  }
   
   Tmp = Matrix_Alloc(A->NbRows*2, A->NbColumns + B->NbColumns);
 
