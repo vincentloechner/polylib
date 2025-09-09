@@ -448,7 +448,7 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
     // build the LBL { AL z | AL z = BL z', z \in AP, z' \in BP }
 
     int extra_max_rows = 0, extra_B_row = A->Lat->NbRows - 1;
-    Matrix *newL, *extra;
+    Matrix *newL = NULL, *extra;
     Polyhedron *newP = NULL, *AP_aligned;
     Matrix_Free(LInter);
 
@@ -1285,7 +1285,7 @@ static Bool sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
     Matrix_Free(H);
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New Lat: ");
-      Matrix_Print(stderr, P_VALUE_FMT, NewL);
+      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
       fprintf(stderr, "New P: ");
       Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
     #endif
@@ -1506,29 +1506,24 @@ static LBL *compute_holes(LBL *A)
   Polyhedron *rest; // exact shadow - dark shadow (polyhedral domain)
 
   #ifdef HOLES_DEBUG
-  fprintf(stderr, "Entering ompute holes. A = ");
+  fprintf(stderr, "Entering compute holes. A = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   nbzeros = count_zeroCols(A->Lat);
   for(int z = 0; z < nbzeros; z++) {
     int col = A->Lat->NbColumns - 2 - z;
-    Polyhedron *d, *e; // dark and exact shadows after eliminating col
+    Polyhedron *d, *e; // shadow polyhedra after eliminating col
 
     d = domain_dark_shadow(dark, col);
     e = domain_project(exact, col);
-    if(exact != A->P) {
-      Domain_Free(exact); // no longer need the previous rest
-      Domain_Free(dark); // no longer need the previous rest
+    if(dark != A->P) {
+      Domain_Free(dark); // no longer need the previous calculated ones
+      Domain_Free(exact);
     }
     dark = d;
     exact = e;
   }
-  #ifdef HOLES_DEBUG
-  fprintf(stderr, "Dark Shadow = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, dark);
-  fprintf(stderr, "Exact Shadow = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, exact);
-  #endif
+
   rest = DomainDifference(exact, dark, MAXNOOFRAYS);
   // rest is the polyhedral domain (exact - dark)
   #ifdef HOLES_DEBUG
@@ -1537,18 +1532,18 @@ static LBL *compute_holes(LBL *A)
   #endif
 
   // TODO: finish writing this.
+  // rest does not have the right dimension! :(
+
+  // need to:
+  // - scan the points that can be holes (domain_disjoint + polyhedron scan of each + lower_upper_bound to scan)
+  // - add them to the polyhedron list of hits if they are not holes
 
 
 
-
+  // remove the list of hits from the result polyhedron
+  // build the final LBL
   
-  // just a test
-  Matrix *Id = NULL;
-  LBL *result;
-  Matrix_identity(rest->Dimension + 1, &Id);
-  result = LBLAlloc(Id, rest);
-  Matrix_Free(Id);
-  return(result);
+  return(NULL);
 } /* compute_holes */
 
 
