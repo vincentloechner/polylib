@@ -394,26 +394,36 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
 
   // Checking inputs:
   if(!A) {
+    Value gcd;
+    value_init(gcd);
     A = Matrix_Copy(B);
-    // set X to 1 in pivots positions (keep last column untouched
-    // -> it will be normalized)
+    // Divide each column of A by its gcd to get the minimal lattice
+    // spreading the same space than B
     for(int j = 0; j < A->NbColumns-1; j++) {
       int i;
-      // pivot to 1
+      // initial gcd value
       for(i = 0; i < A->NbRows; i++) {
         if(value_notzero_p(A->p[i][j])) {
-          value_set_si(A->p[i][j], 1);
+          value_assign(gcd, A->p[i][j]);
           break;
         }
       }
-      // and zeros below
+      // complete gcd computation
       for(i = i+1; i < A->NbRows; i++) {
-        value_set_si(A->p[i][j], 0);
+        value_gcd(gcd, gcd, A->p[i][j]);
+      }
+
+      if(value_notone_p(gcd)) {
+        // divide the column by its gcd:
+        for(i = 0; i < A->NbRows; i++) {
+          value_division(A->p[i][j], A->p[i][j], gcd);
+        }
       }
     }
-    // AffineHermite(A, &X, NULL);
+    // AffineHermite(A, &X, NULL); // not necessary
     // Matrix_Free(A);
     X = A;
+    value_clear(gcd);
   }
   else {
     if (A->NbRows != B->NbRows) {

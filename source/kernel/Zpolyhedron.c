@@ -22,7 +22,6 @@
   #define DIFFERENCE_DEBUG 1
   #define COMP_DEBUG 1
 #endif
-#define COMP_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
