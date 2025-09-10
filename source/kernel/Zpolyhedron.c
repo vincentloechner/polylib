@@ -23,7 +23,6 @@
   #define COMP_DEBUG 1
   #define HOLES_DEBUG 1
 #endif
-#define HOLES_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -1633,7 +1632,7 @@ static LBL *compute_holes(LBL *A)
   int nbzeros;
   Polyhedron *exact = A->P, *dark = A->P; // initialize with P then project
   Polyhedron *rest; // exact shadow - dark shadow (polyhedral domain)
-  Polyhedron *tmp, *AP, *U0, *not_a_hole = NULL;
+  Polyhedron *tmp, *AP, *U0, *not_a_hole = NULL, *holes;
 
   #ifdef HOLES_DEBUG
   fprintf(stderr, "Entering compute holes. A = ");
@@ -1693,13 +1692,16 @@ static LBL *compute_holes(LBL *A)
     Polyhedron_Print(stderr, P_VALUE_FMT, scanAP);
     #endif
 
-    while(rest) {
+    for(Polyhedron *R=rest; R; R = R->next) {
       Polyhedron *scanR, *nextR;
       Vector *v;
 
-      nextR = rest->next;
-      rest->next = NULL;
-      scanR = Polyhedron_Scan(rest, U0, MAXNOOFRAYS);
+      // polyhedron scan does not work on a domain.
+      nextR = R->next;
+      R->next = NULL; // unlink next
+      scanR = Polyhedron_Scan(R, U0, MAXNOOFRAYS);
+      R->next = nextR; // relink next
+
       v = Vector_Alloc(A->P->Dimension + 2);
       Vector_Set(v->p, v->Size-1, 0);
       value_set_si(v->p[v->Size-1], 1);
@@ -1708,7 +1710,6 @@ static LBL *compute_holes(LBL *A)
       not_a_hole = Scan_Rest(scanAP, scanR, v->p, 1, scanR->Dimension, not_a_hole);
 
       Domain_Free(scanR);
-      rest = nextR;
     }
 
     Domain_Free(scanAP);
@@ -1721,14 +1722,18 @@ static LBL *compute_holes(LBL *A)
   Polyhedron_Print(stderr, P_VALUE_FMT, not_a_hole);
   #endif
 
-  // build final LBL: rest - not_a_hole
-  // TODO! Lattice : Id
-  LBL *result = malloc(sizeof(LBL));
-  result->next = NULL;
-  result->Lat = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
-  result->P = DomainDifference(rest, not_a_hole, MAXNOOFRAYS);
+  // build final LBL: (Lat, (rest - not_a_hole))
+  holes = DomainDifference(rest, not_a_hole, MAXNOOFRAYS);
   Domain_Free(rest);
   Domain_Free(not_a_hole);
+  if(emptyQ(holes)) {
+    return(NULL);
+  }
+  Matrix *newL;
+  newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
+  LBL* result = LBLAlloc(newL, holes);
+  Matrix_Free(newL);
+
   #ifdef HOLES_DEBUG
   fprintf(stderr, "Compute_holes returning: ");
   LBLPrint(stderr, P_VALUE_FMT, result);
