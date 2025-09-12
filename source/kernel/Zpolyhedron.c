@@ -23,7 +23,7 @@
   #define COMP_DEBUG 1
   #define HOLES_DEBUG 1
 #endif
-#define INTERSECTION_DEBUG 1
+#define DIFFERENCE_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -396,7 +396,7 @@ void sLBL_Print(FILE *out, char *fmt, LBL *A)
  *    Build the result Z-polyhedron (Linter, preimage of PI by Linter)
  * - ELSE:
  *    build explicit equalities between points of A and B and simplify.
- *      build the LBL { AL z | AL z = BL z', z \in AP, z' \in BP },
+ *      build the LBL { AL z |  BL z' = AL z, z \in AP, z' \in BP },
  *      and remove z' by normalizing the result
  */
 static LBL *sLBL_Intersection(LBL *A, LBL *B) {
@@ -434,6 +434,8 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
     ImageA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
     ImageB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
     PInter = DomainIntersection(ImageA, ImageB, MAXNOOFRAYS);
+    Domain_Free(ImageB);
+    Domain_Free(ImageA);
     #ifdef INTERSECTION_DEBUG
     fprintf(stderr, "imageA inter imageB = PInter = ");
     Polyhedron_Print(stderr, P_VALUE_FMT, PInter);
@@ -448,11 +450,9 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
 
     Matrix_Free(LInter);
     Domain_Free(PInter);
-    Domain_Free(ImageB);
-    Domain_Free(ImageA);
     #ifdef INTERSECTION_DEBUG
     fprintf(stderr, "Z-polyhedra, simplified intersection = ");
-    sLBL_Print(stderr, P_VALUE_FMT, Result);
+    LBLPrint(stderr, P_VALUE_FMT, Result);
     fprintf(stderr, "-- exit sLBL_Intersection\n");
     #endif
 
@@ -460,29 +460,24 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
   }
   else {
     // there's an LBL, need to build the exact LBL manually:
-    // { AL z | AL z = BL z', z \in AP, z' \in BP }
-
+    // { AL z |  BL z' = AL z, z \in AP, z' \in BP }
+    // { (0 AL) z' |  (-BL AL Al-Bl)  z' = 0,  z' \in BP
+    //          z  |                  z        z  \in AP  }
     int extra_max_rows = 0, extra_B_row = A->Lat->NbRows - 1;
     Matrix *newL = NULL, *extra;
     Polyhedron *newP = NULL, *AP_aligned;
     Matrix_Free(LInter);
 
-    //          z     z'   cst
-    // newL =   AL |  0   | Al |
-    //           0 |  0   | 1  |   <- this row is in AL already
-    newL = Matrix_Alloc(A->Lat->NbRows, A->Lat->NbColumns + B->Lat->NbColumns - 1);
+    //  (size) BLCols ALCols 1
+    //          z'      z   cst
+    // newL =   0   |  AL  | Al |
+    //          0   |  0   | 1  |   <- this row is in AL already
+    newL = Matrix_Alloc(A->Lat->NbRows,
+      A->Lat->NbColumns + B->Lat->NbColumns - 1);
     for(int i = 0; i < newL->NbRows; i++) {
-      for(int j = 0; j < newL->NbColumns; j++) {
-        if(j < A->Lat->NbColumns - 1) { // left AL
-          value_assign(newL->p[i][j], A->Lat->p[i][j]);
-        }
-        else if(j == newL->NbColumns - 1) {
-          value_assign(newL->p[i][j], A->Lat->p[i][A->Lat->NbColumns - 1]);
-        }
-        else {
-          value_set_si(newL->p[i][j], 0);
-        }
-      }
+      Vector_Set(newL->p[i], 0, B->Lat->NbColumns-1);
+      Vector_Copy(A->Lat->p[i], &newL->p[i][B->Lat->NbColumns-1],
+        A->Lat->NbColumns);
     }
 
     // newP:
@@ -490,54 +485,59 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
     // scan the polyhedra of domains A->P and B->P, and build their constraints
     // intersections.
     // Build the constraints:
-    //  0/1    z      z'      cst
-    //  ap0    AP      0       Ap     # from A->P    -> AP_aligned
-    //   0     AL     -BL      Al-Bl  # equalities   \ extra
-    //  bp0    0      BP       Bp     # from B->P    /
-    
+    //  0/1    z'      z      cst
+    //  ap0    0      AP       Ap     # from A->P    -> AP_aligned
+    //   0    -BL     AL      Al-Bl   # equalities   \ extra
+    //  bp0    BP      0       Bp     # from B->P    /
+
     // start with a domain of the right dimension (expand dimension of A)
     AP_aligned = align_context(A->P, A->P->Dimension + B->P->Dimension,
       MAXNOOFRAYS);
+    #ifdef INTERSECTION_DEBUG
+    fprintf(stderr, "AP_aligned = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, AP_aligned);
+    #endif
     // extra will be the matrix containing the extra constraints (including
-    // equalities: AL z = BL z', initialized once)
+    // equalities: AL z = BL z', initialized once before scanning the polyhedra)
+    // count max nbrows of extra
     for(Polyhedron *BP = B->P; BP; BP = BP->next) {
       if(A->Lat->NbRows + B->P->NbConstraints > extra_max_rows) {
         extra_max_rows = A->Lat->NbRows + B->P->NbConstraints;
       }
     }
     extra = Matrix_Alloc(extra_max_rows, AP_aligned->Dimension + 2);
-    // initialize |0 AL  -BL  constant| in extra
+    Vector_Set(extra->p[0], 0, extra->NbRows * extra->NbColumns); // init 0
+    // initialize |0 -BL  AL  Al-Bl| in extra
     for(int row = 0; row < extra_B_row; row++) {
-      value_set_si(extra->p[row][0], 0); // equality
-      Vector_Copy  (&A->Lat->p[row][0], &extra->p[row][1],
-        A->Lat->NbColumns - 1);
-      Vector_Oppose(&B->Lat->p[row][0], &extra->p[row][A->Lat->NbColumns],
-        B->Lat->NbColumns - 1);
-      value_substract(extra->p[row][extra->NbColumns - 1],
+      // equality (0 is set already)
+      Vector_Oppose(&B->Lat->p[row][0], &extra->p[row][1],
+        B->Lat->NbColumns - 1); // -BL
+      Vector_Copy  (&A->Lat->p[row][0], &extra->p[row][B->Lat->NbColumns],
+        A->Lat->NbColumns - 1); // AL
+      value_substract(extra->p[row][extra->NbColumns - 1], // constant
         A->Lat->p[row][A->Lat->NbColumns - 1],
         B->Lat->p[row][B->Lat->NbColumns - 1]);
     }
-    // scan the intersections and build union newP
-    for(Polyhedron *AP = AP_aligned; AP; AP = AP->next) {
-      for(Polyhedron *BP = B->P; BP; BP = BP->next) {
-        Polyhedron *P;
-        // complement extra with the Constraints of BP
-        for(int con = 0; con < BP->NbConstraints; con++) {
-          // 0/1 bp0
-          value_assign(extra->p[extra_B_row + con][0], BP->Constraint[con][0]);
-          // constraint BP + constant Bp
-          Vector_Copy(&BP->Constraint[con][1],
-            &extra->p[extra_B_row + con][A->Lat->NbColumns],
-            BP->Dimension + 1);
-        }
-        extra->NbRows = extra_B_row + B->P->NbConstraints;
-        #ifdef INTERSECTION_DEBUG
-          fprintf(stderr, "extra = ");
-          Matrix_Print(stderr, P_VALUE_FMT, extra);
-        #endif
-  
-        P = AddConstraints(&extra->p[0][0], extra->NbRows,
-          AP_aligned, MAXNOOFRAYS);
+    // scan the intersections of each BP with each AP and build union newP
+    for(Polyhedron *BP = B->P; BP; BP = BP->next) {
+      Polyhedron *P;
+      // complement extra with the Constraints of BP
+      for(int con = 0; con < BP->NbConstraints; con++) {
+        // constraint BP
+        Vector_Copy(BP->Constraint[con], extra->p[extra_B_row + con],
+          BP->Dimension + 1);
+        // + constant Bp
+        value_assign(extra->p[extra_B_row + con][extra->NbColumns-1],
+          BP->Constraint[con][BP->Dimension+1]);
+      }
+      extra->NbRows = extra_B_row + B->P->NbConstraints;
+      #ifdef INTERSECTION_DEBUG
+        fprintf(stderr, "extra = ");
+        Matrix_Print(stderr, P_VALUE_FMT, extra);
+      #endif
+
+      for(Polyhedron *AP = AP_aligned; AP; AP = AP->next) {
+        P = AddConstraints(extra->p[0], extra->NbRows, AP_aligned, MAXNOOFRAYS);
         newP = AddPolyToDomain(P, newP); // consumes P and newP
       }
     }
@@ -872,7 +872,8 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   // LBLFree(Result);
   // return(Final_Result);
 
-  Bcomp = LBLComplement(Binter);
+  // TODO:
+  Bcomp = LBLComplement(Binter); // Binter or B? which one is simpler
   #ifdef DIFFERENCE_DEBUG
   fprintf(stderr, "Difference = intersection between Bcomp = ");
   LBLPrint(stderr, P_VALUE_FMT, Bcomp);
@@ -965,7 +966,7 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
   }
   value_set_si(newL->p[newL->NbRows-1][newL->NbColumns-1], 1);
 
-  // add the extra dimension on P
+  // add the extra dimension on P (first dimensions!)
   newP = align_context(Z->P, d+dp-2, MAXNOOFRAYS);
 
   // build the extra constraint to be added to newP: G z' = L z

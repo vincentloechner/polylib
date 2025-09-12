@@ -12,37 +12,19 @@ def ZP2D(lattice, i_inf, i_sup, j_inf, j_sup):
 
 A = ZP2D("(2*i, 2*j)", "-20", "20", "-20", "20")
 B = ZP2D("(i, 0)", "0", "100", "i/4", "i/3")
-diff = A - B
-
 print("A contains", len(A), "points")
 print("B contains", len(B), "points")
-print("diff=A-B contains", len(diff), "points")
 
-print("diff=B-A contains", len(B-A), "points")
+diff = A - B
+print("diff = A - B contains", len(diff), "points")
 
 ZP = set()
 ZP = ZP.union(ZP2D("(2, 0)", "0", "0", "0", "0"))
 ZP = ZP.union(ZP2D("(2*i, 2*j)", "-20", "20", "-20", "-1"))
 ZP = ZP.union(ZP2D("(2*i, 2*j)", "-20", "20", "1", "20"))
-if len(ZP - diff) == 0:
-  print("ok until here")
-ZP = ZP.union(ZP2D("(2*i, 2*j)", "11", "20", "-20", "20"))
-if len(ZP - diff) == 0:
-  print("ZP is in diff")
-else:
-  print("problem")
-  print(ZP - diff)
 ZP = ZP.union(ZP2D("(2*i, 2*j)", "-20", "-1", "-20", "20"))
-if len(ZP - diff) == 0:
-  print("ZP is in diff")
-else:
-  print("Points that should not be there:")
-  print(ZP - diff)
-
-
 
 print("len(ZP) =", len(ZP))
-
 if len(ZP - diff) == 0:
   print("ZP is in diff")
 else:
@@ -54,3 +36,22 @@ if len(diff - ZP) == 0:
 else:
   print("Missing points:")
   print(diff - ZP)
+
+
+diff2 = B - A
+print("diff2 = B - A contains", len(diff2), "points")
+YP = set()
+YP = YP.union(ZP2D("(2*i+1, 0)", "-20", "19", "(i+1)/2", "(2*i+1)/3"))
+
+print("len(ZP) =", len(YP))
+if len(YP - diff2) == 0:
+  print("YP is in diff2")
+else:
+  print("Points that should not be there:")
+  print(YP - diff2)
+
+if len(diff2 - YP) == 0:
+  print("diff2 is in YP")
+else:
+  print("Missing points:")
+  print(diff2 - YP)
