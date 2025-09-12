@@ -21,54 +21,23 @@ print("diff=A-B contains", len(diff), "points")
 print("diff=B-A contains", len(B-A), "points")
 
 ZP = set()
-# A - B = LBL: Dimension 2
-
-# LATTICE:
-# 3 3
-#    2    0    0 
-#    0    2    0 
-#    0    0    1 
-# POLYHEDRON Dimension:2
-#            Constraints:4  Equations:0  Rays:4  Lines:0
-# Constraints 4 4
-# Inequality: [   0   -1   -1  ]
-# Inequality: [   1    0   20  ]
-# Inequality: [  -1    0   20  ]
-# Inequality: [   0    1   20  ]
-# Rays 4 4
-# Vertex: [  20   -1  ]/1
-# Vertex: [ -20   -1  ]/1
-# Vertex: [ -20  -20  ]/1
-# Vertex: [  20  -20  ]/1
+ZP = ZP.union(ZP2D("(2, 0)", "0", "0", "0", "0"))
 ZP = ZP.union(ZP2D("(2*i, 2*j)", "-20", "20", "-20", "-1"))
-
-# UNION POLYHEDRON Dimension:2
-#            Constraints:4  Equations:0  Rays:4  Lines:0
-# Constraints 4 4
-# Inequality: [   0    1   -1  ]
-# Inequality: [   1    0   20  ]
-# Inequality: [  -1    0   20  ]
-# Inequality: [   0   -1   20  ]
-# Rays 4 4
-# Vertex: [  20    1  ]/1
-# Vertex: [ -20    1  ]/1
-# Vertex: [ -20   20  ]/1
-# Vertex: [  20   20  ]/1
 ZP = ZP.union(ZP2D("(2*i, 2*j)", "-20", "20", "1", "20"))
-
-# UNION POLYHEDRON Dimension:2
-#            Constraints:4  Equations:0  Rays:4  Lines:0
-# Constraints 4 4
-# Inequality: [  -1    0   -1  ]
-# Inequality: [   1    0   20  ]
-# Inequality: [   0    1   20  ]
-# Inequality: [   0   -1   20  ]
-# Rays 4 4
-# Vertex: [ -20  -20  ]/1
-# Vertex: [  -1  -20  ]/1
-# Vertex: [  -1   20  ]/1
-# Vertex: [ -20   20  ]/1
+if len(ZP - diff) == 0:
+  print("ok until here")
+ZP = ZP.union(ZP2D("(2*i, 2*j)", "11", "20", "-20", "20"))
+if len(ZP - diff) == 0:
+  print("ZP is in diff")
+else:
+  print("problem")
+  print(ZP - diff)
 ZP = ZP.union(ZP2D("(2*i, 2*j)", "-20", "-1", "-20", "20"))
+if len(ZP - diff) == 0:
+  print("ZP is in diff")
+else:
+  print("Points that should not be there:")
+  print(ZP - diff)
 
 
 

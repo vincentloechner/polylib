@@ -23,6 +23,7 @@
   #define COMP_DEBUG 1
   #define HOLES_DEBUG 1
 #endif
+#define INTERSECTION_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -405,7 +406,7 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
   Polyhedron *PInter, *ImageA, *ImageB, *PreImage;
 
   #ifdef INTERSECTION_DEBUG
-    fprintf(stderr, "entering sLBL_Intersection\nA = ");
+    fprintf(stderr, "-- Entering sLBL_Intersection\nA = ");
     sLBL_Print(stderr, P_VALUE_FMT, A);
     fprintf(stderr, "B = ");
     sLBL_Print(stderr, P_VALUE_FMT, B);
@@ -413,8 +414,16 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
   LInter = LatticeIntersection(A->Lat, B->Lat);
   if (isEmptyLattice(LInter)) {
     Matrix_Free(LInter);
+    #ifdef INTERSECTION_DEBUG
+    fprintf(stderr, "Empty Lattice intersection, result = <empty>\n");
+    fprintf(stderr, "-- exit sLBL_Intersection\n");
+    #endif
     return (NULL);
   }
+  #ifdef INTERSECTION_DEBUG
+  fprintf(stderr, "Lattice intersection = LInter = ");
+  Matrix_Print(stderr, P_VALUE_FMT, LInter);
+  #endif
 
   if(count_zeroCols(A->Lat) == 0 && count_zeroCols(B->Lat) == 0 &&
     count_zeroCols(LInter) == 0)
@@ -425,6 +434,10 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
     ImageA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
     ImageB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
     PInter = DomainIntersection(ImageA, ImageB, MAXNOOFRAYS);
+    #ifdef INTERSECTION_DEBUG
+    fprintf(stderr, "imageA inter imageB = PInter = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, PInter);
+    #endif
     if (emptyQ(PInter))
       Result = NULL;
     else {
@@ -438,14 +451,16 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
     Domain_Free(ImageB);
     Domain_Free(ImageA);
     #ifdef INTERSECTION_DEBUG
-      fprintf(stderr, "Z-polyhedra, simplified intersection = ");
-      sLBL_Print(stderr, P_VALUE_FMT, Result);
+    fprintf(stderr, "Z-polyhedra, simplified intersection = ");
+    sLBL_Print(stderr, P_VALUE_FMT, Result);
+    fprintf(stderr, "-- exit sLBL_Intersection\n");
     #endif
 
     return (Result);
   }
   else {
-    // build the LBL { AL z | AL z = BL z', z \in AP, z' \in BP }
+    // there's an LBL, need to build the exact LBL manually:
+    // { AL z | AL z = BL z', z \in AP, z' \in BP }
 
     int extra_max_rows = 0, extra_B_row = A->Lat->NbRows - 1;
     Matrix *newL = NULL, *extra;
@@ -534,10 +549,10 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
     Matrix_Free(newL);
     Domain_Free(newP);
     #ifdef INTERSECTION_DEBUG
-      fprintf(stderr, "Manual built intersection = ");
-      sLBL_Print(stderr, P_VALUE_FMT, Result);
+    fprintf(stderr, "Manual built intersection = ");
+    sLBL_Print(stderr, P_VALUE_FMT, Result);
+    fprintf(stderr, "-- exit sLBL_Intersection\n");
     #endif
-
 
     return(Result);
   }
@@ -591,28 +606,28 @@ static LBL *sLBLComplement(LBL *A)
   Polyhedron *Univ, *hullA, *comp_hullA;
   LatticeUnion *LatDiff;
   #ifdef COMP_DEBUG
-  fprintf(stderr, "\nEntering sLBLComplement. A = ");
+  fprintf(stderr, "\n-- Entering sLBLComplement. A = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   
-  // step 1: complement of hull(A)
+  // STEP 1: complement of hull(A)
   hullA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   Univ = Universe_Polyhedron(hullA->Dimension);
   comp_hullA = DomainDifference(Univ, hullA, MAXNOOFRAYS);
+  #ifdef COMP_DEBUG
+  fprintf(stderr, "STEP 1: Adding hull complement polyhedron: ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, comp_hullA);
+  #endif
   if (!emptyQ(comp_hullA)) {
     Matrix *Id;
     Id = Identity_Matrix(comp_hullA->Dimension + 1);
     Result = LBLAlloc(Id, comp_hullA);
     Matrix_Free(Id);
-    #ifdef COMP_DEBUG
-    fprintf(stderr, "Adding hull complement: ");
-    LBLPrint(stderr, P_VALUE_FMT, Result);
-    #endif
   }
   Domain_Free(comp_hullA);
   Domain_Free(Univ);
 
-  // step 2: lattice differences (not L) on hullA
+  // STEP 2: lattice differences (not L) on hullA
   LatDiff = LatticeDifference(NULL, A->Lat);
   #ifdef COMP_DEBUG
   fprintf(stderr, "\nLatDiff: ");
@@ -621,7 +636,7 @@ static LBL *sLBLComplement(LBL *A)
   // Add all Z-polyhedra to Result, applying the list of lattices on hullA
   for(LatticeUnion *lat = LatDiff; lat; lat = lat->next) {
     LBL *Ztmp;
-    #ifdef DIFFERENCE_DEBUG
+    #ifdef COMP_DEBUG
     fprintf(stderr, "Considering Lat diff: ");
     Matrix_Print(stderr, P_VALUE_FMT, lat->M);
     #endif
@@ -648,15 +663,23 @@ static LBL *sLBLComplement(LBL *A)
   }
   Domain_Free(hullA);
 
-  // step 3: holes
-  // TODO: add the holes of A, with lattice L.
+  // STEP 3: holes
   if(count_zeroCols(A->Lat)) {
     // there are potential holes
     LBL *holes = compute_holes(A);
+    #ifdef COMP_DEBUG
+    fprintf(stderr, "STEP 3 adding holes = ");
+    LBLPrint(stderr, P_VALUE_FMT, holes);
+    #endif
     Result = LBL_concatenate(Result, holes);
   }
 
   CanonicalLBL(Result);
+  #ifdef COMP_DEBUG
+  fprintf(stderr, "\n-- sLBLComplement final result (normalized) = ");
+  LBLPrint(stderr, P_VALUE_FMT, Result);
+  #endif
+
   return (Result);
 } /* sLBLComplement */
 
@@ -700,6 +723,10 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
 {
   LBL *Result, *Binter, *Bcomp;
 
+  #ifdef DIFFERENCE_DEBUG
+  fprintf(stderr, "-- Entering sLBL_Difference. A = ");
+  LBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
   if (A->Lat->NbRows != B->Lat->NbRows) {
     errormsg1("sLBL_Difference", "dimincomp", "incompatible dimensions");
     return(NULL);
@@ -707,10 +734,14 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
 
   // treat the simple case where the LBLs do not intersect
   Binter = sLBL_Intersection(A, B); // reused below
+  #ifdef DIFFERENCE_DEBUG
+  fprintf(stderr, "Binter = ");
+  LBLPrint(stderr, P_VALUE_FMT, Binter);
+  #endif
   if(isEmptyLBL(Binter)) {
     // if B does not intersect A, return A.
     #ifdef DIFFERENCE_DEBUG
-      fprintf(stderr,
+    fprintf(stderr,
       "Binter=(A inter B) is empty, so B does not intersect A, we return A\n");
     #endif
     LBLFree(Binter);
@@ -841,7 +872,13 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   // LBLFree(Result);
   // return(Final_Result);
 
-  Bcomp = sLBLComplement(Binter);
+  Bcomp = LBLComplement(Binter);
+  #ifdef DIFFERENCE_DEBUG
+  fprintf(stderr, "Difference = intersection between Bcomp = ");
+  LBLPrint(stderr, P_VALUE_FMT, Bcomp);
+  fprintf(stderr, "[Difference = intersection between Bcomp] and A = ");
+  LBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
   Result = LBLIntersection(Bcomp, A);
 
   LBLFree(Binter);
