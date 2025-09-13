@@ -23,7 +23,6 @@
   #define COMP_DEBUG 1
   #define HOLES_DEBUG 1
 #endif
-#define DIFFERENCE_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -532,13 +531,22 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
       }
       extra->NbRows = extra_B_row + B->P->NbConstraints;
       #ifdef INTERSECTION_DEBUG
-        fprintf(stderr, "extra = ");
-        Matrix_Print(stderr, P_VALUE_FMT, extra);
+      fprintf(stderr, "extra = ");
+      Matrix_Print(stderr, P_VALUE_FMT, extra);
       #endif
 
       for(Polyhedron *AP = AP_aligned; AP; AP = AP->next) {
-        P = AddConstraints(extra->p[0], extra->NbRows, AP_aligned, MAXNOOFRAYS);
-        newP = AddPolyToDomain(P, newP); // consumes P and newP
+        P = AddConstraints(extra->p[0], extra->NbRows, AP, MAXNOOFRAYS);
+        #ifdef INTERSECTION_DEBUG
+        fprintf(stderr, "Adding P = ");
+        Polyhedron_Print(stderr, P_VALUE_FMT, P);
+        #endif
+        if(emptyQ(P)) {
+          Polyhedron_Free(P);
+        }
+        else {
+          newP = AddPolyToDomain(P, newP); // consumes P and newP
+        }
       }
     }
     Matrix_Free(extra);
