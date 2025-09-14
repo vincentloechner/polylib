@@ -1796,9 +1796,7 @@ static LBL *compute_holes(LBL *A)
   fprintf(stderr, "-- holes = ");
   Polyhedron_Print(stderr, P_VALUE_FMT, holes);
   #endif
-  Polyhedron *holes_src = DomainPreimage(holes, newL, MAXNOOFRAYS);
-  LBL* result = LBLAlloc(newL, holes_src);
-  Domain_Free(holes_src);
+  LBL* result = LBLAlloc(newL, holes);
   Matrix_Free(newL);
   Domain_Free(holes);
 
