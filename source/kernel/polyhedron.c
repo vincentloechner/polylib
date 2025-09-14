@@ -3903,7 +3903,8 @@ Polyhedron *Polyhedron_Scan(Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
 /*    pos : index position of current loop index (1..hdim-1)           */
 /*    P: loop domain                                                   */
 /*    context : context values for fixed indices                       */
-/*              notice that context[hdim] must be 1                    */
+/*              notice that context[hdim] is set to 1                  */
+/*              and context[pos] is set to 0                           */
 /*    LBp, UBp : pointers to resulting bounds                          */
 /* returns the flag = (UB_INFINITY, LB_INFINITY)                       */
 /*---------------------------------------------------------------------*/
@@ -3927,6 +3928,14 @@ int lower_upper_bounds(int pos, Polyhedron *P, Value *context, Value *LBp,
 
   value_set_si(LB, 0);
   value_set_si(UB, 0);
+
+  //             0  1 .. pos .. hdim  hdim+1
+  // context :   0   * *  0 ..... 0    1
+
+  // ensure that context[pos] = 0 and
+  // that context[hdim] = 1.
+  value_set_si(context[pos], 0);
+  value_set_si(context[P->Dimension+1], 1);
 
   /* Compute Upper Bound and Lower Bound for current loop */
   flag = LB_INFINITY | UB_INFINITY;
@@ -3972,14 +3981,14 @@ int lower_upper_bounds(int pos, Polyhedron *P, Value *context, Value *LBp,
     }
 
     if (value_pos_p(d)) { /* Lower Bound */
-      value_modulus(tmp, n, d);
+      value_modulus(tmp, n, d); // tmp = n % d
 
       /* n1 = ceiling(n/d) */
-      if (value_pos_p(n) && value_notzero_p(tmp)) {
+      if (value_pos_p(n) && value_notzero_p(tmp)) { // n>0 && tmp!=0
         value_division(n1, n, d);
-        value_add_int(n1, n1, 1);
+        value_add_int(n1, n1, 1);  // n1 = n/d+1
       } else
-        value_division(n1, n, d);
+        value_division(n1, n, d);  // n1 = n/d
       if (flag & LB_INFINITY) {
         value_assign(LB, n1);
         flag ^= LB_INFINITY;

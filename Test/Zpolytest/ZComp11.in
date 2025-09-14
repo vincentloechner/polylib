@@ -1,0 +1,121 @@
+# from Bcomp in ZDiff11
+
+M 1
+
+# Bcomp =
+4 4
+   2    0    0    0
+   0    0    0    0
+  52   66    0    0
+   0    0    0    1
+
+D 1
+
+5 5
+1  -150 -198    1    0 
+1   200  264   -1    0 
+1     2    0   -9    0 
+1    -1    0    0   50 
+1    -1    0    5    0 
+
+# (74, 0, 76) = (2i, 0, 52i+66j)
+# from (i,j,k) = (37, -28, ?).
+#    k >= 150*i+198*j = 6
+#    k >= i/5 = 7.4
+#    k <= 2*i/9 = 8.22
+#    k <= 200 * i + 264 * j = 8
+# is in A so should not be in complement.
+
+# LBLComplement
+F 16
+
+
+# the solution includes something wrong:
+LATTICE:
+4 3
+   2    0    0
+   0    0    0
+  52   66    0
+   0    0    1
+POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0   39  ]
+Inequality: [ 333  440    0  ]
+Inequality: [-674 -891   -4  ]
+Rays 3 4
+Vertex: [17160 -12987  ]/440
+Vertex: [1760 -1332  ]/143
+Vertex: [3159 -2390  ]/81
+
+-> point (74, 0, 76)
+from (i,k) = (37, -28)
+
+
+########## Bcomp =
+Binter = LBL: Dimension 3
+
+LATTICE:
+4 4
+   2    0    0    0
+   0    0    0    0
+  52   66    0    0
+   0    0    0    1
+POLYHEDRON Dimension:3
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 5
+Inequality: [-150 -198    1    0  ]
+Inequality: [ 200  264   -1    0  ]
+Inequality: [   2    0   -9    0  ]
+Inequality: [  -1    0    0   50  ]
+Inequality: [  -1    0    5    0  ]
+Rays 5 5
+Vertex: [   0    0    0  ]/1
+Vertex: [2200 -1665  440  ]/44
+Vertex: [29700 -22475 6600  ]/594
+Vertex: [44550 -33700 9900  ]/891
+Vertex: [4950 -3745  990  ]/99
+
+########## exact shadow from Bcomp:
+LATTICE:
+4 3
+   2    0    0
+   0    0    0
+  52   66    0
+   0    0    1
+POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ 674  891    3  ]
+Inequality: [ 333  440    0  ]
+Inequality: [-674 -891    0  ]
+Inequality: [  -1    0   39  ]
+Inequality: [   1    0   -1  ]
+Rays 5 4
+Vertex: [11583 -8762  ]/297
+Vertex: [1320 -999  ]/143
+Vertex: [3861 -2921  ]/99
+Vertex: [ 440 -333  ]/440
+Vertex: [ 891 -674  ]/891
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0   39  ]
+Inequality: [ 333  440    0  ]
+Inequality: [-674 -891   -4  ]
+Rays 3 4
+Vertex: [17160 -12987  ]/440
+Vertex: [1760 -1332  ]/143
+Vertex: [3159 -2390  ]/81
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0   50  ]
+Inequality: [ 674  891    3  ]
+Inequality: [-674 -891    0  ]
+Inequality: [   1    0  -40  ]
+Rays 4 4
+Vertex: [44550 -33703  ]/891
+Vertex: [44550 -33700  ]/891
+Vertex: [35640 -26960  ]/891
+Vertex: [35640 -26963  ]/891

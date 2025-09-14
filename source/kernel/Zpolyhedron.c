@@ -23,6 +23,7 @@
   #define COMP_DEBUG 1
   #define HOLES_DEBUG 1
 #endif
+#define HOLES_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -881,7 +882,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   // return(Final_Result);
 
   // TODO:
-  Bcomp = LBLComplement(Binter); // Binter or B? which one is simpler
+  Bcomp = LBLComplement(Binter); // Binter or B? which one is simpler? B is larger... ?
   #ifdef DIFFERENCE_DEBUG
   fprintf(stderr, "Difference = intersection between Bcomp = ");
   LBLPrint(stderr, P_VALUE_FMT, Bcomp);
@@ -1579,16 +1580,16 @@ Polyhedron *Scan_Rest(Polyhedron *scan, Polyhedron *R, Value *val,
 {
   Value LB, UB;
 
+  value_set_si(val[position], 0); // ensure no previous value is assigned there
   #ifdef HOLES_DEBUG
   fprintf(stderr, "Enter Scan_Rest, position = %d\n", position);
   fprintf(stderr, "val = (");
-  for(int i=0; i<position; i++)
+  for(int i=0; i<=((scan)?(dim_R+scan->Dimension):position); i++) {
+    if(i == position || i == 1)
+      fprintf(stderr, "::");
     value_print(stderr, P_VALUE_FMT, val[i]);
+  }
   fprintf(stderr, ")\n");
-  fprintf(stderr, "R = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, R);
-  fprintf(stderr, "scan = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, scan);
   #endif
   if(!R && !scan) {
       // end here, it is a hit!
@@ -1721,7 +1722,8 @@ static LBL *compute_holes(LBL *A)
   U0 = Universe_Polyhedron(0);
 
   // need to:
-  // - scan the points that can be holes (domain_disjoint + polyhedron scan of each + lower_upper_bound to scan)
+  // - scan the points that can be holes (domain_disjoint + polyhedron scan
+  //   of each + lower_upper_bound to scan)
   // - add them to the polyhedron list of hits if they are not holes
 
   // prepare to scan the domain A->P: scan disjoint parts successively
@@ -1753,6 +1755,13 @@ static LBL *compute_holes(LBL *A)
       value_set_si(v->p[v->Size-1], 1);
 
       // scan and update not_a_hole (the result)
+      #ifdef HOLES_DEBUG
+      fprintf(stderr, "------- Calling Scan_Rest -------");
+      fprintf(stderr, "R = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, scanR);
+      fprintf(stderr, "scan = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, scanAP);
+      #endif
       not_a_hole = Scan_Rest(scanAP, scanR, v->p, 1, scanR->Dimension, not_a_hole);
 
       Domain_Free(scanR);
@@ -1773,12 +1782,25 @@ static LBL *compute_holes(LBL *A)
   Domain_Free(rest);
   Domain_Free(not_a_hole);
   if(emptyQ(holes)) {
+    #ifdef HOLES_DEBUG
+    fprintf(stderr, "Compute_holes returning: <NULL>");
+    #endif
+    Domain_Free(holes);
     return(NULL);
   }
   Matrix *newL;
   newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
-  LBL* result = LBLAlloc(newL, holes);
+  #ifdef HOLES_DEBUG
+  fprintf(stderr, "Building final result\n-- newL = ");
+  Matrix_Print(stderr, P_VALUE_FMT, newL);
+  fprintf(stderr, "-- holes = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, holes);
+  #endif
+  Polyhedron *holes_src = DomainPreimage(holes, newL, MAXNOOFRAYS);
+  LBL* result = LBLAlloc(newL, holes_src);
+  Domain_Free(holes_src);
   Matrix_Free(newL);
+  Domain_Free(holes);
 
   #ifdef HOLES_DEBUG
   fprintf(stderr, "Compute_holes returning: ");

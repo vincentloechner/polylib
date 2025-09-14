@@ -29,7 +29,7 @@ D 2
   1 -1  4  0    # 4j >= i
   1  1 -3  0    # 3j <= i
                 # i/4 <= j <= i/3 will be thick starting at i=3
-                # point (2,0) is not in the LBL!
+                # points (1,0) and (2,0) are not in the LBL!
 
 # ZP diff
 F 9
