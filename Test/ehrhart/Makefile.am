@@ -55,7 +55,7 @@ EHRHART_ALL = \
 EXTRA_DIST = $(EHRHART_ALL)
 
 TEST_EXE = $(top_builddir)/testehrhart
-TEST_FILES = `if test $(TEST_BITS) = 32 ; then echo $(EHRHART_32) ; else echo $(EHRHART_ALL) ; fi `
+TEST_FILES = $(shell if test $(TEST_BITS) = 32 ; then echo $(EHRHART_32) ; else echo $(EHRHART_ALL) ; fi )
 
 include ../Tests.mk
 
