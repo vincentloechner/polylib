@@ -1,5 +1,7 @@
 import math
 
+# A-B is the same as ZDiff11.
+
 # 50 -> 1m points in A (~(50*2)^3) takes some time to compute...
 MAX = 50
 

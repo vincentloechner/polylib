@@ -1655,7 +1655,7 @@ Polyhedron *Scan_Rest(Polyhedron *scan, Polyhedron *R, Value *val,
     for(; value_le(LB, UB); value_increment(LB, LB)) {
       value_assign(val[position], LB);
       // accumulate
-      Result = Scan_Rest(scan, R->next, val, position+1, dim_R, Result);
+      Result = Scan_Rest(scan->next, R->next, val, position+1, dim_R, Result);
     }
   }
   value_clear(UB);
@@ -1734,7 +1734,8 @@ static LBL *compute_holes(LBL *A)
     Polyhedron *scanAP, *nextAP;
     nextAP = AP->next; // save next
     AP->next = NULL;   // set NULL to next to build scan AP
-    scanAP = Polyhedron_Scan(AP, rest, MAXNOOFRAYS);
+    scanAP = Polyhedron_Scan(AP, U0, MAXNOOFRAYS);
+    // scanAP = Polyhedron_Scan(AP, rest, MAXNOOFRAYS);
     #ifdef HOLES_DEBUG
     fprintf(stderr, "Scanning:");
     Polyhedron_Print(stderr, P_VALUE_FMT, scanAP);
