@@ -18,10 +18,11 @@ D 0
 F 3
 
 # should be:
-# 1  0  0
-# 0  0 31
-# 0  0 75
-# 0  0  1
+# 1   0
+# 0  31
+# 0  75
+# 0   1
+(smaller dimension since those lattices intersect in one dimension only)
 
 H:
 8 6

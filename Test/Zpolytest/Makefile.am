@@ -17,21 +17,19 @@ TEST_FILES =  \
 	LatHNF1.in \
 	LatHNF2.in \
 	LatHNF3.in \
+	LatInc1.in \
+	LatInc2.in \
 	LatInter1.in \
 	LatInter2.in \
 	LatInter4.in \
 	LatInter5.in \
-	LatInc1.in \
-	LatInc2.in \
-	LeftHermite1.in \
-	LeftHermite2.in \
-	ZEmpty1.in \
-	ZEmpty2.in \
-	ZInter1.in \
-	ZInter2.in  \
-	ZInter3.in  \
-	ZUnion1.in \
-	ZUnion2.in \
+	ZAlloc1.in \
+	ZAlloc1b.in \
+	ZAlloc1c.in \
+	ZAlloc2.in \
+	ZAlloc3.in \
+	ZComp3.in \
+	ZComp11.in \
 	ZDiff1.in \
 	ZDiff2.in \
 	ZDiff3.in \
@@ -43,12 +41,18 @@ TEST_FILES =  \
 	ZDiff9.in \
 	ZDiff10.in \
 	ZDiff12.in \
+	ZEmpty2.in \
 	ZImage1.in \
+	ZImPre1.in \
+	ZImPre2.in \
+	ZImPre3.in \
+	ZInter1.in \
+	ZInter2.in  \
+	ZInter3.in  \
 	ZPre1.in \
 	ZPre2.in  \
 	ZPre3.in \
-	ZImPre1.in \
-	ZImPre2.in \
-	ZImPre3.in
+	ZUnion1.in \
+	ZUnion2.in
 
 include ../Tests.mk

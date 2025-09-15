@@ -18,7 +18,7 @@ D 0
 F 3
 
 # should be empty because no j, j' satisfy both:
-# 2j+1 = 6j'+31 and 
+# 2j+1 = 6j'+31, and,
 # 5j = 15j' + 70
 
 H:

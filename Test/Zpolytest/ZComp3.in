@@ -16,9 +16,11 @@ D 1
 1 -1  3 0  # j >= i/3
 1  1 -2 0  # j <= i/2
 
-
 # LBLComplement
 F 16
 
-# the result should be {i=0} U {2 <= i <= 10}
-# because there is no integer j for i = 1 (1/3->1/2)
+# the complement of this pointy LBL should be:
+- all j's, with i outside of [0, 10]
+- plus one point i=1, because
+the shadow of the LBL is {i=0} U {2 <= i <= 10}
+(there is no integer j for i = 1 (1/3 -> 1/2))
