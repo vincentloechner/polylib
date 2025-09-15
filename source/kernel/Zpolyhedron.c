@@ -23,7 +23,6 @@
   #define COMP_DEBUG 1
   #define HOLES_DEBUG 1
 #endif
-#define HOLES_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
