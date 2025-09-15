@@ -1679,6 +1679,9 @@ static LBL *compute_holes(LBL *A)
   Polyhedron *exact = A->P, *dark = A->P; // initialize with P then project
   Polyhedron *rest; // exact shadow - dark shadow (polyhedral domain)
   Polyhedron *tmp, *AP, *U0, *not_a_hole = NULL, *holes;
+  Vector *v;
+  Matrix *newL;
+  LBL* result;
 
   #ifdef HOLES_DEBUG
   fprintf(stderr, "Entering compute holes. A = ");
@@ -1686,47 +1689,49 @@ static LBL *compute_holes(LBL *A)
   #endif
   nbzeros = count_zeroCols(A->Lat);
   for(int z = 0; z < nbzeros; z++) {
-    Polyhedron *d, *e; // shadow polyhedra after eliminating col
+    Polyhedron *d, *e; // shadow polyhedra after eliminating the column
     int col = A->Lat->NbColumns - 2 - z;
 
     d = domain_dark_shadow(dark, col);
     e = domain_project(exact, col);
     if(dark != A->P) {
-      Domain_Free(dark); // no longer need the previous calculated ones
-      Domain_Free(exact);
+      Domain_Free(dark);  // no longer need the previous calculated ones
+      Domain_Free(exact); // (keep the original A->P first ones)
     }
     dark = d;
     exact = e;
   }
 
-  // rest is the polyhedral domain (exact - dark)
+  // rest is the polyhedral domain (exact - dark) in origin-nbzero col space
   rest = DomainDifference(exact, dark, MAXNOOFRAYS);
   Domain_Free(exact);
   Domain_Free(dark);
-  // simplify obvious non integer cases
+  // simplify obvious non integer cases (is this useful?)
   rest = DomainConstraintSimplify(rest, MAXNOOFRAYS);
   if(emptyQ(rest)) {
     Domain_Free(rest);
     return(NULL);
   }
-  // disjoint domain (for scan):
+
+  // PREPARE SCAN:
+  // disjoint domain:
   tmp = Disjoint_Domain(rest, 0, MAXNOOFRAYS);
   Domain_Free(rest);
   rest = tmp;
   #ifdef HOLES_DEBUG
-  fprintf(stderr, "exact - dark = ");
+  fprintf(stderr, "disjoint (exact - dark) = ");
   Polyhedron_Print(stderr, P_VALUE_FMT, rest);
   #endif
-  // and universe
+  // disjoint domain A->P
+  AP = Disjoint_Domain(A->P, 0, MAXNOOFRAYS);
+  v = Vector_Alloc(A->P->Dimension + 2);
+  // and universe (dim 0)
   U0 = Universe_Polyhedron(0);
 
   // need to:
   // - scan the points that can be holes (domain_disjoint + polyhedron scan
   //   of each + lower_upper_bound to scan)
   // - add them to the polyhedron list of hits if they are not holes
-
-  // prepare to scan the domain A->P: scan disjoint parts successively
-  AP = Disjoint_Domain(A->P, 0, MAXNOOFRAYS);
   while(AP) {
     // AP is the polyhedron that needs to be scanned
     // rest is the context
@@ -1742,19 +1747,16 @@ static LBL *compute_holes(LBL *A)
 
     for(Polyhedron *R=rest; R; R = R->next) {
       Polyhedron *scanR, *nextR;
-      Vector *v;
 
-      // polyhedron scan does not work on a domain.
+      // polyhedron scan does not work on a domain, need to nullify next.
       nextR = R->next;
       R->next = NULL; // unlink next
       scanR = Polyhedron_Scan(R, U0, MAXNOOFRAYS);
       R->next = nextR; // relink next
 
-      v = Vector_Alloc(A->P->Dimension + 2);
       Vector_Set(v->p, v->Size-1, 0);
       value_set_si(v->p[v->Size-1], 1);
 
-      // scan and update not_a_hole (the result)
       #ifdef HOLES_DEBUG
       fprintf(stderr, "------- Calling Scan_Rest -------");
       fprintf(stderr, "R = ");
@@ -1762,6 +1764,7 @@ static LBL *compute_holes(LBL *A)
       fprintf(stderr, "scan = ");
       Polyhedron_Print(stderr, P_VALUE_FMT, scanAP);
       #endif
+      // scan and update not_a_hole (add points that are not holes)
       not_a_hole = Scan_Rest(scanAP, scanR, v->p, 1, scanR->Dimension, not_a_hole);
 
       Domain_Free(scanR);
@@ -1769,8 +1772,9 @@ static LBL *compute_holes(LBL *A)
 
     Domain_Free(scanAP);
     Polyhedron_Free(AP);
-    AP = nextAP; // continue with next
+    AP = nextAP; // continue with next disjoint part
   }
+  Vector_Free(v);
   Domain_Free(U0);
   #ifdef HOLES_DEBUG
   fprintf(stderr, "not holes in (exact-dark) = ");
@@ -1788,7 +1792,7 @@ static LBL *compute_holes(LBL *A)
     Domain_Free(holes);
     return(NULL);
   }
-  Matrix *newL;
+
   newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
   #ifdef HOLES_DEBUG
   fprintf(stderr, "Building final result\n-- newL = ");
@@ -1796,23 +1800,20 @@ static LBL *compute_holes(LBL *A)
   fprintf(stderr, "-- holes = ");
   Polyhedron_Print(stderr, P_VALUE_FMT, holes);
   #endif
-  LBL* result = LBLAlloc(newL, holes);
+  result = LBLAlloc(newL, holes);
   Matrix_Free(newL);
   Domain_Free(holes);
 
-  #ifdef HOLES_DEBUG
-  fprintf(stderr, "Compute_holes returning: ");
-  LBLPrint(stderr, P_VALUE_FMT, result);
-  #endif
   return(result);
 } /* compute_holes */
 
 
 /*
- * Check that the zero columns of lattice A->Lat can be eliminated through
+ * Try to eliminate the zero columns of lattice A->Lat through
  * projection.
  * 
  * Eliminate only if exact shadow == dark shadow along each dimension.
+ * Restart again from first column after a successful scan with update.
  */
 static void sLBL_Simplify_Zero_Dimensions(LBL *A)
 {
@@ -1886,7 +1887,7 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
       Domain_Free(dark);
     }
     else {
-      // non empty column, everything on the left is also non empty, exit.
+      // non empty column, everything on the left is also non empty, exit loop.
       break;
     }
   }
@@ -1895,8 +1896,8 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   if(modified) {
-    // an inside column was eliminated, we can try again if another one
-    // (that has been scaned before) can be eliminated.
+    // an inside column was eliminated, we can try again to eliminate
+    // another one (that has been scaned before).
     sLBL_Simplify_Zero_Dimensions(A);
   }
 }
