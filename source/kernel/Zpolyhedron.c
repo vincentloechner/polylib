@@ -211,6 +211,8 @@ Bool LBLIncludes(LBL *A, LBL *B)
 
   // TODO: can we do better on ZDomains?
 
+  // TODO: could check lattice union inclusion first, if not included return fail.
+
   diff = LBLDifference(A, B);
   if(isEmptyLBL(diff)) {
     ret = True;
@@ -2223,6 +2225,8 @@ void CanonicalLBL(LBL *A) {
     sLBL_Canonical(tmp);
   }
 
+  // TODO: rewrite, this is ugly.
+  
   // check if a Lat is present twice in A, and if it is, union this
   // polyhedron to the existing one and remove the second reference
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
