@@ -55,16 +55,6 @@ void mp_get_memory_functions(void *(**alloc_func_ptr)(size_t),
 #endif
 
 /*
-   #        ####   #    #   ####           #        ####   #    #   ####
-   #       #    #  ##   #  #    #          #       #    #  ##   #  #    #
-   #       #    #  # #  #  #               #       #    #  # #  #  #
-   #       #    #  #  # #  #  ###          #       #    #  #  # #  #  ###
-   #       #    #  #   ##  #    #          #       #    #  #   ##  #    #
-   ######   ####   #    #   ####           ######   ####   #    #   ####
-
-*/
-
-/*
  * Constants like LONG_LONG_MAX are not defined with ansi options, so they are
  * defined here.
  */
@@ -86,6 +76,17 @@ void mp_get_memory_functions(void *(**alloc_func_ptr)(size_t),
 #undef ULONG_LONG_MAX
 #define ULONG_LONG_MAX (LONG_LONG_MAX * 2ULL + 1)
 #endif
+
+
+/*
+   #        ####   #    #   ####           #        ####   #    #   ####
+   #       #    #  ##   #  #    #          #       #    #  ##   #  #    #
+   #       #    #  # #  #  #               #       #    #  # #  #  #
+   #       #    #  #  # #  #  ###          #       #    #  #  # #  #  ###
+   #       #    #  #   ##  #    #          #       #    #  #   ##  #    #
+   ######   ####   #    #   ####           ######   ####   #    #   ####
+
+*/
 
 #if defined(LINEAR_VALUE_IS_LONGLONG)
 
@@ -231,35 +232,6 @@ typedef union {
 /* end LINEAR_VALUE_IS_CHARS */
 
 /*
-    #    #    #   #####
-    #    ##   #     #
-    #    # #  #     #
-    #    #  # #     #
-    #    #   ##     #
-    #    #    #     #
-
-*/
-
-#elif defined(LINEAR_VALUE_IS_INT)
-
-#define LINEAR_VALUE_STRING "int"
-typedef int Value;
-#define VALUE_FMT "%d"
-#define VALUE_CONST(val) (val)
-#define VALUE_NAN INT_MIN
-#define VALUE_MIN (INT_MIN + 1)
-#define VALUE_MAX INT_MAX
-#define VALUE_ZERO 0
-#define VALUE_ONE 1
-#define VALUE_MONE -1
-#define VALUE_TO_LONG(val) ((long)(val))
-#define VALUE_TO_INT(val) ((int)(val))
-#define VALUE_TO_FLOAT(val) ((float)(val))
-#define VALUE_TO_DOUBLE(val) ((double)(val))
-
-/* end LINEAR_VALUE_IS_INT */
-
-/*
      #####    #     #   ######
     #     #   ##   ##   #     #
     #         # # # #   #     #
@@ -305,8 +277,39 @@ typedef cln::cl_I Value;
 
 /* end CLN */
 
+/*
+    #    #    #   #####
+    #    ##   #     #
+    #    # #  #     #
+    #    #  # #     #
+    #    #   ##     #
+    #    #    #     #
+
+*/
+
+// #elif defined(LINEAR_VALUE_IS_INT)
+#else
+
+#define LINEAR_VALUE_STRING "int"
+typedef int Value;
+#define VALUE_FMT "%d"
+#define VALUE_CONST(val) (val)
+#define VALUE_NAN INT_MIN
+#define VALUE_MIN (INT_MIN + 1)
+#define VALUE_MAX INT_MAX
+#define VALUE_ZERO 0
+#define VALUE_ONE 1
+#define VALUE_MONE -1
+#define VALUE_TO_LONG(val) ((long)(val))
+#define VALUE_TO_INT(val) ((int)(val))
+#define VALUE_TO_FLOAT(val) ((float)(val))
+#define VALUE_TO_DOUBLE(val) ((double)(val))
+
+/* end LINEAR_VALUE_IS_INT */
+
 #endif
 /* end LINEAR_VALUE_IS_* */
+
 
 /* ********************************************************************* */
 /* ***************** MACROS FOR MANIPULATING VALUES ******************** */
