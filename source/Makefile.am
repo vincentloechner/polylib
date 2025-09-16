@@ -1,0 +1,1 @@
+SUBDIRS = arith kernel ehrhart
