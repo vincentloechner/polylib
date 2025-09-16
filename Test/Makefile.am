@@ -13,7 +13,7 @@ check:
 longtest:
 	@for BITS in $(ALL_BITS); do \
 	    printf "\n----------- Performing Ehrhart longtests (bits=$$BITS) -----------\n"; \
-	    (cd ehrhart; $(MAKE) TEST_BITS=$$BITS longtest) \
+	    (cd ehrhart; $(MAKE) TEST_BITS=$$BITS longtest) || exit 1;\
 	done
 
 dist-hook:

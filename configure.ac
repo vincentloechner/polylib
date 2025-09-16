@@ -311,10 +311,15 @@ PACKAGE_NAME=polylib$BITS
 AX_CREATE_PKGCONFIG_INFO
 
 AC_CONFIG_HEADERS(config.h)
-AC_CONFIG_FILES([Makefile
+AC_CONFIG_FILES([
+	  include/polylib/polylib.h
+		Makefile
 	  include/Makefile
 	  include/polylib/Makefile
-	  include/polylib/polylib.h
+		source/Makefile
+		source/arith/Makefile
+		source/kernel/Makefile
+		source/ehrhart/Makefile
 	  Test/Makefile
 	  Test/Zpolytest/Makefile
 	  Test/ehrhart/Makefile

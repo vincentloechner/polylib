@@ -3,7 +3,12 @@
 tests:
 	@failedtest=0; \
 	failedtestnames=""; \
-	for x in $(TEST_FILES) ; do \
+	if [ "$(TEST_BITS)" = "32" -a -n "$(TEST_FILES_32)" ]; then \
+		testfiles="$(TEST_FILES_32)"; \
+	else \
+		testfiles="$(TEST_FILES)"; \
+	fi ; \
+	for x in $$testfiles ; do \
 		file=`basename $$x .in`; \
 		printf "Verify file $$file... " ; \
 		$(TEST_EXE)$(TEST_BITS) < $(srcdir)/$$x > xyz; \
