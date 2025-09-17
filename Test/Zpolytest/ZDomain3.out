@@ -14,11 +14,11 @@ Rays 3 4
 Vertex: [   0    0  ]/1
 Vertex: [  30   10  ]/3
 Vertex: [  10    5  ]/1
-Complement(A) = LBL: Dimension 1
+LBL2ZDomain(A) = LBL: Dimension 1
 
 LATTICE:
 2 1
-   1 
+   0 
    1 
 POLYHEDRON Dimension:0
            Constraints:1  Equations:0  Rays:1  Lines:0
@@ -36,16 +36,8 @@ LATTICE:
 POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [   1  -11  ]
-Inequality: [   0    1  ]
+Inequality: [  -1   10  ]
+Inequality: [   1   -2  ]
 Rays 2 3
-Ray:    [   1  ]
-Vertex: [  11  ]/1
-UNION POLYHEDRON Dimension:1
-           Constraints:2  Equations:0  Rays:2  Lines:0
-Constraints 2 3
-Inequality: [  -1   -1  ]
-Inequality: [   0    1  ]
-Rays 2 3
-Ray:    [  -1  ]
-Vertex: [  -1  ]/1
+Vertex: [  10  ]/1
+Vertex: [   2  ]/1

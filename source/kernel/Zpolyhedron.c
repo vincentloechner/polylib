@@ -34,7 +34,7 @@ static void sLBL_Canonical(LBL* A);
 static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL* A, LBL* B);
 static int count_zeroCols (Matrix* M);
-static LBL *compute_holes(LBL *A);
+static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
 
 // typedef struct forsimplify {
 //   Polyhedron *Pol;
@@ -603,7 +603,7 @@ static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
  * Algorithm:
  * Let L = A->Lat, P = A->P.
  * complement(A) = Universe() - A = union of:
- *   1- LBL (Z^d, complement hull(A))
+ *   1- LBL (Z^d, complement hull(A)), with hull(A) = image by L of P
  *   2- LBL ((Z^d - L), hull(A)) ---- or ((Z^d - L), universe())
  *   3- holes of A
  *      if L has no zero columns -> empty
@@ -615,6 +615,7 @@ static LBL *sLBLComplement(LBL *A)
   LBL *Result = NULL;
   Polyhedron *Univ, *hullA, *comp_hullA;
   LatticeUnion *LatDiff;
+  int nbzeros;
   #ifdef COMP_DEBUG
   fprintf(stderr, "\n-- Entering sLBLComplement. A = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
@@ -637,7 +638,7 @@ static LBL *sLBLComplement(LBL *A)
   Domain_Free(comp_hullA);
   Domain_Free(Univ);
 
-  // STEP 2: lattice differences (not L) on hullA
+  // STEP 2: lattice differences (not L) on hull(A)
   LatDiff = LatticeDifference(NULL, A->Lat);
   #ifdef COMP_DEBUG
   fprintf(stderr, "\nLatDiff: ");
@@ -664,8 +665,7 @@ static LBL *sLBLComplement(LBL *A)
     Ztmp->next = Result;
     Result = Ztmp;
   }
-  // free LatticeUnion remaining memory (M has been reused as a lattice of
-  // Result)
+  // free LatticeUnion remaining memory (M has been reused as a lattice)
   while(LatDiff) {
     LatticeUnion *next = LatDiff->next;
     free(LatDiff);
@@ -674,14 +674,19 @@ static LBL *sLBLComplement(LBL *A)
   Domain_Free(hullA);
 
   // STEP 3: holes
-  if(count_zeroCols(A->Lat)) {
+  if((nbzeros = count_zeroCols(A->Lat))) {
     // there are potential holes
-    LBL *holes = compute_holes(A);
+    Matrix *newL;
+    Polyhedron *holes = sLBL_compute_holes(A, NULL);
     #ifdef COMP_DEBUG
     fprintf(stderr, "STEP 3 adding holes = ");
-    LBLPrint(stderr, P_VALUE_FMT, holes);
+    PolyhedronPrint(stderr, P_VALUE_FMT, holes);
     #endif
-    Result = LBL_concatenate(Result, holes);
+    newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
+    
+    Result = LBL_concatenate(LBLAlloc(newL, holes), Result);
+    Matrix_Free(newL);
+    Polyhedron_Free(holes);
   }
 
   CanonicalLBL(Result);
@@ -1666,16 +1671,17 @@ Polyhedron *Scan_Rest(Polyhedron *scan, Polyhedron *R, Value *val,
 
 
 /*
- * Compute the LBL of the holes of LBL A.
+ * Compute the coordinate polyhedron containing the holes of the single LBL A.
  *
  * Algo:
  * - compute the domain (exact shadow - dark shadow)
  * - scan the integer points of the result and verify for each point:
  *      if there is an integer point in the origin intersection with the LBL
  *      add it to the polyhedral domain not_a_hole
- * - return the LBL (Id, (exact shadow - dark shadow) - not_a_hole)
+ * - return (exact shadow - dark shadow) - not_a_hole
+ * - set *pExact to the exact shadow if the pointer is not NULL
  */
-static LBL *compute_holes(LBL *A)
+static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
 {
   int nbzeros;
   Polyhedron *exact = A->P, *dark = A->P; // initialize with P then project
@@ -1706,8 +1712,13 @@ static LBL *compute_holes(LBL *A)
 
   // rest is the polyhedral domain (exact - dark) in origin-nbzero col space
   rest = DomainDifference(exact, dark, MAXNOOFRAYS);
-  Domain_Free(exact);
   Domain_Free(dark);
+  if(pExact) {
+    *pExact = exact;
+  }
+  else {
+    Domain_Free(exact);
+  }
   // simplify obvious non integer cases (is this useful?)
   rest = DomainConstraintSimplify(rest, MAXNOOFRAYS);
   if(emptyQ(rest)) {
@@ -1767,7 +1778,8 @@ static LBL *compute_holes(LBL *A)
       Polyhedron_Print(stderr, P_VALUE_FMT, scanAP);
       #endif
       // scan and update not_a_hole (add points that are not holes)
-      not_a_hole = Scan_Rest(scanAP, scanR, v->p, 1, scanR->Dimension, not_a_hole);
+      not_a_hole = Scan_Rest(scanAP, scanR, v->p, 1, scanR->Dimension,
+        not_a_hole);
 
       Domain_Free(scanR);
     }
@@ -1783,31 +1795,20 @@ static LBL *compute_holes(LBL *A)
   Polyhedron_Print(stderr, P_VALUE_FMT, not_a_hole);
   #endif
 
-  // build final LBL: (Lat, (rest - not_a_hole))
+  // build final domain: (rest - not_a_hole)
   holes = DomainDifference(rest, not_a_hole, MAXNOOFRAYS);
   Domain_Free(rest);
   Domain_Free(not_a_hole);
   if(emptyQ(holes)) {
     #ifdef HOLES_DEBUG
-    fprintf(stderr, "Compute_holes returning: <NULL>");
+    fprintf(stderr, "sLBL_compute_holes returning: <NULL>");
     #endif
     Domain_Free(holes);
-    return(NULL);
+    return(NULL); // no holes
   }
 
-  newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
-  #ifdef HOLES_DEBUG
-  fprintf(stderr, "Building final result\n-- newL = ");
-  Matrix_Print(stderr, P_VALUE_FMT, newL);
-  fprintf(stderr, "-- holes = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, holes);
-  #endif
-  result = LBLAlloc(newL, holes);
-  Matrix_Free(newL);
-  Domain_Free(holes);
-
-  return(result);
-} /* compute_holes */
+  return(holes);
+} /* sLBL_compute_holes */
 
 
 /*
@@ -2295,6 +2296,40 @@ static int count_zeroCols(Matrix* M)
   return nb;
 }
 
+
+/*
+ * Transform a single LBL into a list of Z-domains
+ *
+ * Remove zero columns from the lattice, build a union of Z-polyhedra
+ * 
+ */
+static LBL *sLBL2ZDomain(LBL *A)
+{
+  int nbzeros;
+  LBL *Result;
+
+  if((nbzeros = count_zeroCols(A->Lat))) {
+    // there are potential holes
+    Matrix *newL;
+    Polyhedron *holes, *not_holes, *exact;
+    holes = sLBL_compute_holes(A, &exact);
+
+    not_holes = DomainDifference(exact, holes, MAXNOOFRAYS);
+    Polyhedron_Free(holes);
+    Polyhedron_Free(exact);
+
+    // build result LBL
+    newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
+    Result = LBLAlloc(newL, not_holes);
+    Matrix_Free(newL);
+    Polyhedron_Free(not_holes);
+  }
+  else {
+    Result = sLBL_Copy(A);
+  }
+  return(Result);
+}
+
 /*
  * Build a union of Z-domains from a union of LBLs.
  * 
@@ -2306,7 +2341,13 @@ static int count_zeroCols(Matrix* M)
  */
 LBL *LBL2ZDomain(LBL *A)
 {
-  // TODO: eliminate existential variables :)
-
-  return (NULL);
+  LBL *Result = NULL;
+  for(LBL *Z = A; Z; Z = Z->next)
+  {
+    LBL *tmp;
+    tmp = sLBL2ZDomain(Z);
+    Result = LBL_concatenate(tmp, Result);
+  }
+  CanonicalLBL(Result);
+  return(Result);
 }

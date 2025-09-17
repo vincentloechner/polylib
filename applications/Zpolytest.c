@@ -261,22 +261,21 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     break;
 
+  case 17:  /* LBL2Zdomain */
+    ZA = LBLAlloc(a, A);
+    ZB = LBL2ZDomain(ZA);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    printf("LBL2ZDomain(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+    break;
+
   // case 18:  /* EmptyLattice */
         
   //   printf("is Empty? :%d\n", isEmptyLattice(a));
   //   printf("is Empty? :%d\n", isEmptyLattice(EmptyLattice(3)));
   //   break;
-  
-  // case 19:  /* CanonicalForm */
-     
-  //   ZA=LBLAlloc(a,A);
-  //   ZB=LBLAlloc(a,B);
-  //   CanonicalForm(ZA, &ZC, &c);
-  //   CanonicalForm(ZB, &ZD, &d);
-  //   LBLPrint(stdout, P_VALUE_FMT, ZC);
-  //   LBLPrint(stdout, P_VALUE_FMT, ZD);
-  //   break;
-    
+      
   // case 20: /* LatticeSimplify */
     
   //   l1=LatticeUnion_Alloc();
@@ -325,7 +324,7 @@ int main() {
   //   LBLPrint(stdout, P_VALUE_FMT, ZC);
   //   break;
 
-  case 24: /* left_hermite */
+  case 24: /* (test) left_hermite */
     left_hermite(a, &b, &c, NULL);
     printf("A = H . Q\nH = ");
     Matrix_Print(stdout, P_VALUE_FMT, b);
@@ -333,21 +332,6 @@ int main() {
     Matrix_Print(stdout, P_VALUE_FMT, c);
     break;
   
-  case 25:/* move homogenous dimension */
-
-    Matrix_Print(stdout, P_VALUE_FMT, a);
-    Matrix_Move_Homogeneous_Dim_First(a);
-    b = Matrix_Copy(a);
-    Matrix_Move_Homogeneous_Dim_Last(b);
-    Matrix_Print(stdout, P_VALUE_FMT, a);
-    Matrix_Print(stdout, P_VALUE_FMT, b);
-    break;
-
-  case 28:
-    b = int_ker(a);
-    Matrix_Print(stdout, P_VALUE_FMT, b);
-    break;
-
   case 100: /* just alloc and normalize */
     ZA = LBLAlloc(a,A);
     LBLPrint(stdout, P_VALUE_FMT, ZA);

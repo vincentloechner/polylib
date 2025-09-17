@@ -1,0 +1,132 @@
+A = LBL: Dimension 3
+
+LATTICE:
+4 4
+   2    0    0    0 
+   0    0    0    0 
+  52   66    0    0 
+   0    0    0    1 
+POLYHEDRON Dimension:3
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 5
+Inequality: [-150 -198    1    0  ]
+Inequality: [ 200  264   -1    0  ]
+Inequality: [   2    0   -9    0  ]
+Inequality: [  -1    0    0 1000  ]
+Inequality: [  -1    0    5    0  ]
+Rays 5 5
+Vertex: [   0    0    0  ]/1
+Vertex: [297000 -224750 66000  ]/297
+Vertex: [891000 -674000 198000  ]/891
+Vertex: [99000 -74900 19800  ]/99
+Vertex: [11000 -8325 2200  ]/11
+LBL2ZDomain(A) = LBL: Dimension 3
+
+LATTICE:
+4 3
+   2    0    0 
+   0    0    0 
+  52   66    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 1000  ]
+Inequality: [ 333  440    0  ]
+Inequality: [-674 -891   -4  ]
+Inequality: [   1    0  -40  ]
+Rays 4 4
+Vertex: [11000 -8325  ]/11
+Vertex: [297000 -224668  ]/297
+Vertex: [3960 -2996  ]/99
+Vertex: [ 440 -333  ]/11
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+  74 
+   0 
+  76 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+   0 
+   0 
+   0 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+1782 
+   0 
+1848 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+ 542 
+   0 
+ 562 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+1626 
+   0 
+1686 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+1084 
+   0 
+1124 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1

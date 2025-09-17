@@ -24,6 +24,75 @@ Complement(A) = LBL: Dimension 3
 
 LATTICE:
 4 3
+   2    0    0 
+   0    0    0 
+  52   66    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [-674 -891    0  ]
+Inequality: [ 333  440    0  ]
+Inequality: [ 674  891    3  ]
+Inequality: [   1    0   -1  ]
+Inequality: [  -1    0   36  ]
+Rays 5 4
+Vertex: [1320 -999  ]/143
+Vertex: [ 440 -333  ]/440
+Vertex: [ 891 -674  ]/891
+Vertex: [3564 -2696  ]/99
+Vertex: [10692 -8089  ]/297
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0   39  ]
+Inequality: [-674 -891    0  ]
+Inequality: [ 674  891    3  ]
+Inequality: [   1    0  -38  ]
+Rays 4 4
+Vertex: [3861 -2921  ]/99
+Vertex: [11583 -8762  ]/297
+Vertex: [33858 -25612  ]/891
+Vertex: [33858 -25615  ]/891
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0   50  ]
+Inequality: [ 674  891    3  ]
+Inequality: [-674 -891    0  ]
+Inequality: [   1    0  -40  ]
+Rays 4 4
+Vertex: [44550 -33700  ]/891
+Vertex: [44550 -33703  ]/891
+Vertex: [35640 -26963  ]/891
+Vertex: [35640 -26960  ]/891
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [ 333  440    0  ]
+Inequality: [-674 -891   -4  ]
+Inequality: [  -1    0   36  ]
+Rays 3 4
+Vertex: [1760 -1332  ]/143
+Vertex: [3960 -2997  ]/110
+Vertex: [32076 -24268  ]/891
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0   39  ]
+Inequality: [ 333  440    0  ]
+Inequality: [-674 -891   -4  ]
+Inequality: [   1    0  -38  ]
+Rays 4 4
+Vertex: [17160 -12987  ]/440
+Vertex: [3159 -2390  ]/81
+Vertex: [33858 -25616  ]/891
+Vertex: [8360 -6327  ]/220
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 3
    2    0    1 
    0    0    0 
    0    1    0 
@@ -344,72 +413,3 @@ Line:   [  40    0   41  ]
 Line:   [   0    1    0  ]
 Ray:    [   0    0   -1  ]
 Vertex: [   0    0   -1  ]/40
-
-UNION LBL: Dimension 3
-
-LATTICE:
-4 3
-   2    0    0 
-   0    0    0 
-  52   66    0 
-   0    0    1 
-POLYHEDRON Dimension:2
-           Constraints:5  Equations:0  Rays:5  Lines:0
-Constraints 5 4
-Inequality: [-674 -891    0  ]
-Inequality: [ 333  440    0  ]
-Inequality: [ 674  891    3  ]
-Inequality: [   1    0   -1  ]
-Inequality: [  -1    0   36  ]
-Rays 5 4
-Vertex: [1320 -999  ]/143
-Vertex: [ 440 -333  ]/440
-Vertex: [ 891 -674  ]/891
-Vertex: [3564 -2696  ]/99
-Vertex: [10692 -8089  ]/297
-UNION POLYHEDRON Dimension:2
-           Constraints:4  Equations:0  Rays:4  Lines:0
-Constraints 4 4
-Inequality: [  -1    0   39  ]
-Inequality: [-674 -891    0  ]
-Inequality: [ 674  891    3  ]
-Inequality: [   1    0  -38  ]
-Rays 4 4
-Vertex: [3861 -2921  ]/99
-Vertex: [11583 -8762  ]/297
-Vertex: [33858 -25612  ]/891
-Vertex: [33858 -25615  ]/891
-UNION POLYHEDRON Dimension:2
-           Constraints:4  Equations:0  Rays:4  Lines:0
-Constraints 4 4
-Inequality: [  -1    0   50  ]
-Inequality: [ 674  891    3  ]
-Inequality: [-674 -891    0  ]
-Inequality: [   1    0  -40  ]
-Rays 4 4
-Vertex: [44550 -33700  ]/891
-Vertex: [44550 -33703  ]/891
-Vertex: [35640 -26963  ]/891
-Vertex: [35640 -26960  ]/891
-UNION POLYHEDRON Dimension:2
-           Constraints:3  Equations:0  Rays:3  Lines:0
-Constraints 3 4
-Inequality: [ 333  440    0  ]
-Inequality: [-674 -891   -4  ]
-Inequality: [  -1    0   36  ]
-Rays 3 4
-Vertex: [1760 -1332  ]/143
-Vertex: [3960 -2997  ]/110
-Vertex: [32076 -24268  ]/891
-UNION POLYHEDRON Dimension:2
-           Constraints:4  Equations:0  Rays:4  Lines:0
-Constraints 4 4
-Inequality: [  -1    0   39  ]
-Inequality: [ 333  440    0  ]
-Inequality: [-674 -891   -4  ]
-Inequality: [   1    0  -38  ]
-Rays 4 4
-Vertex: [17160 -12987  ]/440
-Vertex: [3159 -2390  ]/81
-Vertex: [33858 -25616  ]/891
-Vertex: [8360 -6327  ]/220

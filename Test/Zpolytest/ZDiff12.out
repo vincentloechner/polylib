@@ -1,20 +1,6 @@
 A - B = LBL: Dimension 2
 
 LATTICE:
-3 1
-   2 
-   0 
-   1 
-POLYHEDRON Dimension:0
-           Constraints:1  Equations:0  Rays:1  Lines:0
-Constraints 1 2
-Inequality: [   1  ]
-Rays 1 2
-Vertex: [ ]/1
-
-UNION LBL: Dimension 2
-
-LATTICE:
 3 3
    2    0    0 
    0    2    0 
@@ -55,6 +41,20 @@ Vertex: [ -20   20  ]/1
 Vertex: [ -20  -20  ]/1
 Vertex: [  -1  -20  ]/1
 Vertex: [  -1   20  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 1
+   2 
+   0 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
 
 
 B - A = LBL: Dimension 2

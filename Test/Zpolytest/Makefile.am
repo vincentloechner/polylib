@@ -4,7 +4,7 @@
 #
 
 TEST_EXE = $(top_builddir)/Zpolytest
-TEST_FILES =  \
+TEST_FILES_32 =  \
 	LatDiff1.in \
 	LatDiff2.in \
 	LatDiff3.in \
@@ -41,6 +41,7 @@ TEST_FILES =  \
 	ZDiff9.in \
 	ZDiff10.in \
 	ZDiff12.in \
+	ZDomain3.in \
 	ZEmpty2.in \
 	ZImage1.in \
 	ZImPre1.in \
@@ -54,5 +55,13 @@ TEST_FILES =  \
 	ZPre3.in \
 	ZUnion1.in \
 	ZUnion2.in
+
+
+# 32 bits overflow in those:
+TEST_FILES = $(TEST_FILES_32) \
+	ZDiff11.in \
+	ZDiff11b.in \
+	ZDomain11.in
+
 
 include ../Tests.mk
