@@ -103,6 +103,7 @@ static SatMatrix *SMAlloc(int rows, int cols) {
   result->NbColumns = cols;
   if (rows == 0 || cols == 0) {
     result->p = NULL;
+    result->p_init = NULL;
     return result;
   }
   result->p = q = malloc(rows * sizeof(int *));
@@ -352,17 +353,22 @@ static void RaySort(Matrix *Ray, SatMatrix *Sat, int NbBid, int NbRay,
   }
 } /* RaySort */
 
-static void SatMatrix_Extend(SatMatrix *Sat, Matrix *Mat, unsigned rows) {
+/*
+ * realloc a saturation matrix to a new size
+ */
+static void SatMatrix_Extend(SatMatrix *Sat, unsigned rows, unsigned cols)
+// static void SatMatrix_Extend(SatMatrix *Sat, Matrix *Mat, unsigned rows)
+{
   int i;
-  unsigned cols;
-  cols = (Mat->NbRows - 1) / (sizeof(int) * 8) + 1;
+  // unsigned cols;
+  // cols = (Mat->NbRows - 1) / (sizeof(int) * 8) + 1;
 
-  Sat->p = (int **)realloc(Sat->p, rows * sizeof(int *));
+  Sat->p = realloc(Sat->p, rows * sizeof(int *));
   if (!Sat->p) {
     errormsg1("SatMatrix_Extend", "outofmem", "out of memory space");
     return;
   }
-  Sat->p_init = (int *)realloc(Sat->p_init, rows * cols * sizeof(int));
+  Sat->p_init = realloc(Sat->p_init, rows * cols * sizeof(int));
   if (!Sat->p_init) {
     errormsg1("SatMatrix_Extend", "outofmem", "out of memory space");
     return;
@@ -636,10 +642,12 @@ static int Chernikova(Matrix *Mat, Matrix *Ray, SatMatrix *Sat, unsigned NbBid,
 
               if (!redundant) {
                 if (NbRay == NbMaxRays) {
+                  int nc;
                   NbMaxRays *= 2;
                   Ray->NbRows = NbRay;
                   Matrix_Extend(Ray, NbMaxRays);
-                  SatMatrix_Extend(Sat, Mat, NbMaxRays);
+                  nc = (Mat->NbRows - 1) / (sizeof(int) * 8) + 1;
+                  SatMatrix_Extend(Sat, NbMaxRays, nc);
                 }
 
                 /* Compute the new ray */
@@ -2955,7 +2963,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
   Matrix *Mat = NULL;
   SatMatrix *Sat = NULL;
   int i, j, k, jx, found;
-  Value *p1, *p2, p3;
+  Value p3;
   unsigned Dimension, NbRays, NbConstraints, bx, nc;
   int NbConstraintsLeft;
   int *tmpC = NULL, *tmpR = NULL, previous_size = 0;
@@ -2965,27 +2973,21 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
   value_init(p3);
 
   CATCH(any_exception_error) {
-    if (tmpC) {
-      free(tmpC);
-    }
-    if (Mat)
-      Matrix_Free(Mat);
-    if (Sat)
-      SMFree(&Sat);
+    // free memory
+    if (tmpC) free(tmpC);
+    if (Mat) Matrix_Free(Mat);
+    SMFree(&Sat);
     if (Pol2 && Pol2 != P2)
       Polyhedron_Free(Pol2);
     if (Pol && Pol != Pol2 && Pol != P2)
       Polyhedron_Free(Pol);
-
-    /* Clear all the 'Value' variables */
     value_clear(p3);
     RETHROW();
   }
   TRY {
-
     Dimension = P1->Dimension + 2; /* status + homogeneous Dimension */
     Mat = Matrix_Alloc(P1->NbConstraints, Dimension);
-
+    Sat = SMAlloc(0, 0); // initial alloc
 
     /* Post constraints in P1 already included by Filter */
     jx = 0;
@@ -3011,12 +3013,14 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
           Polyhedron_Free(Pol2), Pol2 = NULL;
       }
       if (emptyQ(Pol)) {
-        Matrix_Free(Mat), Mat = NULL;
-        Polyhedron_Free(Pol), Pol = NULL;
-        UNCATCH(any_exception_error);
-
-        /* Clear all the 'Value' variables */
+        // free memory
+        Matrix_Free(Mat);
+        Polyhedron_Free(Pol);
+        SMFree(&Sat);
+        if(tmpC) free(tmpC);
         value_clear(p3);
+
+        UNCATCH(any_exception_error);
         return;
       }
       Mat->NbRows = 0; /* Reset Mat */
@@ -3028,7 +3032,6 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       NbConstraints = P1->NbConstraints;
       if(NbConstraints + NbRays > previous_size) {
         // realloc array if necessary:
-        // tmpC = malloc((NbConstraints + NbRays) * sizeof(int));
         tmpC = realloc(tmpC, (NbConstraints + NbRays) * sizeof(int));
         if (!tmpC) {
           errormsg1("FindSimple", "outofmem", "out of memory space");
@@ -3047,8 +3050,8 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
   
       /* Build the Sat matrix */
       nc = (NbConstraints - 1) / (sizeof(int) * 8) + 1;
-      Sat = SMAlloc(NbRays, nc);
-      Sat->NbRows = NbRays;
+      // Sat = SMAlloc(NbRays, nc); // -> reuse memory
+      SatMatrix_Extend(Sat, NbRays, nc);
       SMVector_Init(Sat->p_init, nc * NbRays);
 
       jx = 0;
@@ -3057,17 +3060,11 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
         if (Filter[jx] & bx)
           tmpC[k] = -1;
         else
-          for (i = 0; i < NbRays; i++) {
-            p1 = Pol->Ray[i] + 1;
-            p2 = P1->Constraint[k] + 1;
-            value_set_si(p3, 0);
-            for (j = 0; j < Dimension; j++) {
-              value_addmul(p3, *p1, *p2);
-              p1++;
-              p2++;
-            }
+          for (i = 0; i < NbRays; i++) { 
+            Inner_Product(Pol->Ray[i] + 1, P1->Constraint[k] + 1, Dimension,
+              &p3);
             if (value_zero_p(p3) ||
-                (value_pos_p(p3) && value_notzero_p(P1->Constraint[k][0]))) {
+              (value_pos_p(p3) && value_notzero_p(P1->Constraint[k][0]))) {
               Sat->p[i][jx] |= bx; /* constraint includes ray, set flag */
               tmpR[i]++;
               tmpC[k]++;
@@ -3126,14 +3123,13 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
           NbConstraintsLeft--;
         }
       }
-      // free(tmpC), tmpC = NULL;
-      SMFree(&Sat), Sat = NULL;
     } /* end forever */
   } /* end of TRY */
   
   /* Clear all the 'Value' variables */
   value_clear(p3);
-  free(tmpC), tmpC = NULL;
+  if(tmpC) free(tmpC);
+  SMFree(&Sat);
   UNCATCH(any_exception_error);
 } /* FindSimple */
 
@@ -3160,8 +3156,7 @@ static int SimplifyConstraints(Polyhedron *Pol1, Polyhedron *Pol2,
       Matrix_Free(Mat);
     if (Ray)
       Matrix_Free(Ray);
-    if (Sat)
-      SMFree(&Sat);
+    SMFree(&Sat);
     RETHROW();
   }
   TRY {
@@ -3223,7 +3218,7 @@ static int SimplifyConstraints(Polyhedron *Pol1, Polyhedron *Pol2,
     /* Polyhedron_Print(stderr,"%4d",Pol1); */
 
     Polyhedron_Free(Pol), Pol = NULL;
-    SMFree(&Sat), Sat = NULL;
+    SMFree(&Sat);
     Matrix_Free(Ray), Ray = NULL;
     Matrix_Free(Mat), Mat = NULL;
 
