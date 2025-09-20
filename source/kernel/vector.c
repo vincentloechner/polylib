@@ -12,9 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* defined by configure script */
-/* #define THREAD_SAFE_POLYLIB */
-
 #ifdef MAC_OS
 #define abs __abs
 #endif
@@ -131,12 +128,11 @@ int First_Non_Zero(Value *p, unsigned length) {
   return ((i == length) ? -1 : i);
 } /* First_Non_Zero */
 
-// TODO: use value_alloc here to reuse data!!!
 /*
- * Allocate memory space for Vector
+ * Allocate memory space for a Vector, and initialize Values to 0
  */
-Vector *Vector_Alloc(unsigned length) {
-
+Vector *Vector_Alloc(unsigned length)
+{
   int i;
   Vector *vector;
 
@@ -146,38 +142,48 @@ Vector *Vector_Alloc(unsigned length) {
     return 0;
   }
   vector->Size = length;
-  vector->p = malloc(length * sizeof(Value));
-  if (!vector->p) {
-    errormsg1("Vector_Alloc", "outofmem", "out of memory space");
-    free(vector);
-    return 0;
-  }
-  for (i = 0; i < length; i++)
-    value_init(vector->p[i]);
+  vector->p = value_alloc(length, &(vector->p_Init_size));
+  // vector->p = malloc(length * sizeof(Value));
+  // if (!vector->p) {
+  //   errormsg1("Vector_Alloc", "outofmem", "out of memory space");
+  //   free(vector);
+  //   return 0;
+  // }
+  // for (i = 0; i < length; i++)
+  //   value_init(vector->p[i]);
   return vector;
 } /* Vector_Alloc */
 
 /*
- * Change Vector length (re-allocate memory)
+ * Change Vector length (re-allocate memory if necessary)
+ * and set new Values to zero.
  */
-Vector* Vector_Realloc(Vector* V, unsigned newlength){
-  // EITHER: free extra values
-  for (int i = newlength; i < V->Size; i++) {
-    value_clear(V->p[i]);
-  }
-  V->p = realloc(V->p, newlength * sizeof(Value));
-  // OR: allocate new values
-  for (int i = V->Size; i < newlength; i++) {
-    value_init(V->p[i]);
-  }
+Vector *Vector_Realloc(Vector *V, unsigned newlength)
+{
   V->Size = newlength;
+  if(newlength > V->p_Init_size)
+  {
+    // allocate new values
+    V->p = realloc(V->p, newlength * sizeof(Value));
+    if(!V->p) {
+      errormsg1("Vector_Realloc", "outofmem", "out of memory space");
+    }
+    for (int i = V->p_Init_size; i < newlength; i++) {
+      value_init(V->p[i]);
+    }
+    for (int i = V->Size; i < newlength; i++) {
+      value_set_si(V->p[i], 0);
+    }
+    V->p_Init_size = newlength;
+  }
+  // else: nevermind, everything will be freed correctly using p_Init_size
 
   // does not change V, but return for code readability
   return V;
 }
 
 /*
- * Free the memory space occupied by Vector
+ * Free the memory space occupied by a Vector
  */
 void Vector_Free(Vector *vector) {
 
@@ -185,14 +191,12 @@ void Vector_Free(Vector *vector) {
 
   if (!vector)
     return;
-  for (i = 0; i < vector->Size; i++)
-    value_clear(vector->p[i]);
-  free(vector->p);
+  value_free(vector->p, vector->p_Init_size);
   free(vector);
 } /* Vector_Free */
 
 /*
- * Print the contents of a Vector
+ * Print the content of a Vector
  */
 void Vector_Print(FILE *Dst, const char *Format, Vector *vector) {
   int i;
@@ -212,7 +216,7 @@ void Vector_Print(FILE *Dst, const char *Format, Vector *vector) {
 } /* Vector_Print */
 
 /*
- * Read the contents of a Vector
+ * Read the content of a Vector from stdin
  */
 Vector *Vector_Read() {
 
@@ -242,7 +246,7 @@ Vector *Vector_Read() {
 } /* Vector_Read */
 
 /*
- * Assign 'n' to each component of Vector 'p'
+ * Assign integer 'n' to each component of Vector 'p'
  */
 void Vector_Set(Value *p, int n, unsigned length) {
 
@@ -269,7 +273,7 @@ void Vector_Exchange(Value *p1, Value *p2, unsigned length) {
 }
 
 /*
- * Copy Vector 'p1' to Vector 'p2'
+ * Copy array of Values 'p1' to 'p2' of given length
  */
 void Vector_Copy(Value *p1, Value *p2, unsigned length) {
 
@@ -286,7 +290,8 @@ void Vector_Copy(Value *p1, Value *p2, unsigned length) {
 }
 
 /*
- * Add two vectors 'p1' and 'p2' and store the result in 'p3'
+ * Add two arrays of Values 'p1' and 'p2' and store the result in 'p3'
+ * of given length
  */
 void Vector_Add(Value *p1, Value *p2, Value *p3, unsigned length) {
 
@@ -307,7 +312,8 @@ void Vector_Add(Value *p1, Value *p2, Value *p3, unsigned length) {
 } /* Vector_Add */
 
 /*
- * Subtract two vectors 'p1' and 'p2' and store the result in 'p3'
+ * Subtract two arrays of Values 'p1' and 'p2' and store the result in 'p3'
+ * of given length
  */
 void Vector_Sub(Value *p1, Value *p2, Value *p3, unsigned length) {
 
@@ -328,7 +334,8 @@ void Vector_Sub(Value *p1, Value *p2, Value *p3, unsigned length) {
 } /* Vector_Sub */
 
 /*
- * Compute Bitwise OR of Vectors 'p1' and 'p2' and store in 'p3'
+ * Compute Bitwise OR of arrays of Values 'p1' and 'p2' and store in 'p3'
+ * of given length
  */
 void Vector_Or(Value *p1, Value *p2, Value *p3, unsigned length) {
 
@@ -349,7 +356,8 @@ void Vector_Or(Value *p1, Value *p2, Value *p3, unsigned length) {
 } /* Vector_Or */
 
 /*
- * Scale Vector 'p1' lambda times and store in 'p2'
+ * Scale array of Values 'p1' lambda times and store in 'p2'
+ * of given length
  */
 void Vector_Scale(Value *p1, Value *p2, Value lambda, unsigned length) {
 
@@ -368,8 +376,9 @@ void Vector_Scale(Value *p1, Value *p2, Value lambda, unsigned length) {
 } /* Vector_Scale */
 
 /*
- * Antiscale Vector 'p1' by lambda and store in 'p2'
- * Assumes all elements of 'p1' are divisble by lambda.
+ * Antiscale array of Values 'p1' by lambda and store in 'p2'
+ * of given length
+ * Assumes all elements of 'p1' are divisible by lambda.
  */
 void Vector_AntiScale(Value *p1, Value *p2, Value lambda, unsigned length) {
   int i;
@@ -379,7 +388,8 @@ void Vector_AntiScale(Value *p1, Value *p2, Value lambda, unsigned length) {
 } /* Vector_AntiScale */
 
 /*
- * Puts negative of 'p1' in 'p2'
+ * Puts negative of array of Values 'p1' in 'p2'
+ * of given length
  */
 void Vector_Oppose(Value *p1, Value *p2, unsigned len) {
   unsigned i;
@@ -389,7 +399,8 @@ void Vector_Oppose(Value *p1, Value *p2, unsigned len) {
 }
 
 /*
- * Return the inner product of the two Vectors 'p1' and 'p2'
+ * Inner product of the two array of Values 'p1' and 'p2' and store in 'ip'
+ * of given length
  */
 void Inner_Product(Value *p1, Value *p2, unsigned length, Value *ip) {
   int i;
@@ -403,7 +414,8 @@ void Inner_Product(Value *p1, Value *p2, unsigned length, Value *ip) {
 } /* Inner_Product */
 
 /*
- * Return the maximum of the components of 'p'
+ * Compute the maximum Value of the array of Values 'p'
+ * of given length
  */
 void Vector_Max(Value *p, unsigned length, Value *max) {
 
@@ -420,7 +432,8 @@ void Vector_Max(Value *p, unsigned length, Value *max) {
 } /* Vector_Max */
 
 /*
- * Return the minimum of the components of Vector 'p'
+ * Compute the minimum Value of the array of Values 'p'
+ * of given length
  */
 void Vector_Min(Value *p, unsigned length, Value *min) {
 
@@ -438,7 +451,8 @@ void Vector_Min(Value *p, unsigned length, Value *min) {
 } /* Vector_Min */
 
 /*
- * Given Vectors 'p1' and 'p2', return Vector 'p3' = lambda * p1 + mu * p2.
+ * Given array of Values 'p1' and 'p2', set 'p3' = lambda * p1 + mu * p2.
+ * of given length
  */
 void Vector_Combine(Value *p1, Value *p2, Value *p3, Value lambda, Value mu,
                     unsigned length) {
@@ -456,12 +470,13 @@ void Vector_Combine(Value *p1, Value *p2, Value *p3, Value lambda, Value mu,
 } /* Vector_Combine */
 
 /*
- * Return 1 if 'Vec1' equals 'Vec2', otherwise return 0
+ * True if array of Values 'Vec1' equals 'Vec2', otherwise False
+ * arrays of given length
  */
-int Vector_Equal(Value *Vec1, Value *Vec2, unsigned n) {
+int Vector_Equal(Value *Vec1, Value *Vec2, unsigned length) {
   int i;
 
-  for (i = 0; i < n; ++i)
+  for (i = 0; i < length; ++i)
     if (value_ne(Vec1[i], Vec2[i]))
       return 0;
 
@@ -469,9 +484,11 @@ int Vector_Equal(Value *Vec1, Value *Vec2, unsigned n) {
 } /* Vector_Equal */
 
 /*
- * Return the component of 'p' with minimum non-zero absolute value. 'index'
- * points to the component index that has the minimum value. If no such value
- * and index is found, Value 1 is returned.
+ * Set '*min' to the component of array 'p' with minimum non-zero absolute
+ * value.
+ * '*index' points to the component index that has the minimum value.
+ * 
+ * If no such value and index is found, Value 1 is set to min.
  */
 void Vector_Min_Not_Zero(Value *p, unsigned length, int *index, Value *min) {
   Value aux;
@@ -498,7 +515,7 @@ void Vector_Min_Not_Zero(Value *p, unsigned length, int *index, Value *min) {
 } /* Vector_Min_Not_Zero */
 
 /*
- * Return the GCD of components of Vector 'p'
+ * Return the GCD of components of array of Values 'p'
  */
 void Vector_Gcd(Value *p, unsigned length, Value *min) {
 
@@ -545,8 +562,9 @@ void Vector_Gcd(Value *p, unsigned length, Value *min) {
 } /* Vector_Gcd */
 
 /*
- * Given vectors 'p1', 'p2', and a pointer to a function returning 'Value type,
- * compute p3[i] = f(p1[i],p2[i]).
+ * Given array of Values 'p1', 'p2', and a pointer to a function returning
+ * a Value type and taking two Value as arguments,
+ * compute p3[i] = f(p1[i], p2[i]).
  */
 void Vector_Map(Value *p1, Value *p2, Value *p3, unsigned length,
                 Value *(*f)(Value, Value)) {
@@ -566,9 +584,8 @@ void Vector_Map(Value *p1, Value *p2, Value *p3, unsigned length,
 } /* Vector_Map */
 
 /*
- * Reduce a vector by dividing it by GCD. There is no restriction on
- * components of Vector 'p'. Making the last element positive is *not* OK
- * for equalities.
+ * Reduce an array of Values by dividing them by their GCD. There is no
+ * restriction on the components of array 'p'.
  */
 void Vector_Normalize(Value *p, unsigned length) {
 
@@ -585,8 +602,9 @@ void Vector_Normalize(Value *p, unsigned length) {
 } /* Vector_Normalize */
 
 /*
- * Reduce a vector by dividing it by GCD and making sure its pos-th
+ * Reduce an array of Values by dividing it by GCD and making sure its pos-th
  * element is positive.
+ * (to be used in equalities normalization)
  */
 void Vector_Normalize_Positive(Value *p, int length, int pos) {
 
@@ -602,7 +620,9 @@ void Vector_Normalize_Positive(Value *p, int length, int pos) {
 } /* Vector_Normalize_Positive */
 
 /*
- * Reduce 'p' by operating binary function on its components successively
+ * Reduce an array of Values 'p' by operating the given binary function on its
+ * components successively:
+ * r = f(f(... f(f(p[0], p[1]), p[2]), ...), p[length-1])
  */
 void Vector_Reduce(Value *p, unsigned length, void (*f)(Value, Value *),
                    Value *r) {
@@ -619,7 +639,8 @@ void Vector_Reduce(Value *p, unsigned length, void (*f)(Value, Value *),
 } /* Vector_Reduce */
 
 /*
- * Sort the components of a Vector 'vector' using Heap Sort.
+ * Sort the components of an array of Values 'vector' using Heap Sort.
+ * (not used, don't mind replacing this by qsort())
  */
 void Vector_Sort(Value *vector, unsigned n) {
 
@@ -721,7 +742,8 @@ void Vector_Sort(Value *vector, unsigned n) {
  * Return non-zero if something changed.
  * Result is placed in newp.
  */
-int ConstraintSimplify(Value *old, Value *newp, int len, Value *v) {
+int ConstraintSimplify(Value *old, Value *newp, int len, Value *v)
+{
   /* first remove common factor of all coefficients (including "c") */
   Vector_Gcd(old + 1, len - 1, v);
   if (value_notone_p(*v))
@@ -737,6 +759,9 @@ int ConstraintSimplify(Value *old, Value *newp, int len, Value *v) {
   return 1;
 }
 
+/*
+ * True if an array of Value contains only zeros
+ */
 int Vector_IsZero(Value *v, unsigned length) {
   unsigned i;
   if (value_notzero_p(v[0]))
@@ -759,7 +784,7 @@ typedef struct {
 
 // those number of arrays of Values memory allocations are kept in the cache
 // and reused when possible.
-#define MAX_CACHE_SIZE 20
+#define MAX_CACHE_SIZE 50
 
 /************************************************/
 /** Vincent's patch for thread safe value cache */
@@ -794,6 +819,12 @@ cache_holder cache[MAX_CACHE_SIZE];
 static int cache_size = 0;
 #endif // THREAD_SAFE_POLYLIB
 
+/*
+ * Allocate an array of values and initialize values to 0.
+ * return an array of value, and sets allocated array size in *got.
+ *
+ * USAGE: 'got' can be greater than 'want', when a cache block is reused
+ */
 Value *value_alloc(int want, int *got) {
   int i;
   Value *p;

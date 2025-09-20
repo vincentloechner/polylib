@@ -82,6 +82,7 @@ extern int Pol_status;
 typedef struct {
   unsigned Size;
   Value *p;
+  int p_Init_size; /* initial allocated size that will be freed */
 } Vector;
 
 typedef struct matrix {

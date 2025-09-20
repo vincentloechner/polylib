@@ -3899,12 +3899,11 @@ Polyhedron *Polyhedron_Scan(Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
 } /* Polyhedron_Scan */
 
 /*---------------------------------------------------------------------*/
-/* int lower_upper_bounds(pos,P,context,LBp,UBp)                       */
+/* int lower_upper_bounds(pos, P, context, LBp, UBp)                   */
 /*    pos : index position of current loop index (1..hdim-1)           */
 /*    P: loop domain                                                   */
-/*    context : context values for fixed indices                       */
-/*              notice that context[hdim] is set to 1                  */
-/*              and context[pos] is set to 0                           */
+/*    context : context values for fixed dimensions                    */
+/*              context[pos] is set to 0                               */
 /*    LBp, UBp : pointers to resulting bounds                          */
 /* returns the flag = (UB_INFINITY, LB_INFINITY)                       */
 /*---------------------------------------------------------------------*/
@@ -3929,19 +3928,20 @@ int lower_upper_bounds(int pos, Polyhedron *P, Value *context, Value *LBp,
   value_set_si(LB, 0);
   value_set_si(UB, 0);
 
-  //             0  1 .. pos .. hdim  hdim+1
-  // context :   0   * *  0 ..... 0    1
+  //             0  1 .. pos pos+1..hdim  hdim+1
+  // context :   0   * *  0    0...0        1
+  // notice that, in PolyhedronEnumerate() (ehrhart.c), the context between
+  // pos+1 and hdim can be != 0.
 
-  // ensure that context[pos] = 0 and
-  // that context[hdim] = 1.
+  // ensure that context[pos] = 0
   value_set_si(context[pos], 0);
-  value_set_si(context[P->Dimension+1], 1);
 
   /* Compute Upper Bound and Lower Bound for current loop */
   flag = LB_INFINITY | UB_INFINITY;
   for (i = 0; i < P->NbConstraints; i++) {
     value_assign(d, P->Constraint[i][pos]);
-    Inner_Product(&context[1], &(P->Constraint[i][1]), P->Dimension + 1, &n);
+    Inner_Product(&context[1], &(P->Constraint[i][1]), P->Dimension, &n);
+    value_addto(n, n, P->Constraint[i][P->Dimension + 1]);
     if (value_zero_p(d)) {
       /* If context doesn't satisfy constraints, return empty loop. */
       if (value_neg_p(n) ||
