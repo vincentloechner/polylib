@@ -806,7 +806,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   //   Polyhedron_Print(stderr, P_VALUE_FMT, ImInter);
   // #endif
   
-  // // TODO: can be simplified, Ainter not really needed!
+  // // (TODO) can be simplified, Ainter not really needed!
 
   // // compute the part of A that intersects the hull of B in the image space
   // preimA = DomainPreimage(ImInter, A->Lat, MAXNOOFRAYS);
@@ -860,7 +860,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   //   LatDiff = next;
   // }
 
-  // // TODO: also consider the intersection of lattices, where some points of
+  // // (TODO) also consider the intersection of lattices, where some points of
   // // lattice B->Lat could have no integer antecedent in B->P and should
   // // be kept in the result A - B:
   // // Add the holes of B (that can be included in A but not in B).
@@ -887,8 +887,9 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   // LBLFree(Result);
   // return(Final_Result);
 
-  // TODO:
-  Bcomp = LBLComplement(Binter); // Binter or B? which one is simpler? B is larger... ?
+  // TODO: which one to use, Binter or B?
+  // which one is simpler? B is larger... Binter is part of A
+  Bcomp = LBLComplement(Binter);
   #ifdef DIFFERENCE_DEBUG
   fprintf(stderr, "Difference = intersection between Bcomp = ");
   LBLPrint(stderr, P_VALUE_FMT, Bcomp);
@@ -1573,17 +1574,17 @@ Polyhedron *Scan_Rest(Polyhedron *scan, Polyhedron *R, Value *val,
   value_init(LB);
   value_init(UB);
   if(!R) {
-    // no more R to scan, now scan the 'scan' polytope, setting the values of
+    // no more R to scan, scan the 'scan' polytope, setting the values of
     // lower/upper bounds to val up to position.
-
-    // loop and recursive call to scan->next, early exit if we found a hit!
+    // loop and recursive call to scan->next, exit as soon as we found a hit!
 
     if(lower_upper_bounds(position, scan, val, &LB, &UB) != 0) {
-      // problem: infinity somewhere!
-      errormsg1("Scan_Rest", "infinitepoly",
-        "trying to scan an infinite (A->P) domain");
-      // TODO: we could just say that it's a hit if infinity?
-      return(Result);
+      // should never happen (?)
+      // errormsg1("Scan_Rest", "infinitepoly",
+      //   "trying to scan an infinite (A->P) domain");
+
+      // it's a hit if infinity!
+      return(GenPoly(dim_R, val));
     }
     #ifdef HOLES_DEBUG
     fprintf(stderr, "position %d - looping from ", position);
@@ -1596,18 +1597,18 @@ Polyhedron *Scan_Rest(Polyhedron *scan, Polyhedron *R, Value *val,
       Polyhedron *res;
       // use LB in val[position] and scan next dimensions
       value_assign(val[position], LB);
-      // recursive call (no accumulation of results here)
+      // recursive call (no accumulation of results here: Result=NULL)
       if((res = Scan_Rest(scan->next, NULL, val, position+1, dim_R, NULL))) {
         // it's a hit!
         value_clear(UB);
         value_clear(LB);
         return(AddPolyToDomain(res, Result));
-        // if Result != NULL it's the initial call and res will be added to Result,
-        // else this will just return res.
+        // if Result != NULL it's the initial call and res will be added to
+        // Result, else this will just return res.
       }
     }
     // it's a hole!
-    // goto the end, free memory and return Result.
+    // goto the end, free memory and return Result unchanged.
   }
   else {
     // scaning R, recursive call to next dimension,
@@ -1628,7 +1629,7 @@ Polyhedron *Scan_Rest(Polyhedron *scan, Polyhedron *R, Value *val,
     // loop: LB from LB to UB
     for(; value_le(LB, UB); value_increment(LB, LB)) {
       value_assign(val[position], LB);
-      // accumulate
+      // accumulate all results
       Result = Scan_Rest(scan->next, R->next, val, position+1, dim_R, Result);
     }
   }
@@ -1641,13 +1642,14 @@ Polyhedron *Scan_Rest(Polyhedron *scan, Polyhedron *R, Value *val,
 /*
  * Compute the coordinate polyhedron containing the holes of the single LBL A.
  *
+ * Usage: set *pExact to the exact shadow if the pointer is not NULL
+ *
  * Algo:
  * - compute the domain (exact shadow - dark shadow)
- * - scan the integer points of the result and verify for each point:
+ * - scan all its integer points and verify for each point:
  *      if there is an integer point in the origin intersection with the LBL
  *      add it to the polyhedral domain not_a_hole
  * - return (exact shadow - dark shadow) - not_a_hole
- * - set *pExact to the exact shadow if the pointer is not NULL
  */
 static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
 {
@@ -1685,7 +1687,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   else {
     Domain_Free(exact);
   }
-  // simplify obvious non integer cases (is this useful?)
+  // simplify obvious non integer cases
   rest = DomainConstraintSimplify(rest, MAXNOOFRAYS);
   if(emptyQ(rest)) {
     Domain_Free(rest);
@@ -1693,7 +1695,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   }
 
   // PREPARE SCAN:
-  // disjoint domain:
+  // make rest a disjoint domain, to avoid scanning a point multiple times
   tmp = Disjoint_Domain(rest, 0, MAXNOOFRAYS);
   Domain_Free(rest);
   rest = tmp;
@@ -1701,7 +1703,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   fprintf(stderr, "disjoint (exact - dark) = ");
   Polyhedron_Print(stderr, P_VALUE_FMT, rest);
   #endif
-  // disjoint domain A->P
+  // disjoint domain A->P (same)
   AP = Disjoint_Domain(A->P, 0, MAXNOOFRAYS);
   v = Vector_Alloc(A->P->Dimension + 2);
   // and universe (dim 0)
@@ -1715,10 +1717,11 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
     // AP is the polyhedron that needs to be scanned
     // rest is the context
     Polyhedron *scanAP, *nextAP;
-    nextAP = AP->next; // save next
-    AP->next = NULL;   // set NULL to next to build scan AP
+    nextAP = AP->next; // save and
+    AP->next = NULL;   // unlink next
+
+    // polyhedron scan does not work on a domain (need to nullify next)
     scanAP = Polyhedron_Scan(AP, U0, MAXNOOFRAYS);
-    // scanAP = Polyhedron_Scan(AP, rest, MAXNOOFRAYS);
     #ifdef HOLES_DEBUG
     fprintf(stderr, "Scanning:");
     Polyhedron_Print(stderr, P_VALUE_FMT, scanAP);
@@ -1727,9 +1730,10 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
     for(Polyhedron *R=rest; R; R = R->next) {
       Polyhedron *scanR, *nextR;
 
-      // polyhedron scan does not work on a domain, need to nullify next.
-      nextR = R->next;
-      R->next = NULL; // unlink next
+      nextR = R->next; // save and
+      R->next = NULL;  // unlink next
+
+      // polyhedron scan does not work on a domain (need to nullify next)
       scanR = Polyhedron_Scan(R, U0, MAXNOOFRAYS);
       R->next = nextR; // relink next
 
@@ -1782,7 +1786,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
  * projection.
  * 
  * Eliminate only if exact shadow == dark shadow along each dimension.
- * Restart again from first column after a successful scan with update.
+ * Restart again from last column after a successful column elimination.
  */
 static void sLBL_Simplify_Zero_Dimensions(LBL *A)
 {
@@ -1801,14 +1805,8 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
     }
     if(i == A->Lat->NbRows) {
       // col is empty
-
-      // An idea to solve this was to build the domain transformed to start
-      // at i_col = 0 (for each constraint of each polyhedron)
-      // then add constraint i_col <= 1.
-      // but it does not work, it would be a non unimodular transformation.
-
-      // solution 2: compute the dark shadow and the exact shadow.
-      // if dark shadow projection is in exact shadow: can project
+      // Compute the dark shadow and the exact shadow.
+      // If dark shadow is in exact shadow: can project out the dimension
       // else: keep
 
       // What if some polyhedra of the union can be simplified and others
@@ -1821,13 +1819,14 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
       diff = DomainDifference(exact, dark, MAXNOOFRAYS);
 
       if(! emptyQ(diff)) {
-        // is this useful? removes obvious integer-empty solutions.
+        // try to remove obvious integer-empty solutions.
+        // is this useful in some case?
         diff = DomainConstraintSimplify(diff, MAXNOOFRAYS);
-        // TODO: should check if diff has no integer solution... ???
+        // TODO: could check if diff has no integer solution...
       }
 
       if(emptyQ(diff)) {
-        // if exact - dark = 0, can project :)
+        // if exact - dark = 0, project out the column :)
         Matrix *newL;
         #ifdef CANONICAL_DEBUG
         fprintf(stderr, "Exact == Dark. Removing column %d of Lat\n", col);
@@ -1840,9 +1839,9 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
         Matrix_Free(A->Lat);
         A->Lat = newL;
         if(col != A->Lat->NbColumns-2) {
-          // one of the "inside" columns was eliminated, check at the end if
-          // one of the outside one can be eliminated now... (call the function
-          // again)
+          // one of the "inner" columns was eliminated, check at the end if
+          // one of the outer one can be eliminated now... (call the function
+          // again at the end)
           modified = True;
         }
       }
@@ -1865,7 +1864,7 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   if(modified) {
-    // an inside column was eliminated, we can try again to eliminate
+    // an inner column was eliminated, we can try again to eliminate
     // another one (that has been scaned before).
     sLBL_Simplify_Zero_Dimensions(A);
   }
@@ -2115,6 +2114,7 @@ static void sLBL_Canonical(LBL* A)
   for(Polyhedron *pp = A->P->next; pp; pp = nextpp) {
     // check that the equalities of pp->Constraints are the same as the ones
     // of matrix Equalities.
+    nextpp = pp->next;  // next polyhedron of the domain (pp can be moved out)
     if(!same_equalities(Equalities, pp)) {
       // if not, get pp out.
       if(!new) {
@@ -2129,13 +2129,11 @@ static void sLBL_Canonical(LBL* A)
       // remove pp from the list A->P, and get the right next iteration
       prevpp->next = pp->next;
       // add pp to new->P
-      // new->P = AddPolyToDomain(pp, new->P);
       pp->next = new->P;
       new->P = pp;
-      nextpp = prevpp->next;
+      // prevpp does not change
     }
     else {
-      nextpp = pp->next;  // next polyhedron of the domain
       prevpp = pp;        // keep a pointer to the previous to relink
     }
   }

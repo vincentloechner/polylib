@@ -1,0 +1,29 @@
+# A dual sided pointy polyhedron, projected on i
+
+M 1
+
+# eliminate j
+2 3
+1 0 0
+0 0 1
+
+D 1
+
+# a pointy polyhedron: i=0 then i>=2 on the left
+#  plus another one on the right.
+5 4
+1  1  0 0
+1 -1  0 100
+1 -1  3 0  # j >= i/3
+1  5 -10 -1  # j <= i/2 - 0.1
+# for i=100, j>=34 and j <= 49.5.
+#  Add an inequality on j >= somewhere close to 50
+#  j ~= i/2 = 5*i/10 is the upper bound, set lower bound to (5.5*i-50)/10:
+#  equal to 50 for i = 100 and decreasing faster than i/2 when i decreases
+1 -11 20 100    # j >= (7 * i - 200) / 10
+
+# LBL2ZDomain (remove holes)
+F 17
+
+# the result should be {i=0} U {2 <= i <= 10}
+# because there is no integer j for i = 1 (1/3->1/2)
