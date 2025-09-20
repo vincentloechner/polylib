@@ -13,7 +13,7 @@ int main() {
   
   Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *g;
   LatticeUnion *l1, *l2;
-  Polyhedron *A=NULL, *B=NULL, *C=NULL, *D;
+  Polyhedron *A=NULL, *B=NULL, *C=NULL, *D = NULL;
   LBL *ZA=NULL, *ZB=NULL, *ZC=NULL, *ZD=NULL;
   int  nbPol, nbMat, func;
 
@@ -119,7 +119,6 @@ int main() {
     D = DomainConvex(C, 200);
     d = Polyhedron2Constraints(D);
     Matrix_Print(stdout, P_VALUE_FMT, d);
-    Domain_Free(D);
     break;
     
   case 2: /* AffineHermite */
@@ -270,23 +269,7 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     break;
 
-  // case 18:  /* EmptyLattice */
-        
-  //   printf("is Empty? :%d\n", isEmptyLattice(a));
-  //   printf("is Empty? :%d\n", isEmptyLattice(EmptyLattice(3)));
-  //   break;
-      
-  // case 20: /* LatticeSimplify */
-    
-  //   l1=LatticeUnion_Alloc();
-  //   l2=LatticeUnion_Alloc();
-  //   l1->M=Matrix_Copy(a);
-  //   l1->next=l2;
-  //   l2->M=Matrix_Copy(b);
-  //   l1=LatticeSimplify(l1);
-  //   PrintLatticeUnion(stdout, P_VALUE_FMT, l1);
-  //   LatticeUnion_Free(l1);
-  //   break;
+  // no longer in use tests:
 
   // case 21: /* AffineSmith */
   
@@ -317,20 +300,6 @@ int main() {
   //   Vector_Free(v);
   //   break;
 
-  // case 23: /* SplitLBL */
-        
-  //   ZA = LBLAlloc(a, A);
-  //   ZC = SplitLBL(ZA, b);
-  //   LBLPrint(stdout, P_VALUE_FMT, ZC);
-  //   break;
-
-  case 24: /* (test) left_hermite */
-    left_hermite(a, &b, &c, NULL);
-    printf("A = H . Q\nH = ");
-    Matrix_Print(stdout, P_VALUE_FMT, b);
-    printf("Q = ");
-    Matrix_Print(stdout, P_VALUE_FMT, c);
-    break;
   
   case 100: /* just alloc and normalize */
     ZA = LBLAlloc(a,A);
@@ -342,32 +311,22 @@ int main() {
   }
 
   // free 4 allocated matrices, polyhedra, Z-polyhedra.
-  if (a)
-    Matrix_Free(a);
-  if (b)
-    Matrix_Free(b);
-  if (c)
-    Matrix_Free(c);
-  if(d)
-    Matrix_Free(d);
+  if (a)    Matrix_Free(a);
+  if (b)    Matrix_Free(b);
+  if (c)    Matrix_Free(c);
+  if (d)    Matrix_Free(d);
 
-  if (A)
-    Domain_Free(A);
-  if (B)
-    Domain_Free(B);
-  if (C)
-    Domain_Free(C);
+  if (A)    Domain_Free(A);
+  if (B)    Domain_Free(B);
+  if (C)    Domain_Free(C);
+  if (D)    Domain_Free(D);
 
-  if (ZA)
-    LBLFree(ZA);
-  if (ZB)
-    LBLFree(ZB);
-  if (ZC)
-    LBLFree(ZC);
-  if (ZD)
-    LBLFree(ZD);
+  if (ZA)    LBLFree(ZA);
+  if (ZB)    LBLFree(ZB);
+  if (ZC)    LBLFree(ZC);
+  if (ZD)    LBLFree(ZD);
   
-  // free all memory (sanitizer):
+  // free all remaining cache memory of PolyLib:
   polylib_close();
 
   return 0;

@@ -1021,38 +1021,6 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
 
 
 // /*
-//  * Given a Z-polyhedron 'A' in which the Lattice is not integral, return the
-//  * Z-polyhedron which contains all the integral points in the input lattice.
-//  */
-// LBL *IntegraliseLattice(LBL *A) {
-
-//   LBL *Result;
-//   Matrix *M = NULL, *Id;
-//   Polyhedron *Im = NULL, *Preim = NULL;
-
-// #ifdef DOMDEBUG
-//   FILE *fp;
-//   fp = fopen("_debug", "a");
-//   fprintf(fp, "\nEntered INTEGRALISELATTICE\n");
-//   fclose(fp);
-// #endif
-
-//   Im = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
-//   Id = Identity(A->Lat->NbRows);
-//   M = LatticeImage(Id, A->Lat);
-//   if (isEmptyLattice(M))
-//     Result = EmptyLBL(A->Lat->NbRows - 1);
-//   else {
-//     Preim = DomainPreimage(Im, M, MAXNOOFRAYS);
-//     Result = LBLAlloc(M, Preim);
-//   }
-//   Matrix_Free(M);
-//   Domain_Free(Im);
-//   Domain_Free(Preim);
-//   return Result;
-// } /* IntegraliseLattice */
-
-// /*
 //  * Return the simplified representation of the Z-domain 'ZDom'. It attempts to
 //  * convexize unions of polyhedra when they correspond to the same lattices and
 //  * to simplify union of lattices when they correspond to the same polyhdera.
