@@ -2958,7 +2958,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
   Value *p1, *p2, p3;
   unsigned Dimension, NbRays, NbConstraints, bx, nc;
   int NbConstraintsLeft;
-  int *tmpC = NULL, *tmpR = NULL;
+  int *tmpC = NULL, *tmpR = NULL, previous_size = 0;
   Polyhedron *Pol = NULL, *Pol2 = NULL;
 
   /* Initialize all the 'Value' variables */
@@ -3026,20 +3026,24 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       Dimension = Pol->Dimension + 1; /* homogeneous Dimension */
       NbRays = Pol->NbRays;
       NbConstraints = P1->NbConstraints;
-      tmpC = malloc((NbConstraints + NbRays) * sizeof(int));
-      // tmpC = realloc(tmpC, (NbConstraints + NbRays) * sizeof(int));
-      if (!tmpC) {
-        errormsg1("FindSimple", "outofmem", "out of memory space");
-        UNCATCH(any_exception_error);
-  
-        /* Clear all the 'Value' variables */
-        value_clear(p3);
-        return;
+      if(NbConstraints + NbRays > previous_size) {
+        // realloc array if necessary:
+        // tmpC = malloc((NbConstraints + NbRays) * sizeof(int));
+        tmpC = realloc(tmpC, (NbConstraints + NbRays) * sizeof(int));
+        if (!tmpC) {
+          errormsg1("FindSimple", "outofmem", "out of memory space");
+          UNCATCH(any_exception_error);
+    
+          /* Clear all the 'Value' variables */
+          value_clear(p3);
+          return;
+        }
+        previous_size = NbConstraints + NbRays;
       }
+      tmpR = tmpC + NbConstraints;
       for(i = 0; i < NbConstraints + NbRays; i++) {
         tmpC[i] = 0;
       }
-      tmpR = tmpC + NbConstraints;
   
       /* Build the Sat matrix */
       nc = (NbConstraints - 1) / (sizeof(int) * 8) + 1;
@@ -3122,14 +3126,14 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
           NbConstraintsLeft--;
         }
       }
-      free(tmpC), tmpC = NULL;
+      // free(tmpC), tmpC = NULL;
       SMFree(&Sat), Sat = NULL;
     } /* end forever */
   } /* end of TRY */
   
   /* Clear all the 'Value' variables */
   value_clear(p3);
-  // free(tmpC), tmpC = NULL;
+  free(tmpC), tmpC = NULL;
   UNCATCH(any_exception_error);
 } /* FindSimple */
 
