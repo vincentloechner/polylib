@@ -94,7 +94,7 @@ static SatMatrix *SMAlloc(int rows, int cols) {
   int **q, *p, i;
   SatMatrix *result;
 
-  result = (SatMatrix *)malloc(sizeof(SatMatrix));
+  result = malloc(sizeof(SatMatrix));
   if (!result) {
     errormsg1("SMAlloc", "outofmem", "out of memory space");
     return 0;
@@ -105,12 +105,12 @@ static SatMatrix *SMAlloc(int rows, int cols) {
     result->p = NULL;
     return result;
   }
-  result->p = q = (int **)malloc(rows * sizeof(int *));
+  result->p = q = malloc(rows * sizeof(int *));
   if (!result->p) {
     errormsg1("SMAlloc", "outofmem", "out of memory space");
     return 0;
   }
-  result->p_init = p = (int *)malloc(rows * cols * sizeof(int));
+  result->p_init = p = malloc(rows * cols * sizeof(int));
   if (!result->p_init) {
     errormsg1("SMAlloc", "outofmem", "out of memory space");
     return 0;
@@ -411,7 +411,7 @@ static int Chernikova(Matrix *Mat, Matrix *Ray, SatMatrix *Sat, unsigned NbBid,
   RowSize1 = (Dimension + 1);
   RowSize2 = sat_nbcolumns * sizeof(int);
 
-  Temp = (int *)malloc(RowSize2);
+  Temp = malloc(RowSize2);
   if (!Temp) {
     errormsg1("Chernikova", "outofmem", "out of memory space");
     return 0;
@@ -735,7 +735,7 @@ static int Gauss4(Value **p, int NbEq, int NbRows, int Dimension) {
   Value gcd;
 
   value_init(gcd);
-  column_index = (int *)malloc(Dimension * sizeof(int));
+  column_index = malloc(Dimension * sizeof(int));
   if (!column_index) {
     errormsg1("Gauss", "outofmem", "out of memory space");
     value_clear(gcd);
@@ -1328,7 +1328,7 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
     /* 'Trace' is a (1 X sat_nbcolumns) row matrix to hold the union of all */
     /* rows (corresponding to irredundant rays) of saturation matrix 'Sat'  */
     /* which saturate some constraint 'j'. See figure below:-               */
-    Trace = (unsigned *)malloc(sat_nbcolumns * sizeof(unsigned));
+    Trace = malloc(sat_nbcolumns * sizeof(unsigned));
     if (!Trace) {
       UNCATCH(any_exception_error);
       goto oom;
@@ -2904,8 +2904,8 @@ Polyhedron *Domain_Copy(Polyhedron *Pol) {
  *        }
  *     }
  */
-static void addToFilter(int k, unsigned *Filter, SatMatrix *Sat, Value *tmpR,
-                        Value *tmpC, int NbRays, int NbConstraints) {
+static void addToFilter(int k, unsigned *Filter, SatMatrix *Sat, int *tmpR,
+                        int *tmpC, int NbRays, int NbConstraints) {
 
   int kj, i, j, jx;
   unsigned kb, bx;
@@ -2915,24 +2915,24 @@ static void addToFilter(int k, unsigned *Filter, SatMatrix *Sat, Value *tmpR,
   kb = MSB;
   kb >>= k % WSIZE;
   Filter[kj] |= kb;
-  value_set_si(tmpC[k], -1);
+  tmpC[k] = -1;
 
   /* Remove rays excluded by constraint k */
   for (i = 0; i < NbRays; i++)
-    if (value_posz_p(tmpR[i])) {
+    if (tmpR[i] >= 0) {
       if (Sat->p[i][kj] & kb)
-        value_decrement(tmpR[i], tmpR[i]); /* adjust included ray */
+        tmpR[i]--; /* adjust included ray */
       else {
 
         /* Constraint k excludes ray i -- delete ray i */
-        value_set_si(tmpR[i], -1);
+        tmpR[i] = -1;
 
         /* Adjust non-deleted constraints */
         jx = 0;
         bx = MSB;
         for (j = 0; j < NbConstraints; j++) {
-          if (value_posz_p(tmpC[j]) && (Sat->p[i][jx] & bx))
-            value_decrement(tmpC[j], tmpC[j]);
+          if ((tmpC[j] >= 0) && (Sat->p[i][jx] & bx))
+            tmpC[j]--;
           NEXT(jx, bx);
         }
       }
@@ -2950,32 +2950,23 @@ static void addToFilter(int k, unsigned *Filter, SatMatrix *Sat, Value *tmpR,
  * constraints otherwise it is set to 0.
  */
 static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
-                       unsigned NbMaxRays) {
-
+                       unsigned NbMaxRays)
+{
   Matrix *Mat = NULL;
   SatMatrix *Sat = NULL;
   int i, j, k, jx, found;
   Value *p1, *p2, p3;
   unsigned Dimension, NbRays, NbConstraints, bx, nc;
-  Value NbConstraintsLeft, tmp;
-  Value *tmpC = NULL, *tmpR = NULL;
+  int NbConstraintsLeft;
+  int *tmpC = NULL, *tmpR = NULL;
   Polyhedron *Pol = NULL, *Pol2 = NULL;
 
   /* Initialize all the 'Value' variables */
   value_init(p3);
-  value_init(NbConstraintsLeft);
-  value_init(tmp);
 
   CATCH(any_exception_error) {
     if (tmpC) {
-      for (i = 0; i < NbConstraints; i++)
-        value_clear(tmpC[i]);
       free(tmpC);
-    }
-    if (tmpR) {
-      for (i = 0; i < NbRays; i++)
-        value_clear(tmpR[i]);
-      free(tmpR);
     }
     if (Mat)
       Matrix_Free(Mat);
@@ -2988,36 +2979,25 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
 
     /* Clear all the 'Value' variables */
     value_clear(p3);
-    value_clear(NbConstraintsLeft);
-    value_clear(tmp);
     RETHROW();
   }
   TRY {
 
     Dimension = P1->Dimension + 2; /* status + homogeneous Dimension */
     Mat = Matrix_Alloc(P1->NbConstraints, Dimension);
-    if (!Mat) {
-      errormsg1("FindSimple", "outofmem", "out of memory space");
-      UNCATCH(any_exception_error);
 
-      /* Clear all the 'Value' variables */
-      value_clear(p3);
-      value_clear(NbConstraintsLeft);
-      value_clear(tmp);
-      return;
-    }
 
     /* Post constraints in P1 already included by Filter */
     jx = 0;
     bx = MSB;
     Mat->NbRows = 0;
-    value_set_si(NbConstraintsLeft, 0);
+    NbConstraintsLeft = 0;
     for (k = 0; k < P1->NbConstraints; k++) {
       if (Filter[jx] & bx) {
         Vector_Copy(P1->Constraint[k], Mat->p[Mat->NbRows], Dimension);
         Mat->NbRows++;
       } else
-        value_increment(NbConstraintsLeft, NbConstraintsLeft);
+        NbConstraintsLeft++;
       NEXT(jx, bx);
     }
     Pol2 = P2;
@@ -3037,8 +3017,6 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
 
         /* Clear all the 'Value' variables */
         value_clear(p3);
-        value_clear(NbConstraintsLeft);
-        value_clear(tmp);
         return;
       }
       Mat->NbRows = 0; /* Reset Mat */
@@ -3048,38 +3026,20 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       Dimension = Pol->Dimension + 1; /* homogeneous Dimension */
       NbRays = Pol->NbRays;
       NbConstraints = P1->NbConstraints;
-      tmpR = malloc(NbRays * sizeof(Value));
-      if (!tmpR) {
-        errormsg1("FindSimple", "outofmem", "out of memory space");
-        UNCATCH(any_exception_error);
-
-        /* Clear all the 'Value' variables */
-        value_clear(p3);
-        value_clear(NbConstraintsLeft);
-        value_clear(tmp);
-        return;
-      }
-      for (i = 0; i < NbRays; i++)
-        value_init(tmpR[i]);
-      tmpC = (Value *)malloc(NbConstraints * sizeof(Value));
+      tmpC = realloc(tmpC, (NbConstraints + NbRays) * sizeof(int));
       if (!tmpC) {
         errormsg1("FindSimple", "outofmem", "out of memory space");
         UNCATCH(any_exception_error);
-
+  
         /* Clear all the 'Value' variables */
         value_clear(p3);
-        value_clear(NbConstraintsLeft);
-        value_clear(tmp);
-        for (i = 0; i < NbRays; i++)
-          value_clear(tmpR[i]);
-        free(tmpR);
         return;
       }
-      for (i = 0; i < NbConstraints; i++)
-        value_init(tmpC[i]);
-      Vector_Set(tmpR, 0, NbRays);
-      Vector_Set(tmpC, 0, NbConstraints);
-
+      for(i = 0; i < NbConstraints + NbRays; i++) {
+        tmpC[i] = 0;
+      }
+      tmpR = tmpC + NbConstraints;
+  
       /* Build the Sat matrix */
       nc = (NbConstraints - 1) / (sizeof(int) * 8) + 1;
       Sat = SMAlloc(NbRays, nc);
@@ -3090,7 +3050,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       bx = MSB;
       for (k = 0; k < NbConstraints; k++) {
         if (Filter[jx] & bx)
-          value_set_si(tmpC[k], -1);
+          tmpC[k] = -1;
         else
           for (i = 0; i < NbRays; i++) {
             p1 = Pol->Ray[i] + 1;
@@ -3104,8 +3064,8 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
             if (value_zero_p(p3) ||
                 (value_pos_p(p3) && value_notzero_p(P1->Constraint[k][0]))) {
               Sat->p[i][jx] |= bx; /* constraint includes ray, set flag */
-              value_increment(tmpR[i], tmpR[i]);
-              value_increment(tmpC[k], tmpC[k]);
+              tmpR[i]++;
+              tmpC[k]++;
             }
           }
         NEXT(jx, bx);
@@ -3114,21 +3074,20 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       do { /* find all of the essential constraints */
         found = 0;
         for (i = 0; i < NbRays; i++)
-          if (value_posz_p(tmpR[i])) {
-            value_add_int(tmp, tmpR[i], 1);
-            if (value_eq(tmp, NbConstraintsLeft)) {
+          if (tmpR[i] >= 0) {
+            if ((tmpR[i] + 1 == NbConstraintsLeft)) {
 
               /* Ray i is excluded by only one constraint... find it */
               jx = 0;
               bx = MSB;
               for (k = 0; k < NbConstraints; k++) {
-                if (value_posz_p(tmpC[k]) && ((Sat->p[i][jx] & bx) == 0)) {
+                if ((tmpC[k] >= 0) && ((Sat->p[i][jx] & bx) == 0)) {
                   addToFilter(k, Filter, Sat, tmpR, tmpC, NbRays,
                               NbConstraints);
                   Vector_Copy(P1->Constraint[k], Mat->p[Mat->NbRows],
                               Dimension + 1);
                   Mat->NbRows++;
-                  value_decrement(NbConstraintsLeft, NbConstraintsLeft);
+                  NbConstraintsLeft--;
                   found = 1;
                   break;
                 }
@@ -3141,52 +3100,34 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
 
       if (!Mat->NbRows) { /* Well then, just use a stupid heuristic */
         /* find the constraint which excludes the most */
-        Value cmax;
-        value_init(cmax);
+        long int cmax;
 
-        #ifndef LINEAR_VALUE_IS_CHARS
-        value_set_si(cmax, (NbRays * NbConstraints + 1));
-        #else
-        value_set_si(cmax, 1);
-        #endif
-
+        cmax = (NbRays * NbConstraints + 1);
         j = -1;
         for (k = 0; k < NbConstraints; k++)
-          if (value_posz_p(tmpC[k])) {
-            if (value_gt(cmax, tmpC[k])) {
-              value_assign(cmax, tmpC[k]);
+          if (tmpC[k] >= 0) {
+            if (cmax > tmpC[k]) {
+              cmax = tmpC[k];
               j = k;
             }
           }
-        value_clear(cmax);
         if (j < 0) {
           errormsg1("DomSimplify", "logerror", "logic error");
-        } else {
+        }
+        else {
           addToFilter(j, Filter, Sat, tmpR, tmpC, NbRays, NbConstraints);
           Vector_Copy(P1->Constraint[j], Mat->p[Mat->NbRows], Dimension + 1);
           Mat->NbRows++;
-          value_decrement(NbConstraintsLeft, NbConstraintsLeft);
+          NbConstraintsLeft--;
         }
       }
       SMFree(&Sat), Sat = NULL;
-      for (i = 0; i < NbConstraints; i++)
-        value_clear(tmpC[i]);
-      free(tmpC), tmpC = NULL;
-      for (i = 0; i < NbRays; i++)
-        value_clear(tmpR[i]);
-      free(tmpR), tmpR = NULL;
     } /* end forever */
   } /* end of TRY */
-
+  
   /* Clear all the 'Value' variables */
   value_clear(p3);
-  value_clear(NbConstraintsLeft);
-  value_clear(tmp);
-  /*  for(i=0;i<NbRays;i++)
-        value_clear(tmpR[i]);
-      for(i=0;i<NbRays;i++)
-        value_clear(tmpC[i]);
-  */
+  free(tmpC), tmpC = NULL;
   UNCATCH(any_exception_error);
 } /* FindSimple */
 

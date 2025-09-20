@@ -1688,8 +1688,6 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   Polyhedron *rest; // exact shadow - dark shadow (polyhedral domain)
   Polyhedron *tmp, *AP, *U0, *not_a_hole = NULL, *holes;
   Vector *v;
-  Matrix *newL;
-  LBL* result;
 
   #ifdef HOLES_DEBUG
   fprintf(stderr, "Entering compute holes. A = ");
