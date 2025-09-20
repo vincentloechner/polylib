@@ -47,20 +47,21 @@
 /* WSIZE is the number of bits in a word or int type */
 #define WSIZE (8 * sizeof(int))
 
-#define bexchange(a, b, l)                                                     \
-  {                                                                            \
-    char *t = (char *)malloc(l * sizeof(char));                                \
-    memcpy((t), (char *)(a), (int)(l));                                        \
-    memcpy((char *)(a), (char *)(b), (int)(l));                                \
-    memcpy((char *)(b), (t), (int)(l));                                        \
-    free(t);                                                                   \
+#define bexchange(a, b, l)                                                   \
+  {                                                                          \
+    for(int _i = 0; _i < (l); _i++) {                                        \
+      char _c;                                                               \
+      _c = *((char *)(a) + _i);                                              \
+      *((char *)(a) + _i) = *((char *)(b) + _i);                             \
+      *((char *)(b) + _i) = _c;                                              \
+    }                                                                        \
   }
 
-#define exchange(a, b, t)                                                      \
-  {                                                                            \
-    (t) = (a);                                                                 \
-    (a) = (b);                                                                 \
-    (b) = (t);                                                                 \
+#define exchange(a, b, t)                                                    \
+  {                                                                          \
+    (t) = (a);                                                               \
+    (a) = (b);                                                               \
+    (b) = (t);                                                               \
   }
 
 /*  errormsg1 is an external function which is usually supplied by the
@@ -872,10 +873,6 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
   RowSize2 = sat_nbcolumns * sizeof(int);
 
   temp1 = Vector_Alloc(Dimension + 1);
-  if (!temp1) {
-    errormsg1("Remove_Redundants", "outofmem", "out of memory space");
-    return 0;
-  }
 
   if (Filter) {
     temp2 = (int *)calloc(sat_nbcolumns, sizeof(int));
@@ -885,10 +882,10 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
 
   /* Introduce indirections into saturation matrix 'Sat' to simplify */
   /* processing with 'Sat' and allow easy exchanges of columns.      */
-  bx = (unsigned *)malloc(NbConstraints * sizeof(unsigned));
+  bx = malloc(NbConstraints * sizeof(unsigned));
   if (!bx)
     goto oom;
-  jx = (unsigned *)malloc(NbConstraints * sizeof(unsigned));
+  jx = malloc(NbConstraints * sizeof(unsigned));
   if (!jx)
     goto oom;
   CATCH(any_exception_error) {
@@ -1419,7 +1416,7 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
     /* (corresponding to irredundant inequalities) of saturation matrix 'Sat'*/
     /* which saturate some ray 'i'. See figure below:-                       */
 
-    Trace = (unsigned *)malloc(NbRay * sizeof(unsigned));
+    Trace = malloc(NbRay * sizeof(unsigned));
     if (!Trace) {
       UNCATCH(any_exception_error);
       goto oom;
@@ -1573,7 +1570,7 @@ Polyhedron *Polyhedron_Alloc(unsigned Dimension, unsigned NbConstraints,
   int i;
   Value *p, **q;
 
-  Pol = (Polyhedron *)malloc(sizeof(Polyhedron));
+  Pol = malloc(sizeof(Polyhedron));
   if (!Pol) {
     errormsg1("Polyhedron_Alloc", "outofmem", "out of memory space");
     return 0;
@@ -1589,7 +1586,7 @@ Polyhedron *Polyhedron_Alloc(unsigned Dimension, unsigned NbConstraints,
   NbRows = NbConstraints + NbRays;
   NbColumns = Dimension + 2;
 
-  q = (Value **)malloc(NbRows * sizeof(Value *));
+  q = malloc(NbRows * sizeof(Value *));
   if (!q) {
     errormsg1("Polyhedron_Alloc", "outofmem", "out of memory space");
     return 0;
@@ -3047,11 +3044,11 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       Mat->NbRows = 0; /* Reset Mat */
       Pol2 = Pol;
 
-      /* Its not enough-- find some more constraints */
+      /* It's not enough-- find some more constraints */
       Dimension = Pol->Dimension + 1; /* homogeneous Dimension */
       NbRays = Pol->NbRays;
       NbConstraints = P1->NbConstraints;
-      tmpR = (Value *)malloc(NbRays * sizeof(Value));
+      tmpR = malloc(NbRays * sizeof(Value));
       if (!tmpR) {
         errormsg1("FindSimple", "outofmem", "out of memory space");
         UNCATCH(any_exception_error);
@@ -3147,11 +3144,11 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
         Value cmax;
         value_init(cmax);
 
-#ifndef LINEAR_VALUE_IS_CHARS
+        #ifndef LINEAR_VALUE_IS_CHARS
         value_set_si(cmax, (NbRays * NbConstraints + 1));
-#else
+        #else
         value_set_si(cmax, 1);
-#endif
+        #endif
 
         j = -1;
         for (k = 0; k < NbConstraints; k++)
@@ -3178,7 +3175,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       for (i = 0; i < NbRays; i++)
         value_clear(tmpR[i]);
       free(tmpR), tmpR = NULL;
-    }
+    } /* end forever */
   } /* end of TRY */
 
   /* Clear all the 'Value' variables */
@@ -3388,7 +3385,7 @@ Polyhedron *DomainSimplify(Polyhedron *Pol1, Polyhedron *Pol2,
     nbentries = (NbConstraints + NbCon - 1) / (sizeof(int) * 8) + 1;
 
     /* Allocate space for array 'Filter' */
-    Filter = (unsigned *)malloc(nbentries * sizeof(int));
+    Filter = malloc(nbentries * sizeof(int));
     if (!Filter) {
       errormsg1("DomSimplify", "outofmem", "out of memory space\n");
       Pol_status = 1;
@@ -3516,7 +3513,7 @@ Polyhedron *Stras_DomainSimplify(Polyhedron *Pol1, Polyhedron *Pol2,
       nbentries = (NbConstraints + NbCon - 1) / (sizeof(int) * 8) + 1;
 
       /* Allocate space for array 'Filter' */
-      Filter = (unsigned *)malloc(nbentries * sizeof(int));
+      Filter = malloc(nbentries * sizeof(int));
       if (!Filter) {
         errormsg1("DomainSimplify", "outofmem", "out of memory space");
         UNCATCH(any_exception_error);
@@ -4385,7 +4382,7 @@ Interval *DomainCost(Polyhedron *Pol, Value *Cost) {
     Ray = Pol->Ray;
     NbRay = Pol->NbRays;
     Dim = Pol->Dimension + 1; /* Homogenous Dimension */
-    I = (Interval *)malloc(sizeof(Interval));
+    I = malloc(sizeof(Interval));
     if (!I) {
       errormsg1("DomainCost", "outofmem", "out of memory space\n");
       UNCATCH(any_exception_error);

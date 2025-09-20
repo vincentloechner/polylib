@@ -133,7 +133,6 @@ int First_Non_Zero(Value *p, unsigned length) {
  */
 Vector *Vector_Alloc(unsigned length)
 {
-  int i;
   Vector *vector;
 
   vector = malloc(sizeof(Vector));
@@ -185,10 +184,8 @@ Vector *Vector_Realloc(Vector *V, unsigned newlength)
 /*
  * Free the memory space occupied by a Vector
  */
-void Vector_Free(Vector *vector) {
-
-  int i;
-
+void Vector_Free(Vector *vector)
+{
   if (!vector)
     return;
   value_free(vector->p, vector->p_Init_size);
@@ -260,7 +257,8 @@ void Vector_Set(Value *p, int n, unsigned length) {
 } /* Vector_Set */
 
 /*
- * Exchange the components of the vectors 'p1' and 'p2' of length 'length'
+ * Exchange the components of the arrays of Values 'p1' and 'p2'
+ * of length 'length'
  */
 void Vector_Exchange(Value *p1, Value *p2, unsigned length) {
 
@@ -820,7 +818,7 @@ static int cache_size = 0;
 #endif // THREAD_SAFE_POLYLIB
 
 /*
- * Allocate an array of values and initialize values to 0.
+ * low-level allocation of an array of values and initialize values to 0.
  * return an array of value, and sets allocated array size in *got.
  *
  * USAGE: 'got' can be greater than 'want', when a cache block is reused
@@ -871,6 +869,9 @@ Value *value_alloc(int want, int *got) {
   return p;
 }
 
+/*
+ * low-level free memory of an array of Values
+ */
 void value_free(Value *p, int size) {
   int i;
 
