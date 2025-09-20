@@ -78,7 +78,7 @@ void Union_Read(Polyhedron **P, Polyhedron **C, char ***param_name)
 			if( j==0 )
 				break;
 			param[j] = 0;
-			pp[i] = (char *)malloc(j);
+			pp[i] = (char *)malloc(j+1);
 			strcpy(pp[i], param);
 		}
 		if( i != (*C)->Dimension )
