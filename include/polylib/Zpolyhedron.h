@@ -30,7 +30,6 @@ extern "C" {
 // so the functions have explicit prefix/suffix names depending on what they
 // handle: sLBL, LBL, Zpolyhedron, ZDomain.
 
-
 extern LBL *LBLAlloc(Matrix *Lat, Polyhedron *Poly);
 extern void LBLFree(LBL *Head);
 extern void LBLPrint(FILE *fp, const char *format, LBL *A);
@@ -45,6 +44,8 @@ extern LBL *LBLDifference(LBL *A, LBL *B);
 extern LBL *LBLImage(LBL *A, Matrix *Func);
 extern LBL *LBLPreimage(LBL *A, Matrix *Func);
 extern LBL *LBLComplement(LBL *A);
+
+extern LBL *LBLSimplify(LBL *A);
 
 // All above functions always return a canonical LBL.
 // The CanonicalLBL() function is exposed to the user to enable transforming

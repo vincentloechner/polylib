@@ -149,6 +149,7 @@ LBL *LBLCopy(LBL *L)
  * and return a pointer to the new LBL.
  * Consumes the memory of A and of B (no need to free) to build
  * the result. Internal function only, do not use to build unions.
+ * No simplification, just join them.
  */
 static LBL *LBL_concatenate(LBL *A, LBL *B)
 {
@@ -208,9 +209,9 @@ Bool LBLIncludes(LBL *A, LBL *B)
   Bool ret = False;
   LBL *diff;
 
-  // TODO: can we do better on ZDomains?
-
-  // TODO: could check lattice union inclusion first, if not included return fail.
+  // Could we do better on ZDomains?
+  // the answer is no: the complicated part of the difference is not called
+  // when the input LBLs are ZDomains.
 
   diff = LBLDifference(A, B);
   if(isEmptyLBL(diff)) {
@@ -1187,6 +1188,12 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
 //   return Result;
 // } /* SplitLBL */
 
+
+
+/***************************************************************************/
+/*  Utility functions for LBL simplification and normalization             */
+/***************************************************************************/
+
 /*
  * get the matrix of equalities from a polyhedron
  * (without the first columns of 0's)
@@ -2042,85 +2049,27 @@ static Bool sLBL_Remove_Empty(LBL *A)
 }
 
 
-// previous method, not considering existential integer variables...
-// /*
-//  * Remove the columns of zeros from A->Lat.
-//  * In place. A->P is a domain.
-//  * 
-//  * This is equivalent to removing an existential variable: need to verify that
-//  * there is an integer solution in the removed dimension
-//  */
-// static void sLBL_Lat_Remove_Zeros(LBL *A)
-// {
-//   // Could use DomainConstraintSimplify() to eliminate obvious empty case
+/*
+ * Find if a given lattice is present in a LBL.
+ * Returns the address of the *previous* LBL
+ * (such that ZZ->next->Lat == L).
+ * NULL if not found.
+ */
+static LBL *FindLatticePred(Matrix *L, LBL *A) {
+  LBL* tmp;
 
-//   Polyhedron *NewP;
-//   int nbZeros = LatCountZeroCols(A->Lat);
-//   if(nbZeros) {
-//     // check which dimensions can be eliminated
-//     Bool *elim = malloc(sizeof(Bool)*nbZeros); // dimensions to eliminate
-//     int nbelim = 0; // number of dimensions to eliminate
+  for(tmp = A; tmp->next; tmp=tmp->next) {
+    if(isEqualLattice(L, tmp->next->Lat)) {
+      return (tmp);
+    }
+  }
+  return (NULL);
+} /* FindLatticePred */
 
-//     for(int dim = 0; dim < nbZeros; dim++) {
-//       int position = dim + A->Lat->NbColumns - nbZeros;
-//       elim[dim] = True;
-//       // if there is an equality with a coefficient different than +/- 1,
-//       // the dimension cannot be eliminated
-//       for(int j = 0; j < A->P->NbEq; j++) {
-//         if(value_notone_p(A->P->Constraint[j][position]) &&
-//             value_notmone_p(A->P->Constraint[j][position]) ) {
-//           elim[dim] = False;
-//           break;
-//         }
-//       }
-//     }
 
-//     // Now transform the domain
-//     Matrix *Transformation;
-//     Transformation = Matrix_Alloc(A->Lat->NbColumns - nbelim,
-//                                   A->Lat->NbColumns);
-//     // Id on top-left
-//     for (int  i = 0; i < Transformation->NbRows; i++) {
-//       for (int j = 0; j < Transformation->NbColumns; j++) {
-//         if(i==j && i!=Transformation->NbRows-1) {
-//           value_set_si(Transformation->p[i][j], 1);
-//         }
-//         else {
-//           value_set_si(Transformation->p[i][j], 0);
-//         }
-//       }
-//     }
-//     // 1 on bottom-right
-//     value_set_si(
-//       Transformation->p[Transformation->NbRows-1][Transformation->NbColumns-1],
-//       1);
-
-//     NewP = DomainImage(A->P, Transformation, MAXNOOFRAYS);
-//     Domain_Free(A->P);
-//     A->P = NewP;
-//     Matrix_Free(Transformation);
-
-//     // Take the first columns of Lat
-//     Matrix* NewL = Matrix_Alloc(A->Lat->NbRows, A->Lat->NbColumns-nbZeros);
-//     for (int  i = 0; i < NewL->NbRows; i++) {
-//       for (int j = 0; j < NewL->NbColumns; j++) {
-//         if(j < NewL->NbColumns-1) {
-//           value_assign(NewL->p[i][j], A->Lat->p[i][j]);
-//         }
-//         else {
-//           value_assign(NewL->p[i][j], A->Lat->p[i][A->Lat->NbColumns-1]);
-//         }
-//       }
-//     }
-//     Matrix_Free(A->Lat);
-//     A->Lat = NewL;
-
-//     #ifdef CANONICAL_DEBUG
-//       LBLPrint(stderr, P_VALUE_FMT, A);
-//     #endif
-//   }
-// } /* sLBL_Lat_Remove_Zeros */
-
+/***************************************************************************/
+/*       CanonicalLBL, LBL2ZDomain, and LBLSimplify                        */
+/***************************************************************************/
 
 /*
  * Modify the single LBL 'A' (next is ignored) to be in canonical form:
@@ -2253,24 +2202,6 @@ void CanonicalLBL(LBL *A)
 
 
 /*
- * Find if a given lattice is present in a LBL.
- * Returns the address of the *previous* LBL
- * (such that ZZ->next->Lat == L).
- * NULL if not found.
- */
-static LBL *FindLatticePred(Matrix *L, LBL *A) {
-  LBL* tmp;
-
-  for(tmp = A; tmp->next; tmp=tmp->next) {
-    if(isEqualLattice(L, tmp->next->Lat)) {
-      return (tmp);
-    }
-  }
-  return (NULL);
-} /* FindLatticePred */
-
-
-/*
  * Transform a single LBL into a list of Z-domains
  *
  * Remove zero columns from the lattice, build a union of Z-polyhedra
@@ -2323,4 +2254,22 @@ LBL *LBL2ZDomain(LBL *A)
   }
   CanonicalLBL(Result);
   return(Result);
+}
+
+
+/*
+ * Simplifies an LBL.
+ *
+ * Algorithm:
+ * 1- merge all the lattices that can be
+ *    -> have the same linear part (?)
+ *    -> or that are included in another (?)
+ * 2- fuse all adjacent polyhedral domains (complement of complement)
+ * 3- call CanonicalLBL to simplify back
+ */
+LBL *LBLSimplify(LBL *A)
+{
+  // TODO: everything :)
+
+  return(A);
 }
