@@ -535,8 +535,8 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
   // rest will be the rest of the lattice X to be treated
   // (Intersection on first line(s)/column(s), X on bottom-right)
   rest = Matrix_Copy(X);
-  // get the positions of the pivots of (X and) Inter
-  pivots_columns = get_pivots_columns(Inter);
+  // get the positions of the pivots of X (and Inter too, unless infinite diff)
+  pivots_columns = get_pivots_columns(X);
 
   // -------------- MAIN LOOP --------------------
 
@@ -552,6 +552,14 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
       fprintf(stderr, "+++ rest =\n");
       Matrix_Print(stderr, P_VALUE_FMT, rest);
     #endif
+    if(value_zero_p(Inter->p[line][pivots_columns[line]])) {
+      // there is a problem, trying to compute an infinite lattice union
+      errormsg1("LatticeDifference", "dimincomp",
+        "Difference is infinite (incompatible dimensions: columns)");
+      LatticeUnion_Free(Result);
+      Result = NULL;
+      goto LD_cleanup;
+    }
     // this function does all the hard work:
     Result = generate_lattice_union_line(line, pivots_columns, X, Inter,
                 rest, Result);
@@ -568,6 +576,7 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
   #endif
 
   // cleanup
+  LD_cleanup:
   free(pivots_columns);
   Matrix_Free(Inter);
   Matrix_Free(rest);
