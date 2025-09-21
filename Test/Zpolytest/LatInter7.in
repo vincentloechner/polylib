@@ -1,18 +1,17 @@
 # Intersection of these two linear lattices
 M 2
 
-
 4 3
   1 0 0
   0 2 1
   0 5 0
   0 0 1
 
-4 3
-  1 0 0
-  0 6 1
-  0 6 0
-  0 0 1
+4 5
+  1 0 0 0 0   # added 2 columns of zero's
+  0 6 0 0 1
+  0 6 0 0 0
+  0 0 0 0 1
 
 D 0
 

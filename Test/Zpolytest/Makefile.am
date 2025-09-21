@@ -21,9 +21,12 @@ TEST_FILES_32 =  \
 	LatInc2.in \
 	LatInc3.in \
 	LatInter1.in \
+	LatInter1b.in \
 	LatInter2.in \
 	LatInter4.in \
 	LatInter5.in \
+	LatInter6.in \
+	LatInter7.in \
 	ZAlloc1.in \
 	ZAlloc1b.in \
 	ZAlloc1c.in \

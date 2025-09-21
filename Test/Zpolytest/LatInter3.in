@@ -14,4 +14,4 @@ M 2
 D 0
 F 3
 
-# result should be (error) since they have different dimensions.
+# result should be (error) since they have different dimensions (num rows)
