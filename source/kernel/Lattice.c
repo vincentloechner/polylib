@@ -312,11 +312,11 @@ void AffineHermite(Matrix *A, Matrix **H, Matrix **U)
  * Given two canonical lattices 'A' and 'B', check if lattice 'A' is included
  * in 'B'.
  * 
- * If 'A' is included in 'B' the intersection is 'A'.
+ * If 'A' is included in 'B' their intersection is 'A'.
  */
-Bool LatticeIncludes(Matrix *A, Matrix *B) {
-
-  Matrix *temp; //, *HA;
+Bool LatticeIncludes(Matrix *A, Matrix *B)
+{
+  Matrix *temp;
   Bool flag = False;
 
   temp = LatticeIntersection(B, A);
@@ -363,8 +363,8 @@ Bool sameLattice(Matrix *A, Matrix *B)
  *
  * Algorithm: compute the intersection of A and B and take it out of A
  */
-LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
-
+LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
+{
   Matrix *H, *X;
   int *pivots_columns;
   Matrix *Inter, *rest;
@@ -489,13 +489,12 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
       // ignore lines below a previously treated pivot.
       continue;
     }
-
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "+++ Enter main loop (%d)\n", line);
       fprintf(stderr, "+++ rest =\n");
       Matrix_Print(stderr, P_VALUE_FMT, rest);
     #endif
-
+    // this function does all the hard work:
     Result = generate_lattice_union_line(line, pivots_columns, X, Inter,
                 rest, Result);
     #ifdef LATDIF_DEBUG
@@ -503,7 +502,6 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
       PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
     #endif
   }
-
   // ------------ END MAIN LOOP --------------------
   #ifdef LATDIF_DEBUG
     if(!Result)
@@ -520,11 +518,6 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
   return Result;
 } /* LatticeDifference */
 
-// Tried to use this, but Urt has zero columns too :(
-// use: left_hermite(Matrix *M, Matrix **Hp, Matrix **Qp, Matrix **Up)
-//  |A  B| . |Ult Urt| =  M U = H = |D    0  |
-//  |A  0|   |Ulb Urb|              |X  inter|  <- A Urt = inter
-// (then do the preimage of P by Urt)
 
 /*
  * Compute the intersection between two lattices.
@@ -604,21 +597,14 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
     Matrix_Print(stderr, P_VALUE_FMT, Tmp);
   #endif
 
-  // // TRIED:
-  // Matrix *U = NULL;
-  // left_hermite(Tmp, &H, NULL, &U);
-
   left_hermite(Tmp, &H, NULL, NULL);
-
-  
-
   #ifdef LATINTER_DEBUG
     fprintf(stderr,"\nH = ");
     Matrix_Print(stderr,P_VALUE_FMT,H);
   #endif
   Matrix_Free(Tmp);
 
-  // what is the number of columns of zeros on the first NbRows rows of H?
+  // count the number of columns of zeros on the first NbRows rows of H.
   // the matrix has A->NbColumns + B-> NbColumns columns.
   int nbcol = 0;
   for(int col_num = H->NbColumns-1 ; col_num >= 0; col_num--) {
@@ -653,15 +639,6 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
   #ifdef LATINTER_DEBUG
     fprintf(stderr, "\nLatticeIntersection result = ");
     Matrix_Print(stderr, P_VALUE_FMT, Res);
-    // // TRIED:
-    // // Get Urt such that: A Urt = Res
-    // Matrix *Urt = NULL;
-    // Matrix_Print(stdout, P_VALUE_FMT, U);
-    // fprintf(stderr,"A Urt = Inter.\n Urt = ");
-    // Matrix_subMatrix(U, 0, U->NbColumns-Res->NbColumns, Res->NbRows, U->NbColumns, &Urt);
-    // Matrix_Move_Homogeneous_Dim_Last(Urt);
-    // Matrix_Print(stdout, P_VALUE_FMT, Urt);
-
     fprintf(stderr,"---Exiting LatInter---\n\n");
   #endif
 
@@ -705,8 +682,8 @@ static int *get_pivots_columns(Matrix* A)
  *
  * *result is a vector of Values, that can be larger than the return value
  */
-static int value_prime_factors(Value n, Vector **result) {
-
+static int value_prime_factors(Value n, Vector **result)
+{
   if(!*result) {
     // allocate if NULL
     *result = Vector_Alloc(10);
@@ -741,7 +718,7 @@ static int value_prime_factors(Value n, Vector **result) {
       value_division(rest, rest, div); // rest /= div;
     }
     else{
-      // div = 2, 3, 5, 7, 9, 11, ...
+      // div = 2 / 3, 5, 7, 9, 11, ...
       if(value_eq(div, two))        //  if(div == 2)
         value_set_si(div, 3);       //    div = 3;
       else
@@ -849,10 +826,10 @@ static LatticeUnion *generate_lattice_union_line(int line_nb,
     // 27i+ 7/16/25
 
     // general case:
-    // - if same prime factor as previously:
+    //  if same prime factor as previously:
     //    * iterator step = previous multiplier
     //    * multiply = prime factor * previous multiplier
-    //   else (new multiplier):
+    //  else (new multiplier):
     //    * iteration step = 1 (* initial pivot of A)
     //    * multiply = prime factor (* initial pivot of A)
     //      (initial pivot of A always divides the pivot of the intersection)
@@ -877,9 +854,10 @@ static LatticeUnion *generate_lattice_union_line(int line_nb,
     // Iterate on each possible 'modulo':
     // from a possible intersection value, to 'multiply', with step 'step'
     // -> init loop value = intersection constant % iterator step
-    for(value_modulus(modulo, Intersection->p[line_nb][Intersection->NbColumns-1], step);
-        value_lt(modulo, multiply);
-        value_addto(modulo, modulo, step)) {
+    for(value_modulus(modulo,
+      Intersection->p[line_nb][Intersection->NbColumns-1], step);
+      value_lt(modulo, multiply);
+      value_addto(modulo, modulo, step)) {
       // consider line: multiply * x + modulo
       #ifdef LATDIF_DEBUG
         fprintf(stderr, "  -> considering line: ");
