@@ -5,7 +5,7 @@
 // #define LATDIF_DEBUG 1
 
 
-static void get_pivots_columns(Matrix* A, int *columns);
+static int *get_pivots_columns(Matrix* A);
 static int value_prime_factors(Value n, Vector **result);
 static LatticeUnion *generate_lattice_union_line(
   int line_nb, int *pivots_columns, Matrix *A, Matrix *Intersection, Matrix *L,
@@ -393,8 +393,9 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
     for(int l = 0; l < A->NbRows; l++)
       value_assign(A->p[l][A->NbColumns - 1], B->p[l][B->NbColumns - 1]);
 
+    // previous method was:
     // // Divide each column of A by its gcd to get the same dimension lattice
-    // // spreading the whole space of hull(B)
+    // // spreading the whole space of the dimension of B
     // for(int j = 0; j < A->NbColumns-1; j++) {
     //   int i;
     //   // initial gcd value
@@ -416,11 +417,10 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
     //     }
     //   }
     // }
+    // value_clear(gcd);
     X = NULL;
     AffineHermite(A, &X, NULL);
     Matrix_Free(A);
-    // A = X;
-    // value_clear(gcd);
   }
   else {
     if (A->NbRows != B->NbRows) {
@@ -466,8 +466,7 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
     Matrix_Print(stderr, P_VALUE_FMT, Inter);
   #endif
 
-  // if Inter has only one column, exit:
-  // (do not enter the loop, line 0 would have no pivot)
+  // if Inter has only one column there is no pivot, the result is empty.
   if(Inter->NbColumns == 1) {
     Matrix_Free(Inter);
     Matrix_Free(X);
@@ -479,8 +478,7 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
   // (Intersection on first line(s)/column(s), X on bottom-right)
   rest = Matrix_Copy(X);
   // get the positions of the pivots of (X and) Inter
-  pivots_columns = malloc(sizeof(int) * (X->NbRows-1));
-  get_pivots_columns(Inter, pivots_columns);
+  pivots_columns = get_pivots_columns(Inter);
 
   // -------------- MAIN LOOP --------------------
 
@@ -679,20 +677,24 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
  * column number for each line number.
  * Fills the array columns (needs to be allocated by caller, size = A->NbRows-1)
  */
-static void get_pivots_columns(Matrix* A, int *columns)
+static int *get_pivots_columns(Matrix* A)
 {
   int col = 0;
+  int *res;
+  res = malloc(sizeof(int) * (A->NbRows-1));
+
   for(int i = 0; i < A->NbRows - 1; i++) {
     if(i > 0 && value_zero_p(A->p[i][col])) {
       // zero in this column: take the previous one
-      columns[i] = col-1;
+      res[i] = col-1;
     }
     else {
       // there's a non zero value on this column, take it and increase col.
-      columns[i] = col;
+      res[i] = col;
       col++;
     }
   }
+  return(res);
 } /* get_pivots_columns */
 
 
