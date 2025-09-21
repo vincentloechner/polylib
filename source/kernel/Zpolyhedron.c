@@ -1222,6 +1222,70 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
   return (True);
 } /* same_equalities */
 
+
+/*
+ * Change A->P such that all polyhedra in this domain have the same set of
+ * equalities, that is, the equalities of the first polyhedron of this domain.
+ * All the other ones are added to a new LBL, linked to LBL A (in A->next).
+ */
+static Matrix *sLBL_Homogenize_Equalities(LBL *A)
+{
+  #ifdef CANONICAL_DEBUG
+  fprintf(stderr, "Checking for equalites in P\n");
+  #endif
+  LBL *new = NULL;
+  Matrix *Equalities = get_equalities(A->P); // get eq from the first one
+  Polyhedron *nextpp, *prevpp, *pp;
+
+  prevpp = A->P;
+  pp = A->P->next;
+  while(pp)
+  {
+    // check if the equalities of pp->Constraints are the same as the ones
+    // of matrix Equalities.
+    nextpp = pp->next;
+    // nextpp = next polyhedron of the domain (pp can be relinked below:)
+    if(!same_equalities(Equalities, pp)) {
+      // if not, get pp out.
+      if(!new) {
+        new = malloc(sizeof(LBL));
+        if (!new) {
+          errormsg1("sLBL_Canonical", "outofmem", "Out of Memory");
+          return(NULL);
+        }
+        new->P = NULL;
+        new->Lat = Matrix_Copy(A->Lat);
+      }
+      // remove pp from the list A->P, and get the right next iteration
+      prevpp->next = pp->next;
+      // add pp to new->P
+      pp->next = new->P;
+      new->P = pp;
+      // prevpp does not change
+    }
+    else {
+      // move on, keep a pointer to the previous one to relink easily
+      prevpp = pp;
+    }
+    pp = nextpp;
+  }
+
+  if(new) {
+    // include new in the LBL list A
+    new->next = A->next;
+    A->next = new;
+    #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "Unified equalites in A->P!\n - First A->P = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+    fprintf(stderr, " - A Next ->P = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, A->next->P);
+    #endif
+  }
+  // Now all polyhedra of domain A->P have the same equalities
+  return(Equalities);
+}
+
+
 /*
  * Simplify the equalities from A->P, in the single LBL A.
  * In place. A->P is a domain (all polyhedra have the same set of equalities).
@@ -1511,7 +1575,9 @@ static Polyhedron *domain_dark_shadow(Polyhedron *P, int dim)
 } /* domain_dark_shadow */
 
 
-/* generate a polyhedron of just one point */
+/*
+ * Generate a polyhedron of just one point
+ */
 Polyhedron *GenPoly(int dim, Value *val)
 {
   Matrix *rays;
@@ -2058,13 +2124,15 @@ static Bool sLBL_Remove_Empty(LBL *A)
 
 
 /*
- * The function takes the head of LBL 'A'
- * --- single lattice function, domain (list of polyhedra) ---
- * and modifies it in place to be in canonical form (A->Lat in HNF and no
- * equalities in A->P)
- * IN PLACE: modifies A itself
+ * Modify the single LBL 'A' (next is ignored) to be in canonical form:
+ * A->Lat in HNF and no equalities in A->P.
+ * Also tries to remove the columns of zeros from A->Lat if possible:
+ * do the projection along those dimensions and eliminate only if
+ * dark shadow = exact shadow
+ *
+ * USAGE: in place, modifies A itself
  * 
- * WARNING: this function modifies the head single LBL of A to build a union:
+ * IMPORTANT: this function modifies the head single LBL of A to build a union,
  * it may add or remove the LBLs stored in A->next
  */
 static void sLBL_Canonical(LBL* A)
@@ -2083,72 +2151,35 @@ static void sLBL_Canonical(LBL* A)
     return;
   }
 
-  // Normalize the affine lattice A->Lat (can also update A->P)
+  // ************************
+  // STEP 1: normalize A->Lat
+  // ************************
+
+  // Normalize the affine lattice A->Lat (and update A->P)
   sLBL_Lat_Normalize(A);
 
   // simplify non-integer constraints such that they intersect at least one
-  // integer point (to avoid infinite empty integer polyhedra for example)
+  // integer point (to avoid infinite empty integer polyhedra)
   A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
 
   // check emptyness
   if(emptyQ(A->P)) {
     if(sLBL_Remove_Empty(A)) {
-      // head was empty and has been replaced (with next).
+      // head was empty and has been replaced with A->next.
       // need to canonicalize the (new) current LBL itself
-      // (since the caller will not rescan it!):
+      // (so the caller does not need to rescan it!)
       sLBL_Canonical(A);
     }
   }
+  // now we have a non-empty A->P and A->Lat is canonical
 
-  // change P such that all polyhedra in this domain have the same set of
-  // equalities, that is, the equalities of the first one.
-  // all the other ones are added to a new LBL, linked to LBL A (in A->next)
-  // A->next will be treated at next step by the caller
-  #ifdef CANONICAL_DEBUG
-  fprintf(stderr, "Checking for equalites in P\n");
-  #endif
-  LBL *new = NULL;
-  Matrix *Equalities = get_equalities(A->P); // get eq from the first one
-  Polyhedron *nextpp, *prevpp = A->P; // keep a ref to the previous to relink
+  // ***********************************
+  // STEP 2: remove equalities from A->P
+  // ***********************************
 
-  for(Polyhedron *pp = A->P->next; pp; pp = nextpp) {
-    // check that the equalities of pp->Constraints are the same as the ones
-    // of matrix Equalities.
-    nextpp = pp->next;  // next polyhedron of the domain (pp can be moved out)
-    if(!same_equalities(Equalities, pp)) {
-      // if not, get pp out.
-      if(!new) {
-        new = malloc(sizeof(*new));
-        if (!new) {
-          errormsg1("sLBL_Canonical", "outofmem", "Out of Memory");
-          return;
-        }
-        new->P = NULL;
-        new->Lat = Matrix_Copy(A->Lat);
-      }
-      // remove pp from the list A->P, and get the right next iteration
-      prevpp->next = pp->next;
-      // add pp to new->P
-      pp->next = new->P;
-      new->P = pp;
-      // prevpp does not change
-    }
-    else {
-      prevpp = pp;        // keep a pointer to the previous to relink
-    }
-  }
-  if(new) {
-    // include new in the LBL list A
-    new->next = A->next;
-    A->next = new;
-    #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Unified equalites in A->P!\n - First A->P = ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
-    fprintf(stderr, " - A Next ->P = ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, A->next->P);
-    #endif
-  }
-  // Now all polyhedra of domain A->P have the same equalities
+  // homogenize the equalities of A->P: ensure that all polyhedra of the
+  // domain verify the same set of equalities
+  Matrix *Equalities = sLBL_Homogenize_Equalities(A);
 
   // We can remove the equalities from A->P
   simplified = sLBL_Simplify_Equalities(A, Equalities);
@@ -2160,9 +2191,13 @@ static void sLBL_Canonical(LBL* A)
     sLBL_Canonical(A);
   }
 
+  // ****************************************
+  // STEP 3: eliminate zero columns of A->Lat
+  // ****************************************
+
   // Remove the columns of zeros from A->Lat if possible
   // do the projection along those dimensions,
-  // eliminate only if dark shadow = exact shadow
+  // eliminate only if dark shadow \in exact shadow
   sLBL_Simplify_Zero_Dimensions(A);
 
   return;
@@ -2181,19 +2216,17 @@ static void sLBL_Canonical(LBL* A)
  * To transform a union of LBLs into a union of Z-polyhedra, you need to
  * call LBL2ZDomain().
  */
-void CanonicalLBL(LBL *A) {
-
+void CanonicalLBL(LBL *A)
+{
   // here, just transform every LBL of the list individually
   // careful, this may add a new LBL to the list A itself
   // (after tmp) but they will be scanned by this loop :)
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     sLBL_Canonical(tmp);
   }
-
-  // TODO: rewrite, this is ugly.
   
-  // check if a Lat is present twice in A, and if it is, union this
-  // polyhedron to the existing one and remove the second reference
+  // check if a lattice is present twice in A, and if it is, union the other
+  // polyhedral domain with this one and remove the second reference
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     LBL *ZZ;
     if((ZZ = FindLatticePred(tmp->Lat, tmp))) {
