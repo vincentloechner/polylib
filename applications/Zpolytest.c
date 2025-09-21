@@ -11,7 +11,7 @@ char s[128];
 
 int main() {
   
-  Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *g;
+  Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *e=NULL, *f=NULL, *g;
   LatticeUnion *l1, *l2;
   Polyhedron *A=NULL, *B=NULL, *C=NULL, *D = NULL;
   LBL *ZA=NULL, *ZB=NULL, *ZC=NULL, *ZD=NULL;
@@ -138,10 +138,12 @@ int main() {
     break;
     
   case 4: /* LatticeDifference */
-        
-    printf(" 2 in 1 : %d\n", LatticeIncludes(b, a));
-    printf(" 1 in 3 : %d\n", LatticeIncludes(c, a));
-    printf(" 1 in 2 : %d\n", LatticeIncludes(a, b));
+    AffineHermite(a, &d, NULL);
+    AffineHermite(b, &e, NULL);
+    AffineHermite(c, &f, NULL);
+    printf(" 2 in 1: %d\n", LatticeIncludes(e, d));
+    printf(" 1 in 3: %d\n", LatticeIncludes(f, d));
+    printf(" 1 in 2: %d\n", LatticeIncludes(d, e));
     break;
   
   case 5: /* LatticeDifference */

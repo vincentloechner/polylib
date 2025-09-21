@@ -14,14 +14,14 @@
 // See the header of Zpolyhedron.h for more information
 
 
-// debug this file:
+// debug all functions:
 // #define DEBUG
 #ifdef DEBUG
-  #define CANONICAL_DEBUG 1
-  #define INTERSECTION_DEBUG 1
-  #define DIFFERENCE_DEBUG 1
-  #define COMP_DEBUG 1
-  #define HOLES_DEBUG 1
+#define CANONICAL_DEBUG 1
+#define INTERSECTION_DEBUG 1
+#define DIFFERENCE_DEBUG 1
+#define COMP_DEBUG 1
+#define HOLES_DEBUG 1
 #endif
 
 static LBL *sLBL_Intersection(LBL *, LBL *);

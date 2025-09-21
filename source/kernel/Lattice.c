@@ -12,7 +12,7 @@ static LatticeUnion *generate_lattice_union_line(
   LatticeUnion *Result);
 
 
-  /*
+/*
  * Print the contents of a list of Lattices 'Head'
  */
 void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head) {
@@ -21,8 +21,9 @@ void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head) {
 
   for (temp = Head; temp != NULL; temp = temp->next)
     Matrix_Print(fp, format, temp->M);
-  return;
+
 } /* PrintLatticeUnion */
+
 
 /*
  * Free the memory allocated for a list of lattices 'Head'
@@ -35,7 +36,6 @@ void LatticeUnion_Free(LatticeUnion *Head) {
     Matrix_Free(temp->M);
     free(temp);
   }
-  return;
 } /* LatticeUnion_Free */
 
 
@@ -205,6 +205,7 @@ Bool isNormalLattice(Matrix *A)
   return(True);
 } /* isNormalLattice */
 
+
 /*
  * Return the affine Hermite normal form of the affine lattice 'A'. The
  * affine Hermite form if a lattice is stored in 'H' and the unimodular
@@ -233,6 +234,7 @@ void AffineHermite(Matrix *A, Matrix **H, Matrix **U)
 } /* AffineHermite */
 
 
+// not used anymore:
 // /*
 //  * Given a Polylib matrix 'A' that represents an affine function, return the
 //  * affine Smith normal form 'Delta' of 'A' and unimodular matrices 'U' and 'V'
@@ -251,13 +253,6 @@ void AffineHermite(Matrix *A, Matrix **H, Matrix **U)
 //   Matrix *Uinv;
 //   int i, j;
 //   Value sum, quo, rem;
-
-// #ifdef DOMDEBUG
-//   FILE *fp;
-//   fp = fopen("_debug", "a");
-//   fprintf(fp, "\nEntered AFFINESMITH \n");
-//   fclose(fp);
-// #endif
 
 //   value_init(sum);
 //   value_init(quo);
@@ -314,76 +309,59 @@ void AffineHermite(Matrix *A, Matrix **H, Matrix **U)
 
 
 /*
- * Given two lattices 'A' and 'B', verify if lattice 'A' is included in 'B' or
- * not. If 'A' is included in 'B' the 'A' intersection 'B', will be 'A'. So,
- * compute 'A' intersection 'B' and check if it is the same as 'A'.
+ * Given two canonical lattices 'A' and 'B', check if lattice 'A' is included
+ * in 'B'.
+ * 
+ * If 'A' is included in 'B' the intersection is 'A'.
  */
 Bool LatticeIncludes(Matrix *A, Matrix *B) {
 
-  Matrix *temp, *HA;
+  Matrix *temp; //, *HA;
   Bool flag = False;
 
-#ifdef DOMDEBUG
-  FILE *fp;
-  fp = fopen("_debug", "a");
-  fprintf(fp, "\nEntered LATTICE INCLUDES \n");
-  fclose(fp);
-#endif
-
-  AffineHermite(A, &HA, NULL);
-  temp = LatticeIntersection(B, HA);
+  temp = LatticeIntersection(B, A);
   if(temp) {
-    if(sameLattice(temp, HA))
+    if(sameLattice(temp, A))
       flag = True;
     Matrix_Free(temp);
   }
 
-  Matrix_Free(HA);
   return flag;
 } /* LatticeIncludes */
 
+
 /*
- * Given two lattices 'A' and 'B', verify if 'A' and 'B' are the same lattice.
- * Algorithm:
- *           The Affine Hermite form of two full dimensional matrices are
- * unique. So, take the Affine Hermite form of both 'A' and 'B' and compare the
- * matrices. If they are equal, the function returns True, else it returns
- * False.
+ * Given two canonical lattices 'A' and 'B', check if 'A' and 'B' are the
+ * same.
  */
-Bool sameLattice(Matrix *A, Matrix *B) {
-
-  Matrix *HA, *HB;
-  int i, j;
-  Bool result = True;
-
+Bool sameLattice(Matrix *A, Matrix *B)
+{
   if(A->NbRows != B->NbRows || A->NbColumns != B->NbColumns)
     return (False);
 
-  AffineHermite(A, &HA, NULL);
-  AffineHermite(B, &HB, NULL);
-
-  for (i = 0; i < A->NbRows; i++)
-    for (j = 0; j < A->NbColumns; j++)
-      if (value_ne(HA->p[i][j], HB->p[i][j])) {
-        result = False;
-        break;
+  for(int i = 0; i < A->NbRows; i++) {
+    for(int j = 0; j < A->NbColumns; j++) {
+      if(value_ne(A->p[i][j], B->p[i][j])) {
+        return(False);
       }
+    }
+  }
 
-  Matrix_Free(HA);
-  Matrix_Free(HB);
-
-  return result;
+  return(True);
 } /* sameLattice */
+
 
 /*
  * Return the Union of lattices that constitute the difference between
- * two single lattices: A - B.
+ * two single lattices: 'A' - 'B'.
+ * The dimensions of A and B should be equal: same rows and columns (!=0)).
+ * If A = NULL consider the whole space spread by B (the same dimension
+ * maximal space).
  * 
- * if A = NULL it's the universe.
- * The dimensions of A and B should be the same. 
- * Main algorithm: compute the intersection of A and B and take it out of A
- * If the difference is empty return NULL.
  * Allocates a LatticeUnion.
+ * If the difference is empty return NULL.
+ *
+ * Algorithm: compute the intersection of A and B and take it out of A
  */
 LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
 
@@ -399,34 +377,50 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
   if(!A) {
     Value gcd;
     value_init(gcd);
-    A = Matrix_Copy(B);
-    // Divide each column of A by its gcd to get the minimal lattice
-    // spreading the same space than B
-    for(int j = 0; j < A->NbColumns-1; j++) {
-      int i;
-      // initial gcd value
-      for(i = 0; i < A->NbRows; i++) {
-        if(value_notzero_p(A->p[i][j])) {
-          value_assign(gcd, A->p[i][j]);
+    // set 1's in the positions of the pivots of B
+    A = Matrix_Alloc(B->NbRows, B->NbColumns);
+    Vector_Set(A->p[0], 0, A->NbRows * A->NbColumns);
+    for(int c = 0; c < A->NbColumns - 1; c++) {
+      for(int l = 0; l < A->NbRows; l++) {
+        if(value_notzero_p(B->p[l][c])) {
+          // pivot of B
+          value_set_si(A->p[l][c], 1);
           break;
         }
       }
-      // complete gcd computation
-      for(i = i+1; i < A->NbRows; i++) {
-        value_gcd(gcd, gcd, A->p[i][j]);
-      }
-
-      if(value_notone_p(gcd)) {
-        // divide the column by its gcd:
-        for(i = 0; i < A->NbRows; i++) {
-          value_division(A->p[i][j], A->p[i][j], gcd);
-        }
-      }
     }
-    // AffineHermite(A, &X, NULL); // not necessary
-    // Matrix_Free(A);
-    X = A;
-    value_clear(gcd);
+    // keep the constant so that the intersection is guaranteed non empty:
+    for(int l = 0; l < A->NbRows; l++)
+      value_assign(A->p[l][A->NbColumns - 1], B->p[l][B->NbColumns - 1]);
+
+    // // Divide each column of A by its gcd to get the same dimension lattice
+    // // spreading the whole space of hull(B)
+    // for(int j = 0; j < A->NbColumns-1; j++) {
+    //   int i;
+    //   // initial gcd value
+    //   for(i = 0; i < A->NbRows; i++) {
+    //     if(value_notzero_p(A->p[i][j])) {
+    //       value_assign(gcd, A->p[i][j]);
+    //       break;
+    //     }
+    //   }
+    //   // complete gcd computation
+    //   for(i = i+1; i < A->NbRows; i++) {
+    //     value_gcd(gcd, gcd, A->p[i][j]);
+    //   }
+
+    //   if(value_notone_p(gcd)) {
+    //     // divide the column by its gcd:
+    //     for(i = 0; i < A->NbRows; i++) {
+    //       value_division(A->p[i][j], A->p[i][j], gcd);
+    //     }
+    //   }
+    // }
+    X = NULL;
+    AffineHermite(A, &X, NULL);
+    Matrix_Free(A);
+    // A = X;
+    // value_clear(gcd);
   }
   else {
     if (A->NbRows != B->NbRows) {
@@ -448,15 +442,6 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
     Matrix_Free(X);
     return(NULL);
   }
-  // no need to normalize B, it will just be used to compute
-  // the (normalized) intersection with X
-  // if (! isNormalLattice(B)) {
-  //   AffineHermite(B, &H, NULL);
-  //   Y = H;
-  // }
-  // else {
-  //   Y = Matrix_Copy(B);
-  // }
   #ifdef LATDIF_DEBUG
     fprintf(stderr, "--- Entering LatDiff ---\n"
         "A (normalized) = X = ");
