@@ -19,6 +19,7 @@ TEST_FILES_32 =  \
 	LatHNF3.in \
 	LatInc1.in \
 	LatInc2.in \
+	LatInc3.in \
 	LatInter1.in \
 	LatInter2.in \
 	LatInter4.in \

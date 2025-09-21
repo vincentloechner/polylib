@@ -307,6 +307,27 @@ void AffineHermite(Matrix *A, Matrix **H, Matrix **U)
 //   return;
 // } /* AffineSmith */
 
+/*
+ * count the number of columns of zeros on the right of the linear part
+ * of a lattice function
+ */
+int LatCountZeroCols(Matrix* M)
+{
+  int nb = 0;
+  for (int j = M->NbColumns-2; j >= 0; j--) {
+    int i;
+    for(i = 0; i < M->NbRows; i++) {
+      if(value_notzero_p(M->p[i][j])) {
+        break;
+      }
+    }
+    if(i != M->NbRows)
+      break;
+    nb++;
+  }
+  return nb;
+}
+
 
 /*
  * Given two canonical lattices 'A' and 'B', check if lattice 'A' is included
@@ -321,7 +342,7 @@ Bool LatticeIncludes(Matrix *A, Matrix *B)
 
   temp = LatticeIntersection(B, A);
   if(temp) {
-    if(sameLattice(temp, A))
+    if(isSameLatticeSpace(temp, A))
       flag = True;
     Matrix_Free(temp);
   }
@@ -331,10 +352,47 @@ Bool LatticeIncludes(Matrix *A, Matrix *B)
 
 
 /*
- * Given two canonical lattices 'A' and 'B', check if 'A' and 'B' are the
- * same.
+ * Check if 'A' and 'B' spread the same points (ignore columns of zero's)
+ * 'A' and 'B' are canonical lattices
  */
-Bool sameLattice(Matrix *A, Matrix *B)
+Bool isSameLatticeSpace(Matrix *A, Matrix *B)
+{
+  if(A->NbRows != B->NbRows)
+    return(False);
+
+  for(int i = 0; i < A->NbRows; i++) {
+    int j;
+    // common part
+    for(j = 0; j < A->NbColumns - 1 && j < B->NbColumns - 1; j++) {
+      if(value_ne(A->p[i][j], B->p[i][j])) {
+        return(False);
+      }
+    }
+    // zero's on the right of A and of B if A or B has more columns
+    for(; j < A->NbColumns - 1; j++) {
+      if(value_notzero_p(A->p[i][j])) {
+        return(False);
+      }
+    }
+    for(; j < B->NbColumns - 1; j++) {
+      if(value_notzero_p(B->p[i][j])) {
+        return(False);
+      }
+    }
+    // same constant
+    if(value_ne(A->p[i][A->NbColumns-1], B->p[i][B->NbColumns-1])) {
+      return(False);
+    }
+  }
+  
+  return(True);
+}
+
+/*
+ * Check if 'A' and 'B' are the exact same (including same zero columns).
+ * 'A' and 'B' are canonical lattices
+ */
+Bool isEqualLattice(Matrix *A, Matrix *B)
 {
   if(A->NbRows != B->NbRows || A->NbColumns != B->NbColumns)
     return (False);
@@ -348,7 +406,7 @@ Bool sameLattice(Matrix *A, Matrix *B)
   }
 
   return(True);
-} /* sameLattice */
+} /* isEqualLattice */
 
 
 /*

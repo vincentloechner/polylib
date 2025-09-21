@@ -137,7 +137,7 @@ int main() {
     Matrix_Print(stdout, P_VALUE_FMT, c);
     break;
     
-  case 4: /* LatticeDifference */
+  case 4: /* LatticeIncludes */
     AffineHermite(a, &d, NULL);
     AffineHermite(b, &e, NULL);
     AffineHermite(c, &f, NULL);

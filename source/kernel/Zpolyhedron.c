@@ -33,7 +33,6 @@ static LBL *sLBL_Preimage(LBL *, Matrix *);
 static void sLBL_Canonical(LBL* A);
 static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL* A, LBL* B);
-static int count_zeroCols (Matrix* M);
 static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
 
 // typedef struct forsimplify {
@@ -426,8 +425,8 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
   Matrix_Print(stderr, P_VALUE_FMT, LInter);
   #endif
 
-  if(count_zeroCols(A->Lat) == 0 && count_zeroCols(B->Lat) == 0 &&
-    count_zeroCols(LInter) == 0)
+  if(LatCountZeroCols(A->Lat) == 0 && LatCountZeroCols(B->Lat) == 0 &&
+    LatCountZeroCols(LInter) == 0)
   {
     // This works only IF there are no columns of zeros in the LBLs:
     // they are Z-polyhedra
@@ -674,7 +673,7 @@ static LBL *sLBLComplement(LBL *A)
   Domain_Free(hullA);
 
   // STEP 3: holes
-  if((nbzeros = count_zeroCols(A->Lat))) {
+  if((nbzeros = LatCountZeroCols(A->Lat))) {
     // there are potential holes
     Matrix *newL;
     Polyhedron *holes = sLBL_compute_holes(A, NULL);
@@ -1729,7 +1728,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   fprintf(stderr, "Entering compute holes. A = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
-  nbzeros = count_zeroCols(A->Lat);
+  nbzeros = LatCountZeroCols(A->Lat);
   for(int z = 0; z < nbzeros; z++) {
     Polyhedron *d, *e; // shadow polyhedra after eliminating the column
     int col = A->Lat->NbColumns - 2 - z;
@@ -2056,7 +2055,7 @@ static Bool sLBL_Remove_Empty(LBL *A)
 //   // Could use DomainConstraintSimplify() to eliminate obvious empty case
 
 //   Polyhedron *NewP;
-//   int nbZeros = count_zeroCols(A->Lat);
+//   int nbZeros = LatCountZeroCols(A->Lat);
 //   if(nbZeros) {
 //     // check which dimensions can be eliminated
 //     Bool *elim = malloc(sizeof(Bool)*nbZeros); // dimensions to eliminate
@@ -2263,35 +2262,12 @@ static LBL *FindLatticePred(Matrix *L, LBL *A) {
   LBL* tmp;
 
   for(tmp = A; tmp->next; tmp=tmp->next) {
-    if(sameLattice(L, tmp->next->Lat)) {
+    if(isEqualLattice(L, tmp->next->Lat)) {
       return (tmp);
     }
   }
   return (NULL);
 } /* FindLatticePred */
-
-
-/*
- * count the number of columns of zeros on the right of the linear part
- * of a lattice function
- */
-static int count_zeroCols(Matrix* M)
-{
-  int nb = 0;
-  for (int j = M->NbColumns-2; j >= 0; j--) {
-    Bool isZero = True;
-    for(int i = 0; i < M->NbRows; i++) {
-      if(value_notzero_p(M->p[i][j])) {
-        isZero=False;
-        break;
-      }
-    }
-    if(!isZero)
-      break;
-    nb++;
-  }
-  return nb;
-}
 
 
 /*
@@ -2305,7 +2281,7 @@ static LBL *sLBL2ZDomain(LBL *A)
   int nbzeros;
   LBL *Result;
 
-  if((nbzeros = count_zeroCols(A->Lat))) {
+  if((nbzeros = LatCountZeroCols(A->Lat))) {
     // there are potential holes
     Matrix *newL;
     Polyhedron *holes, *not_holes, *exact;

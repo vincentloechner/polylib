@@ -13,7 +13,9 @@ extern Matrix *LatticeIntersection(Matrix *X, Matrix *Y);
 extern LatticeUnion *LatticeUnion_Alloc(void);
 extern void LatticeUnion_Free(LatticeUnion *Head);
 extern void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head);
-extern Bool sameLattice(Matrix *A, Matrix *B);
+extern int LatCountZeroCols(Matrix* M);
+extern Bool isEqualLattice(Matrix *A, Matrix *B);     // exact equality
+extern Bool isSameLatticeSpace(Matrix *A, Matrix *B); // spread the same points
 extern void Matrix_Move_Homogeneous_Dim_First(Matrix *A);
 extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
 extern Bool isNormalLattice(Matrix *A);
