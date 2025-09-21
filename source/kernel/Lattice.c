@@ -466,8 +466,8 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
     Matrix_Print(stderr, P_VALUE_FMT, Inter);
   #endif
 
-  // if Inter has only one column, there is a problem in the loop:
-  // line 0 would have no pivot.
+  // if Inter has only one column, exit:
+  // (do not enter the loop, line 0 would have no pivot)
   if(Inter->NbColumns == 1) {
     Matrix_Free(Inter);
     Matrix_Free(X);
@@ -479,7 +479,7 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B) {
   // (Intersection on first line(s)/column(s), X on bottom-right)
   rest = Matrix_Copy(X);
   // get the positions of the pivots of (X and) Inter
-  pivots_columns = malloc(sizeof(int) * X->NbRows);
+  pivots_columns = malloc(sizeof(int) * (X->NbRows-1));
   get_pivots_columns(Inter, pivots_columns);
 
   // -------------- MAIN LOOP --------------------
@@ -677,13 +677,13 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
  * Get the column numbers of the pivots.
  * since the matrix is not necessarily square, retrieve the right pivot
  * column number for each line number.
- * Fills the array columns (needs to be allocated by caller)
+ * Fills the array columns (needs to be allocated by caller, size = A->NbRows-1)
  */
 static void get_pivots_columns(Matrix* A, int *columns)
 {
   int col = 0;
-  for(int i=0; i < A->NbRows ; i++) {
-    if(i>0 && value_zero_p(A->p[i][col])){
+  for(int i = 0; i < A->NbRows - 1; i++) {
+    if(i > 0 && value_zero_p(A->p[i][col])) {
       // zero in this column: take the previous one
       columns[i] = col-1;
     }
@@ -784,8 +784,9 @@ static int value_prime_factors(Value n, Vector **result) {
  *
  * Add all newly generated lattices to Result, and return the new Result.
  */
-static LatticeUnion *generate_lattice_union_line(int line_nb, int *pivots_columns,
-            Matrix *A, Matrix *Intersection, Matrix *rest, LatticeUnion *Result)
+static LatticeUnion *generate_lattice_union_line(int line_nb,
+  int *pivots_columns, Matrix *A, Matrix *Intersection, Matrix *rest,
+  LatticeUnion *Result)
 {
   Value step, multiply, modulo, ratio, tmp;
   Vector *prime_factors = NULL; // Vector of Values, reuse memory several times
