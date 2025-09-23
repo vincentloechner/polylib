@@ -2273,6 +2273,8 @@ LBL *LBL2ZDomain(LBL *A)
   new idea: make all lattices = (Id 0), adding existential variables in the domains to generate the right lbls
   then merge everything together
 
+  Problem to solve: two different lattices of the LBL can generate the same point.
+
  * 2- fuse/simplify all adjacent polyhedral domains (complement of simplify complement)
  * 3- CanonicalLBL to simplify lattices and remove equalities
  */
