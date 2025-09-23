@@ -3,17 +3,17 @@
 M 1
 
 3 3
-2 0 0
-0 2 1
-0 0 1
+  2 0 0
+  0 2 1
+  0 0 1
 
 D 1
 
 # polyhedron with an equality, rational solution
 3 4
-0 -1  2 -1 # j = (i+1)/2! only odd i works
-1  1  0  0
-1 -1  0 10
+  0 -1  2 -1 # j = (i+1)/2! only odd i works
+  1  1  0  0
+  1 -1  0 10
 
 # ZAlloc test
 F 100

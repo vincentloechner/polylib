@@ -1,3 +1,6 @@
+# union of even i's and odd i's
+# at some point, could be simplified!
+
 #readMat["(i,j->2i+1,2i+j)"]
 #readMat["(i,j->2i,2i+j)"]
 M 2
