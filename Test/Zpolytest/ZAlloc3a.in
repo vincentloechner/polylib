@@ -1,0 +1,22 @@
+# ZAlloc of a *not very pointy* polyhedron, projected on i
+
+M 1
+
+# projection along j
+2 3
+  1 0 0
+  0 0 1
+
+D 1
+4 4
+  1  1  0 0
+  1 -1  0 10
+  1 -1  1 0  # j >= i
+  1  2 -1 0  # j <= 2i
+
+
+# ZAlloc test
+F 100
+
+# the result should be  {0 <= i <= 10}
+# because there IS an integer j for all i's
