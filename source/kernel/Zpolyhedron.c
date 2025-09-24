@@ -2263,17 +2263,22 @@ LBL *LBL2ZDomain(LBL *A)
  * Algorithm:
  * 1- merge all the lattices that can be merged. Ideas... :
  *    a- merge same lattices, ignore zero columns (extend dimension of P) -> easy.
- *    b- check inclusion? (involves a-) but how to merge? only if poly included too?
- *           or separate the part that is not included
+ *    b- check lattice inclusion and merge?
+ *       (involves a-) but how to merge?
+ *         only if poly included too?
+ *         or separate the part that is not included
+ *       if included, transform the lattice to be equal to the first one, then
+ *       add equalities to P in order to generate the original points
+ *         of L x | x \in P
  *    c- sort lattices by linear part...
  *            and try to merge same ones..., when domains overlap?
- * can (2i+0) be merged with (2i+1)? -> if P is same
+ *             or split domains such that a part of it does overlap?
+ *       example: can (2i+0) be merged with (2i+1)? -> if P is same
  * let A = im((2i+0),P), and B = im((2i+1),P') -> if A = B then (i+0), preim((i+0), A) -> Z-pol only
 
   new idea: make all lattices = (Id 0), adding existential variables in the domains to generate the right lbls
   then merge everything together
-
-  Problem to solve: two different lattices of the LBL can generate the same point.
+  -> can be pretty complex...
 
  * 2- fuse/simplify all adjacent polyhedral domains (complement of simplify complement)
  * 3- CanonicalLBL to simplify lattices and remove equalities
