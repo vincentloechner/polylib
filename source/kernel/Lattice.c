@@ -335,7 +335,7 @@ int LatCountZeroCols(Matrix* M)
  * 
  * If 'A' is included in 'B' their intersection is 'A'.
  */
-Bool LatticeIncludes(Matrix *A, Matrix *B)
+Bool LatticeIncluded(Matrix *A, Matrix *B)
 {
   Matrix *temp;
   Bool flag = False;
@@ -348,7 +348,7 @@ Bool LatticeIncludes(Matrix *A, Matrix *B)
   }
 
   return flag;
-} /* LatticeIncludes */
+} /* LatticeIncluded */
 
 
 /*

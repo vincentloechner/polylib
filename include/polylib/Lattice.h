@@ -8,7 +8,7 @@ extern "C" {
 extern void AffineHermite(Matrix *A, Matrix **H, Matrix **U);
 extern Bool isEmptyLattice(Matrix *A);
 extern LatticeUnion *LatticeDifference(Matrix *A, Matrix *B);
-extern Bool LatticeIncludes(Matrix *A, Matrix *B);
+extern Bool LatticeIncluded(Matrix *A, Matrix *B);    // True if A \in B
 extern Matrix *LatticeIntersection(Matrix *X, Matrix *Y);
 extern LatticeUnion *LatticeUnion_Alloc(void);
 extern void LatticeUnion_Free(LatticeUnion *Head);

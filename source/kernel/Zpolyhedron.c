@@ -20,9 +20,11 @@
 #define CANONICAL_DEBUG 1
 #define INTERSECTION_DEBUG 1
 #define DIFFERENCE_DEBUG 1
+#define LBLDIFF_DEBUG 1
 #define COMP_DEBUG 1
 #define HOLES_DEBUG 1
 #endif
+#define LBLDIFF_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -204,7 +206,7 @@ LBL *EmptyLBL(int dimension)
  * Given LBLs A and B, return True if A is included in B,
  * otherwise return False.
  */
-Bool LBLIncludes(LBL *A, LBL *B)
+Bool LBLIncluded(LBL *A, LBL *B)
 {
   Bool ret = False;
   LBL *diff;
@@ -220,7 +222,24 @@ Bool LBLIncludes(LBL *A, LBL *B)
   LBLFree(diff);
 
   return ret;
-} /* LBLIncludes */
+} /* LBLIncluded */
+
+
+/*
+ * Print the contents of a single LBL 'A'
+ */
+static void sLBLPrint(FILE *fp, const char *format, LBL *A)
+{
+  fprintf(fp, "LBL: Dimension %d\n", A->Lat->NbRows - 1);
+  if(emptyQ(A->P)) {
+    fprintf(fp, "\n<empty>>\n");
+  }
+  else {
+    fprintf(fp, "\nLATTICE:\n");
+    Matrix_Print(fp, format, A->Lat);
+    Polyhedron_Print(fp, format, A->P);
+  }
+} /* LBLPrint */
 
 
 /*
@@ -229,15 +248,7 @@ Bool LBLIncludes(LBL *A, LBL *B)
 void LBLPrint(FILE *fp, const char *format, LBL *A)
 {
   for( ; A; A = A->next) {
-    fprintf(fp, "LBL: Dimension %d\n", A->Lat->NbRows - 1);
-    if(emptyQ(A->P)) {
-      fprintf(fp, "\n<empty>>\n");
-    }
-    else {
-      fprintf(fp, "\nLATTICE:\n");
-      Matrix_Print(fp, format, A->Lat);
-      Polyhedron_Print(fp, format, A->P);
-    }
+    sLBLPrint(fp, format, A);
     if(A->next)
       fprintf(fp, "\nUNION ");
   }
@@ -298,7 +309,10 @@ LBL *LBLIntersection(LBL *A, LBL *B)
 /*
  * Return the difference of the LBLs 'A' - 'B' in canonical form.
  * The dimensions of 'A' and 'B' must be equal. Note that the
- * difference of two single LBLs can be a union of LBLs
+ * difference of two single LBLs can be a union of LBLs.
+ * 
+ * Algorithm:
+ * Successively remove each single LBL composing B from a copy of A
  */
 LBL *LBLDifference(LBL *A, LBL *B)
 { 
@@ -310,13 +324,28 @@ LBL *LBLDifference(LBL *A, LBL *B)
     return (NULL);
   }
   
+  // initialize result: a copy of A
   res = LBLCopy(A);
+  #ifdef LBLDIFF_DEBUG
+  fprintf(stderr, "Entering LBLDiff. A =");
+  LBLPrint(stderr, P_VALUE_FMT, A);
+  fprintf(stderr, "Entering LBLDiff. B =");
+  LBLPrint(stderr, P_VALUE_FMT, B);
+  #endif
   // remove all single LBLs composing B from a copy of A:
   for (LBL *tempB = B; tempB; tempB = tempB->next) {
-    LBL *tmp;
-    tmp = LBL_sLBL_Difference(res, tempB);
-    LBLFree(res);
-    res = tmp;
+    LBL *diff;
+    #ifdef LBLDIFF_DEBUG
+    fprintf(stderr, "Removing tempB from Res. tempB = ");
+    sLBLPrint(stderr, P_VALUE_FMT, tempB);
+    #endif
+    diff = LBL_sLBL_Difference(res, tempB);  // diff = res(LBL) - tempB(sLBL)
+    LBLFree(res);                            // free previous res
+    res = diff;                              // new res(LBL) = diff
+    #ifdef LBLDIFF_DEBUG
+    fprintf(stderr, "new res = ");
+    LBLPrint(stderr, P_VALUE_FMT, res);
+    #endif
   }
 
   if (!res)
@@ -572,23 +601,33 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B) {
 
 /*
  * Return the difference A - B
- * between a (union of) LBL(s) 'A' and a single LBL 'B'.
+ * between a union of LBLs 'A' and a single LBL 'B'.
+ * 
  * Algo: remove B from each part of A, and build a list of the result.
  *
  * USAGE: only the first lattice of B is considered
  *       (even if next is not NULL).
  * Creates a new allocated LBL, not necessarily in canonical form
  */
-static LBL *LBL_sLBL_Difference(LBL* A, LBL* B)
+static LBL *LBL_sLBL_Difference(LBL *A, LBL *B)
 {
   LBL *Result = NULL;
 
-  for(LBL *z = A; z; z = z->next) {
+  for(; A; A = A->next) {
     LBL *diff;
 
-    diff = sLBL_Difference(z, B);
+    #ifdef LBLDIFF_DEBUG
+    fprintf(stderr, "  LBL_sLBL_diff: Removing B from (a part of) A. A = ");
+    sLBLPrint(stderr, P_VALUE_FMT, A);
+    #endif
+
+    diff = sLBL_Difference(A, B);  // A - B
     // simple concatenate of diff and result (not canonical)
     Result = LBL_concatenate(diff, Result);
+    #ifdef LBLDIFF_DEBUG
+    fprintf(stderr, "  LBL_sLBL_diff: new Result = ");
+    LBLPrint(stderr, P_VALUE_FMT, Result);
+    #endif
   }
 
   // Result contains every piece of the solution,
@@ -721,7 +760,7 @@ LBL *LBLComplement(LBL *A)
 
 
 /*
- * Return the difference of two single LBLs A and B.
+ * Return the difference of two single LBLs A - B.
  * A and B are single LBLs, but the return value can be a union of LBLs!
  * Creates a new allocated LBL union
  *

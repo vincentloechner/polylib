@@ -137,13 +137,13 @@ int main() {
     Matrix_Print(stdout, P_VALUE_FMT, c);
     break;
     
-  case 4: /* LatticeIncludes */
+  case 4: /* LatticeIncluded */
     AffineHermite(a, &d, NULL);
     AffineHermite(b, &e, NULL);
     AffineHermite(c, &f, NULL);
-    printf(" 2 in 1: %d\n", LatticeIncludes(e, d));
-    printf(" 1 in 3: %d\n", LatticeIncludes(f, d));
-    printf(" 1 in 2: %d\n", LatticeIncludes(d, e));
+    printf(" 2 in 1: %d\n", LatticeIncluded(e, d));
+    printf(" 1 in 3: %d\n", LatticeIncluded(f, d));
+    printf(" 1 in 2: %d\n", LatticeIncluded(d, e));
     break;
   
   case 5: /* LatticeDifference */
@@ -219,12 +219,10 @@ int main() {
     printf("Im(PreIm(A)) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
     // ZD should be included in ZA
-    printf(
-      "The image of the preimage is included in the original Z-polyhedron (should always be true)? %d\n",
-	    LBLIncludes(ZD, ZA));
+    printf("The image of the preimage is included in the original LBL");
+    printf("(should always be true)? %d\n", LBLIncluded(ZD, ZA));
     ZB = LBLDifference(ZA, ZD);
-    printf(
-      "The image of the preimage is exactly the original Z-polyhedron? %d\n",
+    printf("The image of the preimage is exactly the original LBL? %d\n",
 	    isEmptyLBL(ZB));
     break;
   
@@ -243,23 +241,31 @@ int main() {
     printf("is Empty? :%d\n", isEmptyLBL(ZA));
     break;
     
-  case 15:  /* LBLInclude */
+  case 15:  /* LBLIncluded */
   
     ZA = LBLAlloc(a, A);
     ZB = LBLAlloc(b, B);
     printf("A in B  :%d\nB in A  :%d\n", 
-	    LBLIncludes(ZA, ZB),
-	    LBLIncludes(ZB, ZA));
+    LBLIncluded(ZA, ZB),
+    LBLIncluded(ZB, ZA));
     break;
   
   case 16:  /* LBLComplement */
   
     ZA = LBLAlloc(a, A);
     ZB = LBLComplement(ZA);
+    ZC = LBLComplement(ZB);
     printf("A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZA);
-    printf("Complement(A) = ");
+    printf("\nComplement(A) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZB);
+    printf("\nComplement(Complement(A)) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    printf("\nIs the the complement of the complement the original?\n");
+    printf("  A is included in C(C(A)): %d\n", LBLIncluded(ZA, ZC));
+    printf("  C(C(A)) is included in A: %d\n", LBLIncluded(ZC, ZA));
+    printf("ZC - ZA =");
+    LBLPrint(stdout, P_VALUE_FMT, LBLDifference(ZC, ZA));
     break;
 
   case 17:  /* LBL2Zdomain */

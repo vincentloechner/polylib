@@ -38,9 +38,9 @@ extern LBL *EmptyLBL(int dimension);
 extern Bool isEmptyLBL(LBL *Zpol);
 
 extern LBL *LBLUnion(LBL *A, LBL *B);
-extern Bool LBLIncludes(LBL *A, LBL *B);
+extern Bool LBLIncluded(LBL *A, LBL *B);       // True if A \in B
 extern LBL *LBLIntersection(LBL *A, LBL *B);
-extern LBL *LBLDifference(LBL *A, LBL *B);
+extern LBL *LBLDifference(LBL *A, LBL *B);     // A - B
 extern LBL *LBLImage(LBL *A, Matrix *Func);
 extern LBL *LBLPreimage(LBL *A, Matrix *Func);
 extern LBL *LBLComplement(LBL *A);
