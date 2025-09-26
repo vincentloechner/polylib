@@ -264,6 +264,8 @@ int main() {
     printf("\nIs the the complement of the complement the original?\n");
     printf("  A is included in C(C(A)): %d\n", LBLIncluded(ZA, ZC));
     printf("  C(C(A)) is included in A: %d\n", LBLIncluded(ZC, ZA));
+    printf("ZA - ZC =");
+    LBLPrint(stdout, P_VALUE_FMT, LBLDifference(ZA, ZC));
     printf("ZC - ZA =");
     LBLPrint(stdout, P_VALUE_FMT, LBLDifference(ZC, ZA));
     break;

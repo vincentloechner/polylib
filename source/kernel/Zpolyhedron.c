@@ -24,7 +24,6 @@
 #define COMP_DEBUG 1
 #define HOLES_DEBUG 1
 #endif
-#define LBLDIFF_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -32,9 +31,9 @@ static void sLBL_Free(LBL *L);
 static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBL_Image(LBL *, Matrix *);
 static LBL *sLBL_Preimage(LBL *, Matrix *);
-static void sLBL_Canonical(LBL* A);
+static void sLBL_Canonical(LBL *A, LBL *pred);
 static LBL *FindLatticePred(Matrix *L, LBL *A);
-static LBL *LBL_sLBL_Difference(LBL* A, LBL* B);
+static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
 static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
 
 // typedef struct forsimplify {
@@ -232,7 +231,7 @@ static void sLBLPrint(FILE *fp, const char *format, LBL *A)
 {
   fprintf(fp, "LBL: Dimension %d\n", A->Lat->NbRows - 1);
   if(emptyQ(A->P)) {
-    fprintf(fp, "\n<empty>>\n");
+    fprintf(fp, "\n<empty>\n");
   }
   else {
     fprintf(fp, "\nLATTICE:\n");
@@ -686,7 +685,7 @@ static LBL *sLBLComplement(LBL *A)
   Domain_Free(Univ);
 
   // STEP 2: lattice differences (not L) on hull(A)
-  if(!emptyQ(hullA))
+  if(hullA && !emptyQ(hullA))
   {
     LatDiff = LatticeDifference(NULL, A->Lat);
     #ifdef COMP_DEBUG
@@ -734,7 +733,7 @@ static LBL *sLBLComplement(LBL *A)
     PolyhedronPrint(stderr, P_VALUE_FMT, holes);
     #endif
 
-    if(!emptyQ(holes))
+    if(holes && !emptyQ(holes))
     {
       newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
     
@@ -1311,7 +1310,7 @@ static Matrix *sLBL_Homogenize_Equalities(LBL *A)
       if(!new) {
         new = malloc(sizeof(LBL));
         if (!new) {
-          errormsg1("sLBL_Canonical", "outofmem", "Out of Memory");
+          errormsg1("sLBL_Homogenize_Equalities", "outofmem", "Out of Memory");
           return(NULL);
         }
         new->P = NULL;
@@ -2127,7 +2126,7 @@ static LBL *FindLatticePred(Matrix *L, LBL *A) {
 /***************************************************************************/
 
 /*
- * Modify the single LBL 'A' (next is ignored) to be in canonical form:
+ * Modify the single LBL 'A' to be in canonical form:
  * A->Lat in HNF and no equalities in A->P.
  * Also tries to remove the columns of zeros from A->Lat if possible:
  * do the projection along those dimensions and eliminate only if
@@ -2135,10 +2134,12 @@ static LBL *FindLatticePred(Matrix *L, LBL *A) {
  *
  * USAGE: in place, modifies A itself
  * 
- * IMPORTANT: this function modifies the head single LBL of A to build a union,
- * it may add or remove the LBLs stored in A->next
+ * IMPORTANT:
+ * this function modifies the head single LBL of the union A, but it can also
+ * add or remove LBLs (stored in A->next or change pred->next if A becomes
+ * empty)!
  */
-static void sLBL_Canonical(LBL* A)
+static void sLBL_Canonical(LBL *A, LBL *pred)
 {
   int simplified;
   #ifdef CANONICAL_DEBUG
@@ -2167,6 +2168,7 @@ static void sLBL_Canonical(LBL* A)
 
   // check emptyness
   if(emptyQ(A->P)) {
+    // TODO: rewrite!
     if(sLBL_Remove_Empty(A)) {
       // head was empty and has been replaced with A->next.
       // need to canonicalize the (new) current LBL itself
@@ -2221,11 +2223,15 @@ static void sLBL_Canonical(LBL* A)
  */
 void CanonicalLBL(LBL *A)
 {
+  LBL *pred = NULL;
   // here, just transform every LBL of the list individually
   // careful, this may add a new LBL to the list A itself
   // (after tmp) but they will be scanned by this loop :)
+  // TODO: it can also remove an element from the list, so pred is needed to
+  // link the list again
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
-    sLBL_Canonical(tmp);
+    sLBL_Canonical(tmp, pred);
+    pred = tmp; // keep a reference to the predecessor
   }
   
   // check if a lattice is present twice in A, and if it is, union the other
