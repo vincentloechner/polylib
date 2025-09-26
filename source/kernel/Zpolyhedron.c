@@ -614,14 +614,22 @@ static LBL *LBL_sLBL_Difference(LBL *A, LBL *B)
   LBL *Result = NULL;
 
   for(; A; A = A->next) {
-    LBL *diff;
+    LBL *diff, *nextA, *nextB;
 
     #ifdef LBLDIFF_DEBUG
     fprintf(stderr, "  LBL_sLBL_diff: Removing B from (a part of) A. A = ");
     sLBLPrint(stderr, P_VALUE_FMT, A);
+    fprintf(stderr, "  LBL_sLBL_diff: Removing B from (a part of) A. B = ");
+    sLBLPrint(stderr, P_VALUE_FMT, B);
     #endif
+    nextA = A->next; A->next = NULL;
+    nextB = B->next; B->next = NULL;
 
     diff = sLBL_Difference(A, B);  // A - B
+
+    A->next = nextA;
+    B->next = nextB;
+
     // simple concatenate of diff and result (not canonical)
     Result = LBL_concatenate(diff, Result);
     #ifdef LBLDIFF_DEBUG
@@ -678,37 +686,40 @@ static LBL *sLBLComplement(LBL *A)
   Domain_Free(Univ);
 
   // STEP 2: lattice differences (not L) on hull(A)
-  LatDiff = LatticeDifference(NULL, A->Lat);
-  #ifdef COMP_DEBUG
-  fprintf(stderr, "\nLatDiff: ");
-  PrintLatticeUnion(stderr, P_VALUE_FMT, LatDiff);
-  #endif
-  // Add all Z-polyhedra to Result, applying the list of lattices on hullA
-  for(LatticeUnion *lat = LatDiff; lat; lat = lat->next) {
-    LBL *Ztmp;
+  if(!emptyQ(hullA))
+  {
+    LatDiff = LatticeDifference(NULL, A->Lat);
     #ifdef COMP_DEBUG
-    fprintf(stderr, "Considering Lat diff: ");
-    Matrix_Print(stderr, P_VALUE_FMT, lat->M);
+    fprintf(stderr, "\nLatDiff: ");
+    PrintLatticeUnion(stderr, P_VALUE_FMT, LatDiff);
     #endif
-    Ztmp = malloc(sizeof(LBL));
-    Ztmp->Lat = lat->M;
-    Ztmp->P = DomainPreimage(hullA, lat->M, MAXNOOFRAYS);
-    // remove obvious simplification?
-    // -> not necessary since preimage by integer function.
-    // Ztmp->P = DomainConstraintSimplify(Ztmp->P, MAXNOOFRAYS);
-    #ifdef COMP_DEBUG
-    Ztmp->next = NULL;
-    fprintf(stderr, "Adding: ");
-    LBLPrint(stderr, P_VALUE_FMT, Ztmp);
-    #endif
-    Ztmp->next = Result;
-    Result = Ztmp;
-  }
-  // free LatticeUnion remaining memory (M has been reused as a lattice)
-  while(LatDiff) {
-    LatticeUnion *next = LatDiff->next;
-    free(LatDiff);
-    LatDiff = next;
+    // Add all Z-polyhedra to Result, applying the list of lattices on hullA
+    for(LatticeUnion *lat = LatDiff; lat; lat = lat->next) {
+      LBL *Ztmp;
+      #ifdef COMP_DEBUG
+      fprintf(stderr, "Considering Lat diff: ");
+      Matrix_Print(stderr, P_VALUE_FMT, lat->M);
+      #endif
+      Ztmp = malloc(sizeof(LBL));
+      Ztmp->Lat = lat->M;
+      Ztmp->P = DomainPreimage(hullA, lat->M, MAXNOOFRAYS);
+      // remove obvious simplification?
+      // -> not necessary since preimage by integer function.
+      // Ztmp->P = DomainConstraintSimplify(Ztmp->P, MAXNOOFRAYS);
+      #ifdef COMP_DEBUG
+      Ztmp->next = NULL;
+      fprintf(stderr, "Adding: ");
+      LBLPrint(stderr, P_VALUE_FMT, Ztmp);
+      #endif
+      Ztmp->next = Result;
+      Result = Ztmp;
+    }
+    // free LatticeUnion remaining memory (M has been reused as a lattice)
+    while(LatDiff) {
+      LatticeUnion *next = LatDiff->next;
+      free(LatDiff);
+      LatDiff = next;
+    }
   }
   Domain_Free(hullA);
 
@@ -716,16 +727,21 @@ static LBL *sLBLComplement(LBL *A)
   if((nbzeros = LatCountZeroCols(A->Lat))) {
     // there are potential holes
     Matrix *newL;
-    Polyhedron *holes = sLBL_compute_holes(A, NULL);
+    Polyhedron *holes;
+    holes = sLBL_compute_holes(A, NULL);
     #ifdef COMP_DEBUG
     fprintf(stderr, "STEP 3 adding holes = ");
     PolyhedronPrint(stderr, P_VALUE_FMT, holes);
     #endif
-    newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
+
+    if(!emptyQ(holes))
+    {
+      newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
     
-    Result = LBL_concatenate(LBLAlloc(newL, holes), Result);
-    Matrix_Free(newL);
-    Polyhedron_Free(holes);
+      Result = LBL_concatenate(LBLAlloc(newL, holes), Result);
+      Matrix_Free(newL);
+    }
+    Domain_Free(holes);
   }
 
   CanonicalLBL(Result);
@@ -928,7 +944,7 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
 
   // TODO: which one to use, Binter or B?
   // which one is simpler? B is larger... Binter is part of A
-  Bcomp = LBLComplement(Binter);
+  Bcomp = sLBLComplement(Binter);
   #ifdef DIFFERENCE_DEBUG
   fprintf(stderr, "Difference = intersection between Bcomp = ");
   LBLPrint(stderr, P_VALUE_FMT, Bcomp);
