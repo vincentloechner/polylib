@@ -219,7 +219,7 @@ int main() {
     printf("Im(PreIm(A)) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
     // ZD should be included in ZA
-    printf("The image of the preimage is included in the original LBL");
+    printf("The image of the preimage is included in the original LBL ");
     printf("(should always be true)? %d\n", LBLIncluded(ZD, ZA));
     ZB = LBLDifference(ZA, ZD);
     printf("The image of the preimage is exactly the original LBL? %d\n",

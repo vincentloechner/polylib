@@ -1,6 +1,6 @@
-PreIm(A) = LBL: Dimension 1 
+PreIm(A) = LBL: Dimension 1
 
-LATTICE: 
+LATTICE:
 2 2
    2    0 
    0    1 
@@ -12,9 +12,9 @@ Inequality: [   1   -1  ]
 Rays 2 3
 Vertex: [   1  ]/1
 Vertex: [  50  ]/1
-Im(PreIm(A)) = LBL: Dimension 1 
+Im(PreIm(A)) = LBL: Dimension 1
 
-LATTICE: 
+LATTICE:
 2 2
    2    0 
    0    1 
@@ -26,5 +26,5 @@ Inequality: [   1   -1  ]
 Rays 2 3
 Vertex: [   1  ]/1
 Vertex: [  50  ]/1
-The image of the preimage is included in the original Z-polyhedron (should always be true)? 1
-The image of the preimage is exactly the original Z-polyhedron? 0
+The image of the preimage is included in the original LBL(should always be true)? 1
+The image of the preimage is exactly the original LBL? 0

@@ -1,8 +1,8 @@
-PreIm(A) = LBL: Dimension 2 
+PreIm(A) = LBL: Dimension 2
 
-<empty>>
-Im(PreIm(A)) = LBL: Dimension 2 
+<empty>
+Im(PreIm(A)) = LBL: Dimension 2
 
-<empty>>
-The image of the preimage is included in the original Z-polyhedron (should always be true)? 1
-The image of the preimage is exactly the original Z-polyhedron? 0
+<empty>
+The image of the preimage is included in the original LBL(should always be true)? 1
+The image of the preimage is exactly the original LBL? 0

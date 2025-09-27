@@ -24,7 +24,6 @@
 #define COMP_DEBUG 1
 #define HOLES_DEBUG 1
 #endif
-#define CANONICAL_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -32,7 +31,7 @@ static void sLBL_Free(LBL *L);
 static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBL_Image(LBL *, Matrix *);
 static LBL *sLBL_Preimage(LBL *, Matrix *);
-static void sLBL_Canonical(LBL *A, LBL *pred);
+static void sLBL_Canonical(LBL *A);
 static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
 static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
@@ -1995,7 +1994,7 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
     // another one (that has been scaned before).
     sLBL_Simplify_Zero_Dimensions(A);
   }
-}
+} /* sLBL_Simplify_Zero_Dimensions */
 
 /*
  * Set the affine function A->Lat to normal form in single LBL 'A'.
@@ -2050,41 +2049,58 @@ static void sLBL_Lat_Normalize(LBL *A)
 
 
 /*
- * Remove an empty head from a list of LBLs.
+ * Remove the empty sLBL's from a list of LBLs.
  *
- * if A has no successor: check that it is canonical and return False;
- * else: replace A with the content of A->next and return True.
- * 
- * so this function returns True if A changed
  */
-static Bool sLBL_Remove_Empty(LBL *A)
+static void LBL_Remove_Empty(LBL *A)
 {
+  LBL *current, *previous;
   #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Empty LBL\n");
+    fprintf(stderr, "Entering Remove_Empty\n");
   #endif
 
-  // if there is something linked to an empty LBL, need to replace the
-  // current LBL with the next LBL: replace A with next and free A->next
-  if(A->next) {
-    LBL *nextA = A->next;
+  // Scan from A->next, and relink previous to next if empty found
+  previous = A;
+  current = A->next;
+  while(current) {
+    if(!current->P || emptyQ(current->P)) {
+      // remove current
+      #ifdef CANONICAL_DEBUG
+        fprintf(stderr, "Found empty sLBL, relinking previous to next\n");
+      #endif
+      previous->next = current->next; // relink previous
+      Domain_Free(current->P);        // free current
+      Matrix_Free(current->Lat);
+      free(current);
+      current = previous->next;       // new current (previous does not change)
+    }
+    else {
+      // advance
+      previous = current;
+      current = current->next;
+    }
+  }
 
+  if(A->next && (!A->P || emptyQ(A->P))) {
+    // if there is something linked to an empty LBL, need to replace the
+    // head A with the content of A->next, and relink next.
+    LBL *nextA;
     #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "... But the next one is not empty, relinking\n");
+    fprintf(stderr, "Found empty sLBL at head, replacing head with next\n");
     #endif
+    nextA = A->next;
     Domain_Free(A->P);
     Matrix_Free(A->Lat);
     A->P = nextA->P;
     A->Lat = nextA->Lat;
     A->next = nextA->next;
     free(nextA);
-
-    // A changed
-    return(True);
   }
 
-  // A is empty and alone.
-  // Verify that it is canonical and return.
-  if(!A->P || A->P->Dimension > 0) {
+  // If the head A is empty, make sure it is canonical
+  if(!A->P || (emptyQ(A->P) && A->P->Dimension > 0)) {
+    // not canonical,
+    // re-create a canonical version of the emptyLBL
     int dimension = A->Lat->NbRows;
     Domain_Free(A->P);
     Matrix_Free(A->Lat);
@@ -2096,12 +2112,10 @@ static Bool sLBL_Remove_Empty(LBL *A)
     value_set_si(A->Lat->p[0][dimension-1], 1);
   }
   #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Returning, A is empty: ");
-    LBLPrint(stderr, P_VALUE_FMT, A);
+  fprintf(stderr, "Exit Remove_Empty, A = ");
+  LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
-
-  return(False);
-}
+} /* LBL_Remove_Empty */
 
 
 /*
@@ -2134,14 +2148,12 @@ static LBL *FindLatticePred(Matrix *L, LBL *A) {
  * dark shadow = exact shadow
  *
  * USAGE: in place, modifies A itself.
- * pred is its predecessor in the list (if not NULL)
  * 
- * IMPORTANT:
- * this function modifies the head single LBL of the union A, but it can also
- * add or remove LBLs (stored in A->next or change pred->next if A becomes
- * empty)!
+ * This function can leave an arbitrary number of empty LBLs in the list
+ * (will be removed later on).
+ * Can modify A->next to insert new sub-LBLs.
  */
-static void sLBL_Canonical(LBL *A, LBL *pred)
+static void sLBL_Canonical(LBL *A)
 {
   int simplified;
   #ifdef CANONICAL_DEBUG
@@ -2170,29 +2182,9 @@ static void sLBL_Canonical(LBL *A, LBL *pred)
   A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
 
   if(!A->P || emptyQ(A->P)) {
-    // A is empty!
-    if(pred) {
-      // there is a predecessor, remove A (pred->next) and relink
-      pred->next = A->next;
-      Domain_Free(A->P);
-      Matrix_Free(A->Lat);
-      free(A);
-      A = pred->next;
-      // and start again with the new A.
-      if(A) {
-        sLBL_Canonical(A, pred);
-      }
-    }
-    else if(sLBL_Remove_Empty(A)) {
-      // there was no predecessor, head was empty and has been replaced
-      // with A->next.
-      // Canonicalize the (new) current LBL A itself
-      // (so the caller does not need to rescan it!)
-      sLBL_Canonical(A, pred);
-    }
+    // empty, done.
     return;
   }
-  // now we have a non-empty A->P and A->Lat is canonical
 
   // ***********************************
   // STEP 2: remove equalities from A->P
@@ -2206,10 +2198,14 @@ static void sLBL_Canonical(LBL *A, LBL *pred)
   simplified = sLBL_Simplify_Equalities(A, Equalities);
   Matrix_Free(Equalities);
 
-  // If some equalities were eliminated start again from scratch!
-  // (Lat and P changed and could be further simplified)
-  if(!A->P || simplified) {
-    sLBL_Canonical(A, pred);
+  if(!A->P || emptyQ(A->P)) {
+    // empty, done.
+    return;
+  }
+  if(simplified) {
+    // if some equalities were eliminated start again from scratch!
+    // (Lat and P changed and could be further simplified)
+    sLBL_Canonical(A);
     return;
   }
 
@@ -2240,20 +2236,21 @@ static void sLBL_Canonical(LBL *A, LBL *pred)
  */
 void CanonicalLBL(LBL *A)
 {
-  LBL *pred = NULL;
   #ifdef CANONICAL_DEBUG
   fprintf(stderr, "Entering CanonicalLBL.\nA =");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
-  // here, just transform every LBL of the list individually
-  // careful, this may relink the list A itself
-  // (after pred) but they will just be scanned by this loop :)
+
+  // transform every LBL of the list individually
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
-    sLBL_Canonical(tmp, pred);
-    pred = tmp; // keep a reference to the predecessor
+    sLBL_Canonical(tmp);
   }
+
+  // remove empty LBLs from the list, keep at least something in A
+  LBL_Remove_Empty(A);
+
   #ifdef CANONICAL_DEBUG
-  fprintf(stderr, "sLBL_Canonical done.\nA =");
+  fprintf(stderr, "sLBL_Canonical and RemoveEmpty done.\nA =");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   
