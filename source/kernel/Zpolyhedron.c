@@ -24,6 +24,7 @@
 #define COMP_DEBUG 1
 #define HOLES_DEBUG 1
 #endif
+#define CANONICAL_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -2049,11 +2050,12 @@ static void sLBL_Lat_Normalize(LBL *A)
 
 
 /*
- * A is empty, if A has no successor check that it is canonical.
+ * Remove an empty head from a list of LBLs.
+ *
+ * if A has no successor: check that it is canonical and return False;
  * else: replace A with the content of A->next and return True.
  * 
- * returns False if A did not change.
- * In place.
+ * so this function returns True if A changed
  */
 static Bool sLBL_Remove_Empty(LBL *A)
 {
@@ -2093,7 +2095,6 @@ static Bool sLBL_Remove_Empty(LBL *A)
     }
     value_set_si(A->Lat->p[0][dimension-1], 1);
   }
-
   #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Returning, A is empty: ");
     LBLPrint(stderr, P_VALUE_FMT, A);
@@ -2164,10 +2165,11 @@ static void sLBL_Canonical(LBL *A, LBL *pred)
   sLBL_Lat_Normalize(A);
 
   // simplify non-integer constraints such that they intersect at least one
-  // integer point (to avoid infinite empty integer polyhedra)
+  // integer point (to avoid infinite empty integer polyhedra and obviously
+  // empty polyhedra)
   A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
 
-  if(emptyQ(A->P)) {
+  if(!A->P || emptyQ(A->P)) {
     // A is empty!
     if(pred) {
       // there is a predecessor, remove A (pred->next) and relink
@@ -2182,7 +2184,7 @@ static void sLBL_Canonical(LBL *A, LBL *pred)
       }
     }
     else if(sLBL_Remove_Empty(A)) {
-      // there was no predecessor, and head was empty and has been replaced
+      // there was no predecessor, head was empty and has been replaced
       // with A->next.
       // Canonicalize the (new) current LBL A itself
       // (so the caller does not need to rescan it!)
@@ -2239,15 +2241,21 @@ static void sLBL_Canonical(LBL *A, LBL *pred)
 void CanonicalLBL(LBL *A)
 {
   LBL *pred = NULL;
+  #ifdef CANONICAL_DEBUG
+  fprintf(stderr, "Entering CanonicalLBL.\nA =");
+  LBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
   // here, just transform every LBL of the list individually
-  // careful, this may add a new LBL to the list A itself
-  // (after tmp) but they will be scanned by this loop :)
-  // TODO: it can also remove an element from the list, so pred is needed to
-  // link the list again
+  // careful, this may relink the list A itself
+  // (after pred) but they will just be scanned by this loop :)
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     sLBL_Canonical(tmp, pred);
     pred = tmp; // keep a reference to the predecessor
   }
+  #ifdef CANONICAL_DEBUG
+  fprintf(stderr, "sLBL_Canonical done.\nA =");
+  LBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
   
   // check if a lattice is present twice in A, and if it is, union the other
   // polyhedral domain with this one and remove the second reference
@@ -2256,7 +2264,7 @@ void CanonicalLBL(LBL *A)
     if((ZZ = FindLatticePred(tmp->Lat, tmp))) {
       LBL *remove;
       Polyhedron *nextpp;
-      // add all polyhedra of the domain ZZ->next->P to tmp
+      // add each polyhedron of the domain ZZ->next->P to tmp
       // consumes ZZ->next->P.
       Polyhedron *pp = ZZ->next->P;
       while(pp) {
