@@ -2049,14 +2049,14 @@ static void sLBL_Lat_Normalize(LBL *A)
 
 
 /*
- * A is empty, check if A has no successor in the list and is canonical.
- * Can relink A->next to current A if needed, and returns True.
- * returns False if A->next did not change.
+ * A is empty, if A has no successor check that it is canonical.
+ * else: replace A with the content of A->next and return True.
+ * 
+ * returns False if A did not change.
  * In place.
  */
 static Bool sLBL_Remove_Empty(LBL *A)
 {
-  // A is empty
   #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Empty LBL\n");
   #endif
@@ -2132,7 +2132,8 @@ static LBL *FindLatticePred(Matrix *L, LBL *A) {
  * do the projection along those dimensions and eliminate only if
  * dark shadow = exact shadow
  *
- * USAGE: in place, modifies A itself
+ * USAGE: in place, modifies A itself.
+ * pred is its predecessor in the list (if not NULL)
  * 
  * IMPORTANT:
  * this function modifies the head single LBL of the union A, but it can also
@@ -2166,15 +2167,28 @@ static void sLBL_Canonical(LBL *A, LBL *pred)
   // integer point (to avoid infinite empty integer polyhedra)
   A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
 
-  // check emptyness
   if(emptyQ(A->P)) {
-    // TODO: rewrite!
-    if(sLBL_Remove_Empty(A)) {
-      // head was empty and has been replaced with A->next.
-      // need to canonicalize the (new) current LBL itself
-      // (so the caller does not need to rescan it!)
-      sLBL_Canonical(A);
+    // A is empty!
+    if(pred) {
+      // there is a predecessor, remove A (pred->next) and relink
+      pred->next = A->next;
+      Domain_Free(A->P);
+      Matrix_Free(A->Lat);
+      free(A);
+      A = pred->next;
+      // and start again with the new A.
+      if(A) {
+        sLBL_Canonical(A, pred);
+      }
     }
+    else if(sLBL_Remove_Empty(A)) {
+      // there was no predecessor, and head was empty and has been replaced
+      // with A->next.
+      // Canonicalize the (new) current LBL A itself
+      // (so the caller does not need to rescan it!)
+      sLBL_Canonical(A, pred);
+    }
+    return;
   }
   // now we have a non-empty A->P and A->Lat is canonical
 
@@ -2193,7 +2207,8 @@ static void sLBL_Canonical(LBL *A, LBL *pred)
   // If some equalities were eliminated start again from scratch!
   // (Lat and P changed and could be further simplified)
   if(!A->P || simplified) {
-    sLBL_Canonical(A);
+    sLBL_Canonical(A, pred);
+    return;
   }
 
   // ****************************************
