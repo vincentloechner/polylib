@@ -32,8 +32,8 @@ TEST_FILES_32 =  \
 	ZAlloc1c.in \
 	ZAlloc2.in \
 	ZAlloc3.in \
+	ZComp1.in \
 	ZComp3.in \
-	ZComp11.in \
 	ZDiff1.in \
 	ZDiff2.in \
 	ZDiff3.in \
@@ -63,6 +63,7 @@ TEST_FILES_32 =  \
 
 # 32 bits overflow in those:
 TEST_FILES = $(TEST_FILES_32) \
+	ZComp11.in \
 	ZDiff11.in \
 	ZDiff11b.in \
 	ZDomain11.in

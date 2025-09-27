@@ -744,6 +744,7 @@ static LBL *sLBLComplement(LBL *A)
   }
 
   CanonicalLBL(Result);
+  // TODO: also need to simplify: remove integer-empty polyhedra
   #ifdef COMP_DEBUG
   fprintf(stderr, "\n-- sLBLComplement final result (normalized) = ");
   LBLPrint(stderr, P_VALUE_FMT, Result);
@@ -2342,7 +2343,9 @@ LBL *LBL2ZDomain(LBL *A)
  * Simplify an LBL.
  *
  * Algorithm:
- * 1- merge all the lattices that can be merged. Ideas... :
+ * 1- check for integer-empty polyhedra, remove if a polyhedron does not
+ *    contain any integer point
+ * 2- merge all the lattices that can be merged. Ideas... :
  *    a- merge same lattices, ignore zero columns (extend dimension of P) -> easy.
  *    b- check lattice inclusion and merge?
  *       (involves a-) but how to merge?
@@ -2361,8 +2364,8 @@ LBL *LBL2ZDomain(LBL *A)
   then merge everything together
   -> can be pretty complex...
 
- * 2- fuse/simplify all adjacent polyhedral domains (complement of simplify complement)
- * 3- CanonicalLBL to simplify lattices and remove equalities
+ * 3- fuse/simplify all adjacent polyhedral domains (complement of simplify complement)
+ * 4- CanonicalLBL to simplify lattices and remove equalities
  */
 LBL *LBLSimplify(LBL *A)
 {
