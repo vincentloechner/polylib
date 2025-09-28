@@ -438,45 +438,47 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
     A = Matrix_Alloc(B->NbRows, B->NbColumns);
     Vector_Set(A->p[0], 0, A->NbRows * A->NbColumns);
 
-    // tried this method: not working in cases where the lattice is not normal
-    // // set 1's in the positions of the pivots of B
-    // for(int c = 0; c < A->NbColumns - 1; c++) {
-    //   for(int l = 0; l < A->NbRows; l++) {
-    //     if(value_notzero_p(B->p[l][c])) {
-    //       // pivot of B
-    //       value_set_si(A->p[l][c], 1);
-    //       break;
-    //     }
-    //   }
-    // }
-    // // keep the constant so that the intersection is guaranteed non empty:
-    // for(int l = 0; l < A->NbRows; l++)
-    //   value_assign(A->p[l][A->NbColumns - 1], B->p[l][B->NbColumns - 1]);
-
-    // previous method was:
-    // Divide each column of A by its gcd to get the same dimension lattice
-    // spreading the whole space of the dimension of B
-    for(int j = 0; j < A->NbColumns-1; j++) {
-      int i;
-      // initial gcd value
-      for(i = 0; i < A->NbRows; i++) {
-        if(value_notzero_p(A->p[i][j])) {
-          value_assign(gcd, A->p[i][j]);
+    // new method: is it right in cases where the lattice
+    // is not orthogonal?
+    // set 1's in the positions of the pivots of B
+    for(int c = 0; c < A->NbColumns - 1; c++) {
+      for(int l = 0; l < A->NbRows; l++) {
+        if(value_notzero_p(B->p[l][c])) {
+          // pivot of B
+          value_set_si(A->p[l][c], 1);
           break;
         }
       }
-      // complete gcd computation
-      for(i = i+1; i < A->NbRows; i++) {
-        value_gcd(gcd, gcd, A->p[i][j]);
-      }
-
-      if(value_notone_p(gcd)) {
-        // divide the column by its gcd:
-        for(i = 0; i < A->NbRows; i++) {
-          value_division(A->p[i][j], A->p[i][j], gcd);
-        }
-      }
     }
+    // keep the constant so that the intersection is guaranteed non empty:
+    for(int l = 0; l < A->NbRows; l++)
+      value_assign(A->p[l][A->NbColumns - 1], B->p[l][B->NbColumns - 1]);
+
+    // // previous method was (not working):
+    // // Divide each column of A by its gcd to get the same dimension lattice
+    // // spreading the whole space of the dimension of B
+    // for(int j = 0; j < A->NbColumns - 1; j++) {
+    //   int i;
+    //   // value_set_si(gcd, 0);
+    //   // initial gcd value (not necessary, 0 is good)
+    //   for(i = 0; i < A->NbRows; i++) {
+    //     if(value_notzero_p(A->p[i][j])) {
+    //       value_assign(gcd, A->p[i][j]);
+    //       break;
+    //     }
+    //   }
+    //   // complete gcd computation
+    //   for(i = i + 1; i < A->NbRows; i++) {
+    //     value_gcd(gcd, gcd, A->p[i][j]);
+    //   }
+
+    //   if(value_notzero_p(gcd) && value_notone_p(gcd)) {
+    //     // divide the column by its gcd:
+    //     for(i = 0; i < A->NbRows; i++) {
+    //       value_division(A->p[i][j], A->p[i][j], gcd);
+    //     }
+    //   }
+    // }
     value_clear(gcd);
     X = NULL;
     AffineHermite(A, &X, NULL);

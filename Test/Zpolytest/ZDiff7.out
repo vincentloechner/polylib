@@ -68,11 +68,11 @@ LATTICE:
 POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [   1   -1  ]
 Inequality: [  -1    2  ]
+Inequality: [   1   -1  ]
 Rays 2 3
-Vertex: [   1  ]/1
 Vertex: [   2  ]/1
+Vertex: [   1  ]/1
 
 UNION LBL: Dimension 2
 
@@ -131,8 +131,8 @@ LATTICE:
 POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [  -1    2  ]
 Inequality: [   1   -1  ]
+Inequality: [  -1    2  ]
 Rays 2 3
-Vertex: [   2  ]/1
 Vertex: [   1  ]/1
+Vertex: [   2  ]/1

@@ -83,10 +83,10 @@ LATTICE:
 POLYHEDRON Dimension:2
            Constraints:3  Equations:0  Rays:3  Lines:0
 Constraints 3 4
-Inequality: [  -1    0   19  ]
 Inequality: [   2   -3    1  ]
 Inequality: [  -1    2   -1  ]
+Inequality: [  -1    0   19  ]
 Rays 3 4
-Vertex: [  19   13  ]/1
 Vertex: [   1    1  ]/1
+Vertex: [  19   13  ]/1
 Vertex: [  19   10  ]/1

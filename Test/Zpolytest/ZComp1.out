@@ -77,34 +77,6 @@ Vertex: [  21    0  ]/1
 Complement(Complement(A)) = LBL: Dimension 2
 
 LATTICE:
-3 1
-  20 
-   3 
-   1 
-POLYHEDRON Dimension:0
-           Constraints:1  Equations:0  Rays:1  Lines:0
-Constraints 1 2
-Inequality: [   1  ]
-Rays 1 2
-Vertex: [ ]/1
-
-UNION LBL: Dimension 2
-
-LATTICE:
-3 1
-   0 
-   3 
-   1 
-POLYHEDRON Dimension:0
-           Constraints:1  Equations:0  Rays:1  Lines:0
-Constraints 1 2
-Inequality: [   1  ]
-Rays 1 2
-Vertex: [ ]/1
-
-UNION LBL: Dimension 2
-
-LATTICE:
 3 2
    2    0 
    0    3 
@@ -112,11 +84,11 @@ LATTICE:
 POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [  -1    9  ]
-Inequality: [   1   -1  ]
+Inequality: [   1    0  ]
+Inequality: [  -1   10  ]
 Rays 2 3
-Vertex: [   1  ]/1
-Vertex: [   9  ]/1
+Vertex: [  10  ]/1
+Vertex: [   0  ]/1
 
 Is the the complement of the complement the original?
   A is included in C(C(A)): 1
