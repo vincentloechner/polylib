@@ -743,8 +743,9 @@ static LBL *sLBLComplement(LBL *A)
     Domain_Free(holes);
   }
 
-  CanonicalLBL(Result);
-  // TODO: also need to simplify: remove integer-empty polyhedra
+  // CanonicalLBL(Result);
+  // also need to simplify: remove integer-empty polyhedra
+  LBLSimplify(A);
   #ifdef COMP_DEBUG
   fprintf(stderr, "\n-- sLBLComplement final result (normalized) = ");
   LBLPrint(stderr, P_VALUE_FMT, Result);
@@ -1675,7 +1676,7 @@ Polyhedron *GenPoly(int dim, Value *val)
  * - if position <= R->Dimension, scan all possible values in R and recursive
  *   call on scan->next
  * 
- * val[hdim] must be one.
+ * val[hdim] must be one and 0's where not used.
  */
 Polyhedron *Scan_Rest(Polyhedron *scan, Polyhedron *R, Value *val,
   int position, int dim_R, Polyhedron *Result)
@@ -1854,7 +1855,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
     Polyhedron_Print(stderr, P_VALUE_FMT, scanAP);
     #endif
 
-    for(Polyhedron *R=rest; R; R = R->next) {
+    for(Polyhedron *R = rest; R; R = R->next) {
       Polyhedron *scanR, *nextR;
 
       nextR = R->next; // save and
@@ -2137,6 +2138,83 @@ static LBL *FindLatticePred(Matrix *L, LBL *A) {
 } /* FindLatticePred */
 
 
+/*
+ * check for emptyness, return True if empty,
+ * scan P, and return False as soon as an integer point is found.
+ */
+static Bool polyhedron_empty(Polyhedron *scan, Value *val, int position)
+{
+  Value LB, UB;
+  Bool ret = True;
+
+  if(! scan) {
+    // found an integer point, exit
+    return(False);
+  }
+
+  value_init(LB);
+  value_init(UB);
+  if(lower_upper_bounds(position, scan, val, &LB, &UB)) {
+    // infinite, so just return False
+    ret = False;
+  }
+  else {
+    // LB increment till UB:
+    for(; value_le(LB, UB); value_increment(LB, LB)) {
+      value_assign(val[position], LB);
+      if(!polyhedron_empty(scan->next, val, position + 1)) {
+        // early exit as soon as an integer point is found
+        ret = False;
+        break;
+      }
+    }
+  }
+
+  // cleanup
+  value_clear(UB);
+  value_clear(LB);
+  return(ret);
+}
+
+/*
+ * Remove polyhedra that have no integer points from a domain
+ * Return a new polyhedral domain, reuses the memory of D (do not free)
+ */
+static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
+{
+  Polyhedron *result = NULL, *next;
+  Polyhedron *universe;
+  Vector *vec;
+  vec = Vector_Alloc(D->Dimension);
+  universe = Universe_Polyhedron(0);
+
+  // TODO:
+  // - if dark shadow (in every dimension) is non empty it's good.
+
+  // scan each polyhedron, if no integer point eliminate it.
+  for(Polyhedron *P = D; P; P = next) {
+    Polyhedron *scan;
+    next = P->next;
+    P->next = NULL;
+    scan = Polyhedron_Scan(P, universe, MAXNOOFRAYS);
+    if(polyhedron_empty(scan, vec->p, 1)) {
+      // empty: free the polyhedron
+      Polyhedron_Free(P);
+    }
+    else {
+      // link P to result
+      P->next = result;
+      result = P;
+    }
+
+    Domain_Free(scan);
+  }
+  Polyhedron_Free(universe);
+  Vector_Free(vec);
+  return(result);
+}
+
+
 /***************************************************************************/
 /*       CanonicalLBL, LBL2ZDomain, and LBLSimplify                        */
 /***************************************************************************/
@@ -2165,6 +2243,9 @@ static void sLBL_Canonical(LBL *A)
     Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
   #endif
   
+  if(!A->P) {
+    return;
+  }
   if (A->P->Dimension+1 != A->Lat->NbColumns) {
     errormsg1("sLBL_Canonical", "dimincomp", "incompatible dimensions");
     return;
@@ -2340,7 +2421,7 @@ LBL *LBL2ZDomain(LBL *A)
 
 
 /*
- * Simplify an LBL.
+ * Simplify an LBL, in place.
  *
  * Algorithm:
  * 1- check for integer-empty polyhedra, remove if a polyhedron does not
@@ -2367,9 +2448,13 @@ LBL *LBL2ZDomain(LBL *A)
  * 3- fuse/simplify all adjacent polyhedral domains (complement of simplify complement)
  * 4- CanonicalLBL to simplify lattices and remove equalities
  */
-LBL *LBLSimplify(LBL *A)
+void LBLSimplify(LBL *A)
 {
   // TODO: everything :)
 
-  return(A);
+  for(LBL *tmp = A; tmp; tmp = tmp->next) {
+    tmp->P = Domain_Remove_Integer_Empty(tmp->P);
+  }
+
+  CanonicalLBL(A);
 }

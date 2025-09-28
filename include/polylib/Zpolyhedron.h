@@ -45,12 +45,12 @@ extern LBL *LBLImage(LBL *A, Matrix *Func);
 extern LBL *LBLPreimage(LBL *A, Matrix *Func);
 extern LBL *LBLComplement(LBL *A);
 
-extern LBL *LBLSimplify(LBL *A);
+extern void LBLSimplify(LBL *A);  // in place
 
-// All above functions always return a canonical LBL.
+// All above functions always manipulate canonical LBLs.
 // The CanonicalLBL() function is exposed to the user to enable transforming
 // a self-built non-canonical union of LBLs into a canonical LBL:
-extern void CanonicalLBL(LBL* A);
+extern void CanonicalLBL(LBL* A); // in place
 
 // This function transforms a union of LBLs into a union of Z-domains:
 extern LBL *LBL2ZDomain(LBL *A);

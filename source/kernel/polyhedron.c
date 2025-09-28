@@ -3776,7 +3776,7 @@ Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
 
 /*----------------------------------------------------------------------*/
 /* Polyhedron *Polyhedron_Scan(D, C, NbMaxRays)                         */
-/*       D : Domain to be scanned (single polyhedron only)              */
+/*       D : Domain to be scanned (need to be a single polyhedron only) */
 /*       C : Context domain                                             */
 /*       NbMaxRays : Workspace size                                     */
 /* Returns a linked list of scan domains, outer loop first              */
