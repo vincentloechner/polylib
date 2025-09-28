@@ -1,0 +1,24 @@
+# from ZDiff11b (first LBL)
+# this is a funny example, the complement of the complement seems simpler
+# than the original one. But they are the same :)
+M 1
+4 4
+   2    0    0    0 
+   0    5    0    0 
+  52   27   66    0 
+   0    0    0    1 
+
+
+D 1
+# first polyhedron: {-50 <= i,j,k <= 50}
+6 5
+  1 1 0 0  50
+  1 -1 0 0 50
+  1 0 1 0  50
+  1 0 -1 0 50
+  1 0 0 1  50
+  1 0 0 -1 50
+
+
+# LBLComplement
+F 16

@@ -943,8 +943,9 @@ static LBL *sLBL_Difference(LBL* A, LBL* B)
   // LBLFree(Result);
   // return(Final_Result);
 
-  // TODO: which one to use, Binter or B?
-  // which one is simpler? B is larger... Binter is part of A
+  // Which one to use to compute the complement, Binter or B?
+  // which one is simpler? B is larger... but Binter is part of A
+  // Binter is probably better to prepare for the intersection
   Bcomp = sLBLComplement(Binter);
   #ifdef DIFFERENCE_DEBUG
   fprintf(stderr, "Difference = intersection between Bcomp = ");
