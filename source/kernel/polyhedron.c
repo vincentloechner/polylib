@@ -1750,7 +1750,7 @@ Polyhedron *Empty_Polyhedron(unsigned Dimension) {
 
 /*
  * Create and return a universe polyhedron of non-homogenous dimension
- * 'Dimension'. A universe polyhedron is characterized by :-
+ * 'Dimension'. A universe polyhedron is characterized by:
  * (a) The dimension of rayspace is zero.
  * (b) The dimension of lineality space is the dimension of the polyhedron.
  * (c) There is only one constraint (positivity constraint) in the constraint

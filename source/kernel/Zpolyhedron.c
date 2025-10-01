@@ -25,7 +25,7 @@
 #define HOLES_DEBUG 1
 #define SIMPLIFY_DEBUG 1
 #endif
-#define SIMPLIFY_DEBUG 1
+// #define SIMPLIFY_DEBUG 1
 // #define COMP_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
@@ -168,6 +168,7 @@ static LBL *LBL_concatenate(LBL *A, LBL *B)
     return (A);
   }
 
+  // go to the end of A and link B there:
   for(tmp = A; tmp->next; tmp = tmp->next)
     ;
   tmp->next = B;
@@ -278,6 +279,9 @@ LBL *LBLUnion(LBL *A, LBL *B)
 /*
  * Return the intersection of the LBLs 'A' and 'B'.
  * The dimensions of 'A' and 'B' must be equal.
+ * 
+ * Algorithm:
+ * intersect each piece of A with each piece of B and union all results
  */
 LBL *LBLIntersection(LBL *A, LBL *B)
 {
@@ -695,7 +699,7 @@ static LBL *sLBLComplement(LBL *A)
     fprintf(stderr, "\nSTEP 2: LatDiff =\n");
     PrintLatticeUnion(stderr, P_VALUE_FMT, LatDiff);
     #endif
-    // Add all Z-polyhedra to Result, applying the list of lattices on hullA
+    // Add all Z-polyhedra to Result, applying the list of lattices on (hullA) -> UniversePolyhedron
     for(LatticeUnion *lat = LatDiff; lat; lat = lat->next) {
       LBL *Ztmp;
       #ifdef COMP_DEBUG
@@ -704,7 +708,9 @@ static LBL *sLBLComplement(LBL *A)
       #endif
       Ztmp = malloc(sizeof(LBL));
       Ztmp->Lat = lat->M;
-      Ztmp->P = DomainPreimage(hullA, lat->M, MAXNOOFRAYS);
+      // TODO: try universe
+      // Ztmp->P = DomainPreimage(hullA, lat->M, MAXNOOFRAYS);
+      Ztmp->P = Universe_Polyhedron(lat->M->NbColumns - 1);
       // remove obvious simplification?
       // -> not necessary since preimage by integer function.
       // Ztmp->P = DomainConstraintSimplify(Ztmp->P, MAXNOOFRAYS);
