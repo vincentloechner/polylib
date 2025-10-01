@@ -23,7 +23,10 @@
 #define LBLDIFF_DEBUG 1
 #define COMP_DEBUG 1
 #define HOLES_DEBUG 1
+#define SIMPLIFY_DEBUG 1
 #endif
+#define SIMPLIFY_DEBUG 1
+// #define COMP_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -664,7 +667,7 @@ static LBL *sLBLComplement(LBL *A)
   int nbzeros;
   #ifdef COMP_DEBUG
   fprintf(stderr, "\n-- Entering sLBLComplement. A = ");
-  LBLPrint(stderr, P_VALUE_FMT, A);
+  sLBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   
   // STEP 1: complement of hull(A)
@@ -689,7 +692,7 @@ static LBL *sLBLComplement(LBL *A)
   {
     LatDiff = LatticeDifference(NULL, A->Lat);
     #ifdef COMP_DEBUG
-    fprintf(stderr, "\nLatDiff: ");
+    fprintf(stderr, "\nSTEP 2: LatDiff =\n");
     PrintLatticeUnion(stderr, P_VALUE_FMT, LatDiff);
     #endif
     // Add all Z-polyhedra to Result, applying the list of lattices on hullA
@@ -729,8 +732,8 @@ static LBL *sLBLComplement(LBL *A)
     Polyhedron *holes;
     holes = sLBL_compute_holes(A, NULL);
     #ifdef COMP_DEBUG
-    fprintf(stderr, "STEP 3 adding holes = ");
-    PolyhedronPrint(stderr, P_VALUE_FMT, holes);
+    fprintf(stderr, "\nSTEP 3 adding holes = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, holes);
     #endif
 
     if(holes && !emptyQ(holes))
@@ -743,7 +746,7 @@ static LBL *sLBLComplement(LBL *A)
     Domain_Free(holes);
   }
 
-  // CanonicalLBL(Result);
+  CanonicalLBL(Result);
   // also need to simplify: remove integer-empty polyhedra
   LBLSimplify(A);
   #ifdef COMP_DEBUG
@@ -2148,6 +2151,13 @@ static Bool polyhedron_empty(Polyhedron *scan, Value *val, int position)
   Value LB, UB;
   Bool ret = True;
 
+  #ifdef SIMPLIFY_DEBUG
+  fprintf(stderr, "  Entering polyhedron_empty: position = %d, val = [",
+    position);
+  for(int p=1 ; p<=position; p++)
+    value_print(stderr, P_VALUE_FMT, val[p]);
+  fprintf(stderr, "]\n");
+  #endif
   if(! scan) {
     // found an integer point, exit
     return(False);
@@ -2156,11 +2166,20 @@ static Bool polyhedron_empty(Polyhedron *scan, Value *val, int position)
   value_init(LB);
   value_init(UB);
   if(lower_upper_bounds(position, scan, val, &LB, &UB)) {
+    #ifdef SIMPLIFY_DEBUG
+    fprintf(stderr, "  polyhedron_empty: infinite lower/upper bound\n");
+    #endif
     // infinite, so just return False
     ret = False;
   }
   else {
-    // LB increment till UB:
+    #ifdef SIMPLIFY_DEBUG
+    fprintf(stderr, "  polyhedron_empty: LB/UB = ");
+    value_print(stderr, P_VALUE_FMT, LB);
+    value_print(stderr, P_VALUE_FMT, UB);
+    fprintf(stderr, "\n");
+    #endif
+      // LB increment till UB:
     for(; value_le(LB, UB); value_increment(LB, LB)) {
       value_assign(val[position], LB);
       if(!polyhedron_empty(scan->next, val, position + 1)) {
@@ -2170,6 +2189,8 @@ static Bool polyhedron_empty(Polyhedron *scan, Value *val, int position)
       }
     }
   }
+  // reset val[position] to 0 after the scan (for next scans)
+  value_set_si(val[position], 0);
 
   // cleanup
   value_clear(UB);
@@ -2179,39 +2200,65 @@ static Bool polyhedron_empty(Polyhedron *scan, Value *val, int position)
 
 /*
  * Remove polyhedra that have no integer points from a domain
- * Return a new polyhedral domain, reuses the memory of D (do not free)
+ * Return a polyhedral domain, reusing the memory of D (do not free)
  */
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 {
-  Polyhedron *result = NULL, *next;
-  Polyhedron *universe;
+  Polyhedron *result = NULL, *universe;
   Vector *vec;
-  vec = Vector_Alloc(D->Dimension);
+
+  #ifdef SIMPLIFY_DEBUG
+  fprintf(stderr, "--- Entering Domain_Remove_Integer_Empty\n");
+  #endif
+
+  vec = Vector_Alloc(D->Dimension + 2);
+  Vector_Set(vec->p, 0, D->Dimension + 1);
+  value_set_si(vec->p[D->Dimension + 1], 1);
   universe = Universe_Polyhedron(0);
 
-  // TODO:
-  // - if dark shadow (in every dimension) is non empty it's good.
-
   // scan each polyhedron, if no integer point eliminate it.
-  for(Polyhedron *P = D; P; P = next) {
-    Polyhedron *scan;
-    next = P->next;
-    P->next = NULL;
-    scan = Polyhedron_Scan(P, universe, MAXNOOFRAYS);
+  while(D) {
+    Polyhedron *scan, *next;
+    next = D->next;
+    D->next = NULL;
+
+    // TODO:
+    // - if one of the vertices is integer it's good
+    // - if dark shadow (projection in every dimension) is non empty it's good.
+
+    scan = Polyhedron_Scan(D, universe, MAXNOOFRAYS);
+    #ifdef SIMPLIFY_DEBUG
+    fprintf(stderr, "Checking integer emptyness of: ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, D);
+    fprintf(stderr, " scan = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, scan);
+    #endif
     if(polyhedron_empty(scan, vec->p, 1)) {
-      // empty: free the polyhedron
-      Polyhedron_Free(P);
-    }
+      // empty: free the polyhedron (next is saved)
+      Polyhedron_Free(D);
+      #ifdef SIMPLIFY_DEBUG
+      fprintf(stderr, "-> empty\n");
+      #endif
+      }
     else {
       // link P to result
-      P->next = result;
-      result = P;
+      D->next = result;
+      result = D;
+      #ifdef SIMPLIFY_DEBUG
+      fprintf(stderr, "-> not empty\n");
+      #endif
     }
 
     Domain_Free(scan);
+    D = next;
   }
   Polyhedron_Free(universe);
   Vector_Free(vec);
+
+  #ifdef SIMPLIFY_DEBUG
+  fprintf(stderr, "--- Exit Domain_Remove_Integer_Empty with result = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, result);
+  #endif
   return(result);
 }
 
