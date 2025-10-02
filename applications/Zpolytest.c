@@ -226,14 +226,15 @@ int main() {
 	    isEmptyLBL(ZB));
     break;
   
-  // case 13:  /* LBLSimplify */
+  case 13:  /* LBLSimplify */
     
-  //   ZA = LBLAlloc(a, A);
-  //   ZA->next = LBLAlloc(b, B);
-  //   LBLPrint(stdout, P_VALUE_FMT, ZA);
-  //   ZD = LBLSimplify(ZA);
-  //   LBLPrint(stdout, P_VALUE_FMT, ZD);
-  //   break;
+    ZA = LBLAlloc(a, A);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    LBLSimplify(ZA);
+    printf("LBLSimplify(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    break;
     
   case 14:  /* EmptyLBL */
         
@@ -277,6 +278,10 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZA);
     printf("LBL2ZDomain(A) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZB);
+    break;
+
+  case 18: /* EMPTINESS CHECK */
+    
     break;
 
   // no longer in use tests:
