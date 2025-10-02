@@ -21,8 +21,8 @@ ZP = ZP.union(ZP2D("(2*i, j)", "1", "10", "1", "4"))
 ZP = ZP.union(ZP2D("(2*i, j)", "1", "10", "6", "10"))
 ZP = ZP.union(ZP2D("(2*i, j)", "1", "2", "1", "10"))
 ZP = ZP.union(ZP2D("(20, j)", "1", "1", "1", "10"))
-ZP = ZP.union(ZP2D("(6*i+2, 5)", "1", "2", "1", "1"))
-ZP = ZP.union(ZP2D("(6*i+4, 5)", "1", "2", "1", "1"))
+ZP = ZP.union(ZP2D("(6*i+2, 5)", "0", "3", "1", "1"))
+ZP = ZP.union(ZP2D("(6*i+4, 5)", "0", "2", "1", "1"))
 
 print("len(ZP) =", len(ZP))
 if len(ZP - diff) == 0:
@@ -44,7 +44,7 @@ print("diff2 = B-A contains", len(diff2), "points")
 YP = set()
 YP = YP.union(ZP2D("(3*i, 5)", "7", "20", "1", "1"))
 YP = YP.union(ZP2D("(3, 5)", "1", "1", "1", "1"))
-YP = YP.union(ZP2D("(6*i+3, 5)", "1", "2", "1", "1"))
+YP = YP.union(ZP2D("(6*i+3, 5)", "0", "9", "1", "1"))
 
 print("len(ZP) =", len(YP))
 if len(YP - diff2) == 0:

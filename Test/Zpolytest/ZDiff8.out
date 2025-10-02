@@ -44,15 +44,15 @@ LATTICE:
 POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
-Inequality: [   0    1   -1  ]
 Inequality: [   0   -1  100  ]
-Inequality: [  -1    0   32  ]
-Inequality: [   1    0   -1  ]
+Inequality: [   1    0    0  ]
+Inequality: [   0    1   -1  ]
+Inequality: [  -1    0   33  ]
 Rays 4 4
-Vertex: [  32    1  ]/1
-Vertex: [  32  100  ]/1
-Vertex: [   1  100  ]/1
-Vertex: [   1    1  ]/1
+Vertex: [   0    1  ]/1
+Vertex: [   0  100  ]/1
+Vertex: [  33  100  ]/1
+Vertex: [  33    1  ]/1
 
 UNION LBL: Dimension 2
 
@@ -64,15 +64,15 @@ LATTICE:
 POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
-Inequality: [   0    1   -1  ]
 Inequality: [   0   -1  100  ]
+Inequality: [   0    1   -1  ]
+Inequality: [   1    0    0  ]
 Inequality: [  -1    0   32  ]
-Inequality: [   1    0   -1  ]
 Rays 4 4
-Vertex: [  32    1  ]/1
+Vertex: [   0    1  ]/1
+Vertex: [   0  100  ]/1
 Vertex: [  32  100  ]/1
-Vertex: [   1  100  ]/1
-Vertex: [   1    1  ]/1
+Vertex: [  32    1  ]/1
 
 
 B - A = LBL: Dimension 2
@@ -121,12 +121,12 @@ LATTICE:
 POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
-Inequality: [   0    1   -1  ]
 Inequality: [   0   -1  100  ]
-Inequality: [   1    0   -1  ]
-Inequality: [  -1    0   32  ]
+Inequality: [   1    0    0  ]
+Inequality: [   0    1   -1  ]
+Inequality: [  -1    0   49  ]
 Rays 4 4
-Vertex: [   1    1  ]/1
-Vertex: [   1  100  ]/1
-Vertex: [  32  100  ]/1
-Vertex: [  32    1  ]/1
+Vertex: [   0    1  ]/1
+Vertex: [   0  100  ]/1
+Vertex: [  49  100  ]/1
+Vertex: [  49    1  ]/1

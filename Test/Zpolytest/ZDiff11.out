@@ -193,17 +193,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1  -30  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1   40  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1  -30  ]
+Inequality: [  24   44   -1   40  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0  -10    0  ]/11
-Vertex: [1650 -920  330  ]/33
-Vertex: [14850 -8270 3300  ]/297
-Vertex: [4950 -2765 1100  ]/99
-Vertex: [1100 -615  220  ]/22
+Vertex: [16500 -8930 3300  ]/33
+Vertex: [5500 -2985 1100  ]/11
+Vertex: [4500 -2440 1000  ]/9
+Vertex: [148500 -80270 33000  ]/297
 
 UNION LBL: Dimension 3
 
@@ -216,17 +216,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1  -27  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1   36  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1  -27  ]
+Inequality: [  24   44   -1   36  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -9    0  ]/11
-Vertex: [1650 -917  330  ]/33
-Vertex: [14850 -8243 3300  ]/297
-Vertex: [4950 -2756 1100  ]/99
-Vertex: [1100 -613  220  ]/22
+Vertex: [16500 -8927 3300  ]/33
+Vertex: [5500 -2984 1100  ]/11
+Vertex: [49500 -26831 11000  ]/99
+Vertex: [148500 -80243 33000  ]/297
 
 UNION LBL: Dimension 3
 
@@ -239,17 +239,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1  -24  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1   32  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1  -24  ]
+Inequality: [  24   44   -1   32  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -8    0  ]/11
-Vertex: [1650 -914  330  ]/33
-Vertex: [14850 -8216 3300  ]/297
-Vertex: [4950 -2747 1100  ]/99
-Vertex: [1100 -611  220  ]/22
+Vertex: [16500 -8924 3300  ]/33
+Vertex: [5500 -2983 1100  ]/11
+Vertex: [49500 -26822 11000  ]/99
+Vertex: [148500 -80216 33000  ]/297
 
 UNION LBL: Dimension 3
 
@@ -262,17 +262,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1  -21  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1   28  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1  -21  ]
+Inequality: [  24   44   -1   28  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -7    0  ]/11
-Vertex: [1650 -911  330  ]/33
-Vertex: [14850 -8189 3300  ]/297
-Vertex: [4950 -2738 1100  ]/99
-Vertex: [1100 -609  220  ]/22
+Vertex: [1500 -811  300  ]/3
+Vertex: [5500 -2982 1100  ]/11
+Vertex: [49500 -26813 11000  ]/99
+Vertex: [148500 -80189 33000  ]/297
 
 UNION LBL: Dimension 3
 
@@ -285,17 +285,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1  -18  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1   24  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1  -18  ]
+Inequality: [  24   44   -1   24  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -6    0  ]/11
-Vertex: [1650 -908  330  ]/33
-Vertex: [1350 -742  300  ]/27
-Vertex: [4950 -2729 1100  ]/99
-Vertex: [1100 -607  220  ]/22
+Vertex: [16500 -8918 3300  ]/33
+Vertex: [ 500 -271  100  ]/1
+Vertex: [49500 -26804 11000  ]/99
+Vertex: [148500 -80162 33000  ]/297
 
 UNION LBL: Dimension 3
 
@@ -308,17 +308,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1  -15  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1   20  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1  -15  ]
+Inequality: [  24   44   -1   20  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -5    0  ]/11
-Vertex: [1650 -905  330  ]/33
-Vertex: [14850 -8135 3300  ]/297
-Vertex: [4950 -2720 1100  ]/99
-Vertex: [ 100  -55   20  ]/2
+Vertex: [16500 -8915 3300  ]/33
+Vertex: [5500 -2980 1100  ]/11
+Vertex: [49500 -26795 11000  ]/99
+Vertex: [13500 -7285 3000  ]/27
 
 UNION LBL: Dimension 3
 
@@ -331,17 +331,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1  -12  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1   16  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1  -12  ]
+Inequality: [  24   44   -1   16  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -4    0  ]/11
-Vertex: [ 150  -82   30  ]/3
-Vertex: [14850 -8108 3300  ]/297
-Vertex: [4950 -2711 1100  ]/99
-Vertex: [1100 -603  220  ]/22
+Vertex: [16500 -8912 3300  ]/33
+Vertex: [5500 -2979 1100  ]/11
+Vertex: [49500 -26786 11000  ]/99
+Vertex: [148500 -80108 33000  ]/297
 
 UNION LBL: Dimension 3
 
@@ -354,17 +354,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1   -9  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1   12  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1   -9  ]
+Inequality: [  24   44   -1   12  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -3    0  ]/11
-Vertex: [1650 -899  330  ]/33
-Vertex: [14850 -8081 3300  ]/297
-Vertex: [4950 -2702 1100  ]/99
-Vertex: [1100 -601  220  ]/22
+Vertex: [16500 -8909 3300  ]/33
+Vertex: [5500 -2978 1100  ]/11
+Vertex: [49500 -26777 11000  ]/99
+Vertex: [148500 -80081 33000  ]/297
 
 UNION LBL: Dimension 3
 
@@ -377,17 +377,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1   -6  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1    8  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1   -6  ]
+Inequality: [  24   44   -1    8  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -2    0  ]/11
-Vertex: [1650 -896  330  ]/33
-Vertex: [14850 -8054 3300  ]/297
-Vertex: [4950 -2693 1100  ]/99
-Vertex: [1100 -599  220  ]/22
+Vertex: [16500 -8906 3300  ]/33
+Vertex: [5500 -2977 1100  ]/11
+Vertex: [49500 -26768 11000  ]/99
+Vertex: [148500 -80054 33000  ]/297
 
 UNION LBL: Dimension 3
 
@@ -400,17 +400,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [ -18  -33    1   -3  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  24   44   -1    4  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [ -18  -33    1   -3  ]
+Inequality: [  24   44   -1    4  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -1    0  ]/11
-Vertex: [1650 -893  330  ]/33
-Vertex: [14850 -8027 3300  ]/297
-Vertex: [ 450 -244  100  ]/9
-Vertex: [1100 -597  220  ]/22
+Vertex: [16500 -8903 3300  ]/33
+Vertex: [5500 -2976 1100  ]/11
+Vertex: [49500 -26759 11000  ]/99
+Vertex: [148500 -80027 33000  ]/297
 
 UNION LBL: Dimension 3
 
@@ -423,17 +423,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [   3   -9    1   -6  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  -4   12   -1    8  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [   3   -9    1   -6  ]
+Inequality: [  -4   12   -1    8  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -2    0  ]/3
-Vertex: [ 450  154   90  ]/9
-Vertex: [4050 1396  900  ]/81
-Vertex: [1350  457  300  ]/27
-Vertex: [ 300  101   60  ]/6
+Vertex: [4500 1594  900  ]/9
+Vertex: [1500  523  300  ]/3
+Vertex: [13500 4732 3000  ]/27
+Vertex: [40500 14446 9000  ]/81
 
 UNION LBL: Dimension 3
 
@@ -446,17 +446,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [   3   -9    1   -3  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  -4   12   -1    4  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [   3   -9    1   -3  ]
+Inequality: [  -4   12   -1    4  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -1    0  ]/3
-Vertex: [ 450  157   90  ]/9
-Vertex: [4050 1423  900  ]/81
-Vertex: [1350  466  300  ]/27
-Vertex: [ 300  103   60  ]/6
+Vertex: [4500 1597  900  ]/9
+Vertex: [1500  524  300  ]/3
+Vertex: [13500 4741 3000  ]/27
+Vertex: [40500 14473 9000  ]/81
 
 UNION LBL: Dimension 3
 
@@ -469,17 +469,17 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:5  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   50  ]
-Inequality: [   6   -6    1   -3  ]
 Inequality: [   2    0   -9    0  ]
-Inequality: [  -8    8   -1    4  ]
 Inequality: [  -1    0    5    0  ]
+Inequality: [   6   -6    1   -3  ]
+Inequality: [  -8    8   -1    4  ]
+Inequality: [  -1    0    0  500  ]
 Rays 5 5
 Vertex: [   0   -1    0  ]/2
-Vertex: [ 300  307   60  ]/6
-Vertex: [2700 2773  600  ]/54
-Vertex: [ 450  458  100  ]/9
-Vertex: [ 200  203   40  ]/4
+Vertex: [3000 3097  600  ]/6
+Vertex: [ 500  512  100  ]/1
+Vertex: [9000 9241 2000  ]/18
+Vertex: [27000 27973 6000  ]/54
 
 UNION LBL: Dimension 3
 
@@ -492,18 +492,18 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:5  Equations:0  Rays:6  Lines:0
 Constraints 5 5
-Inequality: [  -1    0    0   49  ]
-Inequality: [  -1    0    5   -1  ]
-Inequality: [  -8    4   -1   -4  ]
 Inequality: [   2    0   -9    1  ]
 Inequality: [   6   -3    1    3  ]
+Inequality: [  -8    4   -1   -4  ]
+Inequality: [  -1    0    5   -1  ]
+Inequality: [  -1    0    0  499  ]
 Rays 6 5
-Vertex: [ 147  308   33  ]/3
-Vertex: [ 196  407   44  ]/4
-Vertex: [  16   37    4  ]/4
-Vertex: [  98  203   20  ]/2
 Vertex: [  12   28    3  ]/3
-Vertex: [ 147  307   30  ]/3
+Vertex: [  16   37    4  ]/4
+Vertex: [1996 4107  444  ]/4
+Vertex: [ 499 1024  100  ]/1
+Vertex: [ 499 1036  111  ]/1
+Vertex: [1497 3097  300  ]/3
 
 UNION LBL: Dimension 3
 

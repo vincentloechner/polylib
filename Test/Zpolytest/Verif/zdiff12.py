@@ -42,7 +42,7 @@ diff2 = B - A
 print("diff2 = B - A contains", len(diff2), "points")
 YP = set()
 YP = YP.union(ZP2D("(i, 0)", "41", "100", "0", "0"))
-YP = YP.union(ZP2D("(2*i+1, 0)", "-20", "19", "(i+1)/2", "(2*i+1)/3"))
+YP = YP.union(ZP2D("(2*i+1, 0)", "-50", "49", "(i+1)/2", "(2*i+1)/3"))
 
 print("len(ZP) =", len(YP))
 if len(YP - diff2) == 0:
