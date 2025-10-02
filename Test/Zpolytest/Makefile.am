@@ -46,6 +46,7 @@ TEST_FILES_32 =  \
 	ZDiff10.in \
 	ZDiff12.in \
 	ZDomain3.in \
+	ZDomain4.in \
 	ZEmpty2.in \
 	ZImage1.in \
 	ZImPre1.in \
@@ -54,16 +55,18 @@ TEST_FILES_32 =  \
 	ZInter1.in \
 	ZInter2.in  \
 	ZInter3.in  \
+	ZInter12.in  \
 	ZPre1.in \
 	ZPre2.in  \
 	ZPre3.in \
 	ZUnion1.in \
-	ZUnion2.in
+	ZUnion2.in \
+	ZUnion3.in
 
 
 # 32 bits overflow in those:
 TEST_FILES = $(TEST_FILES_32) \
-	ZComp11.in \
+	#ZComp11.in \
 	ZDiff11.in \
 	ZDiff11b.in \
 	ZDomain11.in

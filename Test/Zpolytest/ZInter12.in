@@ -1,5 +1,5 @@
-# Difference of two weird Zpolyhedra, one of them is pointy
-# 2D, simpler than ZDiff11
+# Intersection of two weird Zpolyhedra, one of them is pointy
+# comes from ZDiff11
 M 2
 # multiplied by 2 for the first one
 3 3

@@ -1,5 +1,5 @@
 # union of two identical LBLs, represented in different dimension spaces
-# {(2i, i) | 0 <= i <= 20}, and {(i, j) | 0<=j<=20, 2j = i}
+# {(2i, i) | 1 <= i <= 20}, and {(i, j) | 1<=j<=20, 2j = i}
 
 M 2
 3 2

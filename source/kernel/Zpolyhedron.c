@@ -784,6 +784,7 @@ LBL *LBLComplement(LBL *A)
     comp = sLBLComplement(tmp);
     inter = LBLIntersection(Result, comp);
     LBLFree(Result);
+    LBLFree(comp);
     Result = inter;
   }
 

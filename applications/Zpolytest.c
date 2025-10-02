@@ -266,9 +266,16 @@ int main() {
     printf("  A is included in C(C(A)): %d\n", LBLIncluded(ZA, ZC));
     printf("  C(C(A)) is included in A: %d\n", LBLIncluded(ZC, ZA));
     printf("ZA - ZC = ");
-    LBLPrint(stdout, P_VALUE_FMT, LBLDifference(ZA, ZC));
-    printf("ZC - ZA = ");
-    LBLPrint(stdout, P_VALUE_FMT, LBLDifference(ZC, ZA));
+    {
+      LBL *diff1, *diff2;
+      diff1 = LBLDifference(ZA, ZC);
+      LBLPrint(stdout, P_VALUE_FMT, diff1);
+      LBLFree(diff1);
+      diff2 = LBLDifference(ZC, ZA);
+      printf("ZC - ZA = ");
+      LBLPrint(stdout, P_VALUE_FMT, diff2);
+      LBLFree(diff2);
+    }
     break;
 
   case 17:  /* LBL2Zdomain */
@@ -280,9 +287,6 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     break;
 
-  case 18: /* EMPTINESS CHECK */
-    
-    break;
 
   // no longer in use tests:
 

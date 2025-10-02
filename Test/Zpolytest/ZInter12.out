@@ -10,8 +10,8 @@ POLYHEDRON Dimension:2
 Constraints 3 4
 Inequality: [   2   -3    0  ]
 Inequality: [  -1    2    0  ]
-Inequality: [  -1    0   10  ]
+Inequality: [  -1    0   20  ]
 Rays 3 4
-Vertex: [  10    5  ]/1
-Vertex: [  30   20  ]/3
+Vertex: [  20   10  ]/1
+Vertex: [  60   40  ]/3
 Vertex: [   0    0  ]/1
