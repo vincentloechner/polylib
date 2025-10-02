@@ -28,3 +28,12 @@ D 2
 # ZP diff
 F 9
 
+# expecting:
+
+A = {(2i,j) | 1 <= i,j <= 10}
+B = {(i,j)  | 1 <= i,j <= 20}
+
+A - B = empty
+B - A =
+  1 <= odd i <= 20, 1 <= j <= 20
+  11 <= j <= 20, 1 <= i <= 20
