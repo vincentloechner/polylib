@@ -60,9 +60,39 @@ UNION LBL: Dimension 3
 
 LATTICE:
 4 1
+ 542 
+   0 
+ 562 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
    0 
    0 
    0 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+1084 
+   0 
+1124 
    1 
 POLYHEDRON Dimension:0
            Constraints:1  Equations:0  Rays:1  Lines:0
@@ -90,21 +120,6 @@ UNION LBL: Dimension 3
 
 LATTICE:
 4 1
- 542 
-   0 
- 562 
-   1 
-POLYHEDRON Dimension:0
-           Constraints:1  Equations:0  Rays:1  Lines:0
-Constraints 1 2
-Inequality: [   1  ]
-Rays 1 2
-Vertex: [ ]/1
-
-UNION LBL: Dimension 3
-
-LATTICE:
-4 1
 1626 
    0 
 1686 
@@ -115,18 +130,9 @@ Constraints 1 2
 Inequality: [   1  ]
 Rays 1 2
 Vertex: [ ]/1
+A - ZD(A) = LBL: Dimension 3
 
-UNION LBL: Dimension 3
+<empty>
+ZD(A) - A = LBL: Dimension 3
 
-LATTICE:
-4 1
-1084 
-   0 
-1124 
-   1 
-POLYHEDRON Dimension:0
-           Constraints:1  Equations:0  Rays:1  Lines:0
-Constraints 1 2
-Inequality: [   1  ]
-Rays 1 2
-Vertex: [ ]/1
+<empty>

@@ -1,6 +1,5 @@
 # from ZDiff11b (first LBL)
-# this is a funny example, the complement of the complement seems simpler
-# than the original one. But they are the same :)
+
 M 1
 4 4
    2    0    0    0 

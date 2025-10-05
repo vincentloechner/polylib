@@ -3693,8 +3693,10 @@ Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
 
 /*
  * Given a polyhedral domain 'Pol', convert it to a new polyhedral domain
- * with dimension expanded to 'align_dimension'. 'NbMaxRays' is the maximum
- * allowed rays in the new polyhedra.
+ * with dimension expanded to 'align_dimension'. The first dimensions are
+ * free variables.
+ * 
+ * 'NbMaxRays' is the maximum allowed rays in the new polyhedra.
  */
 Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
 
@@ -3774,13 +3776,15 @@ Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
   return result;
 } /* align_context */
 
-/*----------------------------------------------------------------------*/
-/* Polyhedron *Polyhedron_Scan(D, C, NbMaxRays)                         */
-/*       D : Domain to be scanned (need to be a single polyhedron only) */
-/*       C : Context domain                                             */
-/*       NbMaxRays : Workspace size                                     */
-/* Returns a linked list of scan domains, outer loop first              */
-/*----------------------------------------------------------------------*/
+/*
+ * Polyhedron *Polyhedron_Scan(D, C, NbMaxRays)
+ *  D : Domain to be scanned (need to be a single polyhedron only)
+ *  C : Context domain
+ *  NbMaxRays : Workspace size
+ *  The context corresponds to the last dimensions of D.
+ * 
+ * Returns a linked list of scan domains, outer loop first
+ */
 Polyhedron *Polyhedron_Scan(Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
 
   int i, j, dim;

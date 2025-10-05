@@ -23,83 +23,6 @@ print("diff = A-B contains", len(diff), "points")
 
 ZP = set()
 
-# LATTICE:
-# 4 3
-#    2    0    0 
-#    0    0    0 
-#   52   66    0 
-#    0    0    1 
-# POLYHEDRON Dimension:2
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 4
-# Inequality: [-674 -891    0  ]
-# Inequality: [ 333  440    0  ]
-# Inequality: [   1    0   -1  ]
-# Inequality: [ 674  891    3  ]
-# Inequality: [  -1    0   36  ]
-# Rays 5 4
-# Vertex: [10692 -8089  ]/297
-# Vertex: [ 440 -333  ]/440
-# Vertex: [1320 -999  ]/143
-# Vertex: [ 891 -674  ]/891
-# Vertex: [3564 -2696  ]/99
-ZP = ZP.union(ZP2D("(2*i, 0, 52*i+66*k)", "1", "36", "0", "0", "(-674*i-3)/891", "(-674*i)/891",
-                   "333*i+440*k>=0"))
-print("Adding holes, len(ZP) =", len(ZP))
-# UNION POLYHEDRON Dimension:2
-#            Constraints:4  Equations:0  Rays:4  Lines:0
-# Constraints 4 4
-# Inequality: [-674 -891    0  ]
-# Inequality: [  -1    0   39  ]
-# Inequality: [ 674  891    3  ]
-# Inequality: [   1    0  -38  ]
-# Rays 4 4
-# Vertex: [33858 -25615  ]/891
-# Vertex: [3861 -2921  ]/99
-# Vertex: [11583 -8762  ]/297
-# Vertex: [33858 -25612  ]/891
-ZP = ZP.union(ZP2D("(2*i, 0, 52*i+66*k)", "38", "39", "0", "0", "(-674*i-3)/891", "(-674*i)/891"))
-print("Adding holes, len(ZP) =", len(ZP))
-# UNION POLYHEDRON Dimension:2
-#            Constraints:3  Equations:0  Rays:3  Lines:0
-# Constraints 3 4
-# Inequality: [  -1    0   36  ]
-# Inequality: [ 333  440    0  ]
-# Inequality: [-674 -891   -4  ]
-# Rays 3 4
-# Vertex: [1760 -1332  ]/143
-# Vertex: [3960 -2997  ]/110
-# Vertex: [32076 -24268  ]/891
-ZP = ZP.union(ZP2D("(2*i, 0, 52*i+66*k)", "-50", "36", "0", "0", "-i*333/440", "(-674*i-4)/891"))
-print("Adding holes, len(ZP) =", len(ZP))
-# UNION POLYHEDRON Dimension:2
-#            Constraints:4  Equations:0  Rays:4  Lines:0
-# Constraints 4 4
-# Inequality: [ 333  440    0  ]
-# Inequality: [  -1    0   39  ]
-# Inequality: [-674 -891   -4  ]
-# Inequality: [   1    0  -38  ]
-# Rays 4 4
-# Vertex: [33858 -25616  ]/891
-# Vertex: [3159 -2390  ]/81
-# Vertex: [17160 -12987  ]/440
-# Vertex: [8360 -6327  ]/220
-ZP = ZP.union(ZP2D("(2*i, 0, 52*i+66*k)", "38", "39", "0", "0", "-i*333/440", "(-674*i-4)/891"))
-print("Adding holes, len(ZP) =", len(ZP))
-# UNION POLYHEDRON Dimension:2
-#            Constraints:4  Equations:0  Rays:4  Lines:0
-# Constraints 4 4
-# Inequality: [  -1    0   50  ]
-# Inequality: [-674 -891    0  ]
-# Inequality: [   1    0  -40  ]
-# Inequality: [ 674  891    3  ]
-# Rays 4 4
-# Vertex: [35640 -26963  ]/891
-# Vertex: [35640 -26960  ]/891
-# Vertex: [44550 -33700  ]/891
-# Vertex: [44550 -33703  ]/891
-ZP = ZP.union(ZP2D("(2*i, 0, 52*i+66*k)", "40", "50", "0", "0", "(-674*i-3)/891", "(-674*i)/891"))
-print("Adding holes, len(ZP) =", len(ZP))
 
 # LATTICE: 
 # 4 4
@@ -148,6 +71,57 @@ ZP = ZP.union(ZP2D("(2*i, 5*j, 52*i+27*j+66*k)", "-MAX", "MAX", "-MAX", "MAX", "
 # Inequality: [   0    0    1   50  ]
 ZP = ZP.union(ZP2D("(2*i, 5*j, 52*i+27*j+66*k)", "-MAX", "MAX", "-MAX", "MAX", "-MAX", "MAX",
                    "1348*i+729*j+1782*k-1>=0"))
+
+# # LATTICE:
+# # 4 3
+# #    2    0    0 
+# #    0    0    0 
+# #   52   66    0 
+# #    0    0    1 
+# # POLYHEDRON Dimension:2
+# #            Constraints:4  Equations:0  Rays:4  Lines:0
+# # Constraints 4 4
+# # Inequality: [-674 -891    0  ]
+# # Inequality: [   1    0   -1  ]
+# # Inequality: [ 333  440    0  ]
+# # Inequality: [  -1    0   36  ]
+# # Rays 4 4
+# # Vertex: [3960 -2997  ]/110
+# # Vertex: [ 440 -333  ]/440
+# # Vertex: [ 891 -674  ]/891
+# # Vertex: [3564 -2696  ]/99
+
+# ZP = ZP.union(ZP2D("(2*i, 0, 52*i+66*k)", "1", "36", "0", "0", "-333*i/440", "(-674*i)/891"))
+# print("Adding holes, len(ZP) =", len(ZP))
+# # UNION POLYHEDRON Dimension:2
+# #            Constraints:4  Equations:0  Rays:4  Lines:0
+# # Constraints 4 4
+# # Inequality: [-674 -891    0  ]
+# # Inequality: [  -1    0   39  ]
+# # Inequality: [ 333  440    0  ]
+# # Inequality: [   1    0  -38  ]
+# # Rays 4 4
+# # Vertex: [33858 -25615  ]/891
+# # Vertex: [3861 -2921  ]/99
+# # Vertex: [11583 -8762  ]/297
+# # Vertex: [33858 -25612  ]/891
+# ZP = ZP.union(ZP2D("(2*i, 0, 52*i+66*k)", "38", "39", "0", "0", "-333*i/440", "(-674*i)/891"))
+# print("Adding holes, len(ZP) =", len(ZP))
+
+# # UNION POLYHEDRON Dimension:2
+# #            Constraints:4  Equations:0  Rays:4  Lines:0
+# # Constraints 4 4
+# # Inequality: [  -1    0   50  ]
+# # Inequality: [-674 -891    0  ]
+# # Inequality: [   1    0  -38  ]
+# # Inequality: [ 674  891    3  ]
+# # Rays 4 4
+# # Vertex: [35640 -26963  ]/891
+# # Vertex: [35640 -26960  ]/891
+# # Vertex: [44550 -33700  ]/891
+# # Vertex: [44550 -33703  ]/891
+# ZP = ZP.union(ZP2D("(2*i, 0, 52*i+66*k)", "38", "50", "0", "0", "(-674*i-3)/891", "(-674*i)/891"))
+# print("Adding holes, len(ZP) =", len(ZP))
 
 
 print("len(ZP) =", len(ZP))

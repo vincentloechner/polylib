@@ -8,15 +8,15 @@ LATTICE:
 POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
+Inequality: [   0   -1   20  ]
 Inequality: [   1    0   20  ]
-Inequality: [  -1    0   20  ]
 Inequality: [   0    1   20  ]
-Inequality: [   0   -1   -1  ]
+Inequality: [  -1    0   -1  ]
 Rays 4 4
-Vertex: [  20  -20  ]/1
+Vertex: [ -20   20  ]/1
 Vertex: [ -20  -20  ]/1
-Vertex: [ -20   -1  ]/1
-Vertex: [  20   -1  ]/1
+Vertex: [  -1  -20  ]/1
+Vertex: [  -1   20  ]/1
 UNION POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
@@ -32,15 +32,15 @@ Vertex: [ -20    1  ]/1
 UNION POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
-Inequality: [   0   -1   20  ]
 Inequality: [   1    0   20  ]
+Inequality: [  -1    0   20  ]
 Inequality: [   0    1   20  ]
-Inequality: [  -1    0   -1  ]
+Inequality: [   0   -1   -1  ]
 Rays 4 4
-Vertex: [ -20   20  ]/1
+Vertex: [  20  -20  ]/1
 Vertex: [ -20  -20  ]/1
-Vertex: [  -1  -20  ]/1
-Vertex: [  -1   20  ]/1
+Vertex: [ -20   -1  ]/1
+Vertex: [  20   -1  ]/1
 
 UNION LBL: Dimension 2
 

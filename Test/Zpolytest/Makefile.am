@@ -32,8 +32,11 @@ TEST_FILES_32 =  \
 	ZAlloc1c.in \
 	ZAlloc2.in \
 	ZAlloc3.in \
+	ZAlloc3b.in \
+	ZAlloc3c.in \
 	ZComp1.in \
 	ZComp3.in \
+	ZComp3b.in \
 	ZDiff1.in \
 	ZDiff2.in \
 	ZDiff3.in \
@@ -45,6 +48,8 @@ TEST_FILES_32 =  \
 	ZDiff9.in \
 	ZDiff10.in \
 	ZDiff12.in \
+	ZDiff13.in \
+	ZDomain2b.in \
 	ZDomain3.in \
 	ZDomain4.in \
 	ZEmpty2.in \
@@ -55,6 +60,7 @@ TEST_FILES_32 =  \
 	ZInter1.in \
 	ZInter2.in  \
 	ZInter3.in  \
+	ZInter11.in  \
 	ZInter12.in  \
 	ZPre1.in \
 	ZPre2.in  \
@@ -66,10 +72,13 @@ TEST_FILES_32 =  \
 
 # 32 bits overflow in those:
 TEST_FILES = $(TEST_FILES_32) \
-	#ZComp11.in \
 	ZDiff11.in \
 	ZDiff11b.in \
 	ZDomain11.in
 
+# and those fail:
+#	ZComp11.in \
+#	ZComp11b.in \
+#
 
 include ../Tests.mk

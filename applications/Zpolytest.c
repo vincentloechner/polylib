@@ -188,6 +188,8 @@ int main() {
     // LBLPrint(stdout, P_VALUE_FMT, ZB);
     ZC = LBLDifference(ZA, ZB);
     ZD = LBLDifference(ZB, ZA);
+    LBLSimplify(ZC);
+    LBLSimplify(ZD);
     printf("A - B = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
     printf("\n\nB - A = ");
@@ -265,13 +267,15 @@ int main() {
     printf("\nIs the the complement of the complement the original?\n");
     printf("  A is included in C(C(A)): %d\n", LBLIncluded(ZA, ZC));
     printf("  C(C(A)) is included in A: %d\n", LBLIncluded(ZC, ZA));
-    printf("ZA - ZC = ");
     {
       LBL *diff1, *diff2;
       diff1 = LBLDifference(ZA, ZC);
+      LBLSimplify(diff1);
+      printf("ZA - ZC = ");
       LBLPrint(stdout, P_VALUE_FMT, diff1);
       LBLFree(diff1);
       diff2 = LBLDifference(ZC, ZA);
+      LBLSimplify(diff2);
       printf("ZC - ZA = ");
       LBLPrint(stdout, P_VALUE_FMT, diff2);
       LBLFree(diff2);
@@ -280,13 +284,37 @@ int main() {
 
   case 17:  /* LBL2Zdomain */
     ZA = LBLAlloc(a, A);
-    ZB = LBL2ZDomain(ZA);
     printf("A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZA);
+    ZB = LBL2ZDomain(ZA);
     printf("LBL2ZDomain(A) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZB);
+
+    // check equality between ZA and ZB
+    ZC = LBLDifference(ZA, ZB);
+    LBLSimplify(ZC);
+    printf("A - ZD(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    ZD = LBLDifference(ZB, ZA);
+    LBLSimplify(ZD);
+    printf("ZD(A) - A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZD);
     break;
 
+
+  case 19:  /* intersect complement(A) with A */
+  
+    ZA = LBLAlloc(a, A);
+    ZB = LBLComplement(ZA);
+    ZC = LBLIntersection(ZA, ZB);
+    LBLSimplify(ZC);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    printf("\nComplement(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+    printf("\nA inter Complement(A) (should be empty) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    break;
 
   // no longer in use tests:
 
