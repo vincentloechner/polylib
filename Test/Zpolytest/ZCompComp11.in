@@ -18,16 +18,13 @@ D 1
 1    -1    0    0   50 
 1    -1    0    5    0 
 
-# LBL2ZD
-# F 17
 
-# LBLComplement and check empty intersection
-F 19
-
+# LBLComplement **2 and check equality
+F 16
 
 # there's a column of zeros, but the complement is regular... ?! (no holes)
 
-The complement is:
+The complement of A is:
 2 0 1 + everything inside
 2 0 0
 and

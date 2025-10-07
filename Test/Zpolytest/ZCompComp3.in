@@ -17,7 +17,10 @@ D 1
   1  1 -2 0  # j <= i/2
 
 # check empty intersection with complement
-F 19
+# F 19
+
+# LBLComplement
+F 16
 
 # the complement of this pointy LBL should be:
 - all j's, with i outside of [0, 10]

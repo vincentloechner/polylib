@@ -37,6 +37,9 @@ TEST_FILES_32 =  \
 	ZComp1.in \
 	ZComp3.in \
 	ZComp3b.in \
+	ZCompComp1.in \
+	ZCompComp3.in \
+	ZCompComp3b.in \
 	ZDiff1.in \
 	ZDiff2.in \
 	ZDiff3.in \
@@ -72,13 +75,15 @@ TEST_FILES_32 =  \
 
 # 32 bits overflow in those:
 TEST_FILES = $(TEST_FILES_32) \
+	ZComp11.in \
+	ZComp11b.in \
+	ZCompComp11b.in \
 	ZDiff11.in \
 	ZDiff11b.in \
 	ZDomain11.in
 
 # and those fail:
-#	ZComp11.in \
-#	ZComp11b.in \
+#	ZCompComp11.in \
 #
 
 include ../Tests.mk

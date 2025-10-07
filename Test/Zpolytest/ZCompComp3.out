@@ -51,10 +51,44 @@ Rays 2 3
 Ray:    [  -1  ]
 Vertex: [  -1  ]/1
 
-A inter Complement(A) (should be empty) = LBL: Dimension 1
+Complement(Complement(A)) = LBL: Dimension 1
+
+LATTICE:
+2 1
+   0 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 1
+
+LATTICE:
+2 2
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1   -2  ]
+Inequality: [  -1   10  ]
+Rays 2 3
+Vertex: [   2  ]/1
+Vertex: [  10  ]/1
+
+ZB inter ZC = LBL: Dimension 1
 
 <empty>
 
-Universe - (A union Complement(A)) (should be empty) = LBL: Dimension 1
+Is the the complement of the complement the original?
+  A is included in C(C(A)): 1
+  C(C(A)) is included in A: 1
+ZA - ZC = LBL: Dimension 1
+
+<empty>
+ZC - ZA = LBL: Dimension 1
 
 <empty>

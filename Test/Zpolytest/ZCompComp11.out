@@ -25,51 +25,6 @@ Complement(A) = LBL: Dimension 3
 
 LATTICE:
 4 3
-   2    0    0 
-   0    0    0 
-  52   66    0 
-   0    0    1 
-POLYHEDRON Dimension:2
-           Constraints:4  Equations:0  Rays:4  Lines:0
-Constraints 4 4
-Inequality: [  -1    0   50  ]
-Inequality: [-674 -891    0  ]
-Inequality: [ 674  891    3  ]
-Inequality: [   1    0  -38  ]
-Rays 4 4
-Vertex: [44550 -33703  ]/891
-Vertex: [44550 -33700  ]/891
-Vertex: [33858 -25612  ]/891
-Vertex: [33858 -25615  ]/891
-UNION POLYHEDRON Dimension:2
-           Constraints:4  Equations:0  Rays:4  Lines:0
-Constraints 4 4
-Inequality: [-674 -891    0  ]
-Inequality: [ 333  440    0  ]
-Inequality: [   1    0   -1  ]
-Inequality: [  -1    0   36  ]
-Rays 4 4
-Vertex: [ 440 -333  ]/440
-Vertex: [ 891 -674  ]/891
-Vertex: [3564 -2696  ]/99
-Vertex: [3960 -2997  ]/110
-UNION POLYHEDRON Dimension:2
-           Constraints:4  Equations:0  Rays:4  Lines:0
-Constraints 4 4
-Inequality: [-674 -891    0  ]
-Inequality: [ 333  440    0  ]
-Inequality: [  -1    0   39  ]
-Inequality: [   1    0  -38  ]
-Rays 4 4
-Vertex: [17160 -12987  ]/440
-Vertex: [11583 -8762  ]/297
-Vertex: [33858 -25612  ]/891
-Vertex: [8360 -6327  ]/220
-
-UNION LBL: Dimension 3
-
-LATTICE:
-4 3
    2    0    1 
    0    0    0 
    0    1    0 
@@ -315,33 +270,13 @@ LATTICE:
 POLYHEDRON Dimension:3
            Constraints:2  Equations:0  Rays:4  Lines:2
 Constraints 2 5
-Inequality: [   0   -1    0   -1  ]
+Inequality: [  41    0  -40   -1  ]
 Inequality: [   0    0    0    1  ]
 Rays 4 5
-Line:   [   1    0    0  ]
-Line:   [   0    0    1  ]
-Ray:    [   0   -1    0  ]
-Vertex: [   0   -1    0  ]/1
-UNION POLYHEDRON Dimension:3
-           Constraints:2  Equations:0  Rays:4  Lines:2
-Constraints 2 5
-Inequality: [   0    1    0   -1  ]
-Inequality: [   0    0    0    1  ]
-Rays 4 5
-Line:   [   1    0    0  ]
-Line:   [   0    0    1  ]
-Ray:    [   0    1    0  ]
-Vertex: [   0    1    0  ]/1
-UNION POLYHEDRON Dimension:3
-           Constraints:2  Equations:0  Rays:4  Lines:2
-Constraints 2 5
-Inequality: [   1    0    0 -101  ]
-Inequality: [   0    0    0    1  ]
-Rays 4 5
+Line:   [  40    0   41  ]
 Line:   [   0    1    0  ]
-Line:   [   0    0    1  ]
-Ray:    [   1    0    0  ]
-Vertex: [ 101    0    0  ]/1
+Ray:    [   0    0   -1  ]
+Vertex: [   0    0   -1  ]/40
 UNION POLYHEDRON Dimension:3
            Constraints:2  Equations:0  Rays:4  Lines:2
 Constraints 2 5
@@ -355,18 +290,144 @@ Vertex: [   0    0    1  ]/27
 UNION POLYHEDRON Dimension:3
            Constraints:2  Equations:0  Rays:4  Lines:2
 Constraints 2 5
-Inequality: [  41    0  -40   -1  ]
+Inequality: [   1    0    0 -101  ]
 Inequality: [   0    0    0    1  ]
 Rays 4 5
-Line:   [  40    0   41  ]
 Line:   [   0    1    0  ]
-Ray:    [   0    0   -1  ]
-Vertex: [   0    0   -1  ]/40
+Line:   [   0    0    1  ]
+Ray:    [   1    0    0  ]
+Vertex: [ 101    0    0  ]/1
+UNION POLYHEDRON Dimension:3
+           Constraints:2  Equations:0  Rays:4  Lines:2
+Constraints 2 5
+Inequality: [   0    1    0   -1  ]
+Inequality: [   0    0    0    1  ]
+Rays 4 5
+Line:   [   1    0    0  ]
+Line:   [   0    0    1  ]
+Ray:    [   0    1    0  ]
+Vertex: [   0    1    0  ]/1
+UNION POLYHEDRON Dimension:3
+           Constraints:2  Equations:0  Rays:4  Lines:2
+Constraints 2 5
+Inequality: [   0   -1    0   -1  ]
+Inequality: [   0    0    0    1  ]
+Rays 4 5
+Line:   [   1    0    0  ]
+Line:   [   0    0    1  ]
+Ray:    [   0   -1    0  ]
+Vertex: [   0   -1    0  ]/1
 
-A inter Complement(A) (should be empty) = LBL: Dimension 3
+Complement(Complement(A)) = LBL: Dimension 3
+
+LATTICE:
+4 3
+   2    0    1 
+   0    0    0 
+   0    1    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  56  -27   28  ]
+Inequality: [ -41   20  -21  ]
+Inequality: [  -1    0   49  ]
+Rays 3 4
+Vertex: [   7   28  ]/13
+Vertex: [ 147  308  ]/3
+Vertex: [  98  203  ]/2
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+  74 
+   0 
+  76 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+   0 
+   0 
+   0 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 3
+   2    0    0 
+   0    0    0 
+  52   66    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0   50  ]
+Inequality: [   1    0  -40  ]
+Inequality: [-674 -891   -4  ]
+Inequality: [ 333  440    0  ]
+Rays 4 4
+Vertex: [3960 -2996  ]/99
+Vertex: [ 440 -333  ]/11
+Vertex: [2200 -1665  ]/44
+Vertex: [4050 -3064  ]/81
+
+ZB inter ZC = LBL: Dimension 3
+
+LATTICE:
+4 3
+   2    0    1 
+   0    0    0 
+   0    1    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [ -41   20  -21  ]
+Inequality: [  -1    0   49  ]
+Inequality: [  56  -27   28  ]
+Rays 3 4
+Vertex: [ 147  308  ]/3
+Vertex: [  98  203  ]/2
+Vertex: [   7   28  ]/13
+
+Is the the complement of the complement the original?
+  A is included in C(C(A)): 1
+  C(C(A)) is included in A: 0
+ZA - ZC = LBL: Dimension 3
 
 <empty>
+ZC - ZA = LBL: Dimension 3
 
-Universe - (A union Complement(A)) (should be empty) = LBL: Dimension 3
-
-<empty>
+LATTICE:
+4 3
+   2    0    1 
+   0    0    0 
+   0    1    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0   49  ]
+Inequality: [  56  -27   28  ]
+Inequality: [ -41   20  -21  ]
+Rays 3 4
+Vertex: [   7   28  ]/13
+Vertex: [ 147  308  ]/3
+Vertex: [  98  203  ]/2

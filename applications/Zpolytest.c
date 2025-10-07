@@ -321,8 +321,8 @@ int main() {
 
     ZC = UniverseLBL(ZA->Lat->NbRows - 1);
     ZD = LBLUnion(ZA, ZB);
-    printf("\nA union Complement(A) = ");
-    LBLPrint(stdout, P_VALUE_FMT, ZD);
+    // printf("\nA union Complement(A) = ");
+    // LBLPrint(stdout, P_VALUE_FMT, ZD);
     LBLFree(ZB);
     ZB = LBLDifference(ZC, ZD);
     LBLSimplify(ZB);

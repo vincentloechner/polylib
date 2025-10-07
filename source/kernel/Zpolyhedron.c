@@ -25,12 +25,12 @@
 #define HOLES_DEBUG 1
 #define SIMPLIFY_DEBUG 1
 #endif
-#define LBLDIFF_DEBUG 1
-#define INTERSECTION_DEBUG 1
+// #define LBLDIFF_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
 static void sLBL_Free(LBL *L);
+static LBL *sLBLComplement(LBL *A);
 static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBL_Image(LBL *, Matrix *);
 static LBL *sLBL_Preimage(LBL *, Matrix *);
@@ -349,7 +349,7 @@ LBL *LBLIntersection(LBL *A, LBL *B)
  */
 LBL *LBLDifference(LBL *A, LBL *B)
 { 
-  LBL *res;
+  LBL *res = NULL;
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
     errormsg1("LBLDifference", "dimincomp",
@@ -386,12 +386,13 @@ LBL *LBLDifference(LBL *A, LBL *B)
 
   // CanonicalLBL(res);
 
-  LBL *comp;
+  LBL *comp, *inter;
   #ifdef LBLDIFF_DEBUG
   fprintf(stderr, "-----Entering LBLDiff-----\n");
   #endif
-  comp = LBLComplement(B);
-  res = LBLIntersection(A, comp);
+  inter = LBLIntersection(A, B);
+  comp = LBLComplement(inter);
+  res = LBLIntersection(comp, A);
 
   #ifdef LBLDIFF_DEBUG
   fprintf(stderr, "---- A = ");
@@ -403,8 +404,9 @@ LBL *LBLDifference(LBL *A, LBL *B)
   fprintf(stderr, "---- A inter comp(B) = ");
   LBLPrint(stderr, P_VALUE_FMT, res);
   #endif
-
   LBLFree(comp);
+  LBLFree(inter);
+
   return (res);
 } /* LBLDifference */
 
@@ -819,7 +821,7 @@ LBL *LBLComplement(LBL *A)
 {
   LBL *Result;
   Result = sLBLComplement(A);
-  for(LBL *tmp = A->next; tmp; tmp = tmp->next) {
+  for(LBL *tmp = A->next; tmp && Result; tmp = tmp->next) {
     LBL *comp, *inter;
     comp = sLBLComplement(tmp);
     inter = LBLIntersection(Result, comp);

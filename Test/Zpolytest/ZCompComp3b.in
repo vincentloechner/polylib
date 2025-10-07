@@ -20,7 +20,10 @@ D 1
 # F 17
 
 # check empty intersection with complement
-F 19
+# F 19
+
+# LBLComplement
+F 16
 
 # the complement of this pointy LBL should be:
 # - i outside of [0, 100]
