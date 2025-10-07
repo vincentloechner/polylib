@@ -302,18 +302,30 @@ int main() {
     break;
 
 
-  case 19:  /* intersect complement(A) with A */
-  
+  case 19:  /* check that complement(A) inter A = empty */
+            /* and complement(A) union A = universe */
     ZA = LBLAlloc(a, A);
     ZB = LBLComplement(ZA);
-    ZC = LBLIntersection(ZA, ZB);
-    LBLSimplify(ZC);
     printf("A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZA);
     printf("\nComplement(A) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZB);
+
+    ZC = LBLIntersection(ZA, ZB);
+    LBLSimplify(ZC);
     printf("\nA inter Complement(A) (should be empty) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
+    LBLFree(ZC);
+
+    ZC = UniverseLBL(ZA->Lat->NbRows - 1);
+    ZD = LBLUnion(ZA, ZB);
+    printf("\nA union Complement(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZD);
+    LBLFree(ZB);
+    ZB = LBLDifference(ZC, ZD);
+    LBLSimplify(ZB);
+    printf("\nUniverse - (A union Complement(A)) (should be empty) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
     break;
 
   // no longer in use tests:
