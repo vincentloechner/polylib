@@ -83,11 +83,11 @@ LATTICE:
 POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [  -1   10  ]
 Inequality: [   1    0  ]
+Inequality: [  -1   10  ]
 Rays 2 3
-Vertex: [   0  ]/1
 Vertex: [  10  ]/1
+Vertex: [   0  ]/1
 
 ZB inter ZC = LBL: Dimension 2
 

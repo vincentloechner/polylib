@@ -77,13 +77,11 @@ TEST_FILES_32 =  \
 TEST_FILES = $(TEST_FILES_32) \
 	ZComp11.in \
 	ZComp11b.in \
+	ZCompComp11.in \
 	ZCompComp11b.in \
 	ZDiff11.in \
 	ZDiff11b.in \
 	ZDomain11.in
 
-# and those fail:
-#	ZCompComp11.in \
-#
 
 include ../Tests.mk

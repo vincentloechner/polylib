@@ -801,8 +801,10 @@ static LBL *sLBLComplement(LBL *A)
   }
 
   CanonicalLBL(Result);
-  // also need to simplify: remove integer-empty polyhedra
-  LBLSimplify(A);
+
+  // TODO:
+  // also need to simplify? -> Remove integer-empty polyhedra
+  // LBLSimplify(Result);
   #ifdef COMP_DEBUG
   fprintf(stderr, "\n-- sLBLComplement final result (normalized) = ");
   LBLPrint(stderr, P_VALUE_FMT, Result);

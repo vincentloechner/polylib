@@ -24,19 +24,11 @@ LATTICE:
 POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [  -1   -1  ]
-Inequality: [   0    1  ]
+Inequality: [   1   -1  ]
+Inequality: [  -1   19  ]
 Rays 2 3
-Ray:    [  -1  ]
-Vertex: [  -1  ]/1
-UNION POLYHEDRON Dimension:1
-           Constraints:2  Equations:0  Rays:2  Lines:0
-Constraints 2 3
-Inequality: [   1 -101  ]
-Inequality: [   0    1  ]
-Rays 2 3
-Ray:    [   1  ]
-Vertex: [ 101  ]/1
+Vertex: [   1  ]/1
+Vertex: [  19  ]/1
 UNION POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
@@ -48,11 +40,19 @@ Vertex: [  39  ]/1
 UNION POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [   1   -1  ]
-Inequality: [  -1   19  ]
+Inequality: [   1 -101  ]
+Inequality: [   0    1  ]
 Rays 2 3
-Vertex: [   1  ]/1
-Vertex: [  19  ]/1
+Ray:    [   1  ]
+Vertex: [ 101  ]/1
+UNION POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [  -1   -1  ]
+Inequality: [   0    1  ]
+Rays 2 3
+Ray:    [  -1  ]
+Vertex: [  -1  ]/1
 
 Complement(Complement(A)) = LBL: Dimension 1
 
