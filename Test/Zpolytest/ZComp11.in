@@ -27,7 +27,7 @@ F 19
 
 # there's a column of zeros, but the complement is regular... ?! (no holes)
 
-The complement is:
+The complement of A is:
 2 0 1 + everything inside
 2 0 0
 and

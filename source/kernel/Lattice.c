@@ -433,8 +433,8 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
   }
   // Checking inputs:
   if(!A) {
-    Value gcd;
-    value_init(gcd);
+    // Value gcd;
+    // value_init(gcd);
     A = Matrix_Alloc(B->NbRows, B->NbColumns);
     Vector_Set(A->p[0], 0, A->NbRows * A->NbColumns);
 
@@ -479,7 +479,7 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
     //     }
     //   }
     // }
-    value_clear(gcd);
+    // value_clear(gcd);
     X = NULL;
     AffineHermite(A, &X, NULL);
     Matrix_Free(A);

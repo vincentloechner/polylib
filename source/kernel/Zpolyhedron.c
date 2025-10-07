@@ -309,7 +309,7 @@ LBL *LBLUnion(LBL *A, LBL *B)
  */
 LBL *LBLIntersection(LBL *A, LBL *B)
 {
-  LBL *Result = NULL, *tempA = NULL, *tempB = NULL;
+  LBL *Result = NULL, *tempA, *tempB;
 
   if (A->Lat->NbRows != B->Lat->NbRows) {
     errormsg1("LBLIntersection", "dimincomp",
@@ -1885,7 +1885,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   // PREPARE SCAN:
   // Move R back to original A->P dimension
   Trans = Matrix_Alloc(rest->Dimension + 1, A->P->Dimension + 1);
-  Vector_Set(Trans->p_Init, 0, Trans->NbColumns * Trans->NbRows);
+  Vector_Set(Trans->p[0], 0, Trans->NbRows * Trans->NbColumns);
   for(int i = 0; i < Trans->NbRows - 1; i++) {
     value_set_si(Trans->p[i][i], 1);
   }
@@ -1943,7 +1943,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
 
     Domain_Free(scan);
 
-    // free and treat next
+    // free and re-link next
     Polyhedron_Free(rest_AP);
     rest_AP = nextR;
   }

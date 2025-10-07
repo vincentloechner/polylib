@@ -257,10 +257,12 @@ int main() {
   
     ZA = LBLAlloc(a, A);
     ZB = LBLComplement(ZA);
-    ZC = LBLComplement(ZB);
     printf("A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZA);
     printf("\nComplement(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+    ZC = LBLComplement(ZB);
+    printf("\nZB AFTER COMPLEMENT = ");
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     printf("\nComplement(Complement(A)) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
