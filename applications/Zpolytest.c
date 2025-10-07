@@ -253,8 +253,8 @@ int main() {
     LBLIncluded(ZB, ZA));
     break;
   
-  case 16:  /* LBLComplement */
-  
+  case 16:  /* LBLComplement:
+      compute complement of complement and check equality with original */
     ZA = LBLAlloc(a, A);
     ZB = LBLComplement(ZA);
     ZC = LBLComplement(ZB);
@@ -264,24 +264,9 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     printf("\nComplement(Complement(A)) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
-    printf("\nZB inter ZC = ");
-    LBLPrint(stdout, P_VALUE_FMT, LBLIntersection(ZB, ZC));
     printf("\nIs the the complement of the complement the original?\n");
     printf("  A is included in C(C(A)): %d\n", LBLIncluded(ZA, ZC));
     printf("  C(C(A)) is included in A: %d\n", LBLIncluded(ZC, ZA));
-    {
-      LBL *diff1, *diff2;
-      diff1 = LBLDifference(ZA, ZC);
-      LBLSimplify(diff1);
-      printf("ZA - ZC = ");
-      LBLPrint(stdout, P_VALUE_FMT, diff1);
-      LBLFree(diff1);
-      diff2 = LBLDifference(ZC, ZA);
-      LBLSimplify(diff2);
-      printf("ZC - ZA = ");
-      LBLPrint(stdout, P_VALUE_FMT, diff2);
-      LBLFree(diff2);
-    }
     break;
 
   case 17:  /* LBL2Zdomain */
@@ -321,8 +306,6 @@ int main() {
 
     ZC = UniverseLBL(ZA->Lat->NbRows - 1);
     ZD = LBLUnion(ZA, ZB);
-    // printf("\nA union Complement(A) = ");
-    // LBLPrint(stdout, P_VALUE_FMT, ZD);
     LBLFree(ZB);
     ZB = LBLDifference(ZC, ZD);
     LBLSimplify(ZB);

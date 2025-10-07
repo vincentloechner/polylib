@@ -90,16 +90,6 @@ Rays 2 3
 Vertex: [  20  ]/1
 Vertex: [  30  ]/1
 
-ZB inter ZC = LBL: Dimension 1
-
-<empty>
-
 Is the the complement of the complement the original?
   A is included in C(C(A)): 1
   C(C(A)) is included in A: 1
-ZA - ZC = LBL: Dimension 1
-
-<empty>
-ZC - ZA = LBL: Dimension 1
-
-<empty>

@@ -756,7 +756,7 @@ static LBL *sLBLComplement(LBL *A)
       #endif
       Ztmp = malloc(sizeof(LBL));
       Ztmp->Lat = lat->M;
-      // TODO: try universe
+      // can use universe, no need to restrict on the more complicated hullA:
       // Ztmp->P = DomainPreimage(hullA, lat->M, MAXNOOFRAYS);
       Ztmp->P = Universe_Polyhedron(lat->M->NbColumns - 1);
       // remove obvious simplification?
@@ -802,8 +802,7 @@ static LBL *sLBLComplement(LBL *A)
 
   CanonicalLBL(Result);
 
-  // TODO:
-  // also need to simplify? -> Remove integer-empty polyhedra
+  // We don't need to simplify (-> remove integer-empty polyhedra)
   // LBLSimplify(Result);
   #ifdef COMP_DEBUG
   fprintf(stderr, "\n-- sLBLComplement final result (normalized) = ");
@@ -1728,37 +1727,38 @@ Polyhedron *GenPoly(int dim, Value *val)
 
 
 /*
- * Scan a single (small) pointy polyhedron R, and check for each of these
- * values if the scan hits an integer point.
- * 'AP' contains the whole top domain (A->P), R is the first-dimension
- * part of the (exact-dark) shadow.
- * Returns the union of polyhedra that verify this condition (not a hole)
- * uses the allocated array of values val of dimension scan->dimension+1
+ * Scan a single (hopefully small) pointy polyhedron R, and check if the scan
+ * hits an integer point.
+ * R is the (exact-dark) shadow intersected with the original polyhedron.
+ * Returns the union of polyhedra that are not holes.
+ * 
+ * Uses the allocated array of values val of dimension R->dimension+2
  * position = index position of current loop index (starting at 1 up to
- * scan->Dimension)
+ * R->Dimension)
  * 
  * Recursive,
- * - if R is scanned already (end of val init position),
- *   generate a for loop on all possible values on scan, and check if there
- *   is an integer solution at the end, early exit if found.
- * - if position <= R->Dimension, scan all possible values in R and recursive
- *   call on scan->next
+ * - if the shadow is scanned already (position > dim_sh),
+ *   recursive scan, but stop as soon as an integer solution is found
+ * - if position <= R->Dimension, scan all possible values in shadow and
+ *   recursive scan, accumulating all results together
  * 
- * val[hdim] must be one and 0's where not used.
+ * val[Dimension+1] must be set to 1 and set to 0's where not used.
  */
-Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dim_R,
+Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dim_sh,
   Polyhedron *Result)
 {
   Value LB, UB;
 
-  // val = 0  r0 ... r{dim_R-1}  ap0 ... apn  1
-  //       0. 1. 2.       dim_R.  ...             (indices)
+  //          ----shadow----  -----AP----
+  // val = 0  0  ...       0  0  ...    0     1
+  //       0. 1.       dim_sh     ... R->Dim R->Dim+1
+  //          ->  position -> position ->
   #ifdef HOLES_DEBUG
   fprintf(stderr, "Enter Scan_Rest, position = %d\n", position);
   fprintf(stderr, "val = (");
   for(int i=0; i <= position; i++) {
     value_print(stderr, P_VALUE_FMT, val[i]);
-    if(i == dim_R || i == 0)
+    if(i == dim_sh || i == 0)
       fprintf(stderr, "::");
   }
   fprintf(stderr, ")\n");
@@ -1766,14 +1766,18 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dim_R,
   if(!R) {
       // end here, it is a hit!
       // generate polyhedron of the point = value val
-      return(GenPoly(dim_R, val));
+      return(GenPoly(dim_sh, val));
   }
   value_init(LB);
   value_init(UB);
 
   if(lower_upper_bounds(position, R, val, &LB, &UB) != 0) {
+    if(position <= dim_sh) {
+      errormsg1("Scan_RestAP", "infinite", "trying to scan infinity!");
+      return(NULL);
+    }
     // it's a hit if infinity!
-    return(GenPoly(dim_R, val));
+    return(GenPoly(dim_sh, val));
   }
   #ifdef HOLES_DEBUG
   fprintf(stderr, "position %d - looping from ", position);
@@ -1787,25 +1791,25 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dim_R,
     // use LB in val[position] and scan next dimensions
     value_assign(val[position], LB);
     // recursive call
-    if(position > dim_R)
+    if(position > dim_sh)
     {
-      // when scanning A->P
-      if((res = Scan_RestAP(R->next, val, position+1, dim_R, NULL))) {
+      // when scanning the last dimensions (AP)
+      if((res = Scan_RestAP(R->next, val, position+1, dim_sh, NULL))) {
         // it's a hit: stop here and add this point to result :)
         value_clear(UB);
         value_clear(LB);
-        return(AddPolyToDomain(res, Result));
-        // when scanning A->P, Result is NULL
-        // the first call only adds res to the final Result
+        return(res);
       }
-      // else (no int point), try next value in for loop
+      // else, no integer point found, try next value in for loop
     }
-    else {
-      // when scanning rest
-      Result = Scan_RestAP(R->next, val, position+1, dim_R, Result);
+    else {                 // when scanning shadow, accumulate results
+      Polyhedron *tmp;
+      tmp = Scan_RestAP(R->next, val, position+1, dim_sh, NULL);
+      Result = AddPolyToDomain(tmp, Result);
+      // and continue with all other values
     }
   }
-  // it's a hole, just return
+  // end of scan
 
   value_clear(UB);
   value_clear(LB);
@@ -1850,9 +1854,9 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
 
     d = domain_dark_shadow(dark, col);
     e = domain_project(exact, col);
-    if(dark != A->P) {
+    if(dark != A->P) {    // (do not free the original A->P first ones)
       Domain_Free(dark);  // no longer need the previous calculated ones
-      Domain_Free(exact); // (keep the original A->P first ones)
+      Domain_Free(exact);
     }
     dark = d;
     exact = e;
@@ -1868,7 +1872,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   rest = DomainDifference(exact, dark, MAXNOOFRAYS);
   Domain_Free(dark);
   if(pExact) {
-    *pExact = exact;
+    *pExact = exact;  // keep a copy of exact shadow (caller can reuse it)
   }
   else {
     Domain_Free(exact);
@@ -1885,7 +1889,7 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   #endif
 
   // PREPARE SCAN:
-  // Move R back to original A->P dimension
+  // Move rest back to original A->P dimension = rest_AP
   Trans = Matrix_Alloc(rest->Dimension + 1, A->P->Dimension + 1);
   Vector_Set(Trans->p[0], 0, Trans->NbRows * Trans->NbColumns);
   for(int i = 0; i < Trans->NbRows - 1; i++) {
@@ -1894,12 +1898,12 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   value_set_si(Trans->p[Trans->NbRows - 1][Trans->NbColumns - 1], 1);
   rest_AP = DomainPreimage(rest, Trans, MAXNOOFRAYS);
   Matrix_Free(Trans);
-  // and intersect with A->P
+  // and intersect rest_AP with A->P
   tmp = DomainIntersection(A->P, rest_AP, MAXNOOFRAYS);
   Domain_Free(rest_AP);
   rest_AP = tmp;
 
-  // make rest_AP a disjoint domain, to avoid scanning a point multiple times
+  // make rest_AP a disjoint domain, avoid scanning some points multiple times
   tmp = Disjoint_Domain(rest_AP, 0, MAXNOOFRAYS);
   Domain_Free(rest_AP);
   rest_AP = tmp;
@@ -1908,36 +1912,31 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   Polyhedron_Print(stderr, P_VALUE_FMT, rest_AP);
   #endif
 
-  // vector
+  // vector of fixed values
   v = Vector_Alloc(A->P->Dimension + 2);
   // universe (dim 0)
   U0 = Universe_Polyhedron(0);
 
 
-  // need to:
+  // loop to:
   // - scan the points of rest_AP that can be holes.
   //   (polyhedron scan of each)
   // - add them to the polyhedron list of hits if they are not holes
-
-
   while(rest_AP) {
-    // generate scanning loops
     Polyhedron *scan, *nextR;
-
-    // TODO: first check if it has an integer vertex -> done.
 
     nextR = rest_AP->next; // save and
     rest_AP->next = NULL;  // unlink next
     // polyhedron scan does not work on a domain (need to nullify next)
     scan = Polyhedron_Scan(rest_AP, U0, MAXNOOFRAYS);
 
-    // init vec
+    // init vector to (0...0 1)
     Vector_Set(v->p, v->Size-1, 0);
     value_set_si(v->p[v->Size-1], 1);
 
     #ifdef HOLES_DEBUG
     fprintf(stderr, "------- Calling Scan_Rest -------");
-    fprintf(stderr, " R = ");
+    fprintf(stderr, " scan = ");
     Polyhedron_Print(stderr, P_VALUE_FMT, scan);
     #endif
     // scan and update not_a_hole (add points that are not holes)

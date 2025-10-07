@@ -445,16 +445,6 @@ Vertex: [  50   50  -50  ]/1
 Vertex: [  50  -50  -50  ]/1
 Vertex: [ -50  -50  -50  ]/1
 
-ZB inter ZC = LBL: Dimension 3
-
-<empty>
-
 Is the the complement of the complement the original?
   A is included in C(C(A)): 1
   C(C(A)) is included in A: 1
-ZA - ZC = LBL: Dimension 3
-
-<empty>
-ZC - ZA = LBL: Dimension 3
-
-<empty>
