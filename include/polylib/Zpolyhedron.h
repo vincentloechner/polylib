@@ -35,6 +35,7 @@ extern void LBLFree(LBL *Head);
 extern void LBLPrint(FILE *fp, const char *format, LBL *A);
 extern LBL *LBLCopy(LBL *Head);
 extern LBL *EmptyLBL(int dimension);
+extern LBL *UniverseLBL(int dimension);
 extern Bool isEmptyLBL(LBL *Zpol);
 
 extern LBL *LBLUnion(LBL *A, LBL *B);

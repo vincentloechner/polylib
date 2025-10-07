@@ -204,6 +204,29 @@ LBL *EmptyLBL(int dimension)
 
 
 /*
+ * Return the universe Z-polyhedron of dimension 'dimension'
+ * Lat = Id
+ * P = Universe_Polyhedron()
+ */
+LBL *UniverseLBL(int dimension)
+{
+  LBL *A;
+
+  A = malloc(sizeof(LBL));
+  if(!A) {
+    errormsg1("EmptyLBL", "outofmem", "Out of Memory");
+    return(NULL);
+  }
+  A->Lat = NULL;
+  Matrix_identity(dimension + 1, &(A->Lat));
+  A->P = Universe_Polyhedron(dimension);
+  A->next = NULL;
+
+  return (A);
+} /* UniverseLBL */
+
+
+/*
  * Given LBLs A and B, return True if A is included in B,
  * otherwise return False.
  */
