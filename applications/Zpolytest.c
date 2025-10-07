@@ -264,6 +264,8 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     printf("\nComplement(Complement(A)) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
+    printf("\nZB inter ZC = ");
+    LBLPrint(stdout, P_VALUE_FMT, LBLIntersection(ZB, ZC));
     printf("\nIs the the complement of the complement the original?\n");
     printf("  A is included in C(C(A)): %d\n", LBLIncluded(ZA, ZC));
     printf("  C(C(A)) is included in A: %d\n", LBLIncluded(ZC, ZA));

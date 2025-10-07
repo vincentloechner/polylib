@@ -25,6 +25,8 @@
 #define HOLES_DEBUG 1
 #define SIMPLIFY_DEBUG 1
 #endif
+#define LBLDIFF_DEBUG 1
+#define INTERSECTION_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -317,7 +319,10 @@ LBL *LBLIntersection(LBL *A, LBL *B)
  * difference of two single LBLs can be a union of LBLs.
  * 
  * Algorithm:
- * Successively remove each single LBL composing B from a copy of A
+ * compute A inter complement(B).
+ * 
+ * (previous version was:)
+ *   Successively remove each single LBL composing B from a copy of A
  */
 LBL *LBLDifference(LBL *A, LBL *B)
 { 
@@ -329,35 +334,54 @@ LBL *LBLDifference(LBL *A, LBL *B)
     return (NULL);
   }
   
-  // initialize result: a copy of A
-  res = LBLCopy(A);
+  // // initialize result: a copy of A
+  // res = LBLCopy(A);
+  // #ifdef LBLDIFF_DEBUG
+  // fprintf(stderr, "Entering LBLDiff. A =");
+  // LBLPrint(stderr, P_VALUE_FMT, A);
+  // fprintf(stderr, "Entering LBLDiff. B =");
+  // LBLPrint(stderr, P_VALUE_FMT, B);
+  // #endif
+  // // remove all single LBLs composing B from a copy of A:
+  // for (LBL *tempB = B; tempB && res; tempB = tempB->next) {
+  //   LBL *diff;
+  //   #ifdef LBLDIFF_DEBUG
+  //   fprintf(stderr, "Removing tempB from Res. tempB = ");
+  //   sLBLPrint(stderr, P_VALUE_FMT, tempB);
+  //   #endif
+  //   diff = LBL_sLBL_Difference(res, tempB);  // diff = res(LBL) - tempB(sLBL)
+  //   LBLFree(res);                            // free previous res
+  //   res = diff;                              // new res(LBL) = diff
+  //   #ifdef LBLDIFF_DEBUG
+  //   fprintf(stderr, "new res = ");
+  //   LBLPrint(stderr, P_VALUE_FMT, res);
+  //   #endif
+  // }
+
+  // if (!res)
+  //   return (EmptyLBL(A->Lat->NbRows - 1));
+
+  // CanonicalLBL(res);
+
+  LBL *comp;
   #ifdef LBLDIFF_DEBUG
-  fprintf(stderr, "Entering LBLDiff. A =");
-  LBLPrint(stderr, P_VALUE_FMT, A);
-  fprintf(stderr, "Entering LBLDiff. B =");
-  LBLPrint(stderr, P_VALUE_FMT, B);
+  fprintf(stderr, "-----Entering LBLDiff-----\n");
   #endif
-  // remove all single LBLs composing B from a copy of A:
-  for (LBL *tempB = B; tempB && res; tempB = tempB->next) {
-    LBL *diff;
-    #ifdef LBLDIFF_DEBUG
-    fprintf(stderr, "Removing tempB from Res. tempB = ");
-    sLBLPrint(stderr, P_VALUE_FMT, tempB);
-    #endif
-    diff = LBL_sLBL_Difference(res, tempB);  // diff = res(LBL) - tempB(sLBL)
-    LBLFree(res);                            // free previous res
-    res = diff;                              // new res(LBL) = diff
-    #ifdef LBLDIFF_DEBUG
-    fprintf(stderr, "new res = ");
-    LBLPrint(stderr, P_VALUE_FMT, res);
-    #endif
-  }
+  comp = LBLComplement(B);
+  res = LBLIntersection(A, comp);
 
-  if (!res)
-    return (EmptyLBL(A->Lat->NbRows - 1));
+  #ifdef LBLDIFF_DEBUG
+  fprintf(stderr, "---- A = ");
+  LBLPrint(stderr, P_VALUE_FMT, A);
+  fprintf(stderr, "---- B = ");
+  LBLPrint(stderr, P_VALUE_FMT, B);
+  fprintf(stderr, "---- comp(B) = ");
+  LBLPrint(stderr, P_VALUE_FMT, comp);
+  fprintf(stderr, "---- A inter comp(B) = ");
+  LBLPrint(stderr, P_VALUE_FMT, res);
+  #endif
 
-  CanonicalLBL(res);
-
+  LBLFree(comp);
   return (res);
 } /* LBLDifference */
 
@@ -2515,6 +2539,7 @@ void LBLSimplify(LBL *A)
 
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     tmp->P = Domain_Remove_Integer_Empty(tmp->P);
+    // TODO: idea- if we have an integer point in this polyhedron, we could try to separate into several polyhedra with an integer vertex... or just an int on a border (what's easiest?)
   }
 
   CanonicalLBL(A);

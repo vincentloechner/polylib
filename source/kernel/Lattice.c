@@ -690,7 +690,7 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
     nbcol++;
   }
 
-  if(value_notone_p(H->p[A->NbRows][H->NbColumns-nbcol])) {
+  if(value_notone_p(H->p[A->NbRows][H->NbColumns - nbcol])) {
     #ifdef LATINTER_DEBUG
       fprintf(stderr,"\nEmpty intersection\n");
     #endif
