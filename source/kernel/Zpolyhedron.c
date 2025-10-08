@@ -38,6 +38,7 @@ static void sLBL_Canonical(LBL *A);
 static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
 static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
+static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position);
 
 // typedef struct forsimplify {
 //   Polyhedron *Pol;
@@ -52,9 +53,11 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
  */
 Bool isEmptyLBL(LBL *A)
 {
-  if (A == NULL)
+  if(A == NULL)
     return True;
-  if (emptyQ(A->P)) {
+  if(A->P == NULL)
+    return True;
+  if(emptyQ(A->P)) {
     // check the emptiness of next
     return(isEmptyLBL(A->next));
   }
@@ -72,13 +75,13 @@ LBL *LBLAlloc(Matrix *Lat, Polyhedron *Domain)
 {
   LBL *A;
 
-  POL_ENSURE_FACETS(Domain);
-  POL_ENSURE_VERTICES(Domain);
-
-  if (Lat->NbColumns != Domain->Dimension + 1) {
+  if(Domain && (Lat->NbColumns != Domain->Dimension + 1)) {
     errormsg1("LBLAlloc", "dimincomp",
       "the Lattice and the Polyhedron are not compatible to form a LBL");
     return NULL;
+  }
+  if(Domain && emptyQ(Domain)) {
+    Domain = NULL;
   }
 
   A = malloc(sizeof(LBL));
@@ -198,7 +201,8 @@ LBL *EmptyLBL(int dimension)
   }
   value_set_si(A->Lat->p[0][dimension], 1);
 
-  A->P = Empty_Polyhedron(0);
+  // A->P = Empty_Polyhedron(0);
+  A->P = NULL;
   A->next = NULL;
 
   return (A);
@@ -258,7 +262,7 @@ Bool LBLIncluded(LBL *A, LBL *B)
 static void sLBLPrint(FILE *fp, const char *format, LBL *A)
 {
   fprintf(fp, "LBL: Dimension %d\n", A->Lat->NbRows - 1);
-  if(emptyQ(A->P)) {
+  if(!A->P ) {
     fprintf(fp, "\n<empty>\n");
   }
   else {
@@ -495,6 +499,10 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B)
     fprintf(stderr, "B = ");
     sLBL_Print(stderr, P_VALUE_FMT, B);
   #endif
+  if(isEmptyLBL(A) || isEmptyLBL(B))
+  {
+    return(EmptyLBL(A->Lat->NbRows - 1));
+  }
   LInter = LatticeIntersection(A->Lat, B->Lat);
   if(isEmptyLattice(LInter)) {
     Matrix_Free(LInter);
@@ -724,7 +732,7 @@ static LBL *sLBLComplement(LBL *A)
   
   // STEP 1: complement of hull(A)
   hullA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
-  Univ = Universe_Polyhedron(hullA->Dimension);
+  Univ = Universe_Polyhedron(A->Lat->NbRows - 1);
   comp_hullA = DomainDifference(Univ, hullA, MAXNOOFRAYS);
   #ifdef COMP_DEBUG
   fprintf(stderr, "STEP 1: Adding hull complement polyhedron: ");
@@ -2163,18 +2171,21 @@ static void LBL_Remove_Empty(LBL *A)
   }
 
   // If the head A is empty, make sure it is canonical
-  if(!A->P || (emptyQ(A->P) && A->P->Dimension > 0)) {
-    // not canonical,
-    // re-create a canonical version of the emptyLBL
+  if((!A->P) || (A->P && emptyQ(A->P))) {
+    // not canonical if A->P is not NULL, or if Lat has more than one column
+    // canonical version of the emptyLBL
     int dimension = A->Lat->NbRows;
     Domain_Free(A->P);
-    Matrix_Free(A->Lat);
-    A->P = Empty_Polyhedron(0);
-    A->Lat = Matrix_Alloc(dimension, 1);
-    for(int j=0 ; j < dimension-1; j++) {
-      value_set_si(A->Lat->p[0][j], 0);
+    // A->P = Empty_Polyhedron(0);
+    A->P = NULL;
+    if(A->Lat->NbColumns != 1) {
+      Matrix_Free(A->Lat);
+      A->Lat = Matrix_Alloc(dimension, 1);
+      for(int j=0 ; j < dimension-1; j++) {
+        value_set_si(A->Lat->p[0][j], 0);
+      }
+      value_set_si(A->Lat->p[0][dimension-1], 1);
     }
-    value_set_si(A->Lat->p[0][dimension-1], 1);
   }
   #ifdef CANONICAL_DEBUG
   fprintf(stderr, "Exit Remove_Empty, A = ");
@@ -2202,16 +2213,18 @@ static LBL *FindLatticePred(Matrix *L, LBL *A) {
 
 
 /*
- * check for emptyness, return True if empty,
- * scan P, and return False as soon as an integer point is found.
+ * check for an integer solution of a polyhedron scan, return True if found
+ * else, return False
+ * 
+ * scan P, and return True as soon as an integer point is found.
+ * The found integer solution is in the vector val.
  */
-static Bool polyhedron_empty(Polyhedron *scan, Value *val, int position)
+static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
 {
   Value LB, UB;
-  Bool ret = True;
 
   #ifdef SIMPLIFY_DEBUG
-  fprintf(stderr, "  Entering polyhedron_empty: position = %d, val = [",
+  fprintf(stderr, "  Entering polyhedron_int_solution: position = %d, val = [",
     position);
   for(int p=1 ; p<=position; p++)
     value_print(stderr, P_VALUE_FMT, val[p]);
@@ -2219,47 +2232,55 @@ static Bool polyhedron_empty(Polyhedron *scan, Value *val, int position)
   #endif
   if(! scan) {
     // found an integer point, exit
-    return(False);
+    return(True);
   }
 
   value_init(LB);
   value_init(UB);
   if(lower_upper_bounds(position, scan, val, &LB, &UB)) {
     #ifdef SIMPLIFY_DEBUG
-    fprintf(stderr, "  polyhedron_empty: infinite lower/upper bound\n");
+    fprintf(stderr, "  polyhedron_int_solution: lower_upper_bounds not zero\n");
     #endif
-    // infinite, so just return False
-    ret = False;
+    // infinite, should never happen here (should not call the scan)
+    fprintf(stderr, "polyhedron_int_solution: infinite lower/upper bound\n");
+    value_clear(UB);
+    value_clear(LB);
+    return(True); // True if infinity
   }
   else {
     #ifdef SIMPLIFY_DEBUG
-    fprintf(stderr, "  polyhedron_empty: LB/UB = ");
+    fprintf(stderr, "  polyhedron_int_solution: LB/UB = ");
     value_print(stderr, P_VALUE_FMT, LB);
     value_print(stderr, P_VALUE_FMT, UB);
     fprintf(stderr, "\n");
     #endif
-      // LB increment till UB:
+    // LB increment till UB:
     for(; value_le(LB, UB); value_increment(LB, LB)) {
       value_assign(val[position], LB);
-      if(!polyhedron_empty(scan->next, val, position + 1)) {
+      if(polyhedron_int_solution(scan->next, val, position + 1)) {
         // early exit as soon as an integer point is found
-        ret = False;
-        break;
+        value_clear(UB);
+        value_clear(LB);
+        return(True);
       }
     }
+    // reset val[position] to 0 after the scan, to prepare for next scans
+    value_set_si(val[position], 0);
   }
-  // reset val[position] to 0 after the scan (for next scans)
-  value_set_si(val[position], 0);
 
   // cleanup
   value_clear(UB);
   value_clear(LB);
-  return(ret);
+  return(False);
 }
 
 /*
  * Remove polyhedra that have no integer points from a domain
  * Return a polyhedral domain, reusing the memory of D (do not free)
+ * 
+ * Note: DomainConstraintSimplify() has always been called already by
+ *       canonicalLBL, before entering this function. So if there is a ray
+ *       in one of these polyhedra it has an integer solution.
  */
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 {
@@ -2270,36 +2291,79 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
   fprintf(stderr, "--- Entering Domain_Remove_Integer_Empty\n");
   #endif
 
+  if(!D) {
+    return(NULL);
+  }
+
   vec = Vector_Alloc(D->Dimension + 2);
   Vector_Set(vec->p, 0, D->Dimension + 1);
   value_set_si(vec->p[D->Dimension + 1], 1);
   universe = Universe_Polyhedron(0);
 
-  // scan each polyhedron, if no integer point eliminate it.
+  // scan each polyhedron, if no integer point eliminate it (no copy to result)
   while(D) {
-    Polyhedron *scan, *next;
+    Polyhedron *scan = NULL, *next;
+    int ray;
+    Bool int_solution_found = False;
+
     next = D->next;
     D->next = NULL;
 
-    // TODO:
-    // - if one of the vertices is integer it's good
+    // TODO (?)
     // - if dark shadow (projection in every dimension) is non empty it's good.
+    // -> but this check is not useful since this function should only be
+    //    called on small pointy polyhedra (dark shadows have been treated
+    //    before)
 
-    scan = Polyhedron_Scan(D, universe, MAXNOOFRAYS);
-    #ifdef SIMPLIFY_DEBUG
-    fprintf(stderr, "Checking integer emptyness of: ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, D);
-    fprintf(stderr, " scan = ");
-    Polyhedron_Print(stderr, P_VALUE_FMT, scan);
-    #endif
-    if(polyhedron_empty(scan, vec->p, 1)) {
-      // empty: free the polyhedron (next is saved)
+    if(emptyQ(D)) {
       Polyhedron_Free(D);
-      #ifdef SIMPLIFY_DEBUG
-      fprintf(stderr, "-> empty\n");
-      #endif
+      D = next;
+      continue;
+    }
+
+    // If one of the vertices is integer or if there is a ray/line, it's good
+    for(ray = 0; ray < D->NbRays; ray++) {
+      if(value_zero_p(D->Ray[ray][0])                || // line, or
+         value_zero_p(D->Ray[ray][D->Dimension + 1]) || // ray, or
+         value_one_p(D->Ray[ray][D->Dimension + 1]))    // integer vertex
+      {
+        int_solution_found = True;
+        break;
       }
-    else {
+    }
+
+    if(! int_solution_found) {
+      // if there is no obvious integer solution, try a scan
+      scan = Polyhedron_Scan(D, universe, MAXNOOFRAYS);
+      #ifdef SIMPLIFY_DEBUG
+      fprintf(stderr, "Checking integer emptyness of: ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, D);
+      fprintf(stderr, " scan = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, scan);
+      #endif
+      int_solution_found = polyhedron_int_solution(scan, vec->p, 1);
+
+      Domain_Free(scan);
+
+      // TODO: if found, then vec->p contains an integer solution of D,
+      // use it to simplify D - at least one integer bound on first dimension
+      // -> or can we force the vertex to be in D?
+      //    splitting the polyhedron in parts? -> can be very complex :(
+      if(int_solution_found) {
+        Polyhedron *tmp;
+        // at least we can cut the first dimension of D to the lower bound
+        // reuse vec to build the constraint on first dimension to be added:
+        value_set_si(vec->p[0], 1);                     // inequality
+        value_oppose(vec->p[vec->Size - 1], vec->p[1]); // constant = -vec[1]
+        value_set_si(vec->p[1], 1);                     // vec[1] = 1
+        Vector_Set(vec->p + 2, 0, vec->Size - 3);
+        tmp = AddConstraints(vec->p, 1, D, MAXNOOFRAYS);
+        Polyhedron_Free(D);
+        D = tmp;
+      }
+    }
+
+    if(int_solution_found) {
       // link P to result
       D->next = result;
       result = D;
@@ -2307,8 +2371,14 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
       fprintf(stderr, "-> not empty\n");
       #endif
     }
+    else {
+      // free the polyhedron (next is saved)
+      Polyhedron_Free(D);
+      #ifdef SIMPLIFY_DEBUG
+      fprintf(stderr, "-> empty\n");
+      #endif
+    }
 
-    Domain_Free(scan);
     D = next;
   }
   Polyhedron_Free(universe);
@@ -2565,7 +2635,6 @@ void LBLSimplify(LBL *A)
 
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     tmp->P = Domain_Remove_Integer_Empty(tmp->P);
-    // TODO: idea- if we have an integer point in this polyhedron, we could try to separate into several polyhedra with an integer vertex... or just an int on a border (what's easiest?)
   }
 
   CanonicalLBL(A);

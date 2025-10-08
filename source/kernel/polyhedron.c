@@ -2306,6 +2306,7 @@ static SatMatrix *BuildSat(Matrix *Mat, Matrix *Ray, unsigned NbConstraints,
  * Add 'Nbconstraints' new constraints to polyhedron 'Pol'. Constraints are
  * pointed by 'Con' and the maximum allowed rays in the new polyhedron is
  * 'NbMaxRays'.
+ * Returns a newly allocated Polyhedron.
  */
 Polyhedron *AddConstraints(Value *Con, unsigned NbConstraints, Polyhedron *Pol,
                            unsigned NbMaxRays) {
@@ -3643,8 +3644,10 @@ Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
   Polyhedron *p1, *p2, *p3, *d;
   int i;
 
-  if (!Pol1 || !Pol2)
-    return (Polyhedron *)0;
+  if (!Pol1)
+    return(NULL);
+  if (!Pol2)
+    return(Polyhedron_Copy(Pol1));
   if (Pol1->Dimension != Pol2->Dimension) {
     errormsg1("DomainDifference", "diffdim",
               "operation on different dimensions");

@@ -142,7 +142,7 @@ diff2 = B - A
 print("diff2 = B-A contains", len(diff2), "points")
 
 YP = set()
-
+# B - A = LBL: Dimension 3
 
 # LATTICE:
 # 4 4
@@ -153,13 +153,14 @@ YP = set()
 # POLYHEDRON Dimension:3
 #            Constraints:6  Equations:0  Rays:8  Lines:0
 # Constraints 6 5
-# Inequality: [  -4    4   -1    0  ] depends on k...
-# Inequality: [   1    0   -9    0  ] 
-# Inequality: [  -1    0   10    0  ] 
-# Inequality: [   1    0    0 -101  ] x
+# Inequality: [  -4    4   -1    0  ]
+# Inequality: [   1    0   -9    0  ]
+# Inequality: [  -1    0   10    0  ]
+# Inequality: [   1    0    0 -101  ]
 # Inequality: [   3   -3    1    0  ]
-# Inequality: [  -1    0    0 1000  ] x
-YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)", "min(200*i+264*j, 2*i/9)"))
+# Inequality: [  -1    0    0 1000  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "i/10", "i/9", "(4*i+j)/4", "(3*i+j)/3"))
 
 # UNION LBL: Dimension 3
 
@@ -170,19 +171,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    8   11    0   10 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1  -30  ]
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1   40  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0  -10    0  ]/11
-# Vertex: [1650 -920  330  ]/33
-# Vertex: [14850 -8270 3300  ]/297
-# Vertex: [4950 -2765 1100  ]/99
-# Vertex: [1100 -615  220  ]/22
+# Inequality: [ -18  -33    1  -30  ]
+# Inequality: [  24   44   -1   40  ]
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -15  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+10)", "15", "500", "i/5", "2*i/9",
+                   "(-24*i+j-40)/44", "(-18*i+j-30)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -193,19 +192,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    8   11    0    9 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1  -27  ]
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1   36  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -9    0  ]/11
-# Vertex: [1650 -917  330  ]/33
-# Vertex: [14850 -8243 3300  ]/297
-# Vertex: [4950 -2756 1100  ]/99
-# Vertex: [1100 -613  220  ]/22
+# Inequality: [ -18  -33    1  -27  ]
+# Inequality: [  24   44   -1   36  ]
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -30  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+9)", "30", "500", "i/5", "2*i/9",
+                   "(-24*i+j-36)/44", "(-18*i+j-27)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -216,19 +213,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    8   11    0    8 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1  -24  ]
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1   32  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -8    0  ]/11
-# Vertex: [1650 -914  330  ]/33
-# Vertex: [14850 -8216 3300  ]/297
-# Vertex: [4950 -2747 1100  ]/99
-# Vertex: [1100 -611  220  ]/22
+# Inequality: [ -18  -33    1  -24  ]
+# Inequality: [  24   44   -1   32  ]
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -19  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+8)", "19", "500", "i/5", "2*i/9",
+                   "(-24*i+j-32)/44", "(-18*i+j-24)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -239,19 +234,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    8   11    0    7 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1  -21  ]
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1   28  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -7    0  ]/11
-# Vertex: [1650 -911  330  ]/33
-# Vertex: [14850 -8189 3300  ]/297
-# Vertex: [4950 -2738 1100  ]/99
-# Vertex: [1100 -609  220  ]/22
+# Inequality: [ -18  -33    1  -21  ]
+# Inequality: [  24   44   -1   28  ]
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -34  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+7)", "34", "500", "i/5", "2*i/9",
+                   "(-24*i+j-28)/44", "(-18*i+j-21)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -264,17 +257,14 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 # POLYHEDRON Dimension:3
 #            Constraints:5  Equations:0  Rays:5  Lines:0
 # Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1  -18  ]
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1   24  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -6    0  ]/11
-# Vertex: [1650 -908  330  ]/33
-# Vertex: [1350 -742  300  ]/27
-# Vertex: [4950 -2729 1100  ]/99
-# Vertex: [1100 -607  220  ]/22
+# Inequality: [ -18  -33    1  -18  ]
+# Inequality: [  24   44   -1   24  ]
+# Inequality: [  -1    0    0  500  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+6)", "0", "500", "i/5", "2*i/9",
+                   "(-24*i+j-24)/44", "(-18*i+j-18)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -285,19 +275,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    8   11    0    5 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1  -15  ]
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1   20  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -5    0  ]/11
-# Vertex: [1650 -905  330  ]/33
-# Vertex: [14850 -8135 3300  ]/297
-# Vertex: [4950 -2720 1100  ]/99
-# Vertex: [ 100  -55   20  ]/2
+# Inequality: [ -18  -33    1  -15  ]
+# Inequality: [  24   44   -1   20  ]
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -14  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+5)", "14", "500", "i/5", "2*i/9",
+                   "(-24*i+j-20)/44", "(-18*i+j-15)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -308,19 +296,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    8   11    0    4 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1  -12  ]
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1   16  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -4    0  ]/11
-# Vertex: [ 150  -82   30  ]/3
-# Vertex: [14850 -8108 3300  ]/297
-# Vertex: [4950 -2711 1100  ]/99
-# Vertex: [1100 -603  220  ]/22
+# Inequality: [ -18  -33    1  -12  ]
+# Inequality: [  24   44   -1   16  ]
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -29  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+4)", "29", "500", "i/5", "2*i/9",
+                   "(-24*i+j-16)/44", "(-18*i+j-12)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -331,19 +317,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    8   11    0    3 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1   -9  ]
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1   12  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -3    0  ]/11
-# Vertex: [1650 -899  330  ]/33
-# Vertex: [14850 -8081 3300  ]/297
-# Vertex: [4950 -2702 1100  ]/99
-# Vertex: [1100 -601  220  ]/22
+# Inequality: [ -18  -33    1   -9  ]
+# Inequality: [  24   44   -1   12  ]
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -18  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+3)", "18", "500", "i/5", "2*i/9",
+                   "(-24*i+j-12)/44", "(-18*i+j-9)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -354,19 +338,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    8   11    0    2 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1   -6  ]
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1    8  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -2    0  ]/11
-# Vertex: [1650 -896  330  ]/33
-# Vertex: [14850 -8054 3300  ]/297
-# Vertex: [4950 -2693 1100  ]/99
-# Vertex: [1100 -599  220  ]/22
+# Inequality: [ -18  -33    1   -6  ]
+# Inequality: [  24   44   -1    8  ]
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -20  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+2)", "20", "500", "i/5", "2*i/9",
+                   "(-24*i+j-8)/44", "(-18*i+j-6)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -377,19 +359,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    8   11    0    1 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ -18  -33    1   -3  ]
-# Inequality: [   2    0   -9    0  ]
-# Inequality: [  24   44   -1    4  ]
-# Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -1    0  ]/11
-# Vertex: [1650 -893  330  ]/33
-# Vertex: [14850 -8027 3300  ]/297
-# Vertex: [ 450 -244  100  ]/9
-# Vertex: [1100 -597  220  ]/22
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
+# Inequality: [   2    0   -9    0  ]  9j <= 2i
+# Inequality: [  -1    0    5    0  ]  5j >= i
+# Inequality: [ -18  -33    1   -3  ]  33k <= -18i+j-3
+# Inequality: [  24   44   -1    4  ]  44k >= -24i+j-4
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -35  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 8*i+11*k+1)", "35", "500", "i/5", "2*i/9",
+                   "(-24*i+j-4)/44", "(-18*i+j-3)/33"))
 
 # UNION LBL: Dimension 3
 
@@ -400,19 +380,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    1    3    0    2 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [   3   -9    1   -6  ]
-# Inequality: [   2    0   -9    0  ]
-# Inequality: [  -4   12   -1    8  ]
-# Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -2    0  ]/3
-# Vertex: [ 450  154   90  ]/9
-# Vertex: [4050 1396  900  ]/81
-# Vertex: [1350  457  300  ]/27
-# Vertex: [ 300  101   60  ]/6
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
+# Inequality: [   2    0   -9    0  ] 9j <= 2i
+# Inequality: [  -1    0    5    0  ] 5j >= i
+# Inequality: [   3   -9    1   -6  ] 9k  <= 3i + j - 6
+# Inequality: [  -4   12   -1    8  ] 12k >= 4i + j - 8
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -19  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, i+3*k+2)", "19", "500", "i/5", "2*i/9",
+                   "(4*i+j-8)/12", "(3*i+j-6)/9"))
 
 # UNION LBL: Dimension 3
 
@@ -423,19 +401,17 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 #    1    3    0    1 
 #    0    0    0    1 
 # POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:5  Lines:0
-# Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [   3   -9    1   -3  ]
+#            Constraints:6  Equations:0  Rays:8  Lines:0
+# Constraints 6 5
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  -4   12   -1    4  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -1    0  ]/3
-# Vertex: [ 450  157   90  ]/9
-# Vertex: [4050 1423  900  ]/81
-# Vertex: [1350  466  300  ]/27
-# Vertex: [ 300  103   60  ]/6
+# Inequality: [   3   -9    1   -3  ]
+# Inequality: [  -4   12   -1    4  ]
+# Inequality: [  -1    0    0  500  ]
+# Inequality: [   1    0    0  -15  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, i+3*k+1)", "15", "500", "i/5", "2*i/9",
+                   "(4*i+j-4)/12", "(3*i+j-3)/9"))
 
 # UNION LBL: Dimension 3
 
@@ -448,17 +424,14 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 # POLYHEDRON Dimension:3
 #            Constraints:5  Equations:0  Rays:5  Lines:0
 # Constraints 5 5
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [   6   -6    1   -3  ]
 # Inequality: [   2    0   -9    0  ]
-# Inequality: [  -8    8   -1    4  ]
 # Inequality: [  -1    0    5    0  ]
-# Rays 5 5
-# Vertex: [   0   -1    0  ]/2
-# Vertex: [ 300  307   60  ]/6
-# Vertex: [2700 2773  600  ]/54
-# Vertex: [ 450  458  100  ]/9
-# Vertex: [ 200  203   40  ]/4
+# Inequality: [   6   -6    1   -3  ]
+# Inequality: [  -8    8   -1    4  ]
+# Inequality: [  -1    0    0  500  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i, 0, 2*k+1)", "0", "500", "i/5", "2*i/9",
+                   "(8*i+j-4)/8", "(6*i+j-3)/6"))
 
 # UNION LBL: Dimension 3
 
@@ -471,113 +444,26 @@ YP = YP.union(ZP2D("(i, 0, k)", "101", "1000", "0", "0", "max(150*i+198*j, i/5)"
 # POLYHEDRON Dimension:3
 #            Constraints:5  Equations:0  Rays:6  Lines:0
 # Constraints 5 5
-# Inequality: [  -1    0    0   49  ]
-# Inequality: [  -1    0    5   -1  ]
-# Inequality: [  -8    4   -1   -4  ]
 # Inequality: [   2    0   -9    1  ]
 # Inequality: [   6   -3    1    3  ]
-# Rays 6 5
-# Vertex: [ 147  308   33  ]/3
-# Vertex: [ 196  407   44  ]/4
-# Vertex: [  16   37    4  ]/4
-# Vertex: [  98  203   20  ]/2
-# Vertex: [  12   28    3  ]/3
-# Vertex: [ 147  307   30  ]/3
-
-# UNION LBL: Dimension 3
-
-# LATTICE:
-# 4 4
-#    2    0    0    0 
-#    0    0    0    0 
-#   52   66    0    0 
-#    0    0    0    1 
-# POLYHEDRON Dimension:3
-#            Constraints:7  Equations:0  Rays:10  Lines:0
-# Constraints 7 5
-# Inequality: [ 200  264   -1    0  ]
-# Inequality: [   2    0   -9    0  ]
-# Inequality: [ 674  891    0    3  ]
-# Inequality: [   1    0    0   -1  ]
-# Inequality: [  -1    0    0   36  ]
-# Inequality: [-150 -198    1    0  ]
-# Inequality: [  -1    0    5    0  ]
-# Rays 10 5
-# Vertex: [ 990 -749  198  ]/990
-# Vertex: [ 891 -674  198  ]/891
-# Vertex: [10692 -8089 2178  ]/297
-# Vertex: [ 990 -749  198  ]/33
-# Vertex: [10692 -8089 2376  ]/297
-# Vertex: [3564 -2696  792  ]/99
-# Vertex: [1188 -899  264  ]/99
-# Vertex: [1320 -999  264  ]/143
-# Vertex: [ 440 -333   88  ]/440
-# Vertex: [1188 -899  264  ]/1188
-# UNION POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:6  Lines:0
-# Constraints 5 5
-# Inequality: [   2    0   -9    0  ]
-# Inequality: [-150 -198    1    0  ]
-# Inequality: [ 674  891    0    3  ]
-# Inequality: [  -1    0    0   39  ]
-# Inequality: [   1    0    0  -38  ]
-# Rays 6 5
-# Vertex: [33858 -25615 6930  ]/891
-# Vertex: [3861 -2921  792  ]/99
-# Vertex: [3861 -2921  858  ]/99
-# Vertex: [11583 -8762 2574  ]/297
-# Vertex: [33858 -25612 7524  ]/891
-# Vertex: [33858 -25615 7524  ]/891
-# UNION POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:6  Lines:0
-# Constraints 5 5
-# Inequality: [ 200  264   -1    0  ]
-# Inequality: [   2    0   -9    0  ]
-# Inequality: [-674 -891    0   -4  ]
-# Inequality: [  -1    0    0   36  ]
-# Inequality: [  -1    0    5    0  ]
-# Rays 6 5
-# Vertex: [32076 -24268 7128  ]/891
-# Vertex: [160380 -121340 32076  ]/4455
-# Vertex: [3960 -2997  792  ]/110
-# Vertex: [1760 -1332  352  ]/143
-# Vertex: [4752 -3596 1056  ]/297
-# Vertex: [1188 -899  264  ]/33
-# UNION POLYHEDRON Dimension:3
-#            Constraints:6  Equations:0  Rays:8  Lines:0
-# Constraints 6 5
-# Inequality: [ 200  264   -1    0  ]
-# Inequality: [   2    0   -9    0  ]
-# Inequality: [  -1    0    0   39  ]
-# Inequality: [-674 -891    0   -4  ]
-# Inequality: [   1    0    0  -38  ]
-# Inequality: [  -1    0    5    0  ]
-# Rays 8 5
-# Vertex: [33858 -25616 7524  ]/891
-# Vertex: [169290 -128080 33858  ]/4455
-# Vertex: [15795 -11950 3159  ]/405
-# Vertex: [3159 -2390  702  ]/81
-# Vertex: [15444 -11687 3432  ]/396
-# Vertex: [22572 -17081 5016  ]/594
-# Vertex: [8360 -6327 1672  ]/220
-# Vertex: [17160 -12987 3432  ]/440
-# UNION POLYHEDRON Dimension:3
-#            Constraints:5  Equations:0  Rays:6  Lines:0
-# Constraints 5 5
-# Inequality: [   2    0   -9    0  ]
-# Inequality: [-150 -198    1    0  ]
-# Inequality: [  -1    0    0   50  ]
-# Inequality: [ 674  891    0    3  ]
-# Inequality: [   1    0    0  -40  ]
-# Rays 6 5
-# Vertex: [35640 -26963 7326  ]/891
-# Vertex: [44550 -33703 9306  ]/891
-# Vertex: [44550 -33703 9900  ]/891
-# Vertex: [44550 -33700 9900  ]/891
-# Vertex: [35640 -26960 7920  ]/891
-# Vertex: [35640 -26963 7920  ]/891
+# Inequality: [  -8    4   -1   -4  ]
+# Inequality: [  -1    0    5   -1  ]
+# Inequality: [  -1    0    0  499  ]
+#                 i    k    j
+YP = YP.union(ZP2D("(2*i+1, 0, k)", "0", "499", "(i+1)/5", "(2*i+1)/9",
+                   "(8*i+j+4)/4", "(6*i+j+3)/3"))
 
 
-# print("len(YP) =", len(YP))
-# if len(YP - diff2) == 0:
-#   print("YP is in diff2")
+
+print("len(YP) =", len(YP))
+if len(YP - diff2) == 0:
+  print("YP is in diff2")
+else:
+  print("Points that should not be there:")
+  print(YP - diff2)
+
+if len(diff2 - YP) == 0:
+  print("diff2 is in YP")
+else:
+  print("Missing points:")
+  print(diff2 - YP)
