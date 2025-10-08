@@ -39,6 +39,7 @@ static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
 static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
 static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position);
+static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D);
 
 // typedef struct forsimplify {
 //   Polyhedron *Pol;
@@ -242,11 +243,19 @@ Bool LBLIncluded(LBL *A, LBL *B)
   LBL *diff;
 
   // Could we do better on ZDomains?
-  // the answer is no: the complicated part of the difference is not called
-  // when the input LBLs are ZDomains.
+  // the answer is no: the complicated part of the difference is not executed
+  // anyway when the input LBLs are ZDomains.
 
   diff = LBLDifference(A, B);
-  LBLSimplify(diff);
+
+  // check if diff is integer empty
+  // search an integer solution, stop as soon as found
+  for(LBL *tmp = diff; tmp; tmp = tmp->next) {
+    if((tmp->P = Domain_Remove_Integer_Empty(tmp->P))) {
+      break;
+    }
+  }
+
   if(isEmptyLBL(diff)) {
     ret = True;
   }
@@ -1427,98 +1436,86 @@ static Matrix *sLBL_Homogenize_Equalities(LBL *A)
  * In place. A->P is a domain (all polyhedra have the same set of equalities).
  * 
  * Modifies A->Lat and A->P.
- * Returns True if A is modified
  */
-static Bool sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
+static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
 {
-  if (A->P->Dimension > 0 && A->P->NbEq != 0) {
-    Matrix *H = NULL, *NewL;
-    Matrix *eq_hermite = NULL, *ker = NULL;
+  Matrix *H = NULL, *NewL;
+  Matrix *eq_hermite = NULL, *ker = NULL;
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "P has equalities\n");
+    fprintf(stderr, "Equality matrix (including constants): ");
+    Matrix_Print(stderr, P_VALUE_FMT, Equalities);
+  #endif
 
-    // simplify Lat with the equalities of domain P
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "P has equalities\n");
-      fprintf(stderr, "Equality matrix (including constants): ");
-      Matrix_Print(stderr, P_VALUE_FMT, Equalities);
-    #endif
+  // compute the kernel of Equalities matrix using Hermite:
+  left_hermite(Equalities, &eq_hermite, NULL, &ker);
+  Matrix_Free(eq_hermite);
 
-    // compute the kernel of Equalities matrix using Hermite:
-    left_hermite(Equalities, &eq_hermite, NULL, &ker);
-    Matrix_Free(eq_hermite);
-
-    // the kernel of Equalities is the last (NbEq) columns of ker
-    //            -----NbEq------
-    // ker = *..* k_0..k_{NbEq-1} c
-    // move them left, matrix ker becomes:
-    //       -----NbEq------
-    // ker = k_0..k_{NbEq-1} c *..*
-    for(int i = 0; i < ker->NbRows; i++) {
-      for(int j = 0; j < ker->NbColumns - A->P->NbEq; j++) {
-        value_assign(ker->p[i][j], ker->p[i][j + A->P->NbEq]);
-      }
+  // the kernel of Equalities is the last (NbEq) columns of ker
+  //            -----NbEq------
+  // ker = *..* k_0..k_{NbEq-1} c
+  // move them left, matrix ker becomes:
+  //       -----NbEq------
+  // ker = k_0..k_{NbEq-1} c *..*
+  for(int i = 0; i < ker->NbRows; i++) {
+    for(int j = 0; j < ker->NbColumns - A->P->NbEq; j++) {
+      value_assign(ker->p[i][j], ker->p[i][j + A->P->NbEq]);
     }
-    // set the right number of columns
-    ker->NbColumns = ker->NbColumns - A->P->NbEq;
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "ker of Eq: ");
-      Matrix_Print(stderr, P_VALUE_FMT, ker);
-    #endif
-
-    // Compute H = affine HNF of ker:
-    AffineHermite(ker, &H, NULL);
-    Matrix_Free(ker);
-    // We know that: Eq . H = Eq . Ker(Eq) = 0
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "Matrix H: ");
-      Matrix_Print(stderr, P_VALUE_FMT, H);
-    #endif
-
-    // previous method was:
-    // if the bottom right value of H is not one, this means that
-    // the transformation matrix is not integer but rational.
-    // just make it integer to eliminate rational points.
-    // (see ZImPre3 for an example where this is necessary)
-    // value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
-
-    // The result is just empty (because it is rational) when the bottom-right
-    // value of H is not one.
-    if(value_notone_p(H->p[H->NbRows-1][H->NbColumns-1])) {
-      Domain_Free(A->P);
-      A->P = NULL;  // will be fixed by caller
-    }
-    else {
-      // NewL = L . H
-      NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
-      Matrix_Product(A->Lat, H, NewL);
-
-      // NewP = H^{-1} . P
-      Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
-      // H is not necessarily unimodular, but it has multiplied Lat: this
-      // newP could have less points than the original one, which is correct
-      // since some non-integer solutions to the equalities have been removed.
-
-      // update A
-      Domain_Free(A->P);
-      Matrix_Free(A->Lat);
-      A->P = NewP;
-      A->Lat = NewL;
-    }
-
-    Matrix_Free(H);
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "New Lat: ");
-      Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
-      fprintf(stderr, "New P: ");
-      Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
-    #endif
-    return(True);
   }
-  else { // P contains no equalities
-    #ifdef CANONICAL_DEBUG
-      fprintf(stderr, "P has no equalities.\n");
-    #endif
-    return(False);
+  // set the right number of columns
+  ker->NbColumns = ker->NbColumns - A->P->NbEq;
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "ker of Eq: ");
+    Matrix_Print(stderr, P_VALUE_FMT, ker);
+  #endif
+
+  // Compute H = affine HNF of ker:
+  AffineHermite(ker, &H, NULL);
+  Matrix_Free(ker);
+  // We know that: Eq . H = Eq . Ker(Eq) = 0
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "Matrix H: ");
+    Matrix_Print(stderr, P_VALUE_FMT, H);
+  #endif
+
+  // previous method was:
+  // if the bottom right value of H is not one, this means that
+  // the transformation matrix is not integer but rational.
+  // just make it integer to eliminate rational points.
+  // (see ZImPre3 for an example where this is necessary)
+  // value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
+
+  // The result is just empty (because it is rational) when the bottom-right
+  // value of H is not one.
+  if(value_notone_p(H->p[H->NbRows-1][H->NbColumns-1])) {
+    Domain_Free(A->P);
+    A->P = NULL;      // empty
   }
+  else {
+    // NewL = L . H
+    NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
+    Matrix_Product(A->Lat, H, NewL);
+
+    // NewP = H^{-1} . P
+    Polyhedron* NewP = DomainPreimage(A->P, H, MAXNOOFRAYS);
+    // H is not necessarily unimodular, but it has multiplied Lat: this
+    // newP could have less points than the original one, which is correct
+    // since some non-integer solutions to the equalities have been removed.
+
+    // update A
+    Domain_Free(A->P);
+    Matrix_Free(A->Lat);
+    A->P = NewP;
+    A->Lat = NewL;
+  }
+
+  Matrix_Free(H);
+  #ifdef CANONICAL_DEBUG
+    fprintf(stderr, "New Lat: ");
+    Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+    fprintf(stderr, "New P: ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+  #endif
 } /* sLBL_Simplify_Equalities */
 
 
@@ -2275,17 +2272,17 @@ static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
 }
 
 /*
- * Remove polyhedra that have no integer points from a domain
+ * Remove polyhedra that have no integer solutions from a domain.
  * Return a polyhedral domain, reusing the memory of D (do not free)
  * 
- * Note: DomainConstraintSimplify() has always been called already by
- *       canonicalLBL, before entering this function. So if there is a ray
- *       in one of these polyhedra it has an integer solution.
+ * Note: DomainConstraintSimplify() has been called already by
+ *       canonicalLBL, before entering this function. So if there is a
+ *       line/ray in one of these polyhedra it has an integer solution.
  */
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 {
-  Polyhedron *result = NULL, *universe;
-  Vector *vec;
+  Polyhedron *result = NULL, *universe = NULL;
+  Vector *vec = NULL;
 
   #ifdef SIMPLIFY_DEBUG
   fprintf(stderr, "--- Entering Domain_Remove_Integer_Empty\n");
@@ -2295,12 +2292,8 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     return(NULL);
   }
 
-  vec = Vector_Alloc(D->Dimension + 2);
-  Vector_Set(vec->p, 0, D->Dimension + 1);
-  value_set_si(vec->p[D->Dimension + 1], 1);
-  universe = Universe_Polyhedron(0);
-
-  // scan each polyhedron, if no integer point eliminate it (no copy to result)
+  // scan each polyhedron, if no integer point eliminate it
+  // (do not copy to result, free memory)
   while(D) {
     Polyhedron *scan = NULL, *next;
     int ray;
@@ -2309,19 +2302,24 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     next = D->next;
     D->next = NULL;
 
-    // TODO (?)
+    if(emptyQ(D)) { // D is rational-empty, eliminate.
+      Polyhedron_Free(D);
+      D = next;
+      continue;
+    }
+    #ifdef SIMPLIFY_DEBUG
+    fprintf(stderr, "Checking integer emptyness of: ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, D);
+    #endif
+
+    // Could also check:
     // - if dark shadow (projection in every dimension) is non empty it's good.
     // -> but this check is not useful since this function should only be
     //    called on small pointy polyhedra (dark shadows have been treated
     //    before)
 
-    if(emptyQ(D)) {
-      Polyhedron_Free(D);
-      D = next;
-      continue;
-    }
-
-    // If one of the vertices is integer or if there is a ray/line, it's good
+    // If one of the vertices is integer or if there is a ray/line,
+    // it's not empty
     for(ray = 0; ray < D->NbRays; ray++) {
       if(value_zero_p(D->Ray[ray][0])                || // line, or
          value_zero_p(D->Ray[ray][D->Dimension + 1]) || // ray, or
@@ -2332,12 +2330,19 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
       }
     }
 
-    if(! int_solution_found) {
+    if(!int_solution_found) {
       // if there is no obvious integer solution, try a scan
+      // allocate memory if not done yet
+      if(!vec)
+      {
+        vec = Vector_Alloc(D->Dimension + 2);
+        Vector_Set(vec->p, 0, D->Dimension + 1);
+        value_set_si(vec->p[D->Dimension + 1], 1);
+        universe = Universe_Polyhedron(0);
+      }
+
       scan = Polyhedron_Scan(D, universe, MAXNOOFRAYS);
       #ifdef SIMPLIFY_DEBUG
-      fprintf(stderr, "Checking integer emptyness of: ");
-      Polyhedron_Print(stderr, P_VALUE_FMT, D);
       fprintf(stderr, " scan = ");
       Polyhedron_Print(stderr, P_VALUE_FMT, scan);
       #endif
@@ -2348,7 +2353,7 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
       // TODO: if found, then vec->p contains an integer solution of D,
       // use it to simplify D - at least one integer bound on first dimension
       // -> or can we force the vertex to be in D?
-      //    splitting the polyhedron in parts? -> can be very complex :(
+      //    splitting the polyhedron in parts? -> can be very complex, don't!
       if(int_solution_found) {
         Polyhedron *tmp;
         // at least we can cut the first dimension of D to the lower bound
@@ -2360,11 +2365,12 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
         tmp = AddConstraints(vec->p, 1, D, MAXNOOFRAYS);
         Polyhedron_Free(D);
         D = tmp;
+        value_set_si(vec->p[vec->Size - 1], 1); // restore vec constant
       }
     }
 
     if(int_solution_found) {
-      // link P to result
+      // link polyhedron D to result
       D->next = result;
       result = D;
       #ifdef SIMPLIFY_DEBUG
@@ -2381,8 +2387,11 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 
     D = next;
   }
-  Polyhedron_Free(universe);
-  Vector_Free(vec);
+  if(vec) {
+    // free memory used for scan, if allocated
+    Polyhedron_Free(universe);
+    Vector_Free(vec);
+  }
 
   #ifdef SIMPLIFY_DEBUG
   fprintf(stderr, "--- Exit Domain_Remove_Integer_Empty with result = ");
@@ -2432,7 +2441,7 @@ static void sLBL_Canonical(LBL *A)
   // STEP 1: normalize A->Lat
   // ************************
 
-  // Normalize the affine lattice A->Lat (and update A->P)
+  // Normalize the affine lattice of A (update A->Lat and A->P)
   sLBL_Lat_Normalize(A);
 
   // simplify non-integer constraints such that they intersect at least one
@@ -2440,8 +2449,13 @@ static void sLBL_Canonical(LBL *A)
   // empty polyhedra)
   A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
 
-  if(!A->P || emptyQ(A->P)) {
-    // empty, done.
+  // check (rational) emptyness
+  if(!A->P) {
+    return;
+  }
+  if(emptyQ(A->P)) {
+    Domain_Free(A->P);
+    A->P = NULL;
     return;
   }
 
@@ -2453,20 +2467,22 @@ static void sLBL_Canonical(LBL *A)
   // domain verify the same set of equalities
   Matrix *Equalities = sLBL_Homogenize_Equalities(A);
 
-  // We can remove the equalities from A->P
-  simplified = sLBL_Simplify_Equalities(A, Equalities);
-  Matrix_Free(Equalities);
+  if (A->P->Dimension > 0 && A->P->NbEq != 0) {
+    // Remove the equalities from A->P
+    sLBL_Simplify_Equalities(A, Equalities);
+    Matrix_Free(Equalities);
 
-  if(!A->P || emptyQ(A->P)) {
-    // empty, done.
-    return;
-  }
-  if(simplified) {
-    // if some equalities were eliminated start again from scratch!
+    if(!A->P || emptyQ(A->P)) {
+      // empty, done.
+      return;
+    }
+
+    // some equalities were eliminated, start again from scratch
     // (Lat and P changed and could be further simplified)
     sLBL_Canonical(A);
     return;
   }
+  Matrix_Free(Equalities);
 
   // ****************************************
   // STEP 3: eliminate zero columns of A->Lat
@@ -2619,20 +2635,21 @@ LBL *LBL2ZDomain(LBL *A)
  *    c- sort lattices by linear part...
  *            and try to merge same ones..., when domains overlap?
  *             or split domains such that a part of it does overlap?
- *       example: can (2i+0) be merged with (2i+1)? -> if P is same
+ *       example: can (2i+0) be merged with (2i+1)? -> if P is same -> unlikely
  * let A = im((2i+0),P), and B = im((2i+1),P') -> if A = B then (i+0), preim((i+0), A) -> Z-pol only
 
   new idea: make all lattices = (Id 0), adding existential variables in the domains to generate the right lbls
   then merge everything together
-  -> can be pretty complex...
+  -> can be pretty complex..., but obviously covers all cases!
 
- * 3- fuse/simplify all adjacent polyhedral domains (complement of simplify complement)
- * 4- CanonicalLBL to simplify lattices and remove equalities
+  * Then:
+ * - fuse/simplify all adjacent polyhedral domains (complement of simplify of complement)
+ * - CanonicalLBL to remove equalities
  */
 void LBLSimplify(LBL *A)
 {
-  // TODO: everything :)
 
+  // remove polyhedra that have no integer points from all domains
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     tmp->P = Domain_Remove_Integer_Empty(tmp->P);
   }
