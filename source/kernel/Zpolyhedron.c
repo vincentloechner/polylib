@@ -1981,7 +1981,8 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
  * Try to eliminate the zero columns of lattice A->Lat through
  * projection.
  * 
- * Eliminate only if exact shadow == dark shadow along each dimension.
+ * Successive (along each zero-dimension)
+ *   elimination if exact shadow == dark shadow
  * Restart again from last column after a successful column elimination.
  */
 static void sLBL_Simplify_Zero_Dimensions(LBL *A)
@@ -2007,19 +2008,20 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
 
       // What if some polyhedra of the union can be simplified and others
       // cannot? should we separate them or just stay at the domain level?
-      // TODO: for now, stay at the domain level.
+      // -> staying at the domain level keeps the number of lattices low,
+      //    so it's probably best, even if they have zero-columns...
       Polyhedron *dark = domain_dark_shadow(A->P, col);
       // compute exact projection of P and check if dark covers exact:
       Polyhedron *exact = domain_project(A->P, col);
       Polyhedron *diff;
-      diff = DomainDifference(exact, dark, MAXNOOFRAYS);
+      diff = DomainDifference(exact, dark, MAXNOOFRAYS); // diff = exact - dark
 
       if(! emptyQ(diff)) {
         // try to remove obvious integer-empty solutions.
-        // is this useful in some case?
         diff = DomainConstraintSimplify(diff, MAXNOOFRAYS);
-        // TODO: could check if diff has no integer solution...
       }
+      // could check if diff has no integer solution... but this is complex.
+      // Reserved for LBLSimplify()
 
       if(emptyQ(diff)) {
         // if exact - dark = 0, project out the column :)
@@ -2036,8 +2038,8 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
         A->Lat = newL;
         if(col != A->Lat->NbColumns-2) {
           // one of the "inner" columns was eliminated, check at the end if
-          // one of the outer one can be eliminated now... (call the function
-          // again at the end)
+          // one of the outer one can be eliminated now: call this same
+          // function at the end to try again.
           modified = True;
         }
       }
@@ -2061,10 +2063,11 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
   #endif
   if(modified) {
     // an inner column was eliminated, we can try again to eliminate
-    // another one (that has been scaned before).
+    // another one
     sLBL_Simplify_Zero_Dimensions(A);
   }
 } /* sLBL_Simplify_Zero_Dimensions */
+
 
 /*
  * Set the affine function A->Lat to normal form in single LBL 'A'.
@@ -2080,12 +2083,13 @@ static void sLBL_Lat_Normalize(LBL *A)
     Matrix* U = NULL;
     Matrix* H = NULL;
 
-    // for left hermite to include the constant:
+    // to compute HNF of the lattice (constant part moved left/top)
     Matrix_Move_Homogeneous_Dim_First(A->Lat);
-    // to compute HNF of the lattice (constant part left-top)
-    // We will use U = Q^{-1}, such that LU = H.
+
+    // We will use U of left Hermite, such that LU = H.
     left_hermite(A->Lat, &H, NULL, &U);
-    // Move the constant back to right-bottom
+
+    // Move the constant back to right/bottom in H and U.
     Matrix_Move_Homogeneous_Dim_Last(H);
     Matrix_Move_Homogeneous_Dim_Last(U);
 
@@ -2098,7 +2102,7 @@ static void sLBL_Lat_Normalize(LBL *A)
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     #endif
 
-    // Now update of A->P using the preimage by U (unimodular)
+    // Now update of A->P using the preimage by U (is unimodular)
     Polyhedron *NewP = DomainPreimage(A->P, U, MAXNOOFRAYS);
     Domain_Free(A->P);
     A->P = NewP;
@@ -2108,13 +2112,13 @@ static void sLBL_Lat_Normalize(LBL *A)
       fprintf(stderr, "New P: ");
       Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
     #endif
-  } // A->Lat in canonical form
+    // A->Lat is now in canonical form
+  }
   else {
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "A is HNF.\n");
     #endif
-  }
-  
+  }  
 } /* sLBL_Lat_Normalize */
 
 
@@ -2194,7 +2198,7 @@ static void LBL_Remove_Empty(LBL *A)
  * else, return False
  * 
  * scan P, and return True as soon as an integer point is found.
- * The found integer solution is in the vector val.
+ * The found integer solution is in the array val.
  */
 static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
 {
@@ -2256,8 +2260,8 @@ static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
  * Return a polyhedral domain, reusing the memory of D (do not free)
  * 
  * Note: DomainConstraintSimplify() has been called already by
- *       canonicalLBL, before entering this function. So if there is a
- *       line/ray in one of these polyhedra it has an integer solution.
+ *       canonicalLBL, before entering this function. So if there is a line
+ *       or ray in one of these polyhedra then it has an integer solution.
  */
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 {
@@ -2272,7 +2276,7 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     return(NULL);
   }
 
-  // scan each polyhedron, if no integer point eliminate it
+  // scan each polyhedron, if no integer solution eliminate it
   // (do not copy to result, free memory)
   while(D) {
     Polyhedron *scan = NULL, *next;
@@ -2292,12 +2296,6 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     Polyhedron_Print(stderr, P_VALUE_FMT, D);
     #endif
 
-    // Could also check:
-    // - if dark shadow (projection in every dimension) is non empty it's good.
-    // -> but this check is not useful since this function should only be
-    //    called on small pointy polyhedra (dark shadows have been treated
-    //    before)
-
     // If one of the vertices is integer or if there is a ray/line,
     // it's not empty
     for(ray = 0; ray < D->NbRays; ray++) {
@@ -2309,6 +2307,8 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
         break;
       }
     }
+
+    // Could check if dark shadow is non empty here.
 
     if(!int_solution_found) {
       // if there is no obvious integer solution, try a scan
@@ -2331,9 +2331,10 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
       Domain_Free(scan);
 
       // TODO: if found, then vec->p contains an integer solution of D,
-      // use it to simplify D - at least one integer bound on first dimension
+      // use it to simplify D - at least set integer bound on first dimension
       // -> or can we force the vertex to be in D?
-      //    splitting the polyhedron in parts? -> can be very complex, don't!
+      //    splitting the polyhedron in parts? -> can be very complex in
+      //    higher dimensions, don't!
       if(int_solution_found) {
         Polyhedron *tmp;
         // at least we can cut the first dimension of D to the lower bound
@@ -2341,7 +2342,7 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
         value_set_si(vec->p[0], 1);                     // inequality
         value_oppose(vec->p[vec->Size - 1], vec->p[1]); // constant = -vec[1]
         value_set_si(vec->p[1], 1);                     // vec[1] = 1
-        Vector_Set(vec->p + 2, 0, vec->Size - 3);
+        Vector_Set(vec->p + 2, 0, vec->Size - 3);       // 0's everywhere else
         tmp = AddConstraints(vec->p, 1, D, MAXNOOFRAYS);
         Polyhedron_Free(D);
         D = tmp;
@@ -2358,7 +2359,7 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
       #endif
     }
     else {
-      // free the polyhedron (next is saved)
+      // free the polyhedron (next was saved above)
       Polyhedron_Free(D);
       #ifdef SIMPLIFY_DEBUG
       fprintf(stderr, "-> empty\n");
@@ -2400,7 +2401,6 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
  */
 static void sLBL_Canonical(LBL *A)
 {
-  int simplified;
   #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Entering sLBL_Canonical\n");
     fprintf(stderr, "--------- Input Lat: ");
@@ -2467,9 +2467,10 @@ static void sLBL_Canonical(LBL *A)
   // STEP 3: eliminate zero columns of A->Lat
   // ****************************************
 
-  // Remove the columns of zeros from A->Lat if possible
-  // do the projection along those dimensions,
+  // Remove the columns of zeros from A->Lat if possible:
+  // do the projection along the zero-dimensions,
   // eliminate only if dark shadow \in exact shadow
+  // (do not convert into ZDomains/check for integer-emptyness of polyhedra)
   sLBL_Simplify_Zero_Dimensions(A);
 
   return;
