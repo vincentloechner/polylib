@@ -35,7 +35,6 @@ static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBL_Image(LBL *, Matrix *);
 static LBL *sLBL_Preimage(LBL *, Matrix *);
 static void sLBL_Canonical(LBL *A);
-static LBL *FindLatticePred(Matrix *L, LBL *A);
 static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
 static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
 static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position);
@@ -59,7 +58,8 @@ Bool isEmptyLBL(LBL *A)
   if(A->P == NULL)
     return True;
   if(emptyQ(A->P)) {
-    // check the emptiness of next
+    // this one is empty.
+    // return the emptiness of next
     return(isEmptyLBL(A->next));
   }
   return False;
@@ -182,7 +182,7 @@ static LBL *LBL_concatenate(LBL *A, LBL *B)
 
 
 /*
- * Return the empty Z-polyhedron of dimension 'dimension'
+ * Return the empty LBL of dimension 'dimension'
  * Lat = (0 ... 0 1)^T
  * P = empty polyhedron of dimension 0
  */
@@ -2120,7 +2120,7 @@ static void sLBL_Lat_Normalize(LBL *A)
 
 /*
  * Remove the empty sLBL's from a list of LBLs.
- *
+ * In place.
  */
 static void LBL_Remove_Empty(LBL *A)
 {
@@ -2145,15 +2145,15 @@ static void LBL_Remove_Empty(LBL *A)
       current = previous->next;       // new current (previous does not change)
     }
     else {
-      // advance
+      // advance to next
       previous = current;
       current = current->next;
     }
   }
 
+  // At the end, if there is something linked to an empty LBL, need to replace
+  // the content of head A with the one of A->next (and free A->next)
   if(A->next && (!A->P || emptyQ(A->P))) {
-    // if there is something linked to an empty LBL, need to replace the
-    // head A with the content of A->next, and relink next.
     LBL *nextA;
     #ifdef CANONICAL_DEBUG
     fprintf(stderr, "Found empty sLBL at head, replacing head with next\n");
@@ -2161,52 +2161,32 @@ static void LBL_Remove_Empty(LBL *A)
     nextA = A->next;
     Domain_Free(A->P);
     Matrix_Free(A->Lat);
-    A->P = nextA->P;
-    A->Lat = nextA->Lat;
-    A->next = nextA->next;
+    *A = *nextA;
     free(nextA);
   }
 
-  // If the head A is empty, make sure it is canonical
-  if((!A->P) || (A->P && emptyQ(A->P))) {
-    // not canonical if A->P is not NULL, or if Lat has more than one column
-    // canonical version of the emptyLBL
-    int dimension = A->Lat->NbRows;
+  // If A is empty, make sure it is canonical
+  if(A->P && emptyQ(A->P)) {
+    // not canonical if A->P is not NULL
     Domain_Free(A->P);
-    // A->P = Empty_Polyhedron(0);
     A->P = NULL;
-    if(A->Lat->NbColumns != 1) {
-      Matrix_Free(A->Lat);
-      A->Lat = Matrix_Alloc(dimension, 1);
-      for(int j=0 ; j < dimension-1; j++) {
-        value_set_si(A->Lat->p[0][j], 0);
-      }
-      value_set_si(A->Lat->p[0][dimension-1], 1);
-    }
+    // if empty, we do not care about the number of columns of A
+    // (was:)
+    // int dimension = A->Lat->NbRows;
+    // if(A->Lat->NbColumns != 1) {
+    //   Matrix_Free(A->Lat);
+    //   A->Lat = Matrix_Alloc(dimension, 1);
+    //   for(int j=0 ; j < dimension-1; j++) {
+    //     value_set_si(A->Lat->p[0][j], 0);
+    //   }
+    //   value_set_si(A->Lat->p[0][dimension-1], 1);
+    // }
   }
   #ifdef CANONICAL_DEBUG
   fprintf(stderr, "Exit Remove_Empty, A = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
 } /* LBL_Remove_Empty */
-
-
-/*
- * Find if a given lattice is present in a LBL.
- * Returns the address of the *previous* LBL
- * (such that ZZ->next->Lat == L).
- * NULL if not found.
- */
-static LBL *FindLatticePred(Matrix *L, LBL *A) {
-  LBL* tmp;
-
-  for(tmp = A; tmp->next; tmp=tmp->next) {
-    if(isEqualLattice(L, tmp->next->Lat)) {
-      return (tmp);
-    }
-  }
-  return (NULL);
-} /* FindLatticePred */
 
 
 /*
@@ -2445,11 +2425,11 @@ static void sLBL_Canonical(LBL *A)
   sLBL_Lat_Normalize(A);
 
   // simplify non-integer constraints such that they intersect at least one
-  // integer point (to avoid infinite empty integer polyhedra and obviously
+  // integer point (to avoid infinite integer-empty polyhedra and obviously
   // empty polyhedra)
   A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
 
-  // check (rational) emptyness
+  // check emptyness (A->P = NULL or rational empty)
   if(!A->P) {
     return;
   }
@@ -2470,19 +2450,18 @@ static void sLBL_Canonical(LBL *A)
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
     // Remove the equalities from A->P
     sLBL_Simplify_Equalities(A, Equalities);
-    Matrix_Free(Equalities);
 
-    if(!A->P || emptyQ(A->P)) {
-      // empty, done.
-      return;
-    }
-
-    // some equalities were eliminated, start again from scratch
-    // (Lat and P changed and could be further simplified)
-    sLBL_Canonical(A);
-    return;
+    // some equalities were eliminated. Do we need to start again from scratch?
+    // Lat and P changed, but Lat is kept in HNF, so no.
+    // Matrix_Free(Equalities);
+    // sLBL_Canonical(A);
+    // return;
   }
   Matrix_Free(Equalities);
+  if(!A->P) {
+    // empty, done.
+    return;
+  }
 
   // ****************************************
   // STEP 3: eliminate zero columns of A->Lat
@@ -2529,29 +2508,31 @@ void CanonicalLBL(LBL *A)
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   
-  // check if a lattice is present twice in A, and if it is, union the other
-  // polyhedral domain with this one and remove the second reference
-  for(LBL *tmp = A; tmp; tmp = tmp->next) {
-    LBL *ZZ;
-    if((ZZ = FindLatticePred(tmp->Lat, tmp))) {
-      LBL *remove;
-      Polyhedron *nextpp;
-      // add each polyhedron of the domain ZZ->next->P to tmp
-      // consumes ZZ->next->P.
-      Polyhedron *pp = ZZ->next->P;
-      while(pp) {
-        nextpp = pp->next;
-        pp->next = NULL;
-        // this consumes pp, so need to get next before
-        tmp->P = AddPolyToDomain(pp, tmp->P);
-        pp = nextpp;
+  // check if a lattice is present twice in A, and if it is, union the second
+  // polyhedral domain with the first one and remove the second sLBL
+  for(; A; A = A->next)
+  {
+    LBL *previous = A, *current = A->next;
+    while(current) {
+      if(isEqualLattice(A->Lat, current->Lat)) {
+        // move current->P to A->P, remove current, and relink previous to next
+        Polyhedron *pp = current->P;
+        while(pp) {
+          Polyhedron *nextpp = pp->next;
+          pp->next = NULL;
+          A->P = AddPolyToDomain(pp, A->P);
+          pp = nextpp;
+        }
+        Matrix_Free(current->Lat);
+        previous->next = current->next;
+        free(current);
+        current = previous->next;
+        // and previous does not change
       }
-      // remove ZZ->next by changing the linked list
-      remove = ZZ->next;
-      ZZ->next = ZZ->next->next;
-      Matrix_Free(remove->Lat);
-      // remove->P has been reused
-      free(remove);
+      else {
+        previous = current;
+        current = current->next;
+      }
     }
   }
 } /* CanonicalLBL */
