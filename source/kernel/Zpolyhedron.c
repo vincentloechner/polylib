@@ -24,8 +24,9 @@
 #define COMP_DEBUG 1
 #define HOLES_DEBUG 1
 #define SIMPLIFY_DEBUG 1
+#define SIMPLIFY_DEBUG2 1
 #endif
-// #define LBLDIFF_DEBUG 1
+#define SIMPLIFY_DEBUG 1
 
 static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
@@ -2204,7 +2205,7 @@ static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
 {
   Value LB, UB;
 
-  #ifdef SIMPLIFY_DEBUG
+  #ifdef SIMPLIFY_DEBUG2
   fprintf(stderr, "  Entering polyhedron_int_solution: position = %d, val = [",
     position);
   for(int p=1 ; p<=position; p++)
@@ -2219,7 +2220,7 @@ static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
   value_init(LB);
   value_init(UB);
   if(lower_upper_bounds(position, scan, val, &LB, &UB)) {
-    #ifdef SIMPLIFY_DEBUG
+    #ifdef SIMPLIFY_DEBUG2
     fprintf(stderr, "  polyhedron_int_solution: lower_upper_bounds not zero\n");
     #endif
     // infinite, should never happen here (should not call the scan)
@@ -2229,7 +2230,7 @@ static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
     return(True); // True if infinity
   }
   else {
-    #ifdef SIMPLIFY_DEBUG
+    #ifdef SIMPLIFY_DEBUG2
     fprintf(stderr, "  polyhedron_int_solution: LB/UB = ");
     value_print(stderr, P_VALUE_FMT, LB);
     value_print(stderr, P_VALUE_FMT, UB);
@@ -2611,8 +2612,9 @@ LBL *LBL2ZDomain(LBL *A)
  *    b- check lattice inclusion and merge?
  *       (involves a-) but how to merge?
  *         only if poly included too?
- *         or separate the part that is not included
- *       if included, transform the lattice to be equal to the first one, then
+ *         or separate the part that is not included?
+ *         -> at least their hulls should intersect.
+ *       if merge, transform the lattices to be equal:
  *       add equalities to P in order to generate the original points
  *         of L x | x \in P
  *    c- sort lattices by linear part...
@@ -2625,7 +2627,8 @@ LBL *LBL2ZDomain(LBL *A)
   then merge everything together
   -> can be pretty complex..., but obviously covers all cases!
 
-  oh, lattice inclusion test covers this case too, if the lattice Id is in the LBL
+  lattice inclusion test covers this case too, if the lattice Id is in the LBL list
+  and the hulls intersect.
 
  * Then:
  * - fuse/simplify all adjacent polyhedral domains (complement of simplify of complement)
@@ -2633,29 +2636,65 @@ LBL *LBL2ZDomain(LBL *A)
  */
 void LBLSimplify(LBL *A)
 {
+  // LBL A should be canonical (all functions return a canonical LBL)
+
   // remove polyhedra that have no integer points from all domains
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     tmp->P = Domain_Remove_Integer_Empty(tmp->P);
   }
+  LBL_Remove_Empty(A); // remove emptied LBLs from the list
 
   // check if a lattice of A is included in another, merge them if yes.
   // warning, need to modify A while scanning it: check inclusion both ways
-  // and merge with the first one (suppress the last one)
-  for(LBL *tmp = A; 0 && tmp; tmp = tmp->next) {
+  // and always merge with the first one (suppress the last one)
+  for(LBL *tmp = A; tmp; tmp = tmp->next) {
     LBL *previous = tmp, *current = tmp->next;
     while(current) {
+      int flag = 0; // 1 = current included in tmp
+                    // 2 = tmp included in current
+
+      // if(isSameLatticeSpace(current->Lat, tmp->Lat)) {
+      // // cannot happen, same lattices have been merged by canonical
+      //   flag = 3;
+      // }
+      // else
       if(LatticeIncluded(current->Lat, tmp->Lat)) {
         // current is included in tmp
-        fprintf(stderr, "---- inclusion:\n");
-        Matrix_Print(stderr, P_VALUE_FMT, current->Lat);
-        Matrix_Print(stderr, P_VALUE_FMT, tmp->Lat);
+        flag = 1;
       }
-      if(LatticeIncluded(tmp->Lat, current->Lat)) {
-        // current is included in tmp
-        fprintf(stderr, "---- inclusion:\n");
-        Matrix_Print(stderr, P_VALUE_FMT, tmp->Lat);
-        Matrix_Print(stderr, P_VALUE_FMT, current->Lat);
+      else if(LatticeIncluded(tmp->Lat, current->Lat)) {
+        // tmp is included in current
+        flag = 2;
       }
+      if(flag) {
+        Polyhedron *hull_cur, *hull_tmp, *inter;
+
+        hull_cur = DomainImage(current->P, current->Lat, MAXNOOFRAYS);
+        hull_tmp = DomainImage(tmp->P, tmp->Lat, MAXNOOFRAYS);
+        inter = DomainIntersection(hull_cur, hull_tmp, MAXNOOFRAYS);
+        #ifdef SIMPLIFY_DEBUG
+        fprintf(stderr, "merging current = ");
+        sLBLPrint(stderr, P_VALUE_FMT, current);
+        fprintf(stderr, "[merging with] tmp = ");
+        sLBLPrint(stderr, P_VALUE_FMT, tmp);
+        fprintf(stderr, "[merging] hull intersection = ");
+        Polyhedron_Print(stderr, P_VALUE_FMT, inter);
+        #endif
+        if(inter && !emptyQ(inter)) {
+          #ifdef SIMPLIFY_DEBUG
+          fprintf(stderr, " -> NOT EMPTY INTERSECTION\n");
+          #endif
+        }
+        else {
+          #ifdef SIMPLIFY_DEBUG
+          fprintf(stderr, " -> EMPTY INTERSECTION\n");
+          #endif
+        }
+        Domain_Free(inter);
+        Domain_Free(hull_tmp);
+        Domain_Free(hull_cur);
+      }
+
       previous = current;
       current = current->next;
     }
