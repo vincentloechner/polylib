@@ -2330,8 +2330,9 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 
       Domain_Free(scan);
 
-      // TODO: if found, then vec->p contains an integer solution of D,
-      // use it to simplify D - at least set integer bound on first dimension
+      // If found, then vec->p contains an integer solution of D,
+      // use it to simplify D
+      // -> at least set integer bound on first dimension
       // -> or can we force the vertex to be in D?
       //    splitting the polyhedron in parts? -> can be very complex in
       //    higher dimensions, don't!
@@ -2617,23 +2618,47 @@ LBL *LBL2ZDomain(LBL *A)
  *    c- sort lattices by linear part...
  *            and try to merge same ones..., when domains overlap?
  *             or split domains such that a part of it does overlap?
- *       example: can (2i+0) be merged with (2i+1)? -> if P is same -> unlikely
+ *       example: can (2i+0) be merged with (2i+1)? -> yes if P is same (but this is unlikely)
  * let A = im((2i+0),P), and B = im((2i+1),P') -> if A = B then (i+0), preim((i+0), A) -> Z-pol only
 
-  new idea: make all lattices = (Id 0), adding existential variables in the domains to generate the right lbls
+  another idea: make all lattices = (Id 0), adding existential variables in the domains to generate the right lbls
   then merge everything together
   -> can be pretty complex..., but obviously covers all cases!
 
-  * Then:
+  oh, lattice inclusion test covers this case too, if the lattice Id is in the LBL
+
+ * Then:
  * - fuse/simplify all adjacent polyhedral domains (complement of simplify of complement)
  * - CanonicalLBL to remove equalities
  */
 void LBLSimplify(LBL *A)
 {
-
   // remove polyhedra that have no integer points from all domains
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     tmp->P = Domain_Remove_Integer_Empty(tmp->P);
+  }
+
+  // check if a lattice of A is included in another, merge them if yes.
+  // warning, need to modify A while scanning it: check inclusion both ways
+  // and merge with the first one (suppress the last one)
+  for(LBL *tmp = A; 0 && tmp; tmp = tmp->next) {
+    LBL *previous = tmp, *current = tmp->next;
+    while(current) {
+      if(LatticeIncluded(current->Lat, tmp->Lat)) {
+        // current is included in tmp
+        fprintf(stderr, "---- inclusion:\n");
+        Matrix_Print(stderr, P_VALUE_FMT, current->Lat);
+        Matrix_Print(stderr, P_VALUE_FMT, tmp->Lat);
+      }
+      if(LatticeIncluded(tmp->Lat, current->Lat)) {
+        // current is included in tmp
+        fprintf(stderr, "---- inclusion:\n");
+        Matrix_Print(stderr, P_VALUE_FMT, tmp->Lat);
+        Matrix_Print(stderr, P_VALUE_FMT, current->Lat);
+      }
+      previous = current;
+      current = current->next;
+    }
   }
 
   CanonicalLBL(A);

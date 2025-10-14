@@ -352,7 +352,7 @@ Bool LatticeIncluded(Matrix *A, Matrix *B)
 
 
 /*
- * Check if 'A' and 'B' spread the same points (ignore columns of zero's)
+ * Check if 'A' and 'B' spread the same points (ignore columns of zeros)
  * 'A' and 'B' are canonical lattices
  */
 Bool isSameLatticeSpace(Matrix *A, Matrix *B)
