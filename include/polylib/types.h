@@ -240,10 +240,8 @@ typedef struct lattice_union {
   struct lattice_union *next;
 } LatticeUnion;
 
-// The same LBL structure is used to represent:
-// - a single LBL or a union of LBLs,
-// - a single Z-polyhedron or a union of Z-polyhedra
-// as the image of an integer polyhedron ('P') by an affine function ('Lat')
+// The same LBL structure is used to represent a single LBL or a union of LBLs
+// as the image of a polyhedral domain ('P') by an affine function ('Lat')
 typedef struct lbl {
   Matrix *Lat;
   Polyhedron *P;

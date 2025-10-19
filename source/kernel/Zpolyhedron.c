@@ -32,11 +32,11 @@ static LBL *sLBL_Intersection(LBL *, LBL *);
 static LBL *sLBL_Copy(LBL *A);
 static void sLBL_Free(LBL *L);
 static LBL *sLBLComplement(LBL *A);
-static LBL *sLBL_Difference(LBL *, LBL *);
+// static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBL_Image(LBL *, Matrix *);
 static LBL *sLBL_Preimage(LBL *, Matrix *);
 static void sLBL_Canonical(LBL *A);
-static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
+// static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
 static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
 static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position);
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D);
@@ -405,6 +405,10 @@ LBL *LBLDifference(LBL *A, LBL *B)
   fprintf(stderr, "-----Entering LBLDiff-----\n");
   #endif
   inter = LBLIntersection(A, B);
+  if(isEmptyLBL(inter)) {
+    LBLFree(inter);
+    return(LBLCopy(A));
+  }
   comp = LBLComplement(inter);
   res = LBLIntersection(comp, A);
 
@@ -676,48 +680,48 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B)
 } /* sLBL_Intersection */
 
 
+// /*
+//  * Return the difference A - B
+//  * between a union of LBLs 'A' and a single LBL 'B'.
+//  * 
+//  * Algo: remove B from each part of A, and build a list of the resulting LBLs
+//  *
+//  * USAGE: only the first lattice of B is considered
+//  *       (even if next is not NULL).
+//  * Creates a new allocated LBL, not necessarily in canonical form
+//  */
+// static LBL *LBL_sLBL_Difference(LBL *A, LBL *B)
+// {
+//   LBL *Result = NULL;
+
+//   for(; A; A = A->next) {
+//     LBL *diff;
+
+//     #ifdef LBLDIFF_DEBUG
+//     fprintf(stderr, "  LBL_sLBL_diff: Removing B from (a part of) A. A = ");
+//     sLBLPrint(stderr, P_VALUE_FMT, A);
+//     fprintf(stderr, "  LBL_sLBL_diff: Removing B from (a part of) A. B = ");
+//     sLBLPrint(stderr, P_VALUE_FMT, B);
+//     #endif
+
+//     diff = sLBL_Difference(A, B);  // A - B
+//     #ifdef LBLDIFF_DEBUG
+//     fprintf(stderr, "  LBL_sLBL_diff: diff = ");
+//     LBLPrint(stderr, P_VALUE_FMT, diff);
+//     #endif
+
+//     // simple concatenate of diff and result (not canonical)
+//     Result = LBL_concatenate(diff, Result);
+//   }
+
+//   // Result contains every piece of the solution,
+//   // but it is not necessarily in canonical form (will be done be callee)
+//   return Result;
+// } /* LBL_sLBL_Difference */
+
+
 /*
- * Return the difference A - B
- * between a union of LBLs 'A' and a single LBL 'B'.
- * 
- * Algo: remove B from each part of A, and build a list of the resulting LBLs
- *
- * USAGE: only the first lattice of B is considered
- *       (even if next is not NULL).
- * Creates a new allocated LBL, not necessarily in canonical form
- */
-static LBL *LBL_sLBL_Difference(LBL *A, LBL *B)
-{
-  LBL *Result = NULL;
-
-  for(; A; A = A->next) {
-    LBL *diff;
-
-    #ifdef LBLDIFF_DEBUG
-    fprintf(stderr, "  LBL_sLBL_diff: Removing B from (a part of) A. A = ");
-    sLBLPrint(stderr, P_VALUE_FMT, A);
-    fprintf(stderr, "  LBL_sLBL_diff: Removing B from (a part of) A. B = ");
-    sLBLPrint(stderr, P_VALUE_FMT, B);
-    #endif
-
-    diff = sLBL_Difference(A, B);  // A - B
-    #ifdef LBLDIFF_DEBUG
-    fprintf(stderr, "  LBL_sLBL_diff: diff = ");
-    LBLPrint(stderr, P_VALUE_FMT, diff);
-    #endif
-
-    // simple concatenate of diff and result (not canonical)
-    Result = LBL_concatenate(diff, Result);
-  }
-
-  // Result contains every piece of the solution,
-  // but it is not necessarily in canonical form (will be done be callee)
-  return Result;
-} /* LBL_sLBL_Difference */
-
-
-/*
- * Compute the complement of LBL A: all points z such that z is not in A.
+ * Compute the complement of sLBL A: all points z such that z is not in A.
  *
  * Algorithm:
  * Let L = A->Lat, P = A->P.
@@ -853,196 +857,196 @@ LBL *LBLComplement(LBL *A)
 } /* LBLComplement */
 
 
-/*
- * Return the difference of two single LBLs A - B.
- * A and B are single LBLs, but the return value can be a union of LBLs!
- * Creates a new allocated LBL union
- *
- * USAGE: only the first lattice of A and B is considered (no union),
- *        but A and B can contain several coordinate polyhedra (in ->P).
- * Internal function (you should use LBLDifference)
- * 
- * Algorithm:
- * -> New version: compute A inter complement(B).
- * -> Former version inspired from the method Gautam describes in his thesis,
- * modified to handle LBLs.
- */
-static LBL *sLBL_Difference(LBL* A, LBL* B)
-{
-  LBL *Result, *Bcomp; // union of LBLs
-  LBL *Binter; // intersection = single LBL.
+// /*
+//  * Return the difference of two single LBLs A - B.
+//  * A and B are single LBLs, but the return value can be a union of LBLs!
+//  * Creates a new allocated LBL union
+//  *
+//  * USAGE: only the first lattice of A and B is considered (no union),
+//  *        but A and B can contain several coordinate polyhedra (in ->P).
+//  * Internal function (you should use LBLDifference)
+//  * 
+//  * Algorithm:
+//  * -> New version: compute A inter complement(B).
+//  * -> Former version inspired from the method Gautam describes in his thesis,
+//  * modified to handle LBLs.
+//  */
+// static LBL *sLBL_Difference(LBL* A, LBL* B)
+// {
+//   LBL *Result, *Bcomp; // union of LBLs
+//   LBL *Binter; // intersection = single LBL.
 
-  #ifdef DIFFERENCE_DEBUG
-  fprintf(stderr, "-- Entering sLBL_Difference. A = ");
-  sLBLPrint(stderr, P_VALUE_FMT, A);
-  #endif
-  if (A->Lat->NbRows != B->Lat->NbRows) {
-    errormsg1("sLBL_Difference", "dimincomp", "incompatible dimensions");
-    return(NULL);
-  }
+//   #ifdef DIFFERENCE_DEBUG
+//   fprintf(stderr, "-- Entering sLBL_Difference. A = ");
+//   sLBLPrint(stderr, P_VALUE_FMT, A);
+//   #endif
+//   if (A->Lat->NbRows != B->Lat->NbRows) {
+//     errormsg1("sLBL_Difference", "dimincomp", "incompatible dimensions");
+//     return(NULL);
+//   }
 
-  // treat the simple case where the LBLs do not intersect
-  Binter = sLBL_Intersection(A, B); // reused below
-  #ifdef DIFFERENCE_DEBUG
-  fprintf(stderr, "Binter = ");
-  LBLPrint(stderr, P_VALUE_FMT, Binter);
-  #endif
-  if(isEmptyLBL(Binter)) {
-    // if B does not intersect A, return A.
-    #ifdef DIFFERENCE_DEBUG
-    fprintf(stderr,
-      "Binter=(A inter B) is empty, so B does not intersect A, we return A\n");
-    #endif
-    LBLFree(Binter);
-    return(LBLCopy(A));
-  }
+//   // treat the simple case where the LBLs do not intersect
+//   Binter = sLBL_Intersection(A, B); // reused below
+//   #ifdef DIFFERENCE_DEBUG
+//   fprintf(stderr, "Binter = ");
+//   LBLPrint(stderr, P_VALUE_FMT, Binter);
+//   #endif
+//   if(isEmptyLBL(Binter)) {
+//     // if B does not intersect A, return A.
+//     #ifdef DIFFERENCE_DEBUG
+//     fprintf(stderr,
+//       "Binter=(A inter B) is empty, so B does not intersect A, we return A\n");
+//     #endif
+//     LBLFree(Binter);
+//     return(LBLCopy(A));
+//   }
 
-  // // Separate the computation in 3 phases:
-  // // 0. compute the difference of the image polyhedra P_A \ P_B (=ImDiff) and
-  // //    add it to the solution LBL (with lattice L_A).
-  // //    This can be an over-approximation of A if A->Lat has zero columns
-  // //    (but not of B)
-  // // 1. compute the rest where the intersection of P_A and P_B have same
-  // //    dimensions (required for lattice difference)
-  // // 2. intersect the result with A to get rid of the over-approximations
+//   // // Separate the computation in 3 phases:
+//   // // 0. compute the difference of the image polyhedra P_A \ P_B (=ImDiff) and
+//   // //    add it to the solution LBL (with lattice L_A).
+//   // //    This can be an over-approximation of A if A->Lat has zero columns
+//   // //    (but not of B)
+//   // // 1. compute the rest where the intersection of P_A and P_B have same
+//   // //    dimensions (required for lattice difference)
+//   // // 2. intersect the result with A to get rid of the over-approximations
 
-  // LBL *Result = NULL, *Final_Result; // U. of LBLs
-  // LBL *Ainter, *Binter; // single LBL
-  // LatticeUnion *LatDiff;
-  // Polyhedron *imA, *imB, *preimA, *ImDiff, *ImInter; // polyhedral domains
+//   // LBL *Result = NULL, *Final_Result; // U. of LBLs
+//   // LBL *Ainter, *Binter; // single LBL
+//   // LatticeUnion *LatDiff;
+//   // Polyhedron *imA, *imB, *preimA, *ImDiff, *ImInter; // polyhedral domains
 
-  // // [STEP 0 (includes Gautam's Step 2)]
-  // imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
-  // imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
-  // ImDiff = DomainDifference(imA, imB, MAXNOOFRAYS);
-  // #ifdef DIFFERENCE_DEBUG
-  //   fprintf(stderr, "ImDiff (hull of A that does not cover B) = ");
-  //   Polyhedron_Print(stderr, P_VALUE_FMT, ImDiff);
-  // #endif
+//   // // [STEP 0 (includes Gautam's Step 2)]
+//   // imA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
+//   // imB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
+//   // ImDiff = DomainDifference(imA, imB, MAXNOOFRAYS);
+//   // #ifdef DIFFERENCE_DEBUG
+//   //   fprintf(stderr, "ImDiff (hull of A that does not cover B) = ");
+//   //   Polyhedron_Print(stderr, P_VALUE_FMT, ImDiff);
+//   // #endif
 
-  // // Add (A->Lat, A->P - hull(B)) to the result:
-  // if (!emptyQ(ImDiff)) {
-  //   Polyhedron *RedPolyDiff;
-  //   RedPolyDiff = DomainPreimage(ImDiff, A->Lat, MAXNOOFRAYS);
-  //   // NOTICE: this can be an over-approximation of A
-  //   Result = LBLAlloc(A->Lat, RedPolyDiff);
-  //   #ifdef DIFFERENCE_DEBUG
-  //     fprintf(stderr, "Adding this to the temporary result: ");
-  //     LBLPrint(stderr, P_VALUE_FMT, Result);
-  //   #endif
-  //   Domain_Free(RedPolyDiff);
-  // }
+//   // // Add (A->Lat, A->P - hull(B)) to the result:
+//   // if (!emptyQ(ImDiff)) {
+//   //   Polyhedron *RedPolyDiff;
+//   //   RedPolyDiff = DomainPreimage(ImDiff, A->Lat, MAXNOOFRAYS);
+//   //   // NOTICE: this can be an over-approximation of A
+//   //   Result = LBLAlloc(A->Lat, RedPolyDiff);
+//   //   #ifdef DIFFERENCE_DEBUG
+//   //     fprintf(stderr, "Adding this to the temporary result: ");
+//   //     LBLPrint(stderr, P_VALUE_FMT, Result);
+//   //   #endif
+//   //   Domain_Free(RedPolyDiff);
+//   // }
 
-  // // compute the images intersection of A and B
-  // ImInter = DomainIntersection(imA, imB, MAXNOOFRAYS);
-  // #ifdef DIFFERENCE_DEBUG
-  //   fprintf(stderr, "ImInter (hull of A inter B) = ");
-  //   Polyhedron_Print(stderr, P_VALUE_FMT, ImInter);
-  // #endif
+//   // // compute the images intersection of A and B
+//   // ImInter = DomainIntersection(imA, imB, MAXNOOFRAYS);
+//   // #ifdef DIFFERENCE_DEBUG
+//   //   fprintf(stderr, "ImInter (hull of A inter B) = ");
+//   //   Polyhedron_Print(stderr, P_VALUE_FMT, ImInter);
+//   // #endif
   
-  // // (TODO) can be simplified, Ainter not really needed!
+//   // // (TODO) can be simplified, Ainter not really needed!
 
-  // // compute the part of A that intersects the hull of B in the image space
-  // preimA = DomainPreimage(ImInter, A->Lat, MAXNOOFRAYS);
-  // Ainter = LBLAlloc(A->Lat, preimA);
-  // // NOTICE: this Ainter can be a over-approximation of A
+//   // // compute the part of A that intersects the hull of B in the image space
+//   // preimA = DomainPreimage(ImInter, A->Lat, MAXNOOFRAYS);
+//   // Ainter = LBLAlloc(A->Lat, preimA);
+//   // // NOTICE: this Ainter can be a over-approximation of A
 
-  // Domain_Free(preimA);
-  // Domain_Free(ImDiff);
-  // Domain_Free(imA);
-  // Domain_Free(imB);
+//   // Domain_Free(preimA);
+//   // Domain_Free(ImDiff);
+//   // Domain_Free(imA);
+//   // Domain_Free(imB);
 
-  // // now Ainter and Binter have same lattices and polyhedra dimensions
-  // #ifdef DIFFERENCE_DEBUG
-  //   fprintf(stderr,
-  //     "-- [STEP1] now we compute the intersection on same lattice dimensions\n");
-  //   fprintf(stderr, "Ainter = ");
-  //   LBLPrint(stderr, P_VALUE_FMT, Ainter);
-  //   fprintf(stderr, "and Binter = ");
-  //   LBLPrint(stderr, P_VALUE_FMT, Binter);
-  // #endif
+//   // // now Ainter and Binter have same lattices and polyhedra dimensions
+//   // #ifdef DIFFERENCE_DEBUG
+//   //   fprintf(stderr,
+//   //     "-- [STEP1] now we compute the intersection on same lattice dimensions\n");
+//   //   fprintf(stderr, "Ainter = ");
+//   //   LBLPrint(stderr, P_VALUE_FMT, Ainter);
+//   //   fprintf(stderr, "and Binter = ");
+//   //   LBLPrint(stderr, P_VALUE_FMT, Binter);
+//   // #endif
 
-  // // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of
-  // // same dimensions
-  // LatDiff = LatticeDifference(Ainter->Lat, Binter->Lat); 
-  // #ifdef DIFFERENCE_DEBUG
-  //   if(!LatDiff)
-  //     fprintf(stderr, "Empty Lattice difference\n");
-  // #endif
+//   // // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of
+//   // // same dimensions
+//   // LatDiff = LatticeDifference(Ainter->Lat, Binter->Lat); 
+//   // #ifdef DIFFERENCE_DEBUG
+//   //   if(!LatDiff)
+//   //     fprintf(stderr, "Empty Lattice difference\n");
+//   // #endif
 
-  // // [STEP 1 of Gautam]:
-  // // Add all Z-polyhedra applying the (list of) lattice difference on ImInter
-  // for(LatticeUnion *tmp = LatDiff; tmp; tmp = tmp->next) {
-  //   LBL *Ztmp;
-  //   #ifdef DIFFERENCE_DEBUG
-  //     fprintf(stderr, "Considering Lat diff: ");
-  //     Matrix_Print(stderr, P_VALUE_FMT, tmp->M);
-  //   #endif
-  //   Ztmp = malloc(sizeof(*Ztmp));
-  //   Ztmp->next = Result;
-  //   Ztmp->Lat = tmp->M;
-  //   Ztmp->P = DomainPreimage(ImInter, tmp->M, MAXNOOFRAYS);
-  //   // NOTICE: this can be an over-approximation of A (but not of B)
+//   // // [STEP 1 of Gautam]:
+//   // // Add all Z-polyhedra applying the (list of) lattice difference on ImInter
+//   // for(LatticeUnion *tmp = LatDiff; tmp; tmp = tmp->next) {
+//   //   LBL *Ztmp;
+//   //   #ifdef DIFFERENCE_DEBUG
+//   //     fprintf(stderr, "Considering Lat diff: ");
+//   //     Matrix_Print(stderr, P_VALUE_FMT, tmp->M);
+//   //   #endif
+//   //   Ztmp = malloc(sizeof(*Ztmp));
+//   //   Ztmp->next = Result;
+//   //   Ztmp->Lat = tmp->M;
+//   //   Ztmp->P = DomainPreimage(ImInter, tmp->M, MAXNOOFRAYS);
+//   //   // NOTICE: this can be an over-approximation of A (but not of B)
 
-  //   Result = Ztmp;
-  // }
-  // // free LatticeUnion remaining memory (M has been reused as a lattice of
-  // // Result)
-  // while(LatDiff) {
-  //   LatticeUnion *next = LatDiff->next;
-  //   free(LatDiff);
-  //   LatDiff = next;
-  // }
+//   //   Result = Ztmp;
+//   // }
+//   // // free LatticeUnion remaining memory (M has been reused as a lattice of
+//   // // Result)
+//   // while(LatDiff) {
+//   //   LatticeUnion *next = LatDiff->next;
+//   //   free(LatDiff);
+//   //   LatDiff = next;
+//   // }
 
-  // // (TODO) also consider the intersection of lattices, where some points of
-  // // lattice B->Lat could have no integer antecedent in B->P and should
-  // // be kept in the result A - B:
-  // // Add the holes of B (that can be included in A but not in B).
+//   // // (TODO) also consider the intersection of lattices, where some points of
+//   // // lattice B->Lat could have no integer antecedent in B->P and should
+//   // // be kept in the result A - B:
+//   // // Add the holes of B (that can be included in A but not in B).
 
 
-  // Domain_Free(ImInter);
-  // LBLFree(Ainter);
-  // LBLFree(Binter);
+//   // Domain_Free(ImInter);
+//   // LBLFree(Ainter);
+//   // LBLFree(Binter);
 
-  // if(!Result) {
-  //   #ifdef DIFFERENCE_DEBUG
-  //     fprintf(stderr, "-- result = (NULL)\n");
-  //   #endif
-  //   return(NULL);
-  // }
+//   // if(!Result) {
+//   //   #ifdef DIFFERENCE_DEBUG
+//   //     fprintf(stderr, "-- result = (NULL)\n");
+//   //   #endif
+//   //   return(NULL);
+//   // }
 
-  // #ifdef DIFFERENCE_DEBUG
-  //   fprintf(stderr, "-- temporary over-approximation of result = ");
-  //   LBLPrint(stderr, P_VALUE_FMT, Result);
-  // #endif
-  // // intersect the result with A to get the exact LBL in case there was an
-  // // over-approximation of A before.
-  // Final_Result = LBLIntersection(Result, A);
-  // LBLFree(Result);
-  // return(Final_Result);
+//   // #ifdef DIFFERENCE_DEBUG
+//   //   fprintf(stderr, "-- temporary over-approximation of result = ");
+//   //   LBLPrint(stderr, P_VALUE_FMT, Result);
+//   // #endif
+//   // // intersect the result with A to get the exact LBL in case there was an
+//   // // over-approximation of A before.
+//   // Final_Result = LBLIntersection(Result, A);
+//   // LBLFree(Result);
+//   // return(Final_Result);
 
-  // Which one to use to compute the complement, Binter or B?
-  // which one is simpler? B is larger... but Binter is part of A
-  // Binter is probably better to prepare for the intersection
-  Bcomp = sLBLComplement(Binter);
-  #ifdef DIFFERENCE_DEBUG
-  fprintf(stderr, "Difference = intersection (between A and) Bcomp = ");
-  LBLPrint(stderr, P_VALUE_FMT, Bcomp);
-  #endif
-  LBL *nextA = A->next; A->next = NULL; // unlink A from its next
-  Result = LBLIntersection(Bcomp, A);
-  A->next = nextA;
+//   // Which one to use to compute the complement, Binter or B?
+//   // which one is simpler? B is larger... but Binter is part of A
+//   // Binter is probably better to prepare for the intersection
+//   Bcomp = sLBLComplement(Binter);
+//   #ifdef DIFFERENCE_DEBUG
+//   fprintf(stderr, "Difference = intersection (between A and) Bcomp = ");
+//   LBLPrint(stderr, P_VALUE_FMT, Bcomp);
+//   #endif
+//   LBL *nextA = A->next; A->next = NULL; // unlink A from its next
+//   Result = LBLIntersection(Bcomp, A);
+//   A->next = nextA;
 
-  LBLFree(Binter);
-  LBLFree(Bcomp);
+//   LBLFree(Binter);
+//   LBLFree(Bcomp);
 
-  #ifdef DIFFERENCE_DEBUG
-  fprintf(stderr, "Difference = ");
-  LBLPrint(stderr, P_VALUE_FMT, Result);
-  #endif
+//   #ifdef DIFFERENCE_DEBUG
+//   fprintf(stderr, "Difference = ");
+//   LBLPrint(stderr, P_VALUE_FMT, Result);
+//   #endif
 
-  return(Result);
-} /* sLBL_Difference */
+//   return(Result);
+// } /* sLBL_Difference */
 
 
 /*
@@ -1479,20 +1483,15 @@ static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
     Matrix_Print(stderr, P_VALUE_FMT, H);
   #endif
 
-  // previous method was:
-  // if the bottom right value of H is not one, this means that
-  // the transformation matrix is not integer but rational.
-  // just make it integer to eliminate rational points.
-  // (see ZImPre3 for an example where this is necessary)
-  // value_set_si(H->p[H->NbRows-1][H->NbColumns-1], 1);
-
   // The result is just empty (because it is rational) when the bottom-right
   // value of H is not one.
-  if(value_notone_p(H->p[H->NbRows-1][H->NbColumns-1])) {
-    Domain_Free(A->P);
-    A->P = NULL;      // empty
-  }
-  else {
+  // ----> But this never happens since H is HNF!
+  // if(value_notone_p(H->p[H->NbRows-1][H->NbColumns-1])) {
+  //   Domain_Free(A->P);
+  //   A->P = NULL;      // empty
+  // }
+  // else
+  {
     // NewL = L . H
     NewL = Matrix_Alloc(A->Lat->NbRows, H->NbColumns);
     Matrix_Product(A->Lat, H, NewL);

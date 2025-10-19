@@ -6,17 +6,18 @@ extern "C" {
 #endif
 
 // DEFINITIONS:
-// - a 'single LBL' is a single affine integer function (as the matrix Lat)
-//   associated to a polyhedral domain P (a polyhedral domain can be a union
-//   of polyhedra). As such, it represents the set of all points:
-//      {x = Lat z with z \in P and z \in Z^d}
-//   Lat is in homogeneous HNF and P does not contain equalities (rational).
+// - a 'single LBL' is a single affine integer function (as PolyLib matrix Lat)
+//   associated to a polyhedral domain P (a union of polyhedra).
+//   As such, it represents the set of all points:
+//      {x = Lat z | z \in P and z \in Z^d}
+//   In its canonical form, Lat is in homogeneous HNF and P does not contain
+//   equalities (rational).
 //
-// - the name 'LBL' is used to define a union of LBLs, as a chained list of
-//   LBLs (with possibly multiple _different_ lattices).
-// *************************************************************************
-// All user exposed functions manipulate canonical unions of LBLs by default
-// *************************************************************************
+// - the name 'LBL' is used to describe a union of canonical LBLs, as a linked
+//   list of single LBLs with possibly multiple _different_ lattices
+//   ************************************************************
+//    All user exposed functions manipulate canonical LBL unions
+//   ************************************************************
 //
 // - a 'Z-polyhedron' is the intersection of an integer lattice and an
 //   integer polyhedron. A Z-polyhedron *is* also a specific single LBL and
@@ -27,16 +28,15 @@ extern "C" {
 // - a 'Z-domain' is a union of Z-polyhedra.
 //
 // All those objects are represented using the same data structure (LBL *),
-// so the functions have explicit prefix/suffix names depending on what they
-// handle: sLBL, LBL, Zpolyhedron, ZDomain.
+// but all the user-exposed functions handle LBL unions.
 
-extern LBL *LBLAlloc(Matrix *Lat, Polyhedron *Poly);
-extern void LBLFree(LBL *Head);
+extern LBL *LBLAlloc(Matrix *Lat, Polyhedron *Domain);
+extern void LBLFree(LBL *A);
 extern void LBLPrint(FILE *fp, const char *format, LBL *A);
-extern LBL *LBLCopy(LBL *Head);
+extern LBL *LBLCopy(LBL *A);
 extern LBL *EmptyLBL(int dimension);
 extern LBL *UniverseLBL(int dimension);
-extern Bool isEmptyLBL(LBL *Zpol);
+extern Bool isEmptyLBL(LBL *A);
 
 extern LBL *LBLUnion(LBL *A, LBL *B);
 extern Bool LBLIncluded(LBL *A, LBL *B);       // True if A \in B
