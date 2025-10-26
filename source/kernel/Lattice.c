@@ -4,7 +4,6 @@
 // #define LATINTER_DEBUG 1
 // #define LATDIF_DEBUG 1
 
-
 static int *get_pivots_columns(Matrix* A);
 static int value_prime_factors(Value n, Vector **result);
 static LatticeUnion *generate_lattice_union_line(

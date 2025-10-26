@@ -2272,10 +2272,6 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
   fprintf(stderr, "--- Entering Domain_Remove_Integer_Empty\n");
   #endif
 
-  if(!D) {
-    return(NULL);
-  }
-
   // scan each polyhedron, if no integer solution eliminate it
   // (do not copy to result, free memory)
   while(D) {
