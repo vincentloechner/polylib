@@ -607,7 +607,7 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
  * 
  * Then computes H = left Hermite of Tmp
  * H is of the form:
- * H =   D  |     0            D is a square matrix
+ * H =   D  |   0 ... 0          D is a square matrix if A and B are square
  *     -----+-----------
  *       X  |  1 0 ... 0
  *          |  r    R
