@@ -26,7 +26,7 @@
 #define SIMPLIFY_DEBUG 1
 #define SIMPLIFY_DEBUG2 1
 #endif
-#define SIMPLIFY_DEBUG 1
+// #define SIMPLIFY_DEBUG 1
 
 static LBL *sLBLIntersection(LBL *, LBL *);
 static LBL *sLBLCopy(LBL *A);
@@ -474,14 +474,6 @@ LBL *LBLPreimage(LBL *A, Matrix *Func) {
   return Result;
 } /* LBLPreimage */
 
-
-void sLBLPrint(FILE *out, char *fmt, LBL *A)
-{
-  LBL *next = A->next;
-  A->next=NULL;
-  LBLPrint(out, fmt, A);
-  A->next = next;
-}
 
 
 /*
