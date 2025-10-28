@@ -28,16 +28,16 @@
 #endif
 #define SIMPLIFY_DEBUG 1
 
-static LBL *sLBL_Intersection(LBL *, LBL *);
-static LBL *sLBL_Copy(LBL *A);
-static void sLBL_Free(LBL *L);
+static LBL *sLBLIntersection(LBL *, LBL *);
+static LBL *sLBLCopy(LBL *A);
+static void sLBLFree(LBL *L);
 static LBL *sLBLComplement(LBL *A);
 // static LBL *sLBL_Difference(LBL *, LBL *);
-static LBL *sLBL_Image(LBL *, Matrix *);
-static LBL *sLBL_Preimage(LBL *, Matrix *);
-static void sLBL_Canonical(LBL *A);
+static LBL *sLBLImage(LBL *, Matrix *);
+static LBL *sLBLPreimage(LBL *, Matrix *);
+static void sLBLCanonical(LBL *A);
 // static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
-static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact);
+static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact);
 static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position);
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D);
 
@@ -104,7 +104,7 @@ LBL *LBLAlloc(Matrix *Lat, Polyhedron *Domain)
  * Free the memory used by the single LBL 'L'
  * Internal function, users should use LBLFree.
  */
-static void sLBL_Free(LBL *L)
+static void sLBLFree(LBL *L)
 {
   if (L == NULL)
     return;
@@ -114,7 +114,7 @@ static void sLBL_Free(LBL *L)
     Domain_Free(L->P);
   free(L);
   return;
-} /* sLBL_Free */
+} /* sLBLFree */
 
 
 /*
@@ -125,7 +125,7 @@ void LBLFree(LBL *L)
   if (L == NULL)
     return;
   LBLFree(L->next);
-  sLBL_Free(L);
+  sLBLFree(L);
 } /* LBLFree */
 
 
@@ -133,10 +133,10 @@ void LBLFree(LBL *L)
  * Return a copy of the single LBL 'A'.
  * Internal function, users should use LBLCopy.
  */
-static LBL *sLBL_Copy(LBL *A)
+static LBL *sLBLCopy(LBL *A)
 {
   return (LBLAlloc(A->Lat, A->P));
-} /* sLBL_Copy */
+} /* sLBLCopy */
 
 
 /*
@@ -145,7 +145,7 @@ static LBL *sLBL_Copy(LBL *A)
 LBL *LBLCopy(LBL *L)
 {
   LBL *copy;
-  copy = sLBL_Copy(L);
+  copy = sLBLCopy(L);
 
   if (L->next != NULL)
     copy->next = LBLCopy(L->next);
@@ -160,7 +160,7 @@ LBL *LBLCopy(LBL *L)
  * the result. Internal function only, do not use to build unions.
  * No simplification, just join them.
  */
-static LBL *LBL_concatenate(LBL *A, LBL *B)
+static LBL *LBLConcatenate(LBL *A, LBL *B)
 {
   LBL *tmp;
 
@@ -179,7 +179,7 @@ static LBL *LBL_concatenate(LBL *A, LBL *B)
   tmp->next = B;
   
   return (A);
-} /* LBL_concatenate */
+} /* LBLConcatenate */
 
 
 /*
@@ -307,7 +307,7 @@ LBL *LBLUnion(LBL *A, LBL *B)
 
   // copy A and B, concatenate, Canonicalize, and return :)
 
-  Result = LBL_concatenate(LBLCopy(A), LBLCopy(B));
+  Result = LBLConcatenate(LBLCopy(A), LBLCopy(B));
 
   CanonicalLBL(Result);
 
@@ -334,9 +334,9 @@ LBL *LBLIntersection(LBL *A, LBL *B)
   for (tempA = A; tempA; tempA = tempA->next) {
     for (tempB = B; tempB; tempB = tempB->next) {
       LBL *Inter;
-      Inter = sLBL_Intersection(tempA, tempB);
+      Inter = sLBLIntersection(tempA, tempB);
       if(Inter) {
-        Result = LBL_concatenate(Inter, Result);
+        Result = LBLConcatenate(Inter, Result);
       }
     }
   }
@@ -440,8 +440,8 @@ LBL *LBLImage(LBL *A, Matrix *Func)
 
   for (LBL *temp = A; temp; temp = temp->next) {
     LBL *Im;
-    Im = sLBL_Image(temp, Func);
-    Result = LBL_concatenate(Im, Result);
+    Im = sLBLImage(temp, Func);
+    Result = LBLConcatenate(Im, Result);
   }
   if (Result == NULL)
     return EmptyLBL(A->Lat->NbRows - 1);
@@ -463,8 +463,8 @@ LBL *LBLPreimage(LBL *A, Matrix *Func) {
 
   for (LBL *temp = A; temp; temp = temp->next) {
     LBL *B;
-    B = sLBL_Preimage(temp, Func);
-    Result = LBL_concatenate(B, Result);
+    B = sLBLPreimage(temp, Func);
+    Result = LBLConcatenate(B, Result);
   }
 
   if (Result == NULL)
@@ -475,7 +475,7 @@ LBL *LBLPreimage(LBL *A, Matrix *Func) {
 } /* LBLPreimage */
 
 
-void sLBL_Print(FILE *out, char *fmt, LBL *A)
+void sLBLPrint(FILE *out, char *fmt, LBL *A)
 {
   LBL *next = A->next;
   A->next=NULL;
@@ -501,17 +501,17 @@ void sLBL_Print(FILE *out, char *fmt, LBL *A)
  *      build the LBL { AL z |  BL z' = AL z, z \in AP, z' \in BP },
  *      and remove z' by normalizing the result
  */
-static LBL *sLBL_Intersection(LBL *A, LBL *B)
+static LBL *sLBLIntersection(LBL *A, LBL *B)
 {
   LBL *Result = NULL;
   Matrix *LInter;
   Polyhedron *PInter, *ImageA, *ImageB, *PreImage;
 
   #ifdef INTERSECTION_DEBUG
-    fprintf(stderr, "-- Entering sLBL_Intersection\nA = ");
-    sLBL_Print(stderr, P_VALUE_FMT, A);
+    fprintf(stderr, "-- Entering sLBLIntersection\nA = ");
+    sLBLPrint(stderr, P_VALUE_FMT, A);
     fprintf(stderr, "B = ");
-    sLBL_Print(stderr, P_VALUE_FMT, B);
+    sLBLPrint(stderr, P_VALUE_FMT, B);
   #endif
   if(isEmptyLBL(A) || isEmptyLBL(B))
   {
@@ -522,7 +522,7 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B)
     Matrix_Free(LInter);
     #ifdef INTERSECTION_DEBUG
     fprintf(stderr, "Empty Lattice intersection, result = <empty>\n");
-    fprintf(stderr, "-- exit sLBL_Intersection\n");
+    fprintf(stderr, "-- exit sLBLIntersection\n");
     #endif
     return (NULL);
   }
@@ -562,7 +562,7 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B)
       fprintf(stderr, "empty\n");
     else
       LBLPrint(stderr, P_VALUE_FMT, Result);
-    fprintf(stderr, "-- exit sLBL_Intersection\n");
+    fprintf(stderr, "-- exit sLBLIntersection\n");
     #endif
 
     return (Result);
@@ -671,13 +671,13 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B)
     #ifdef INTERSECTION_DEBUG
     fprintf(stderr, "Manual built intersection = ");
     LBLPrint(stderr, P_VALUE_FMT, Result);
-    fprintf(stderr, "-- exit sLBL_Intersection\n");
+    fprintf(stderr, "-- exit sLBLIntersection\n");
     #endif
 
     return(Result);
   }
 
-} /* sLBL_Intersection */
+} /* sLBLIntersection */
 
 
 // /*
@@ -711,7 +711,7 @@ static LBL *sLBL_Intersection(LBL *A, LBL *B)
 //     #endif
 
 //     // simple concatenate of diff and result (not canonical)
-//     Result = LBL_concatenate(diff, Result);
+//     Result = LBLConcatenate(diff, Result);
 //   }
 
 //   // Result contains every piece of the solution,
@@ -806,7 +806,7 @@ static LBL *sLBLComplement(LBL *A)
     // there are potential holes
     Matrix *newL;
     Polyhedron *holes;
-    holes = sLBL_compute_holes(A, NULL);
+    holes = sLBLCompute_holes(A, NULL);
     #ifdef COMP_DEBUG
     fprintf(stderr, "\nSTEP 3 adding holes = ");
     Polyhedron_Print(stderr, P_VALUE_FMT, holes);
@@ -816,7 +816,7 @@ static LBL *sLBLComplement(LBL *A)
     {
       newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
     
-      Result = LBL_concatenate(LBLAlloc(newL, holes), Result);
+      Result = LBLConcatenate(LBLAlloc(newL, holes), Result);
       Matrix_Free(newL);
     }
     Domain_Free(holes);
@@ -886,7 +886,7 @@ LBL *LBLComplement(LBL *A)
 //   }
 
 //   // treat the simple case where the LBLs do not intersect
-//   Binter = sLBL_Intersection(A, B); // reused below
+//   Binter = sLBLIntersection(A, B); // reused below
 //   #ifdef DIFFERENCE_DEBUG
 //   fprintf(stderr, "Binter = ");
 //   LBLPrint(stderr, P_VALUE_FMT, Binter);
@@ -1056,13 +1056,13 @@ LBL *LBLComplement(LBL *A)
  * - Multiply Lat by Func,
  * - Canonicalize the result (done by LBLAlloc)
  */
-static LBL *sLBL_Image(LBL *A, Matrix *Func)
+static LBL *sLBLImage(LBL *A, Matrix *Func)
 {
   Matrix *newL;
   LBL *result;
 
   if ((Func->NbColumns != A->Lat->NbRows)) {
-    errormsg1("sLBL_Image", "dimincomp", "Incompatible dimensions");
+    errormsg1("sLBLImage", "dimincomp", "Incompatible dimensions");
     return NULL;
   }
 
@@ -1076,7 +1076,7 @@ static LBL *sLBL_Image(LBL *A, Matrix *Func)
 
   Matrix_Free(newL);
   return(result);
-} /* sLBL_Image */
+} /* sLBLImage */
 
 /*
  * Return the preimage of the single LBL 'Z' under an affine
@@ -1087,7 +1087,7 @@ static LBL *sLBL_Image(LBL *A, Matrix *Func)
  * - build the LBL { z' | L z = G z', z \in A->P, z' free},
  * - remove z by normalizing the result
  */
-static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
+static LBL *sLBLPreimage(LBL *Z, Matrix *G)
 {
   LBL *Result;
   Polyhedron *P, *newP;
@@ -1181,10 +1181,10 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
 //     return NULL;
 //   }
 //   if (ZDom->next == NULL)
-//     return (LBL_Copy(ZDom));
+//     return (LBLCopy(ZDom));
 //   Emp = EmptyLBL(ZDom->Lat->NbRows - 1);
 //   ZDomHead = LBLUnion(ZDom, Emp);
-//   LBL_Free(Emp);
+//   LBLFree(Emp);
 //   Head = NULL;
 //   Ztmp = ZDomHead;
 //   do {
@@ -1313,7 +1313,7 @@ static LBL *sLBL_Preimage(LBL *Z, Matrix *G)
 //   if (Head == NULL) {
 //     Matrix_Free(X);
 //     Matrix_Free(Y);
-//     return LBL_Copy(ZPol);
+//     return LBLCopy(ZPol);
 //   }
 
 //   Result = NULL;
@@ -1378,7 +1378,7 @@ static Bool same_equalities(Matrix *Eq, Polyhedron *P)
  * equalities, that is, the equalities of the first polyhedron of this domain.
  * All the other ones are added to a new LBL, linked to LBL A (in A->next).
  */
-static Matrix *sLBL_Homogenize_Equalities(LBL *A)
+static Matrix *sLBLHomogenize_equalities(LBL *A)
 {
   #ifdef CANONICAL_DEBUG
   fprintf(stderr, "Checking for equalites in P\n");
@@ -1400,7 +1400,7 @@ static Matrix *sLBL_Homogenize_Equalities(LBL *A)
       if(!new) {
         new = malloc(sizeof(LBL));
         if (!new) {
-          errormsg1("sLBL_Homogenize_Equalities", "outofmem", "Out of Memory");
+          errormsg1("sLBLHomogenize_equalities", "outofmem", "Out of Memory");
           return(NULL);
         }
         new->P = NULL;
@@ -1442,7 +1442,7 @@ static Matrix *sLBL_Homogenize_Equalities(LBL *A)
  * 
  * Modifies A->Lat and A->P.
  */
-static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
+static void sLBLSimplify_equalities(LBL *A, Matrix *Equalities)
 {
   Matrix *H = NULL, *NewL;
   Matrix *eq_hermite = NULL, *ker = NULL;
@@ -1516,7 +1516,7 @@ static void sLBL_Simplify_Equalities(LBL *A, Matrix *Equalities)
     fprintf(stderr, "New P: ");
     Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
   #endif
-} /* sLBL_Simplify_Equalities */
+} /* sLBLSimplify_equalities */
 
 
 /*
@@ -1835,7 +1835,7 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dim_sh,
  *      polyhedron, add it to the polyhedral domain not_a_hole
  * - return (exact shadow - dark shadow) - not_a_hole
  */
-static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
+static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
 {
   int nbzeros;
   Polyhedron *exact = A->P, *dark = A->P; // initialize with P then project
@@ -1967,14 +1967,14 @@ static Polyhedron *sLBL_compute_holes(LBL *A, Polyhedron **pExact)
   Domain_Free(not_a_hole);
   if(emptyQ(holes)) {
     #ifdef HOLES_DEBUG
-    fprintf(stderr, "sLBL_compute_holes returning: <NULL>\n");
+    fprintf(stderr, "sLBLCompute_holes returning: <NULL>\n");
     #endif
     Domain_Free(holes);
     return(NULL); // no holes
   }
 
   return(holes);
-} /* sLBL_compute_holes */
+} /* sLBLCompute_holes */
 
 
 /*
@@ -2396,10 +2396,10 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
  * (will be removed later on).
  * Can modify A->next to insert new sub-LBLs.
  */
-static void sLBL_Canonical(LBL *A)
+static void sLBLCanonical(LBL *A)
 {
   #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Entering sLBL_Canonical\n");
+    fprintf(stderr, "Entering sLBLCanonical\n");
     fprintf(stderr, "--------- Input Lat: ");
     Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
     fprintf(stderr, "--------- Input P: ");
@@ -2410,7 +2410,7 @@ static void sLBL_Canonical(LBL *A)
     return;
   }
   if (A->P->Dimension+1 != A->Lat->NbColumns) {
-    errormsg1("sLBL_Canonical", "dimincomp", "incompatible dimensions");
+    errormsg1("sLBLCanonical", "dimincomp", "incompatible dimensions");
     return;
   }
 
@@ -2442,16 +2442,16 @@ static void sLBL_Canonical(LBL *A)
 
   // homogenize the equalities of A->P: ensure that all polyhedra of the
   // domain verify the same set of equalities
-  Matrix *Equalities = sLBL_Homogenize_Equalities(A);
+  Matrix *Equalities = sLBLHomogenize_equalities(A);
 
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
     // Remove the equalities from A->P
-    sLBL_Simplify_Equalities(A, Equalities);
+    sLBLSimplify_equalities(A, Equalities);
 
     // some equalities were eliminated. Do we need to start again from scratch?
     // Lat and P changed, but Lat is kept in HNF, so no.
     // Matrix_Free(Equalities);
-    // sLBL_Canonical(A);
+    // sLBLCanonical(A);
     // return;
   }
   Matrix_Free(Equalities);
@@ -2471,7 +2471,7 @@ static void sLBL_Canonical(LBL *A)
   sLBL_Simplify_Zero_Dimensions(A);
 
   return;
-} /* sLBL_Canonical */
+} /* sLBLCanonical */
 
 
 /*
@@ -2495,14 +2495,14 @@ void CanonicalLBL(LBL *A)
 
   // transform every LBL of the list individually
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
-    sLBL_Canonical(tmp);
+    sLBLCanonical(tmp);
   }
 
   // remove empty LBLs from the list, keep at least something in A
   LBL_Remove_Empty(A);
 
   #ifdef CANONICAL_DEBUG
-  fprintf(stderr, "sLBL_Canonical and RemoveEmpty done.\nA =");
+  fprintf(stderr, "sLBLCanonical and RemoveEmpty done.\nA =");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   
@@ -2551,7 +2551,7 @@ static LBL *sLBL2ZDomain(LBL *A)
     // there are potential holes
     Matrix *newL;
     Polyhedron *holes, *not_holes, *exact;
-    holes = sLBL_compute_holes(A, &exact);
+    holes = sLBLCompute_holes(A, &exact);
 
     not_holes = DomainDifference(exact, holes, MAXNOOFRAYS);
     #ifdef HOLES_DEBUG
@@ -2568,7 +2568,7 @@ static LBL *sLBL2ZDomain(LBL *A)
     Polyhedron_Free(not_holes);
   }
   else {
-    Result = sLBL_Copy(A);
+    Result = sLBLCopy(A);
   }
   return(Result);
 }
@@ -2589,7 +2589,7 @@ LBL *LBL2ZDomain(LBL *A)
   {
     LBL *tmp;
     tmp = sLBL2ZDomain(Z);
-    Result = LBL_concatenate(tmp, Result);
+    Result = LBLConcatenate(tmp, Result);
   }
   CanonicalLBL(Result);
   return(Result);

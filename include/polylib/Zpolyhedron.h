@@ -58,7 +58,6 @@ extern LBL *LBL2ZDomain(LBL *A);
 
 
 // removed:
-// extern LBL *LBLSimplify(LBL *ZDom);
 // extern LBL *SplitLBL(LBL *ZPol, Matrix *B);
 // extern LBL *IntegraliseMatrix(LBL *A);
 
