@@ -452,10 +452,9 @@ LBL *LBLImage(LBL *A, Matrix *Func)
 } /* LBLImage */
 
 /*
- * Return the preimage of the Z-domain 'A' under the invertible, affine, ratio-
- * nal transformation 'Func'. The number of rows of the matrix representing
- * the function 'Func' must be equal to the number of rows of the matrix repr-
- * senting the lattice of 'A'.
+ * Return the preimage of the LBL 'A' under the affine transformation 'Func'. 
+ * The number of rows of the matrix representing the function 'Func' must be
+ *  equal to the number of rows of the matrix representing the lattice of 'A'.
  */
 LBL *LBLPreimage(LBL *A, Matrix *Func) {
 
@@ -1076,14 +1075,33 @@ static LBL *sLBLImage(LBL *A, Matrix *Func)
  * be equal to the number of rows of the matrix representing the
  * lattice of Z.
  * Algorithm:
- * - build the LBL { z' | L z = G z', z \in A->P, z' free},
- * - remove z by normalizing the result
+ * - if G is invertible, compute the LBL {M^{-1} L, D},
+ * - else, build the LBL { z' | L z = G z', z \in A->P, z' free},
+ *         and remove z by normalizing the result
  */
 static LBL *sLBLPreimage(LBL *Z, Matrix *G)
 {
   LBL *Result;
   Polyhedron *P, *newP;
   Matrix *Con;
+
+  // first try if G is invertible
+  if(G->NbColumns == G->NbRows) {
+    const int dim = G->NbColumns;
+    Matrix *tmp, *inv;
+    tmp = Matrix_Copy(G);
+    inv = Matrix_Alloc(dim, dim);
+    if(Matrix_Inverse(tmp, inv) && value_one_p(inv->p[dim-1][dim-1])) {
+      // reuse tmp to compute the product Inv Lat
+      Matrix_Product(inv, Z->Lat, tmp);
+      Result = LBLAlloc(tmp, Z->P);
+      Matrix_Free(tmp);
+      Matrix_Free(inv);
+      return(Result);
+    }
+    Matrix_Free(tmp);
+    Matrix_Free(inv);
+  }
 
   if(G->NbRows != Z->Lat->NbRows) {
     // G z' = L z

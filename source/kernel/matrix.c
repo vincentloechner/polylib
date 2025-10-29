@@ -747,7 +747,7 @@ int MatInverse(Matrix *Mat, Matrix *MatInv) {
   value_clear(m2);
 
   return 1;
-} /* Mat_Inverse */
+} /* MatInverse */
 
 /*
  * Given (m x n) integer matrix 'X' and n x (k+1) rational matrix 'P', compute
