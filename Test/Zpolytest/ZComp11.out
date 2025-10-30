@@ -37,10 +37,10 @@ Inequality: [-674 -891    0  ]
 Inequality: [ 674  891    3  ]
 Inequality: [   1    0  -38  ]
 Rays 4 4
-Vertex: [44550 -33703  ]/891
 Vertex: [44550 -33700  ]/891
-Vertex: [33858 -25612  ]/891
+Vertex: [44550 -33703  ]/891
 Vertex: [33858 -25615  ]/891
+Vertex: [33858 -25612  ]/891
 UNION POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4

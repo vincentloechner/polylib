@@ -37,10 +37,10 @@ Inequality: [-674 -891    0  ]
 Inequality: [ 674  891    3  ]
 Inequality: [   1    0  -38  ]
 Rays 4 4
-Vertex: [44550 -33703  ]/891
 Vertex: [44550 -33700  ]/891
-Vertex: [33858 -25612  ]/891
+Vertex: [44550 -33703  ]/891
 Vertex: [33858 -25615  ]/891
+Vertex: [33858 -25612  ]/891
 UNION POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
@@ -366,21 +366,6 @@ Vertex: [   0    0   -1  ]/40
 Complement(Complement(A)) = LBL: Dimension 3
 
 LATTICE:
-4 1
-   0 
-   0 
-   0 
-   1 
-POLYHEDRON Dimension:0
-           Constraints:1  Equations:0  Rays:1  Lines:0
-Constraints 1 2
-Inequality: [   1  ]
-Rays 1 2
-Vertex: [ ]/1
-
-UNION LBL: Dimension 3
-
-LATTICE:
 4 3
    2    0    0 
    0    0    0 
@@ -398,6 +383,21 @@ Vertex: [3960 -2996  ]/99
 Vertex: [ 440 -333  ]/11
 Vertex: [2200 -1665  ]/44
 Vertex: [4050 -3064  ]/81
+
+UNION LBL: Dimension 3
+
+LATTICE:
+4 1
+   0 
+   0 
+   0 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
 
 UNION LBL: Dimension 3
 

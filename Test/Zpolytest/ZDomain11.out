@@ -36,10 +36,10 @@ Inequality: [ 333  440    0  ]
 Inequality: [-674 -891   -4  ]
 Inequality: [   1    0  -40  ]
 Rays 4 4
-Vertex: [11000 -8325  ]/11
 Vertex: [297000 -224668  ]/297
-Vertex: [3960 -2996  ]/99
+Vertex: [11000 -8325  ]/11
 Vertex: [ 440 -333  ]/11
+Vertex: [3960 -2996  ]/99
 
 UNION LBL: Dimension 3
 
