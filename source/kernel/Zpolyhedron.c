@@ -1653,11 +1653,82 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
 
 
 /*
- * compute the projection of domain P along dimension dim.
+ * compute the projection of domain P along dimension eliminate.
  * 
  * P is a polyhedral domain
  */
-static Polyhedron *domain_project(Polyhedron *P, int dim)
+static Polyhedron *domain_project(Polyhedron *P, int eliminate)
+{
+  Polyhedron *Pext;
+  Matrix *ray;
+  // # 1 ..........  elim+1 elim+2... dim cst
+  // --- elim+1 ---   xx    ---  dim-elim ---
+  // 
+  // new homogeneous dimension of cons and ray matrices: dim + 1.
+  const int rest = P->Dimension - eliminate;
+
+  if(!P || emptyQ(P)) {
+    return(NULL);
+  }
+  #ifdef CANONICAL_DEBUG
+  fprintf(stderr, "Entering exact shadow -dimension %d- of:", eliminate);
+  Polyhedron_Print(stderr, P_VALUE_FMT, P);
+  #endif
+
+  // add ray: a line along dimension dim
+  ray = Matrix_Alloc(1, P->Dimension + 2);
+  Vector_Set(ray->p[0], 0, P->Dimension + 2);
+  value_set_si(ray->p[0][eliminate+1], 1);
+
+  Pext = DomainAddRays(P, ray, MAXNOOFRAYS);
+  Matrix_Free(ray);
+
+
+  // just remove the dimension from Pext
+  for(Polyhedron *tmp = Pext; tmp; tmp = tmp->next) {
+    // eliminate dimension in constraint matrix
+    // (keep memory alignment of the Constraints vector of values)
+    for(int c = 0; c < tmp->NbConstraints; c++) {
+      if(c != 0)
+        Vector_Copy(tmp->Constraint[c]+0, tmp->Constraint[c]-c, eliminate + 1);
+      Vector_Copy(tmp->Constraint[c]+eliminate+2, tmp->Constraint[c]-c+eliminate+1, rest);
+      tmp->Constraint[c] -= c;
+    }
+    // eliminate dimension in ray matrix
+    // (keep memory alignment of the Ray vector of values)
+    for(int r = 0; r < tmp->NbRays; r++) {
+      if(r != 0)
+        Vector_Copy(tmp->Ray[r]+0, tmp->Ray[r]-r, eliminate + 1);
+      Vector_Copy(tmp->Ray[r]+eliminate+2, tmp->Ray[r]-r+eliminate+1, rest);
+      tmp->Ray[r] -= r;
+    }
+    tmp->Dimension--;
+  
+    // remove the null ray that is somewhere...
+    for(int r = 0; r < tmp->NbRays; r++) {
+      int i;
+      for(i = 0; i <= tmp->Dimension; i++) {
+        if(value_notzero_p(tmp->Ray[r][i]))
+          break;
+      }
+      if(i == tmp->Dimension + 1) {
+        // r is the null ray, erase it with the end of the ray matrix.
+        Vector_Copy(tmp->Ray[r+1], tmp->Ray[r], (tmp->NbRays - r - 1) * (tmp->Dimension + 2));
+        tmp->NbBid--;
+        tmp->NbRays--;
+      }
+    }
+  }
+  #ifdef CANONICAL_DEBUG
+  fprintf(stderr, "projected result P = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, Pext);
+  #endif
+
+  return(Pext);
+} /* domain_project */
+
+// previous version (much slower on large polyhedra!)
+static Polyhedron *domain_project1(Polyhedron *P, int dim)
 {
   Matrix *T; // transformation: Id without the dim column
   Polyhedron *image;

@@ -49,11 +49,11 @@ LATTICE:
 POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [   1   -5  ]
 Inequality: [  -1   81  ]
+Inequality: [   1   -5  ]
 Rays 2 3
-Vertex: [   5  ]/1
 Vertex: [  81  ]/1
+Vertex: [   5  ]/1
 
 UNION LBL: Dimension 1
 
