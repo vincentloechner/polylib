@@ -2314,10 +2314,11 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
       }
     }
 
-    // Could check if dark shadow is non empty here.
+    // Here: could check if dark shadow to 0-dim space is non empty.
 
     if(!int_solution_found) {
-      // if there is no obvious integer solution, try a scan
+      // if there is no obvious integer solution, try a scan.
+
       // allocate memory if not done yet
       if(!vec)
       {

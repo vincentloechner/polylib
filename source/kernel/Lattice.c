@@ -578,8 +578,8 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
     fprintf(stderr, "--- Exit LatDiff ---\n\n");
   #endif
 
+LD_cleanup:
   // cleanup
-  LD_cleanup:
   free(pivots_columns);
   Matrix_Free(Inter);
   Matrix_Free(rest);
@@ -962,7 +962,7 @@ static LatticeUnion *generate_lattice_union_line(int line_nb,
         // and constant: if a coefficient below the pivot is not zero, set
         // it to the intersection coef., and recompute the constant
         // accordingly (adding (modulo/step))
-        for(int ll = line_nb+1; ll < A->NbRows; ll++) {
+        for(int ll = line_nb + 1; ll < A->NbRows; ll++) {
           if(value_notzero_p(newLat->p[ll][pivot_col])) {
             // new coefficient: set it to the one of the intersection
             value_assign(newLat->p[ll][pivot_col],
