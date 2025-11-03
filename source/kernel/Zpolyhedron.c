@@ -24,9 +24,9 @@
 #define COMP_DEBUG 1
 #define HOLES_DEBUG 1
 #define SIMPLIFY_DEBUG 1
-#define SIMPLIFY_DEBUG2 1
+#define SIMPLIFY2_DEBUG 1
 #endif
-// #define SIMPLIFY_DEBUG 1
+// #define SIMPLIFY2_DEBUG 1
 
 static LBL *sLBLIntersection(LBL *, LBL *);
 static LBL *sLBLCopy(LBL *A);
@@ -2690,7 +2690,7 @@ LBL *LBL2ZDomain(LBL *A)
  *       (involves a-) but how to merge?
  *         only if poly included too?
  *         or separate the part that is not included?
- *         -> at least their hulls should intersect.
+ *         -> or at least their hulls should intersect?
  *       if merge, transform the lattices to be equal:
  *       add equalities to P in order to generate the original points
  *         of L x | x \in P
@@ -2721,61 +2721,125 @@ void LBLSimplify(LBL *A)
   }
   LBL_Remove_Empty(A); // remove emptied LBLs from the list
 
+  // ignore this for now, if debug is off:
+  #ifdef SIMPLIFY2_DEBUG
+
   // check if a lattice of A is included in another, merge them if yes.
   // warning, need to modify A while scanning it: check inclusion both ways
   // and always merge with the first one (suppress the last one)
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     LBL *previous = tmp, *current = tmp->next;
     while(current) {
-      int flag = 0; // 1 = current included in tmp
-                    // 2 = tmp included in current
+      int flag = 0; // if flag, current included in tmp
 
-      // if(isSameLatticeSpace(current->Lat, tmp->Lat)) {
-      // // cannot happen, same lattices have been merged by canonical
-      //   flag = 3;
-      // }
-      // else
-      if(LatticeIncluded(current->Lat, tmp->Lat)) {
+      if(isSameLatticeSpace(current->Lat, tmp->Lat)) {
+        // the two lattices do not have the same zero columns but are equal
+        flag = 2;
+      }
+      else if(LatticeIncluded(current->Lat, tmp->Lat)) {
         // current is included in tmp
         flag = 1;
       }
       else if(LatticeIncluded(tmp->Lat, current->Lat)) {
+        Matrix *L;
+        Polyhedron *P;
         // tmp is included in current
-        flag = 2;
+        flag = 1;
+        // exchange tmp and current, so that current is always included in tmp.
+        L = tmp->Lat;            P = tmp->P;
+        tmp->Lat = current->Lat; tmp->P = current->P;
+        current->Lat = L;        current->P = P;
       }
       if(flag) {
-        Polyhedron *hull_cur, *hull_tmp, *inter;
-
-        hull_cur = DomainImage(current->P, current->Lat, MAXNOOFRAYS);
-        hull_tmp = DomainImage(tmp->P, tmp->Lat, MAXNOOFRAYS);
-        inter = DomainIntersection(hull_cur, hull_tmp, MAXNOOFRAYS);
-        #ifdef SIMPLIFY_DEBUG
+        #ifdef SIMPLIFY2_DEBUG
         fprintf(stderr, "merging current = ");
         sLBLPrint(stderr, P_VALUE_FMT, current);
-        fprintf(stderr, "[merging with] tmp = ");
+        fprintf(stderr, "[included in] tmp = ");
         sLBLPrint(stderr, P_VALUE_FMT, tmp);
-        fprintf(stderr, "[merging] hull intersection = ");
-        Polyhedron_Print(stderr, P_VALUE_FMT, inter);
         #endif
-        if(inter && !emptyQ(inter)) {
-          #ifdef SIMPLIFY_DEBUG
-          fprintf(stderr, " -> NOT EMPTY INTERSECTION\n");
-          #endif
+        if(flag == 1) {
+          // make the lattice current equal to tmp (apart from zero columns),
+          // add equalities to the domain such that it spreads the same points.
+
+          // current included in tmp, so we know that
+          // the pivot of current is a multiple of the pivot of tmp.
+
+          // example:
+          /*
+          merging current = LBL: Dimension 2
+
+          LATTICE:
+          3 3
+            6    0    4  -> 6i+0j+4,  transf. into:
+                            2i'+0j+0 and \exists i such that i' = 3i+2
+            0    1    0
+            0    0    1
+          [included in] tmp = LBL: Dimension 2
+
+          LATTICE:
+          3 3
+            2    0    0
+            0    1    0
+            0    0    1
+          */
+
+          // a more complex example:
+          /*
+          LATTICE:
+          4 4
+            2    0    0    0  -> 2i + 0j + 0, transf. into:
+                                 i' + 0j + 0 and \exists i with i'=2i
+            0    0    0    0
+            1    3    0    1  -> i + 3j + 1, transf. into:
+                                     1j'+ 0 and \exists j with j'=i+3j+1
+            0    0    0    1
+
+          [included in] tmp = LBL: Dimension 3
+
+          LATTICE:
+          4 4
+            1    0    0    0
+
+            0    0    0    0
+            0    1    0    0
+            0    0    0    1
+          */
+
+          // and a difficult one:
+          /*
+          LATTICE:
+          4 4
+            2    0    0    0  -> same i = i'
+            5   15    0   10  -> 6i+15j+10 transf. into:
+                                     5j'    \exists j', j'=i+3j+2  (*5)
+                                            is j' = 3j and a domain transfo enough?
+            13   15   66   54 -> 13i + 15j + 66k + 54 transf. into:
+                                   13i+15j+66k+54 = 52i+27j'+66k'+0 -> same k = k'
+                                   domain transfo would be = Id.
+            0    0    0    1
+
+          [included in] tmp = LBL: Dimension 3
+          LATTICE:
+          4 4
+            2    0    0    0
+            0    5    0    0
+            52   27   66    0
+            0    0    0    1
+
+          */
         }
-        else {
-          #ifdef SIMPLIFY_DEBUG
-          fprintf(stderr, " -> EMPTY INTERSECTION\n");
-          #endif
-        }
-        Domain_Free(inter);
-        Domain_Free(hull_tmp);
-        Domain_Free(hull_cur);
+
+        // after this, align the zero columns such that the two lattices are
+        // perfectly equal
+        // can require to swap dimensions to align same existential variables (?)
+
       }
 
       previous = current;
       current = current->next;
     }
   }
+  #endif
 
   CanonicalLBL(A);
 }

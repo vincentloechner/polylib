@@ -367,7 +367,8 @@ Bool isSameLatticeSpace(Matrix *A, Matrix *B)
         return(False);
       }
     }
-    // zero's on the right of A and of B if A or B has more columns
+    // check zeros on the right of A and of B if A or B has more columns
+    // one of the two loops will be taken if A or B has more columns:
     for(; j < A->NbColumns - 1; j++) {
       if(value_notzero_p(A->p[i][j])) {
         return(False);
@@ -378,7 +379,7 @@ Bool isSameLatticeSpace(Matrix *A, Matrix *B)
         return(False);
       }
     }
-    // same constant
+    // same constant on the rightmost column
     if(value_ne(A->p[i][A->NbColumns-1], B->p[i][B->NbColumns-1])) {
       return(False);
     }
