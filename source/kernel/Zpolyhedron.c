@@ -1075,7 +1075,7 @@ static LBL *sLBLImage(LBL *A, Matrix *Func)
  * be equal to the number of rows of the matrix representing the
  * lattice of Z.
  * Algorithm:
- * - if G is invertible, compute the LBL {M^{-1} L, D},
+ * - if G is invertible, compute the LBL {G^{-1} L, D},
  * - else, build the LBL { z' | L z = G z', z \in A->P, z' free},
  *         and remove z by normalizing the result
  */
