@@ -2460,6 +2460,123 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
   return(result);
 }
 
+/*
+ * Fonction to expand the lattice of current such that it is equal to the ref
+ * lattice (ignore zero columns). The ref lattice includes the lattice
+ * current->Lat.
+ * This function will expand the domain D to the required dimension and add
+ * equalities, such that the same LBL points are spread (does the opposite
+ * of remove_equalities)
+ * In place: modifies current.
+ */
+void sLBLMake_lattice_equal_to(LBL *current, Matrix *ref)
+{
+  // current->Lat is included in ref, so we know that
+  // the pivot of current is a multiple of the pivot of tmp.
+
+  // example:
+  /*
+  merging current = LBL: Dimension 2
+
+  LATTICE:
+  3 3
+    6    0    4  -> 6i+0j+4,  transf. into:
+                    2i'+0j+0 and \exists i' such that 2i' = 6i+4
+    0    1    0
+    0    0    1
+  [included in] tmp = LBL: Dimension 2
+
+  LATTICE:
+  3 3
+    2    0    0
+    0    1    0
+    0    0    1
+  */
+
+  // a more complex example:
+  /*
+  LATTICE:
+  4 4
+    2    0    0    0  -> 2i + 0j + 0, transf. into:
+                         i' + 0j + 0 and \exists i' with i'=2i
+    0    0    0    0
+    1    3    0    1  -> i + 3j + 1, transf. into:
+                             1j'+ 0 -> \exists j' with j'=i+3j+1
+    0    0    0    1
+
+  [included in] tmp = LBL: Dimension 3
+
+  LATTICE:
+  4 4
+    1    0    0    0
+
+    0    0    0    0
+    0    1    0    0
+    0    0    0    1
+  */
+
+  // and a difficult one:
+  /*
+  LATTICE:
+  4 4
+    2    0    0    0  -> same i = i'
+    5   15    0   10  -> 5i+15j+10 transf. into:
+                             5j'    \exists j', 5j'=5i+15j+10
+                                    and a domain transfo
+    13   15   66   54 -> 13i + 15j + 66k + 54 transf. into:
+                           52i + 27j' + 66k' + 0 -> same k = k'
+
+                           (27j' = 27i + 3*27j + 54 so the line becomes
+                            79i + 81j + 66k + 54, do modulo 66 =
+                            13i + 15j + 66k + 54 that is correct.
+                            )
+    0    0    0    1
+
+  [included in] tmp = LBL: Dimension 3
+  LATTICE:
+  4 4
+    2    0    0    0
+    0    5    0    0
+    52   27   66    0
+    0    0    0    1
+
+  */
+
+  // current included in tmp
+  // the pivot of current->L is a multiple of the pivot of tmp->L.
+  Matrix *L = current->Lat;
+  for(int col = 0; col < L->NbColumns - 1; col++) {
+    // search pivot of column col
+    int row;
+    for(row = 0; row < L->NbRows ; row++) {
+      if(value_notzero_p(L->p[row][col])) {
+        break;
+      }
+    }
+    if(row == L->NbRows) {
+      // no more pivots (zero column), exit the loop.
+      break;
+    }
+
+    // now pivot is in position [row][col].
+    // if same pivot, just ignore, goto next
+    if(value_eq(L->p[row][col], ref->p[row][col])) {
+      continue;
+    }
+
+    // expand one dimension of the domain (the pivot one)
+    // and add equality L[row] = tmp->Lat[row]
+
+
+    // TODO.
+
+
+    // normalize lattice (+update domain) without removing any equalities
+    sLBL_Lat_Normalize(current);
+  }
+
+}
+
 
 /***************************************************************************/
 /*       CanonicalLBL, LBL2ZDomain, and LBLSimplify                        */
@@ -2745,7 +2862,7 @@ void LBLSimplify(LBL *A)
         Polyhedron *P;
         // tmp is included in current
         flag = 1;
-        // exchange tmp and current, so that current is always included in tmp.
+        // exchange tmp and current, so that current is included in tmp.
         L = tmp->Lat;            P = tmp->P;
         tmp->Lat = current->Lat; tmp->P = current->P;
         current->Lat = L;        current->P = P;
@@ -2758,80 +2875,17 @@ void LBLSimplify(LBL *A)
         sLBLPrint(stderr, P_VALUE_FMT, tmp);
         #endif
         if(flag == 1) {
-          // make the lattice current equal to tmp (apart from zero columns),
-          // add equalities to the domain such that it spreads the same points.
+          // make the lattice of current equal to the one of tmp
+          // - apart from zero columns
+          // (current is included in tmp)
 
-          // current included in tmp, so we know that
-          // the pivot of current is a multiple of the pivot of tmp.
-
-          // example:
-          /*
-          merging current = LBL: Dimension 2
-
-          LATTICE:
-          3 3
-            6    0    4  -> 6i+0j+4,  transf. into:
-                            2i'+0j+0 and \exists i such that i' = 3i+2
-            0    1    0
-            0    0    1
-          [included in] tmp = LBL: Dimension 2
-
-          LATTICE:
-          3 3
-            2    0    0
-            0    1    0
-            0    0    1
-          */
-
-          // a more complex example:
-          /*
-          LATTICE:
-          4 4
-            2    0    0    0  -> 2i + 0j + 0, transf. into:
-                                 i' + 0j + 0 and \exists i with i'=2i
-            0    0    0    0
-            1    3    0    1  -> i + 3j + 1, transf. into:
-                                     1j'+ 0 and \exists j with j'=i+3j+1
-            0    0    0    1
-
-          [included in] tmp = LBL: Dimension 3
-
-          LATTICE:
-          4 4
-            1    0    0    0
-
-            0    0    0    0
-            0    1    0    0
-            0    0    0    1
-          */
-
-          // and a difficult one:
-          /*
-          LATTICE:
-          4 4
-            2    0    0    0  -> same i = i'
-            5   15    0   10  -> 6i+15j+10 transf. into:
-                                     5j'    \exists j', j'=i+3j+2  (*5)
-                                            is j' = 3j and a domain transfo enough?
-            13   15   66   54 -> 13i + 15j + 66k + 54 transf. into:
-                                   13i+15j+66k+54 = 52i+27j'+66k'+0 -> same k = k'
-                                   domain transfo would be = Id.
-            0    0    0    1
-
-          [included in] tmp = LBL: Dimension 3
-          LATTICE:
-          4 4
-            2    0    0    0
-            0    5    0    0
-            52   27   66    0
-            0    0    0    1
-
-          */
+          sLBLMake_lattice_equal_to(current, tmp->Lat);
         }
 
         // after this, align the zero columns such that the two lattices are
         // perfectly equal
         // can require to swap dimensions to align same existential variables (?)
+        // or to increase dimension to take in all of them (lazy)
 
       }
 
