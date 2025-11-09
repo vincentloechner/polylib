@@ -313,13 +313,6 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     break;
 
-    
-  case 20:  /* LBLSimplify */
-    ZA = LBLAlloc(a, A);
-    LBLSimplify(ZA);
-    LBLPrint(stdout, P_VALUE_FMT, ZA);
-    break;
-
 
   // no longer in use tests:
 

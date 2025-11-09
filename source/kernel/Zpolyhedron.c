@@ -40,6 +40,8 @@ static void sLBLCanonical(LBL *A);
 static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact);
 static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position);
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D);
+static Polyhedron *domain_project(Polyhedron *P, int eliminate);
+static Polyhedron *domain_insert_dim(Polyhedron *D, int move);
 
 // typedef struct forsimplify {
 //   Polyhedron *Pol;
@@ -1727,36 +1729,36 @@ static Polyhedron *domain_project(Polyhedron *P, int eliminate)
   return(Pext);
 } /* domain_project */
 
-// previous version (much slower on large polyhedra!)
-static Polyhedron *domain_project1(Polyhedron *P, int dim)
-{
-  Matrix *T; // transformation: Id without the dim column
-  Polyhedron *image;
-  #ifdef CANONICAL_DEBUG
-    fprintf(stderr, "Entering exact shadow -dimension %d- of:", dim);
-    Polyhedron_Print(stderr, P_VALUE_FMT, P);
-  #endif
+// // previous version (much slower on large polyhedra!)
+// static Polyhedron *domain_project1(Polyhedron *P, int dim)
+// {
+//   Matrix *T; // transformation: Id without the dim column
+//   Polyhedron *image;
+//   #ifdef CANONICAL_DEBUG
+//     fprintf(stderr, "Entering exact shadow -dimension %d- of:", dim);
+//     Polyhedron_Print(stderr, P_VALUE_FMT, P);
+//   #endif
 
-  T = Matrix_Alloc(P->Dimension, P->Dimension + 1);
-  Vector_Set(T->p_Init, 0, T->p_Init_size);
-  for(int i = 0; i < P->Dimension; i++) {
-    if(i >= dim) {
-      value_set_si(T->p[i][i+1], 1);
-    }
-    else {
-      value_set_si(T->p[i][i], 1);
-    }
-  }
+//   T = Matrix_Alloc(P->Dimension, P->Dimension + 1);
+//   Vector_Set(T->p_Init, 0, T->p_Init_size);
+//   for(int i = 0; i < P->Dimension; i++) {
+//     if(i >= dim) {
+//       value_set_si(T->p[i][i+1], 1);
+//     }
+//     else {
+//       value_set_si(T->p[i][i], 1);
+//     }
+//   }
 
-  image = DomainImage(P, T, MAXNOOFRAYS);
-  #ifdef CANONICAL_DEBUG
-  fprintf(stderr, "projected result P = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, image);
-  #endif
-  Matrix_Free(T);
+//   image = DomainImage(P, T, MAXNOOFRAYS);
+//   #ifdef CANONICAL_DEBUG
+//   fprintf(stderr, "projected result P = ");
+//   Polyhedron_Print(stderr, P_VALUE_FMT, image);
+//   #endif
+//   Matrix_Free(T);
 
-  return (image);
-} /* domain_project */
+//   return (image);
+// } /* domain_project */
 
 
 /*
@@ -2461,22 +2463,77 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 }
 
 /*
- * Fonction to expand the lattice of current such that it is equal to the ref
+ * Expand domain D such that the dimension 'move' is moved to a new dimension
+ * (right) and the existing one is left empty (add a line along this dimension)
+ * 1 <= move <= D->Dimension.
+ * 
+ * In D we have constraints/rays:
+ * flag d_1 d_2 ... move-1 move move+1 ... d_dim constant
+ * the function will build:
+ * flag d_1 d_2 ... move-1  0   move+1 ... d_dim move constant
+*/
+static Polyhedron *domain_insert_dim(Polyhedron *D, int move)
+{
+  Polyhedron *R = NULL; // result
+  #ifdef SIMPLIFY2_DEBUG
+  fprintf(stderr, "Entering domain_insert_dim. move = %d, D = ", move);
+  Polyhedron_Print(stderr, P_VALUE_FMT, D);
+  #endif
+  for(Polyhedron *p = D; p; p = p->next) {
+    Polyhedron *new;
+    new = Polyhedron_Alloc(p->Dimension + 1, p->NbConstraints, p->NbRays + 1);
+    new->NbBid = p->NbBid + 1;
+    new->NbEq = p->NbEq;
+    new->flags = p->flags;
+    // copy+expand Constraint matrix:
+    for(int c = 0; c < p->NbConstraints; c++) {
+      Vector_Copy(p->Constraint[c], new->Constraint[c], p->Dimension + 1);
+      value_assign(new->Constraint[c][new->Dimension], p->Constraint[c][move]);
+      value_set_si(new->Constraint[c][move], 0);
+      value_assign(new->Constraint[c][new->Dimension + 1],
+        p->Constraint[c][p->Dimension + 1]);
+    }
+    // add new line (0 0 ... 0 1 0 ... 0) in Ray[0]
+    Vector_Set(new->Ray[0], 0, new->Dimension + 2);
+    value_set_si(new->Ray[0][move], 1);
+    // copy+expand Ray matrix (in Ray[1])
+    for(int r = 0; r < p->NbRays; r++) {
+      Vector_Copy(p->Ray[r], new->Ray[r+1], p->Dimension + 1);
+      value_assign(new->Ray[r+1][new->Dimension], p->Ray[r][move]);
+      value_set_si(new->Ray[r+1][move], 0);
+      value_assign(new->Ray[r+1][new->Dimension + 1],
+        p->Ray[r][p->Dimension + 1]);
+    }
+    // link new to result
+    new->next = R;
+    R = new;
+  }
+  #ifdef SIMPLIFY2_DEBUG
+  fprintf(stderr, "Exiting domain_insert_dim. Result = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, R);
+  #endif
+
+  return(R);
+}
+
+
+/*
+ * Fonction to expand the lattice of LBL A such that it is equal to the ref
  * lattice (ignore zero columns). The ref lattice includes the lattice
- * current->Lat.
+ * A->Lat.
  * This function will expand the domain D to the required dimension and add
  * equalities, such that the same LBL points are spread (does the opposite
  * of remove_equalities)
- * In place: modifies current.
+ * In place: modifies A.
  */
-void sLBLMake_lattice_equal_to(LBL *current, Matrix *ref)
+void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
 {
-  // current->Lat is included in ref, so we know that
-  // the pivot of current is a multiple of the pivot of tmp.
+  // A->Lat is included in ref, so we know that
+  // the pivots of A are multiple of the pivots of ref.
 
-  // example:
+  // some examples:
   /*
-  merging current = LBL: Dimension 2
+  merging A = LBL: Dimension 2
 
   LATTICE:
   3 3
@@ -2542,12 +2599,14 @@ void sLBLMake_lattice_equal_to(LBL *current, Matrix *ref)
 
   */
 
-  // current included in tmp
-  // the pivot of current->L is a multiple of the pivot of tmp->L.
-  Matrix *L = current->Lat;
+  // A included in ref
+  // the pivot of A->Lat is a multiple of the pivot of ref.
+  Matrix *L = A->Lat;
+  Matrix *new_equality = Matrix_Alloc(1, A->P->Dimension + 2 + 1);
   for(int col = 0; col < L->NbColumns - 1; col++) {
-    // search pivot of column col
     int row;
+    Polyhedron *expand, *new;
+    // search pivot of column col
     for(row = 0; row < L->NbRows ; row++) {
       if(value_notzero_p(L->p[row][col])) {
         break;
@@ -2564,17 +2623,72 @@ void sLBLMake_lattice_equal_to(LBL *current, Matrix *ref)
       continue;
     }
 
+
+    // update A->P
     // expand one dimension of the domain (the pivot one)
-    // and add equality L[row] = tmp->Lat[row]
+    // and add equality L[row] = ref[row]
+    // the original dimension should be moved to the right (eliminated) column,
+    // such that the new lattice is just ref
 
+    expand = domain_insert_dim(A->P, col + 1);
 
-    // TODO.
+    // build equality L[row] = ref[row],
+    // (the dimension col+1 of L moved to the new dimension)
+    value_set_si(new_equality->p[0][0], 0);
+    // (1) copy L and update it:
+    Vector_Copy(L->p[row], new_equality->p[0] + 1, L->NbColumns);
+    // shift the constant to the right
+    value_assign(new_equality->p[0][new_equality->NbColumns-1],
+      new_equality->p[0][new_equality->NbColumns-2]);
+    // move the pivot to the new dimension
+    value_assign(new_equality->p[0][new_equality->NbColumns-2],
+      new_equality->p[0][col+1]);
+    // and replace it with 0.
+    value_set_si(new_equality->p[0][col+1], 0);
+    // (2) substract ref[row] from the equality:
+    for(int c = 0; c < ref->NbColumns-1 && c < new_equality->NbColumns-1; c++) {
+      value_substract(new_equality->p[0][c+1], new_equality->p[0][c+1],
+        ref->p[row][c]);
+    }
+    // substract constant:
+    value_substract(new_equality->p[0][new_equality->NbColumns-1],
+      new_equality->p[0][new_equality->NbColumns-1],
+      ref->p[row][ref->NbColumns-1]);
+    #ifdef SIMPLIFY2_DEBUG
+    fprintf(stderr, "Adding constraint: ");
+    Matrix_Print(stderr, P_VALUE_FMT, new_equality);
+    #endif
 
-
-    // normalize lattice (+update domain) without removing any equalities
-    sLBL_Lat_Normalize(current);
+    // build the final domain and update A->P
+    new = DomainAddConstraints(expand, new_equality, MAXNOOFRAYS);
+    // Domain_Free(expand);
+    Domain_Free(A->P);
+    A->P = new;
   }
 
+  // update A->Lat:
+  // replace Lat with ref
+  // and add zero columns for the extra dimensions of the domain
+  Matrix *Lat = Matrix_Alloc(A->Lat->NbRows, A->P->Dimension + 1);
+  for(int r = 0; r < Lat->NbRows; r++) {
+    // linear part:
+    Vector_Copy(ref->p[r], Lat->p[r], ref->NbColumns - 1);
+    // zero columns:
+    if(Lat->NbColumns > ref->NbColumns)
+      Vector_Set(Lat->p[r] + ref->NbColumns - 1, 0, Lat->NbColumns - ref->NbColumns);
+    // constant:
+    value_assign(Lat->p[r][Lat->NbColumns - 1], ref->p[r][ref->NbColumns - 1]);
+  }
+  Matrix_Free(A->Lat);
+  A->Lat = Lat;
+  #ifdef SIMPLIFY2_DEBUG
+  fprintf(stderr, "New Lat: ");
+  Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+  #endif
+
+  // just normalize lattice (+update domain) without removing equalities
+  sLBL_Lat_Normalize(A);
+  Matrix_Free(new_equality);
 }
 
 
@@ -2845,7 +2959,7 @@ void LBLSimplify(LBL *A)
   // warning, need to modify A while scanning it: check inclusion both ways
   // and always merge with the first one (suppress the last one)
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
-    LBL *previous = tmp, *current = tmp->next;
+    LBL *current = tmp->next;
     while(current) {
       int flag = 0; // if flag, current included in tmp
 
@@ -2882,14 +2996,16 @@ void LBLSimplify(LBL *A)
           sLBLMake_lattice_equal_to(current, tmp->Lat);
         }
 
-        // after this, align the zero columns such that the two lattices are
+        // after this, fuse the zero columns such that the two lattices are
         // perfectly equal
         // can require to swap dimensions to align same existential variables (?)
         // or to increase dimension to take in all of them (lazy)
 
+        // TODO.
+
+
       }
 
-      previous = current;
       current = current->next;
     }
   }
