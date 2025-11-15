@@ -2599,27 +2599,62 @@ void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
 
   */
 
+  // dimension reduction:
+  /*
+  LATTICE:
+  3 2
+    0    3  -> add column (0 0 0)^T and add new dimension with equality {3i=3}
+    1    0                              (same procedure as above!)
+    0    1
+  [included in] tmp = LBL: Dimension 2
+  LATTICE:
+  3 3
+    3    0    0
+    0    1    0
+    0    0    1
+  */
   // A included in ref
-  // the pivot of A->Lat is a multiple of the pivot of ref.
+  // the pivot of A->Lat is a multiple of the pivot of ref (if exists)
+
+  // search the pivot in ref, it's not necessarily the same columns than
+  // A->Lat since nbcolumns(A->Lat) can be different than nbcolumns(ref)
+
   Matrix *L = A->Lat;
   Matrix *new_equality = Matrix_Alloc(1, A->P->Dimension + 2 + 1);
-  for(int col = 0; col < L->NbColumns - 1; col++) {
+  for(int col = 0; col < ref->NbColumns - 1; col++) {
     int row;
     Polyhedron *expand, *new;
     // search pivot of column col
-    for(row = 0; row < L->NbRows ; row++) {
-      if(value_notzero_p(L->p[row][col])) {
+    for(row = 0; row < ref->NbRows ; row++) {
+      if(value_notzero_p(ref->p[row][col])) {
         break;
       }
     }
-    if(row == L->NbRows) {
+    if(row == ref->NbRows) {
       // no more pivots (zero column), exit the loop.
       break;
     }
 
-    // now pivot is in position [row][col].
+    // no corresponding pivot in L!
+    if(value_zero_p(L->p[row][col])) {
+      // need to add a column in L
+
+      Matrix *newL;
+      newL = Matrix_Alloc(L->NbRows, L->NbColumns + 1);
+      for(int r = 0; r < L->NbRows; r++) {
+        // column number col is just a zero column
+        Vector_Copy(L->p[r], newL->p[r], col); // 0 to col-1
+        value_set_si(newL->p[r][col], 0);      // col
+        Vector_Copy(L->p[r] + col, newL->p[r] + col + 1, L->NbColumns - col);
+      }
+      Matrix_Free(A->Lat);
+      A->Lat = newL;
+      L = newL;
+    }
+    // now pivot is in position [row][col] of both matrices.
     // if same pivot, just ignore, goto next
-    if(value_eq(L->p[row][col], ref->p[row][col])) {
+    else if(value_eq(L->p[row][col], ref->p[row][col])) {
+      // TODO? need to check if same constant (do not continue in this case)?
       continue;
     }
 
@@ -2634,18 +2669,18 @@ void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
 
     // build equality L[row] = ref[row],
     // (the dimension col+1 of L moved to the new dimension)
-    value_set_si(new_equality->p[0][0], 0);
-    // (1) copy L and update it:
-    Vector_Copy(L->p[row], new_equality->p[0] + 1, L->NbColumns);
-    // shift the constant to the right
+    Vector_Set(new_equality->p[0], 0, new_equality->NbColumns);
+    // (1) copy linear part of L:
+    Vector_Copy(L->p[row], new_equality->p[0] + 1, L->NbColumns - 1);
+    // constant
     value_assign(new_equality->p[0][new_equality->NbColumns-1],
-      new_equality->p[0][new_equality->NbColumns-2]);
+      L->p[row][L->NbColumns-1]);
     // move the pivot to the new dimension
     value_assign(new_equality->p[0][new_equality->NbColumns-2],
       new_equality->p[0][col+1]);
     // and replace it with 0.
     value_set_si(new_equality->p[0][col+1], 0);
-    // (2) substract ref[row] from the equality:
+    // (2) substract linear part of ref[row] from the equality:
     for(int c = 0; c < ref->NbColumns-1 && c < new_equality->NbColumns-1; c++) {
       value_substract(new_equality->p[0][c+1], new_equality->p[0][c+1],
         ref->p[row][c]);
@@ -2655,7 +2690,7 @@ void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
       new_equality->p[0][new_equality->NbColumns-1],
       ref->p[row][ref->NbColumns-1]);
     #ifdef SIMPLIFY2_DEBUG
-    fprintf(stderr, "Adding constraint: ");
+    fprintf(stderr, "Adding equality: ");
     Matrix_Print(stderr, P_VALUE_FMT, new_equality);
     #endif
 
@@ -2674,8 +2709,8 @@ void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
     // linear part:
     Vector_Copy(ref->p[r], Lat->p[r], ref->NbColumns - 1);
     // zero columns:
-    if(Lat->NbColumns > ref->NbColumns)
-      Vector_Set(Lat->p[r] + ref->NbColumns - 1, 0, Lat->NbColumns - ref->NbColumns);
+    Vector_Set(Lat->p[r] + ref->NbColumns - 1, 0,
+      Lat->NbColumns - ref->NbColumns);
     // constant:
     value_assign(Lat->p[r][Lat->NbColumns - 1], ref->p[r][ref->NbColumns - 1]);
   }
@@ -2689,7 +2724,12 @@ void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
   // just normalize lattice (+update domain) without removing equalities
   sLBL_Lat_Normalize(A);
   Matrix_Free(new_equality);
-}
+
+  #ifdef SIMPLIFY2_DEBUG
+  fprintf(stderr, "Exit sLBLMake_lattice_equal_to. A = ");
+  sLBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
+} /* sLBLMake_lattice_equal_to */
 
 
 /***************************************************************************/
@@ -2990,19 +3030,22 @@ void LBLSimplify(LBL *A)
         #endif
         if(flag == 1) {
           // make the lattice of current equal to the one of tmp
-          // - apart from zero columns
+          // apart from zero columns
           // (current is included in tmp)
 
           sLBLMake_lattice_equal_to(current, tmp->Lat);
         }
 
-        // after this, fuse the zero columns such that the two lattices are
+        // after this, merge the zero columns such that the two lattices are
         // perfectly equal
-        // can require to swap dimensions to align same existential variables (?)
-        // or to increase dimension to take in all of them (lazy)
+        // can require to swap dimensions to align same existential variables,
+        // or to increase dimension to take in all of them (lazy) <- do that
+
+        int current_nbzero, tmp_nbzero;
+        current_nbzero = current->Lat->NbColumns - LatCountZeroCols(current->Lat);
+        tmp_nbzero = tmp->Lat->NbColumns - LatCountZeroCols(tmp->Lat);
 
         // TODO.
-
 
       }
 
