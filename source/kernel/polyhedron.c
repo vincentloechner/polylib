@@ -4757,6 +4757,7 @@ static Polyhedron *p_simplify_constraints(Polyhedron *P, Vector *row, Value *g,
  * or just returns P in case no changes were made
  */
 Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
+  if(!P) return(NULL);
   Polyhedron **prev;
   int len = P->Dimension + 2;
   Vector *row = Vector_Alloc(len);

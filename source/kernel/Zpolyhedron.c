@@ -2997,6 +2997,11 @@ LBL *LBL2ZDomain(LBL *A)
  */
 void LBLSimplifyEmpty(LBL *A)
 {
+  // testing:
+  #ifdef SIMPLIFY2_DEBUG
+  LBLSimplify(A);
+  #endif
+
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     tmp->P = Domain_Remove_Integer_Empty(tmp->P);
   }
@@ -3039,16 +3044,20 @@ void LBLSimplifyEmpty(LBL *A)
 void LBLSimplify(LBL *A)
 {
   // LBL A should be canonical (all functions return a canonical LBL)
+  if(isEmptyLBL(A))
+    return;
 
-  // TODO: TESTING, include lattice Id as first lattice in LBL A (with an empty domain).
-  LBL *first;
-  first = malloc(sizeof(LBL));
-  // copy A in first
-  *first = *A;
-  // set A to (Z^d, empty)
-  A->next = first;
-  A->Lat = Identity_Matrix(A->Lat->NbRows);
-  A->P = NULL;
+  // TESTING, add lattice Id as first lattice in LBL A (with an empty domain).
+  // this ensures that all lattices are merged together!
+
+  // LBL *first;
+  // first = malloc(sizeof(LBL));
+  // // copy A in first
+  // *first = *A;
+  // // set A to (Z^d, empty)
+  // A->next = first;
+  // A->Lat = Identity_Matrix(A->Lat->NbRows);
+  // A->P = NULL;
 
   // check if a lattice of A is included in another, merge them if yes.
   // warning, need to modify A while scanning it: check inclusion both ways
@@ -3159,45 +3168,62 @@ void LBLSimplify(LBL *A)
       }
     }
   }
+  // now the the polyhedra have their equalities back and are merged together,
+  // what to do with them??
 
-  // simplify domains
+
+  // THIS IS EASY BUT DOES NOT HELP :(
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
-    if(!tmp->P) {
-      continue;
-    }
-    DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
+    tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
   }
+
+
+  // // THIS IS TOO COMPLEX! -> ZDiff11 takes ages...
+  // Polyhedron *universe;
+  // universe = Universe_Polyhedron(A->P->Dimension);
 
   // for(LBL *tmp = A; tmp; tmp = tmp->next) {
   //   Polyhedron *newP;
-  //   if(!tmp->P) {
-  //     continue;
-  //   }
 
-  //   // newP = Disjoint_Domain(tmp->P, 0, MAXNOOFRAYS);
-  //   // free(tmp->P);
-  //   // tmp->P = newP;
-  //   // DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
-
-  //   Polyhedron *universe;
-  //   universe = Universe_Polyhedron(tmp->P->Dimension);
-
-  //   // twice the difference universe - tmp->P
+  //   // compute complement -> complement
+  //   // first complement
   //   newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
-  //   free(tmp->P);
+  //   Domain_Free(tmp->P);
   //   tmp->P = newP;
-  //   DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
+  
+  //   // disjoint of complement + simplify
+  //   // TOO COMPLEX:
+  //   // tmp->P = Disjoint_Domain(tmp->P, 0, MAXNOOFRAYS);
+  //   // tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
+  
+  //   // and complement + simplify:
   //   newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
-  //   free(tmp->P);
+  //   Domain_Free(tmp->P);
   //   tmp->P = newP;
-  //   DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
-  //   Polyhedron_Free(universe);
+  //   tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
   // }
+
+
+  // // THIS IS NOT WHAT WE WANT!
+  // // but could be useful to count?
+  // for(LBL *tmp = A; tmp; tmp = tmp->next) {
+  //   Polyhedron *newP;
+
+  //   // disjoint + simplify
+  //   newP = Disjoint_Domain(tmp->P, 0, MAXNOOFRAYS);
+  //   Domain_Free(tmp->P);
+  //   tmp->P = DomainConstraintSimplify(newP, MAXNOOFRAYS);
+  // }
+
+
   #ifdef SIMPLIFY2_DEBUG
   fprintf(stderr, "\n Exit LBLSimplify. A (before simplify) = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   CanonicalLBL(A);
-  
+
+  // avoid recursive loop, just for testing:
+  #ifndef SIMPLIFY2_DEBUG
   LBLSimplifyEmpty(A);
+  #endif
 } /* LBLSimplify */
