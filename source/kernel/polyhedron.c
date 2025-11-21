@@ -3524,7 +3524,7 @@ Polyhedron *Stras_DomainSimplify(Polyhedron *Pol1, Polyhedron *Pol2,
 } /* DomainSimplify */
 
 /*
- * Return the Union of two polyhedral domains 'Pol1' and Pol2'. The result is
+ * Return the union of two polyhedral domains 'Pol1' and Pol2'. The result is
  * a new polyhedral domain.
  */
 Polyhedron *DomainUnion(Polyhedron *Pol1, Polyhedron *Pol2,
@@ -4525,8 +4525,8 @@ Polyhedron *Disjoint_Domain(Polyhedron *P, int flag, unsigned NbMaxRays) {
       /* dx = DomainIntersection(reste,lR->P,WS); */
       dx = (Polyhedron *)0;
       for (p1 = reste; p1; p1 = p1->next) {
-        p3 =
-            AddConstraints(lR->Constraint[0], lR->NbConstraints, p1, NbMaxRays);
+        p3 = AddConstraints(lR->Constraint[0], lR->NbConstraints, p1,
+          NbMaxRays);
         dx = AddPolyToDomain(p3, dx);
       }
 
