@@ -188,8 +188,8 @@ int main() {
     // LBLPrint(stdout, P_VALUE_FMT, ZB);
     ZC = LBLDifference(ZA, ZB);
     ZD = LBLDifference(ZB, ZA);
-    LBLSimplify(ZC);
-    LBLSimplify(ZD);
+    LBLSimplifyEmpty(ZC);
+    LBLSimplifyEmpty(ZD);
     printf("A - B = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
     printf("\n\nB - A = ");
@@ -279,11 +279,11 @@ int main() {
 
     // check equality between ZA and ZB
     ZC = LBLDifference(ZA, ZB);
-    LBLSimplify(ZC);
+    LBLSimplifyEmpty(ZC);
     printf("A - ZD(A) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
     ZD = LBLDifference(ZB, ZA);
-    LBLSimplify(ZD);
+    LBLSimplifyEmpty(ZD);
     printf("ZD(A) - A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZD);
     break;
@@ -299,7 +299,7 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
 
     ZC = LBLIntersection(ZA, ZB);
-    LBLSimplify(ZC);
+    LBLSimplifyEmpty(ZC);
     printf("\nA inter Complement(A) (should be empty) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
     LBLFree(ZC);
@@ -308,7 +308,7 @@ int main() {
     ZD = LBLUnion(ZA, ZB);
     LBLFree(ZB);
     ZB = LBLDifference(ZC, ZD);
-    LBLSimplify(ZB);
+    LBLSimplifyEmpty(ZB);
     printf("\nUniverse - (A union Complement(A)) (should be empty) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     break;

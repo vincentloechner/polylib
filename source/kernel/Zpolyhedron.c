@@ -2989,12 +2989,27 @@ LBL *LBL2ZDomain(LBL *A)
 
 
 /*
+ * Remove integer empty single LBLs from an LBL, in place.
+ *
+ * Algorithm:
+ * Check all polyhedra for integer-emptiness, remove if a polyhedron does not
+ *    contain any integer point
+ */
+void LBLSimplifyEmpty(LBL *A)
+{
+  for(LBL *tmp = A; tmp; tmp = tmp->next) {
+    tmp->P = Domain_Remove_Integer_Empty(tmp->P);
+  }
+  LBL_Remove_Empty(A); // remove emptied LBLs from the list
+
+  CanonicalLBL(A);
+} /* LBLSimplifyEmpty */
+
+/*
  * Simplify an LBL, in place.
  *
  * Algorithm:
- * 1- check for integer-empty polyhedra, remove if a polyhedron does not
- *    contain any integer point
- * 2- merge all the lattices that can be merged. Ideas... :
+ * Merge all the lattices that can be merged. Ideas... :
  *    a- merge same lattices, ignore zero columns (extend dimension of P) -> easy.
  *    b- check lattice inclusion and merge?
  *       (involves a-) but how to merge?
@@ -3184,11 +3199,5 @@ void LBLSimplify(LBL *A)
   #endif
   CanonicalLBL(A);
   
-  // remove polyhedra that have no integer points from all domains
-  for(LBL *tmp = A; tmp; tmp = tmp->next) {
-    tmp->P = Domain_Remove_Integer_Empty(tmp->P);
-  }
-  LBL_Remove_Empty(A); // remove emptied LBLs from the list
-
-  CanonicalLBL(A);
+  LBLSimplifyEmpty(A);
 } /* LBLSimplify */

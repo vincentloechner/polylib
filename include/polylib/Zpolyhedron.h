@@ -46,6 +46,7 @@ extern LBL *LBLImage(LBL *A, Matrix *Func);
 extern LBL *LBLPreimage(LBL *A, Matrix *Func);
 extern LBL *LBLComplement(LBL *A);
 
+extern void LBLSimplifyEmpty(LBL *A);  // in place
 extern void LBLSimplify(LBL *A);  // in place
 
 // All above functions always manipulate canonical LBLs.
