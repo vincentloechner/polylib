@@ -2997,7 +2997,7 @@ LBL *LBL2ZDomain(LBL *A)
  */
 void LBLSimplifyEmpty(LBL *A)
 {
-  // testing:
+  // just for testing, call simplify from simplifyEmpty:
   #ifdef SIMPLIFY2_DEBUG
   LBLSimplify(A);
   #endif
@@ -3214,6 +3214,9 @@ void LBLSimplify(LBL *A)
   //   Domain_Free(tmp->P);
   //   tmp->P = DomainConstraintSimplify(newP, MAXNOOFRAYS);
   // }
+
+  // TODO: simplify the polyhedral domains stored in A to get a minimal
+  // and disjoint(?) form
 
 
   #ifdef SIMPLIFY2_DEBUG
