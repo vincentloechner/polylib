@@ -247,12 +247,14 @@ Matrix *Matrix_ReadFile(FILE *fp) {
 
 /*
  * Basic hermite engine
+ * 
+ * Modifies H to its HNF, writes to U and Q if not NULL.
+ * returns the rank of H.
  */
 static int hermite(Matrix *H, Matrix *U, Matrix *Q) {
 
   int nc, nr, i, j, k, rank, reduced, pivotrow;
   Value pivot, x, aux;
-  Value *temp1, *temp2;
 
   /*                     T                     -1   T */
   /* Computes form: A = Q H  and U A = H  and U  = Q  */
@@ -263,32 +265,22 @@ static int hermite(Matrix *H, Matrix *U, Matrix *Q) {
   }
   nc = H->NbColumns;
   nr = H->NbRows;
-  temp1 = (Value *)malloc(nc * sizeof(Value));
-  temp2 = (Value *)malloc(nr * sizeof(Value));
-  if (!temp1 || !temp2) {
-    errormsg1("Domlib", "outofmem", "out of memory space");
-    return -1;
-  }
 
   /* Initialize all the 'Value' variables */
   value_init(pivot);
   value_init(x);
   value_init(aux);
-  for (i = 0; i < nc; i++)
-    value_init(temp1[i]);
-  for (i = 0; i < nr; i++)
-    value_init(temp2[i]);
 
-#ifdef DEBUG
+  #ifdef DEBUG
   fprintf(stderr, "Start  -----------\n");
   Matrix_Print(stderr, 0, H);
-#endif
+  #endif
   for (k = 0, rank = 0; k < nc && rank < nr; k = k + 1) {
     reduced = 1; /* go through loop the first time */
-#ifdef DEBUG
+    #ifdef DEBUG
     fprintf(stderr, "Working on col %d.  Rank=%d ----------\n", k + 1,
             rank + 1);
-#endif
+    #endif
     while (reduced) {
       reduced = 0;
 
@@ -315,17 +307,15 @@ static int hermite(Matrix *H, Matrix *U, Matrix *Q) {
         if (Q)
           Vector_Exchange(Q->p[pivotrow], Q->p[rank], nr);
 
-#ifdef DEBUG
+        #ifdef DEBUG
         fprintf(stderr, "Exchange rows %d and %d  -----------\n", rank + 1,
                 pivotrow + 1);
         Matrix_Print(stderr, 0, H);
-#endif
+        #endif
       }
-      value_assign(pivot, H->p[rank][k]); /* actual ( no abs() ) pivot */
 
       /* 3. Invert the row 'rank' if pivot is negative */
-      if (value_neg_p(pivot)) {
-        value_oppose(pivot, pivot); /* pivot = -pivot */
+      if (value_neg_p(H->p[rank][k])) {
         for (j = 0; j < nc; j++)
           value_oppose(H->p[rank][j], H->p[rank][j]);
 
@@ -340,10 +330,10 @@ static int hermite(Matrix *H, Matrix *U, Matrix *Q) {
             value_oppose(Q->p[rank][j], Q->p[rank][j]);
 
             /* Q->p[rank][j] = -(Q->p[rank][j]); */
-#ifdef DEBUG
+        #ifdef DEBUG
         fprintf(stderr, "Negate row %d  -----------\n", rank + 1);
         Matrix_Print(stderr, 0, H);
-#endif
+        #endif
       }
       if (value_notzero_p(pivot)) {
 
@@ -383,11 +373,11 @@ static int hermite(Matrix *H, Matrix *U, Matrix *Q) {
               }
             reduced = 1;
 
-#ifdef DEBUG
+            #ifdef DEBUG
             fprintf(stderr, "row %d = row %d - %d row %d -----------\n", i + 1,
                     i + 1, x, rank + 1);
             Matrix_Print(stderr, 0, H);
-#endif
+            #endif
 
           } /* if (x) */
         } /* for (i) */
@@ -431,11 +421,11 @@ static int hermite(Matrix *H, Matrix *U, Matrix *Q) {
             for (j = 0; j < nr; j++) {
               value_addmul(Q->p[rank][j], x, Q->p[i][j]);
             }
-#ifdef DEBUG
+          #ifdef DEBUG
           fprintf(stderr, "row %d = row %d - %d row %d -----------\n", i + 1,
                   i + 1, x, rank + 1);
           Matrix_Print(stderr, 0, H);
-#endif
+          #endif
         } /* if (x) */
       } /* for (i) */
       rank++;
@@ -446,18 +436,14 @@ static int hermite(Matrix *H, Matrix *U, Matrix *Q) {
   value_clear(pivot);
   value_clear(x);
   value_clear(aux);
-  for (i = 0; i < nc; i++)
-    value_clear(temp1[i]);
-  for (i = 0; i < nr; i++)
-    value_clear(temp2[i]);
-  free(temp2);
-  free(temp1);
   return rank;
 } /* Hermite */
 
 /*
  * Right Hermite
  * Computes H, U and Q such that: A = QH, and UA = H
+ * 
+ * Allocates matrices *Qp and *Up if Qp and Up are not NULL.
  */
 void right_hermite(Matrix *A, Matrix **Hp, Matrix **Up, Matrix **Qp) {
 
@@ -510,6 +496,7 @@ void right_hermite(Matrix *A, Matrix **Hp, Matrix **Up, Matrix **Qp) {
   } else
     Q = (Matrix *)0;
 
+  // call to base Hermite engine
   hermite(H, U, Q);
 
   /* Q is returned transposed */
@@ -528,8 +515,10 @@ void right_hermite(Matrix *A, Matrix **Hp, Matrix **Up, Matrix **Qp) {
 } /* right_hermite */
 
 /*
- * Left Hermite
- * Computes H, U and Q such that: A = HQ, and AU = H
+ * Left Hermite:
+ * compute H, U and Q such that: A = HQ, and AU = H.
+ * 
+ * Allocates matrices *Qp and *Up if Qp and Up are not NULL.
  */
 void left_hermite(Matrix *A, Matrix **Hp, Matrix **Qp, Matrix **Up) {
 
@@ -582,6 +571,8 @@ void left_hermite(Matrix *A, Matrix **Hp, Matrix **Qp, Matrix **Up) {
       value_set_si(Q->p[i][i], 1);
   } else
     Q = (Matrix *)0;
+
+  // call to base Hermite engine
   hermite(HT, U, Q);
 
   /* H = HT transpose */
