@@ -1,0 +1,28 @@
+A = LBL: Dimension 2
+
+LATTICE:
+3 3
+   1    0    0 
+   0    1    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  11   13  -27  ]
+Inequality: [ -11  -13   45  ]
+Inequality: [   7   -9   10  ]
+Inequality: [  -7    9    4  ]
+Rays 4 4
+Vertex: [  55   85  ]/38
+Vertex: [ 113  299  ]/190
+Vertex: [  59   29  ]/38
+Vertex: [ 457  271  ]/190
+LBL2ZDomain(A) = LBL: Dimension 2
+
+<empty>
+A - ZD(A) = LBL: Dimension 2
+
+<empty>
+ZD(A) - A = LBL: Dimension 2
+
+<empty>

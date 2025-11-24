@@ -55,6 +55,7 @@ TEST_FILES_32 =  \
 	ZDomain2b.in \
 	ZDomain3.in \
 	ZDomain4.in \
+	ZDomain12.in \
 	ZEmpty2.in \
 	ZImage1.in \
 	ZImPre1.in \
