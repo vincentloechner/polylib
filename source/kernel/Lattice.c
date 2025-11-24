@@ -2,12 +2,11 @@
 #include <stdlib.h>
 
 // #define LATINTER_DEBUG 1
-#define LATDIF_DEBUG 1
+// #define LATDIF_DEBUG 1
 
-static int *get_pivots_columns(Matrix* A);
 static int value_prime_factors(Value n, Vector **result);
-static LatticeUnion *generate_lattice_union_line(
-  int line_nb, int *pivots_columns, Matrix *A, Matrix *Intersection, Matrix *L,
+static LatticeUnion *generate_lattice_union_row(
+  int row, int column, Matrix *A, Matrix *Intersection, Matrix *L,
   LatticeUnion *Result);
 
 
@@ -424,7 +423,6 @@ Bool isEqualLattice(Matrix *A, Matrix *B)
 LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
 {
   Matrix *H, *X;
-  int *pivots_columns;
   Matrix *Inter, *rest;
   LatticeUnion *Result = NULL;
 
@@ -537,61 +535,51 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
 
   // Prepare for main loop:
   // rest will be the rest of the lattice X to be treated
-  // (Intersection on first line(s)/column(s), X on bottom-right)
+  // (Intersection on first row(s)/column(s), X on bottom-right)
   rest = Matrix_Copy(X);
-  // get the positions of the pivots of X (and Inter too, unless infinite diff)
-  pivots_columns = get_pivots_columns(X);
-  #ifdef LATDIF_DEBUG
-    fprintf(stderr, "pivots_columns = [");
-    for (int line = 0; line < Inter->NbRows-1; line++) {
-      fprintf(stderr, "%d, ", pivots_columns[line]);
+
+  // -------------- MAIN LOOP: column scan --------------------
+
+  // add each matrix with the row variant to the Result
+  for(int column = 0; column < Inter->NbColumns - 1; column++) {
+    int row;
+    for (row = 0; row < Inter->NbRows - 1; row++) {
+      if(value_notzero_p(Inter->p[row][column]))
+        break;
     }
-    fprintf(stderr, "]\n");
-  #endif
-
-  // TODO: this is bogus if the first line is not a pivot.
-  // replace this whole stuff with a column scan!!!
-
-  // -------------- MAIN LOOP --------------------
-
-  // add each matrix with the line variant to the Result
-  for (int line = 0; line < Inter->NbRows-1; line++) {
-    if(line > 0 && pivots_columns[line] == pivots_columns[line-1]) {
-      // only consider the *real* pivots here,
-      // ignore lines below a previously treated pivot.
-      continue;
+    if(row == Inter->NbRows - 1) {
+      // no more pivot
+      break;
+      //   // there is a problem, trying to compute an infinite lattice union
+      //   errormsg1("LatticeDifference", "dimincomp",
+      //     "Difference is infinite (incompatible dimensions: columns)");
+      //   LatticeUnion_Free(Result);
+      //   Result = NULL;
+      //   goto LD_cleanup;
     }
     #ifdef LATDIF_DEBUG
-      fprintf(stderr, "+++ Enter main loop (%d)\n", line);
+      fprintf(stderr, "+++ Enter main loop (%d, %d)\n", row, column);
       fprintf(stderr, "+++ rest =\n");
       Matrix_Print(stderr, P_VALUE_FMT, rest);
     #endif
-    if(value_zero_p(Inter->p[line][pivots_columns[line]])) {
-      // there is a problem, trying to compute an infinite lattice union
-      errormsg1("LatticeDifference", "dimincomp",
-        "Difference is infinite (incompatible dimensions: columns)");
-      LatticeUnion_Free(Result);
-      Result = NULL;
-      goto LD_cleanup;
-    }
+
     // this function does all the hard work:
-    Result = generate_lattice_union_line(line, pivots_columns, X, Inter,
-                rest, Result);
+    Result = generate_lattice_union_row(row, column, X, Inter, rest, Result);
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "+++ Intermediate result =\n");
       PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
     #endif
   }
   // ------------ END MAIN LOOP --------------------
+
   #ifdef LATDIF_DEBUG
     if(!Result)
       fprintf(stderr, "Empty Result\n");
     fprintf(stderr, "--- Exit LatDiff ---\n\n");
   #endif
 
-LD_cleanup:
+// LD_cleanup:
   // cleanup
-  free(pivots_columns);
   Matrix_Free(Inter);
   Matrix_Free(rest);
   Matrix_Free(X);
@@ -730,33 +718,6 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
 // Utilities for LatticeDifference:
 
 /*
- * Get the column numbers of the pivots.
- * since the matrix is not necessarily square, retrieve the right pivot
- * column number for each line number.
- * Fills the array columns (needs to be allocated by caller, size = A->NbRows-1)
- */
-static int *get_pivots_columns(Matrix* A)
-{
-  int col = 0;
-  int *res;
-  res = malloc(sizeof(int) * (A->NbRows-1));
-
-  for(int i = 0; i < A->NbRows - 1; i++) {
-    if(i > 0 && value_zero_p(A->p[i][col])) {
-      // zero in this column: take the previous one
-      res[i] = col-1;
-    }
-    else {
-      // there's a non zero value on this column, take it and increase col.
-      res[i] = col;
-      col++;
-    }
-  }
-  return(res);
-} /* get_pivots_columns */
-
-
-/*
  * Compute the prime factors of Value n, including n itself if it is prime.
  * reuses or allocates a Vector of Values
  * returns the number of values put into the result
@@ -844,15 +805,14 @@ static int value_prime_factors(Value n, Vector **result)
  *
  * Add all newly generated lattices to Result, and return the new Result.
  */
-static LatticeUnion *generate_lattice_union_line(int line_nb,
-  int *pivots_columns, Matrix *A, Matrix *Intersection, Matrix *rest,
+static LatticeUnion *generate_lattice_union_row(int line_nb,
+  int pivot_col, Matrix *A, Matrix *Intersection, Matrix *rest,
   LatticeUnion *Result)
 {
   Value step, multiply, modulo, ratio, tmp;
   Vector *prime_factors = NULL; // Vector of Values, reuse memory several times
                                 // (from previous step).
   int num_factors;
-  int pivot_col = pivots_columns[line_nb];
 
   value_init(step);
   value_init(multiply);
@@ -1012,4 +972,4 @@ static LatticeUnion *generate_lattice_union_line(int line_nb,
   value_clear(step);
 
   return (Result);
-} /* generate_lattice_union_line */
+} /* generate_lattice_union_row */
