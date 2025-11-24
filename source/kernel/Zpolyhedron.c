@@ -42,6 +42,7 @@ static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position);
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D);
 static Polyhedron *domain_project(Polyhedron *P, int eliminate);
 static Polyhedron *domain_insert_dim(Polyhedron *D, int move);
+static void LBL_Remove_Empty(LBL *A);
 
 // typedef struct forsimplify {
 //   Polyhedron *Pol;
@@ -290,10 +291,15 @@ static void sLBLPrint(FILE *fp, const char *format, LBL *A)
  */
 void LBLPrint(FILE *fp, const char *format, LBL *A)
 {
-  for( ; A; A = A->next) {
+  if(!A) {
+    fprintf(fp, "\n<empty>\n");
+    return;
+  }
+
+  sLBLPrint(fp, format, A);
+  for( A = A->next; A; A = A->next) {
+    fprintf(fp, "\nUNION ");
     sLBLPrint(fp, format, A);
-    if(A->next)
-      fprintf(fp, "\nUNION ");
   }
 } /* LBLPrint */
 
@@ -367,6 +373,12 @@ LBL *LBLDifference(LBL *A, LBL *B)
 { 
   LBL *res = NULL;
 
+  if(!A) {
+    return(NULL);
+  }
+  if(!B) {
+    return(LBLCopy(A));
+  }
   if (A->Lat->NbRows != B->Lat->NbRows) {
     errormsg1("LBLDifference", "dimincomp",
         "incompatible dimensions between domains");
@@ -2216,6 +2228,9 @@ static void LBL_Remove_Empty(LBL *A)
     fprintf(stderr, "Entering Remove_Empty\n");
   #endif
 
+  if(!A)
+    return;
+
   // Scan from A->next, and relink previous to next if empty found
   previous = A;
   current = A->next;
@@ -2984,6 +2999,7 @@ LBL *LBL2ZDomain(LBL *A)
     Result = LBLConcatenate(tmp, Result);
   }
   CanonicalLBL(Result);
+  LBLSimplifyEmpty(Result);
   return(Result);
 }
 

@@ -34,12 +34,12 @@ Constraints 4 4
 Inequality: [  -1    0 1000  ]
 Inequality: [ 333  440    0  ]
 Inequality: [-674 -891   -4  ]
-Inequality: [   1    0  -40  ]
+Inequality: [   1    0  -74  ]
 Rays 4 4
 Vertex: [297000 -224668  ]/297
 Vertex: [11000 -8325  ]/11
-Vertex: [ 440 -333  ]/11
-Vertex: [3960 -2996  ]/99
+Vertex: [16280 -12321  ]/220
+Vertex: [65934 -49880  ]/891
 
 UNION LBL: Dimension 3
 
