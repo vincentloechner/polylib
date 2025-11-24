@@ -1,0 +1,34 @@
+# From Rui-Juan Jing, Marc Moreno Maza, et al.,
+# Quantifier Elimination Over the Integers
+# https://dl.acm.org/doi/pdf/10.1145/3747199.3747580
+
+# −98877x1 − 189663x2 − 1798x3 ≤ 705915
+# −10109x1 − 5958x2 − 14601x3 ≤ 31333
+# −5405x1 + 4965x2 + 3870x3 ≤ 4303504
+# 729x1 − 117x2 + 350x3 ≤ 4561
+# 677x1 + 465x2 − 540x3 ≤ 3489
+
+M 1
+
+# let's try to project this along x3:
+3 4
+   1    0    0    0
+   0    1    0    0
+#  0    0    1    0
+   0    0    0    1
+
+D 1
+
+5 5
+##   x1       x2     x3     1
+1  98877   189663   1798  705915
+1  10109     5958  14601   31333
+1   5405    -4965  -3870 4303504
+1   -729      117   -350    4561
+1   -677     -465    540    3489
+
+# LBL2ZDomain
+F 17
+
+
+# TODO: Lattice difference fails!

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // #define LATINTER_DEBUG 1
-// #define LATDIF_DEBUG 1
+#define LATDIF_DEBUG 1
 
 static int *get_pivots_columns(Matrix* A);
 static int value_prime_factors(Value n, Vector **result);
@@ -541,6 +541,16 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
   rest = Matrix_Copy(X);
   // get the positions of the pivots of X (and Inter too, unless infinite diff)
   pivots_columns = get_pivots_columns(X);
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "pivots_columns = [");
+    for (int line = 0; line < Inter->NbRows-1; line++) {
+      fprintf(stderr, "%d, ", pivots_columns[line]);
+    }
+    fprintf(stderr, "]\n");
+  #endif
+
+  // TODO: this is bogus if the first line is not a pivot.
+  // replace this whole stuff with a column scan!!!
 
   // -------------- MAIN LOOP --------------------
 
