@@ -32,6 +32,7 @@ static LBL *sLBLIntersection(LBL *, LBL *);
 static LBL *sLBLCopy(LBL *A);
 static void sLBLFree(LBL *L);
 static LBL *sLBLComplement(LBL *A);
+static Bool LBL_simple_inclusion_check(LBL *A, LBL *B);
 // static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBLImage(LBL *, Matrix *);
 static LBL *sLBLPreimage(LBL *, Matrix *);
@@ -238,6 +239,38 @@ LBL *UniverseLBL(int dimension)
 
 
 /*
+ * Simple inclusion test, return True if all sLBLs of A are also part of B.
+ *
+ * Check if all sLBLs of A are present in B (same Lat matrix, domain covered)
+ */
+static Bool LBL_simple_inclusion_check(LBL *A, LBL *B)
+{
+  // check if all pieces of A are also present in B
+  for( ; A; A = A->next) {
+    LBL *tmpB;
+    Polyhedron *ddiff;
+    for(tmpB = B; tmpB; tmpB = tmpB->next) {
+      if(isEqualLattice(A->Lat, tmpB->Lat))
+        break; // found
+    }
+    if(! tmpB)
+      return(False);  // did not find A->Lat in B
+  
+    // check if A->P is included in tmpB->P
+    // (A->P - tmpB->P) should be empty.
+    ddiff = DomainDifference(A->P, tmpB->P, MAXNOOFRAYS);
+    if(! emptyQ(ddiff)) {
+      Domain_Free(ddiff);
+      return(False);  // not included
+    }
+    Domain_Free(ddiff);
+  }
+  // every part of A was found in B
+  return(True);
+}
+
+
+/*
  * Given LBLs A and B, return True if A is included in B,
  * otherwise return False.
  */
@@ -245,6 +278,10 @@ Bool LBLIncluded(LBL *A, LBL *B)
 {
   Bool ret = False;
   LBL *diff;
+
+  if(LBL_simple_inclusion_check(A, B)) {
+    return(True);
+  }
 
   // Could we do better on ZDomains?
   // the answer is no: the complicated part of the difference is not executed
@@ -364,14 +401,24 @@ LBL *LBLIntersection(LBL *A, LBL *B)
  * difference of two single LBLs can be a union of LBLs.
  * 
  * Algorithm:
- * compute A inter complement(B).
+ * Let I = A inter B
+ * - check if I is empty -> result = A
+ * - check if A included in I -> result = empty
+ * - general case:
+ *   successively remove each single LBL of I from A, return the rest.
  * 
- * (previous version was:)
- *   Successively remove each single LBL composing B from a copy of A
  */
 LBL *LBLDifference(LBL *A, LBL *B)
 { 
-  LBL *res = NULL;
+  LBL *inter, *res = NULL;
+  
+  #ifdef LBLDIFF_DEBUG
+  fprintf(stderr, "-----Entering LBLDiff-----\n");
+  fprintf(stderr, "---- A = ");
+  LBLPrint(stderr, P_VALUE_FMT, A);
+  fprintf(stderr, "---- B = ");
+  LBLPrint(stderr, P_VALUE_FMT, B);
+  #endif
 
   if(!A) {
     return(NULL);
@@ -384,59 +431,55 @@ LBL *LBLDifference(LBL *A, LBL *B)
         "incompatible dimensions between domains");
     return (NULL);
   }
-  
-  // // initialize result: a copy of A
-  // res = LBLCopy(A);
-  // #ifdef LBLDIFF_DEBUG
-  // fprintf(stderr, "Entering LBLDiff. A =");
-  // LBLPrint(stderr, P_VALUE_FMT, A);
-  // fprintf(stderr, "Entering LBLDiff. B =");
-  // LBLPrint(stderr, P_VALUE_FMT, B);
-  // #endif
-  // // remove all single LBLs composing B from a copy of A:
-  // for (LBL *tempB = B; tempB && res; tempB = tempB->next) {
-  //   LBL *diff;
-  //   #ifdef LBLDIFF_DEBUG
-  //   fprintf(stderr, "Removing tempB from Res. tempB = ");
-  //   sLBLPrint(stderr, P_VALUE_FMT, tempB);
-  //   #endif
-  //   diff = LBL_sLBL_Difference(res, tempB);  // diff = res(LBL) - tempB(sLBL)
-  //   LBLFree(res);                            // free previous res
-  //   res = diff;                              // new res(LBL) = diff
-  //   #ifdef LBLDIFF_DEBUG
-  //   fprintf(stderr, "new res = ");
-  //   LBLPrint(stderr, P_VALUE_FMT, res);
-  //   #endif
-  // }
 
-  // if (!res)
-  //   return (EmptyLBL(A->Lat->NbRows - 1));
-
-  // CanonicalLBL(res);
-
-  LBL *comp, *inter;
-  #ifdef LBLDIFF_DEBUG
-  fprintf(stderr, "-----Entering LBLDiff-----\n");
-  #endif
+  // compute the intersection of A and B
   inter = LBLIntersection(A, B);
   if(isEmptyLBL(inter)) {
     LBLFree(inter);
     return(LBLCopy(A));
   }
-  comp = LBLComplement(inter);
-  res = LBLIntersection(comp, A);
 
-  #ifdef LBLDIFF_DEBUG
-  fprintf(stderr, "---- A = ");
-  LBLPrint(stderr, P_VALUE_FMT, A);
-  fprintf(stderr, "---- B = ");
-  LBLPrint(stderr, P_VALUE_FMT, B);
-  fprintf(stderr, "---- comp(B) = ");
-  LBLPrint(stderr, P_VALUE_FMT, comp);
-  fprintf(stderr, "---- A inter comp(B) = ");
-  LBLPrint(stderr, P_VALUE_FMT, res);
-  #endif
-  LBLFree(comp);
+  // simple check if A is included in inter, then inter == A and result = empty.
+  if(LBL_simple_inclusion_check(A, inter)) {
+    LBLFree(inter);
+    return(EmptyLBL(A->Lat->NbRows - 1));
+  }
+
+
+  // compute res = A - inter
+  // initialize result: A
+  res = A;
+  // remove all single LBLs composing inter from res:
+  for (LBL *tmpi = inter; tmpi; tmpi = tmpi->next) {
+    LBL *diff, *comp;
+
+    // compute res - tmpi:
+    comp = sLBLComplement(tmpi);
+    diff = LBLIntersection(res, comp);
+    LBLFree(comp);
+
+    if(res != A)
+      LBLFree(res);        // free previous res
+    res = diff;            // new res = diff
+
+    // early exit if empty
+    if(isEmptyLBL(res))
+      break;
+  }
+
+
+  // // naïve version
+  // LBL *comp;
+  // comp = LBLComplement(inter);
+  // res = LBLIntersection(comp, A);
+  // #ifdef LBLDIFF_DEBUG
+  // fprintf(stderr, "---- comp(B) = ");
+  // LBLPrint(stderr, P_VALUE_FMT, comp);
+  // fprintf(stderr, "---- A inter comp(B) = ");
+  // LBLPrint(stderr, P_VALUE_FMT, res);
+  // #endif
+  // LBLFree(comp);
+
   LBLFree(inter);
 
   return (res);
@@ -790,9 +833,8 @@ static LBL *sLBLComplement(LBL *A)
       // -> not necessary since preimage by integer function.
       // Ztmp->P = DomainConstraintSimplify(Ztmp->P, MAXNOOFRAYS);
       #ifdef COMP_DEBUG
-      Ztmp->next = NULL;
       fprintf(stderr, "Adding: ");
-      LBLPrint(stderr, P_VALUE_FMT, Ztmp);
+      sLBLPrint(stderr, P_VALUE_FMT, Ztmp);
       #endif
       Ztmp->next = Result;
       Result = Ztmp;
@@ -829,8 +871,8 @@ static LBL *sLBLComplement(LBL *A)
 
   CanonicalLBL(Result);
 
-  // We don't need to simplify (-> remove integer-empty polyhedra)
-  // LBLSimplify(Result);
+  // Don't need to simplify (remove integer-empty polyhedra)
+  // LBLSimplifyEmpty(Result);
   #ifdef COMP_DEBUG
   fprintf(stderr, "\n-- sLBLComplement final result (normalized) = ");
   LBLPrint(stderr, P_VALUE_FMT, Result);
@@ -869,7 +911,6 @@ LBL *LBLComplement(LBL *A)
 //  *
 //  * USAGE: only the first lattice of A and B is considered (no union),
 //  *        but A and B can contain several coordinate polyhedra (in ->P).
-//  * Internal function (you should use LBLDifference)
 //  * 
 //  * Algorithm:
 //  * -> New version: compute A inter complement(B).

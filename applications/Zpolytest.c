@@ -228,13 +228,13 @@ int main() {
 	    isEmptyLBL(ZB));
     break;
   
-  case 13:  /* LBLSimplify */
+  case 13:  /* LBLSimplifyEmpty */
     
     ZA = LBLAlloc(a, A);
     printf("A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZA);
-    LBLSimplify(ZA);
-    printf("LBLSimplify(A) = ");
+    LBLSimplifyEmpty(ZA);
+    printf("LBLSimplifyEmpty(A) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZA);
     break;
     
@@ -269,7 +269,7 @@ int main() {
     printf("  C(C(A)) is included in A: %d\n", LBLIncluded(ZC, ZA));
     break;
 
-  case 17:  /* LBL2Zdomain */
+  case 17:  /* LBL2Zdomain and check that the differences are empty */
     ZA = LBLAlloc(a, A);
     printf("A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZA);
@@ -288,6 +288,15 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZD);
     break;
 
+  case 18:  /* simple LBL2Zdomain + LBLSimplifyEmpty */
+    ZA = LBLAlloc(a, A);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    ZB = LBL2ZDomain(ZA);
+    LBLSimplifyEmpty(ZB);
+    printf("LBLSimplifyEmpty(LBL2ZDomain(A)) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+    break;
 
   case 19:  /* check that complement(A) inter A = empty */
             /* and complement(A) union A = universe */
