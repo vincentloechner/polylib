@@ -86,6 +86,8 @@ extern void CanonicalLBL(LBL* A);
 // This function transforms a union of LBLs into a union of Z-domains:
 extern LBL *LBL2ZDomain(LBL *A);
 
+// This function transforms a union of LBLs into a disjoint union of LBLs:
+extern LBL *LBLDisjointUnion(LBL *A);
 
 // removed:
 // extern LBL *SplitLBL(LBL *ZPol, Matrix *B);

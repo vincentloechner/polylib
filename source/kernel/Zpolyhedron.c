@@ -27,6 +27,7 @@
 #define SIMPLIFY2_DEBUG 1
 #endif
 // #define SIMPLIFY2_DEBUG 1
+// #define HOLES_DEBUG 1
 
 static LBL *sLBLIntersection(LBL *, LBL *);
 static LBL *sLBLCopy(LBL *A);
@@ -2047,6 +2048,7 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
   // make rest_AP a disjoint domain, avoid scanning some points multiple times
   tmp = Disjoint_Domain(rest_AP, 0, MAXNOOFRAYS);
   Domain_Free(rest_AP);
+  // rest_AP = DomainConstraintSimplify(tmp, MAXNOOFRAYS);
   rest_AP = tmp;
   #ifdef HOLES_DEBUG
   fprintf(stderr, "disjoint (exact - dark) inter A->P = ");
@@ -3287,3 +3289,42 @@ void LBLSimplify(LBL *A)
   LBLSimplifyEmpty(A);
   #endif
 } /* LBLSimplify */
+
+
+/***************************************************************************/
+/*                      LBLDisjointUnion                                   */
+/***************************************************************************/
+
+/*
+ * Compute the disjoint union of LBL A, by performing succesive intersection
+ * and difference.
+ */
+LBL *LBLDisjointUnion(LBL *A)
+{
+  // get a copy of the first domain of A
+  LBL *res = sLBLCopy(A);
+
+  // then compute the inter/diff of each sLBL stored in A
+  for(LBL *tmpA = A->next; tmpA; tmpA = tmpA->next) {
+    LBL *next, *inter, *diffA, *diffB, *newres;
+
+    // unlink next
+    next = tmpA->next;
+    tmpA->next = NULL;
+
+    // compute intersections and differences
+    inter = LBLIntersection(res, tmpA);
+    diffA = LBLDifference(tmpA, res);
+    diffB = LBLDifference(res, tmpA);
+
+    newres = LBLConcatenate(LBLConcatenate(inter, diffA), diffB);
+    CanonicalLBL(newres);
+    LBLFree(res);
+    res = newres;
+
+    // relink next
+    tmpA->next = next;
+  }
+
+  return(res);
+}

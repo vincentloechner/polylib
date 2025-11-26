@@ -184,8 +184,6 @@ int main() {
     
     ZA = LBLAlloc(a, A);
     ZB = LBLAlloc(b, B);
-    // LBLPrint(stdout, P_VALUE_FMT, ZA);
-    // LBLPrint(stdout, P_VALUE_FMT, ZB);
     ZC = LBLDifference(ZA, ZB);
     ZD = LBLDifference(ZB, ZA);
     LBLSimplifyEmpty(ZC);
@@ -323,36 +321,14 @@ int main() {
     break;
 
 
-  // no longer in use tests:
-
-  // case 21: /* AffineSmith */
-  
-  //   AffineSmith(a,&b,&c, &d);
-  //   printf("A = U . Diag . V\n");
-  //   Matrix_Print(stdout, P_VALUE_FMT, b);
-  //   Matrix_Print(stdout, P_VALUE_FMT, d);
-  //   Matrix_Print(stdout, P_VALUE_FMT, c);
-  //   break;
-  
-  // case 22: /* SolveDiophantine */
-
-  //   rank=SolveDiophantine(a,&d,&v);
-  //   Matrix_Print(stdout, P_VALUE_FMT, a);
-  //   printf( "rank: %d\n ", rank);
-  //   Matrix_Print(stdout, P_VALUE_FMT, d);
-  //   Vector_Print(stdout, P_VALUE_FMT, v);
-  //   rank=SolveDiophantine(b, &d, &v);
-  //   Matrix_Print(stdout, P_VALUE_FMT, b);
-  //   printf( "rank: %d\n ", rank);
-  //   Matrix_Print(stdout, P_VALUE_FMT, d);
-  //   Vector_Print(stdout, P_VALUE_FMT, v);
-  //   rank=SolveDiophantine(c, &d, &v);
-  //   Matrix_Print(stdout, P_VALUE_FMT, c);
-  //   printf( "rank: %d\n ",rank);
-  //   Matrix_Print(stdout, P_VALUE_FMT, d);
-  //   Vector_Print(stdout, P_VALUE_FMT, v);
-  //   Vector_Free(v);
-  //   break;
+  case 20:  /* LBLDisjointUnion of the difference between two LBLs */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLAlloc(b, B);
+    ZC = LBLDifference(ZB, ZA);
+    ZD = LBLDisjointUnion(ZC);
+    printf("\nLBLDisjointUnion(B - A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZD);
+    break;
 
   
   case 100: /* just alloc and normalize */

@@ -27,5 +27,8 @@ D 2
     1 -1 0 100
     1 0 -1 100
 
-# ZP diff
-F 9
+# Difference:
+# F 9
+
+# disjoint difference:
+F 20
