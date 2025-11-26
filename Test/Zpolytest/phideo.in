@@ -67,7 +67,7 @@ D 1
 
 
 # simplify
-F 13
-# F 100
-# Zdomain and check equality (2*diff)
-# F 17
+# F 13
+
+# LBL2Zdomain and check equality (2*diff)
+F 17
