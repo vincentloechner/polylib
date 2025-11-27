@@ -2031,21 +2031,32 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
     return(NULL);
   }
   #ifdef HOLES_DEBUG
-  fprintf(stderr, "Exact - Dark = ");
+  fprintf(stderr, "(Exact - Dark) = ");
   Polyhedron_Print(stderr, P_VALUE_FMT, rest);
   #endif
 
+  // TODO: make rest bounded, keep the rays somewhere.
+
+
   // PREPARE SCAN:
-  // Move rest back to original A->P dimension = rest_AP
-  Trans = Matrix_Alloc(rest->Dimension + 1, A->P->Dimension + 1);
-  Vector_Set(Trans->p[0], 0, Trans->NbRows * Trans->NbColumns);
-  for(int i = 0; i < Trans->NbRows - 1; i++) {
-    value_set_si(Trans->p[i][i], 1);
+  // Expand rest back to original A->P dimension
+  rest_AP = rest;
+  for(int d = rest->Dimension + 1; d <= A->P->Dimension; d++) {
+    tmp = domain_insert_dim(rest_AP, d);
+    if(rest_AP != rest)
+      Domain_Free(rest_AP);
+    rest_AP = tmp;
   }
-  value_set_si(Trans->p[Trans->NbRows - 1][Trans->NbColumns - 1], 1);
-  rest_AP = DomainPreimage(rest, Trans, MAXNOOFRAYS);
-  Matrix_Free(Trans);
-  // and intersect rest_AP with A->P
+  // Trans = Matrix_Alloc(rest->Dimension + 1, A->P->Dimension + 1);
+  // Vector_Set(Trans->p[0], 0, Trans->NbRows * Trans->NbColumns);
+  // for(int i = 0; i < Trans->NbRows - 1; i++) {
+  //   value_set_si(Trans->p[i][i], 1);
+  // }
+  // value_set_si(Trans->p[Trans->NbRows - 1][Trans->NbColumns - 1], 1);
+  // rest_AP = DomainPreimage(rest, Trans, MAXNOOFRAYS);
+  // Matrix_Free(Trans);
+
+  // and intersect with A->P, get rest_AP.
   tmp = DomainIntersection(A->P, rest_AP, MAXNOOFRAYS);
   Domain_Free(rest_AP);
   rest_AP = tmp;
@@ -2526,9 +2537,10 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 }
 
 /*
- * Expand domain D such that the dimension 'move' is moved to a new dimension
- * (right) and the existing one is left empty (add a line along this dimension)
- * 1 <= move <= D->Dimension.
+ * Return a new domain that is D expanded such that the dimension 'move' is
+ * moved to a new dimension (right) and the existing one is left empty
+ * (add a line along this dimension)
+ * 1 <= move <= D->Dimension + 1.
  * 
  * In D we have constraints/rays:
  * flag d_1 d_2 ... move-1 move move+1 ... d_dim constant
