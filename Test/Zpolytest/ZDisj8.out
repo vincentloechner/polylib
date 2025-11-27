@@ -1,0 +1,84 @@
+
+LBLDisjointUnion(B - A) = LBL: Dimension 2
+
+LATTICE:
+3 2
+   0    3 
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [  -1  100  ]
+Inequality: [   1   -1  ]
+Rays 2 3
+Vertex: [   1  ]/1
+Vertex: [ 100  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 3
+   6    0    3 
+   0    1    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   1    0  -33  ]
+Inequality: [   0    1   -1  ]
+Inequality: [   0   -1  100  ]
+Inequality: [  -1    0   49  ]
+Rays 4 4
+Vertex: [  33  100  ]/1
+Vertex: [  33    1  ]/1
+Vertex: [  49    1  ]/1
+Vertex: [  49  100  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0    1   -1  ]
+Inequality: [   0   -1  100  ]
+Inequality: [   1    0   -1  ]
+Inequality: [  -1    0   32  ]
+Rays 4 4
+Vertex: [   1  100  ]/1
+Vertex: [   1    1  ]/1
+Vertex: [  32    1  ]/1
+Vertex: [  32  100  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   0  300 
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [  -1  100  ]
+Inequality: [   1   -1  ]
+Rays 2 3
+Vertex: [   1  ]/1
+Vertex: [ 100  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 3
+   6    0    0 
+   0    1    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0    1   -1  ]
+Inequality: [  -1    0   50  ]
+Inequality: [   0   -1  100  ]
+Inequality: [   1    0  -34  ]
+Rays 4 4
+Vertex: [  50  100  ]/1
+Vertex: [  50    1  ]/1
+Vertex: [  34    1  ]/1
+Vertex: [  34  100  ]/1
