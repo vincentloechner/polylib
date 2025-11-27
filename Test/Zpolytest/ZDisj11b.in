@@ -30,9 +30,6 @@ D 2
   1 -4 -1  4 0    # k >= j/4+i
   1  3  1 -3 0    # k <= j/3+i
 
-# this one fails because of an infinite exact-dark shadow. Impossible?!
+# this one fails because of an infinite exact-dark shadow.
 F 20
-
-# ZP diff
-F 9
 

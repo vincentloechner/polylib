@@ -127,6 +127,10 @@ def plot_polyhedra(list_of_polyhedra, show_integer_points=True, grid_margin=1):
 # Inequality: [   1    0  -51  ]
 # Inequality: [-160 -297 -270  ]
 # Inequality: [ 160  297  277  ]
+# Rays 3 4
+# Ray:    [ 297 -160  ]       <- there is a ray!
+# Vertex: [5049 -2810  ]/99
+# Vertex: [1377 -767  ]/27
 
 plot_polyhedra(
   [

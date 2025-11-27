@@ -2031,12 +2031,18 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
     return(NULL);
   }
   #ifdef HOLES_DEBUG
-  fprintf(stderr, "(Exact - Dark) = ");
+  fprintf(stderr, "Rest = (Exact - Dark) = ");
   Polyhedron_Print(stderr, P_VALUE_FMT, rest);
   #endif
 
-  // TODO: make rest bounded, keep the rays somewhere.
+  if(value_zero_p(rest->Ray[0][0])
+    || value_zero_p(rest->Ray[0][rest->Dimension + 1])) {
+    // there is a problem, there's a ray or line in rest!
+    // TODO: make rest bounded, keep memory of the rays
+    //       (to be added to the result at the end).
 
+    assert(0);
+  }
 
   // PREPARE SCAN:
   // Expand rest back to original A->P dimension
@@ -2047,15 +2053,6 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
       Domain_Free(rest_AP);
     rest_AP = tmp;
   }
-  // Trans = Matrix_Alloc(rest->Dimension + 1, A->P->Dimension + 1);
-  // Vector_Set(Trans->p[0], 0, Trans->NbRows * Trans->NbColumns);
-  // for(int i = 0; i < Trans->NbRows - 1; i++) {
-  //   value_set_si(Trans->p[i][i], 1);
-  // }
-  // value_set_si(Trans->p[Trans->NbRows - 1][Trans->NbColumns - 1], 1);
-  // rest_AP = DomainPreimage(rest, Trans, MAXNOOFRAYS);
-  // Matrix_Free(Trans);
-
   // and intersect with A->P, get rest_AP.
   tmp = DomainIntersection(A->P, rest_AP, MAXNOOFRAYS);
   Domain_Free(rest_AP);
@@ -2114,6 +2111,8 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
   fprintf(stderr, "not holes in (exact-dark) = ");
   Polyhedron_Print(stderr, P_VALUE_FMT, not_a_hole);
   #endif
+
+  // TODO: add rays/lines of rest back to not_a_hole
 
   // build final domain: (rest - not_a_hole)
   holes = DomainDifference(rest, not_a_hole, MAXNOOFRAYS);
