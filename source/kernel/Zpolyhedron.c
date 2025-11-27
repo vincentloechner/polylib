@@ -1966,11 +1966,16 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dim_sh,
  *        (can be used by caller)
  *
  * Algo:
- * - compute the domain (exact shadow - dark shadow)
+ * - compute the domain rest = (exact shadow - dark shadow)
  * - scan all its integer points and verify for each point:
  *      if there is an integer point in the intersection with the coordinate
  *      polyhedron, add it to the polyhedral domain not_a_hole
- * - return (exact shadow - dark shadow) - not_a_hole
+ * - return (rest - not_a_hole)
+ * 
+ * TODO: the output is not necessarily a bounded polyhedron!
+ * we can add the rays from the rest polyhedra to the result...
+ * but the rays have to be removed from rest before the scan (bound rest with
+ * those rays -> vertices), else the scan is not bounded!
  */
 static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
 {
