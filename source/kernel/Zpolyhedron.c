@@ -440,6 +440,9 @@ LBL *LBLDifference(LBL *A, LBL *B)
     return(LBLCopy(A));
   }
 
+  // TODO: the simple inclusion check could be merged with the main loop
+  // in that case some of the intersection LBLs could be early simplified instead of computing their complement!
+
   // simple check if A is included in inter, then inter == A and result = empty.
   if(LBL_simple_inclusion_check(A, inter)) {
     LBLFree(inter);
@@ -1959,6 +1962,30 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dim_sh,
 } /* Scan_RestAP */
 
 
+// static Polyhedron *bound_domain(Polyhedron *D)
+// {
+//   int num_lr; // number of lines+rays
+//   Matrix *new_rays;
+
+//   // count number of lines/rays
+//   for(num_lr = 0; num_lr < D->NbRays; num_lr++) {
+//     if(value_notzero_p(D->Ray[num_lr][0])
+//       && value_notzero_p(D->Ray[num_lr][D->Dimension + 1])) {
+//       break;
+//     }
+//   }
+  
+//   // build the matrix of vertices of the bounded D:
+//   // original vertices + each line/ray added to each of them.
+//   new_rays = Matrix_Alloc((D->NbRays - num_lr) * (num_lr + 1),
+//     D->Dimension + 2);
+//   // copy the original vertices:
+
+  
+//   // TODO    
+//   assert(0);
+// }
+
 /*
  * Compute the coordinate polyhedron containing the holes of the single LBL A.
  *
@@ -1984,7 +2011,7 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
   Polyhedron *rest, *rest_AP; // exact shadow - dark shadow (polyhedral domain)
   Polyhedron *tmp, *U0, *not_a_hole = NULL, *holes;
   Vector *v;
-  Matrix *Trans;
+  // Bool bounded;
 
 
   #ifdef HOLES_DEBUG
@@ -2035,18 +2062,31 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
   Polyhedron_Print(stderr, P_VALUE_FMT, rest);
   #endif
 
-  if(value_zero_p(rest->Ray[0][0])
-    || value_zero_p(rest->Ray[0][rest->Dimension + 1])) {
-    // there is a problem, there's a ray or line in rest!
-    // TODO: make rest bounded, keep memory of the rays
-    //       (to be added to the result at the end).
+  // scan all subpolyhedra of rest (it's a domain!)
+  // bounded = True;
+  // for(Polyhedron *rr = rest; rr; rr=rr->next) {
+  //   if(value_zero_p(rest->Ray[0][0])
+  //     || value_zero_p(rest->Ray[0][rest->Dimension + 1])) {
+  //     bounded = False;
+  //     break;
+  //   }
+  // }
 
-    assert(0);
-  }
+  // TODO:
+  // If there's a ray or line in rest, just make rest bounded by building
+  // the polytopes of its vertices and (its vertices + each line/ray)
+  // THIS DOES NOT WORK HERE, HAVE TO DO IT LATER IN SCAN...
+
+  // if(! bounded) {
+  //   rest_AP = bound_domain(rest);
+  // }
+  // else {
+  //   rest_AP = Domain_Copy(rest);
+  // }
+  rest_AP = rest;
 
   // PREPARE SCAN:
-  // Expand rest back to original A->P dimension
-  rest_AP = rest;
+  // Expand rest back to original A->P dimension (could be done in one function)
   for(int d = rest->Dimension + 1; d <= A->P->Dimension; d++) {
     tmp = domain_insert_dim(rest_AP, d);
     if(rest_AP != rest)
@@ -2055,7 +2095,8 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
   }
   // and intersect with A->P, get rest_AP.
   tmp = DomainIntersection(A->P, rest_AP, MAXNOOFRAYS);
-  Domain_Free(rest_AP);
+  if(rest_AP != rest)
+    Domain_Free(rest_AP);
   rest_AP = tmp;
 
   // make rest_AP a disjoint domain, avoid scanning some points multiple times
@@ -2081,9 +2122,9 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
   while(rest_AP) {
     Polyhedron *scan, *nextR;
 
+    // polyhedron scan does not work on a domain (need to nullify next)
     nextR = rest_AP->next; // save and
     rest_AP->next = NULL;  // unlink next
-    // polyhedron scan does not work on a domain (need to nullify next)
     scan = Polyhedron_Scan(rest_AP, U0, MAXNOOFRAYS);
 
     // init vector to (0...0 1)
