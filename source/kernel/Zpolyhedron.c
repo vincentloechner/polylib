@@ -3024,14 +3024,14 @@ static LBL *sLBL2ZDomain(LBL *A)
     fprintf(stderr, "-- in LBL2ZDomain - Not holes = ");
     Polyhedron_Print(stderr, P_VALUE_FMT, not_holes);
     #endif
-    Polyhedron_Free(holes);
-    Polyhedron_Free(exact);
+    Domain_Free(holes);
+    Domain_Free(exact);
 
     // build result LBL
     newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
     Result = LBLAlloc(newL, not_holes);
     Matrix_Free(newL);
-    Polyhedron_Free(not_holes);
+    Domain_Free(not_holes);
   }
   else {
     Result = sLBLCopy(A);
