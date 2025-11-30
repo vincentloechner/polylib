@@ -3846,15 +3846,16 @@ Polyhedron *Polyhedron_Scan(Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
   return res;
 } /* Polyhedron_Scan */
 
-/*---------------------------------------------------------------------*/
-/* int lower_upper_bounds(pos, P, context, LBp, UBp)                   */
-/*    pos : index position of current loop index (1..hdim-1)           */
-/*    P: loop domain                                                   */
-/*    context : context values for fixed dimensions                    */
-/*              context[pos] is set to 0                               */
-/*    LBp, UBp : pointers to resulting bounds                          */
-/* returns the flag = (UB_INFINITY, LB_INFINITY)                       */
-/*---------------------------------------------------------------------*/
+/*
+ * int lower_upper_bounds(pos, P, context, LBp, UBp)
+ *    pos : index position of current loop index (1..hdim-1)
+ *    P: loop domain
+ *    context : context values for fixed dimensions
+ *              context[pos] is set to 0
+ *    LBp, UBp : pointers to resulting bounds
+ * returns the flag = (UB_INFINITY, LB_INFINITY)
+ *
+ */
 int lower_upper_bounds(int pos, Polyhedron *P, Value *context, Value *LBp,
                        Value *UBp) {
 

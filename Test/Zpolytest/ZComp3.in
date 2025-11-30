@@ -24,3 +24,7 @@ F 19
 - plus one point i=1, because
 the shadow of the LBL is {i=0} U {2 <= i <= 10}
 (there is no integer j for i = 1 (1/3 -> 1/2))
+
+Dark shadow = {i | 3 <= i <= 10}
+Exact shadow = {i | 0 <= i <= 10}
+Rest = {i | 0 <= i <= 2}
