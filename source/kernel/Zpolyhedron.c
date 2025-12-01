@@ -3432,6 +3432,14 @@ void LBLSimplify(LBL *A)
  */
 LBL *LBLDisjointUnion(LBL *A)
 {
+  if(!A)
+    return(NULL);
+
+  // TODO: infinite loop for ZDisj11b.in
+  
+  // need a ZDomain version or inter/diff risks to loop indefinitely
+  A = LBL2ZDomain(A);
+
   // get a copy of the first domain of A
   LBL *res = sLBLCopy(A);
 
@@ -3457,5 +3465,6 @@ LBL *LBLDisjointUnion(LBL *A)
     tmpA->next = next;
   }
 
+  LBLFree(A);
   return(res);
 }
