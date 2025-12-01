@@ -22,8 +22,7 @@ D 1
 # LBLComplement **2 and check equality
 F 16
 
-# there's a column of zeros, but the complement is regular... ?! (no holes)
-
+###
 The complement of A is:
 2 0 1 + everything inside
 2 0 0
@@ -35,8 +34,6 @@ and
 
 Z^d and everything outside
 
-Missing:  2  0  0  0
-         52 66  0  0 and the holes!
-
-From ZDomain11.in we know that there are holes.
-They were "forgotten"... ?!
+and the holes in:
+  2  0  0  0
+  52 66 0  0
