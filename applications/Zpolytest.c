@@ -325,7 +325,7 @@ int main() {
     ZA = LBLAlloc(a, A);
     ZB = LBLAlloc(b, B);
     ZC = LBLDifference(ZB, ZA);
-    printf("\nZC = ZB - ZA = ");
+    printf("\nC = B - A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZC);
     ZD = LBLDisjointUnion(ZC);
     printf("\nLBLDisjointUnion(B - A) = ");

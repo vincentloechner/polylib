@@ -27,7 +27,7 @@
 #define SIMPLIFY2_DEBUG 1
 #endif
 // #define SIMPLIFY2_DEBUG 1
-#define HOLES_DEBUG 1
+// #define HOLES_DEBUG 1
 
 static LBL *sLBLIntersection(LBL *, LBL *);
 static LBL *sLBLCopy(LBL *A);
@@ -2049,12 +2049,11 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
   Polyhedron *rest, *rest_AP; // exact shadow - dark shadow (polyhedral domain)
   Polyhedron *tmp, *U0, *not_a_hole = NULL, *holes;
   Vector *v;
-  // Bool bounded;
 
 
   #ifdef HOLES_DEBUG
   fprintf(stderr, "\n-- Entering compute holes. A = ");
-  LBLPrint(stderr, P_VALUE_FMT, A);
+  sLBLPrint(stderr, P_VALUE_FMT, A);
   #endif
   nbzeros = LatCountZeroCols(A->Lat);
   if(nbzeros == 0) {
@@ -2090,7 +2089,7 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
     Domain_Free(exact);
   }
 
-  // make rest disjoint to scan each point once and guarantee regularity
+  // make rest disjoint to scan each point once
   tmp = Disjoint_Domain(rest, 0, MAXNOOFRAYS);
   Domain_Free(rest);
   rest = tmp;
@@ -2176,17 +2175,17 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
         new_not_a_hole = AddPolyToDomain(tmp, new_not_a_hole);
         tmp = next;
       }
-
-      #ifdef HOLES_DEBUG
-      fprintf(stderr, "got not holes = ");
-      Polyhedron_Print(stderr, P_VALUE_FMT, not_a_hole);
-      fprintf(stderr, "------- End Scan_Rest -------\n");
-      #endif
   
       Domain_Free(scanR);
       Polyhedron_Free(inter);
       inter = nextI;
     } // while(inter)
+
+    #ifdef HOLES_DEBUG
+    fprintf(stderr, "got not holes = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, new_not_a_hole);
+    fprintf(stderr, "------- End Scan_Rest -------\n");
+    #endif
 
     // if R was unbounded
     if(bounded_rest != R) {
@@ -2209,6 +2208,10 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
         new_not_a_hole = tmp;
         Matrix_Free(lines_rays);
       }
+      #ifdef HOLES_DEBUG
+      fprintf(stderr, "not holes was unbounded, new_not_a_hole = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, new_not_a_hole);
+      #endif
     }
     // not_a_hole = link new_not_a_hole and not_a_hole
     if(new_not_a_hole) {
@@ -2225,12 +2228,15 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
   Vector_Free(v);
   Domain_Free(U0);
   #ifdef HOLES_DEBUG
+  fprintf(stderr, "------- end loop on rest -------\n");
   fprintf(stderr, "not holes in (exact-dark) = ");
   Polyhedron_Print(stderr, P_VALUE_FMT, not_a_hole);
   #endif
 
   // build final domain: (rest - not_a_hole)
   holes = DomainDifference(rest, not_a_hole, MAXNOOFRAYS);
+  holes = DomainConstraintSimplify(holes, MAXNOOFRAYS);
+  holes = Domain_Remove_Integer_Empty(holes);
   Domain_Free(rest);
   Domain_Free(not_a_hole);
   if(!holes || emptyQ(holes)) {
@@ -2241,6 +2247,11 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
     return(NULL); // no holes
   }
 
+  #ifdef HOLES_DEBUG
+  fprintf(stderr, "------- end sLBLCompute_holes -------\n");
+  fprintf(stderr, "returning holes = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, holes);
+  #endif
   return(holes);
 } /* sLBLCompute_holes */
 

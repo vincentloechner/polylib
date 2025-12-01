@@ -16,13 +16,14 @@ print("A contains", len(A), "points")
 
 
 ZA = set()
-ZA = ZA.union(ZP2D("(2*i, 0, 52*i+66*j)", "0", "1000", "-333*i/440", "(-674*i-4)/891", "0", "0"))
-ZA = ZA.union({(74, 0, 76)}) # <- duplicate!
-ZA = ZA.union({(542, 0, 562)})
-ZA = ZA.union({(0, 0, 0)})
-ZA = ZA.union({(1084, 0, 1124)})
-ZA = ZA.union({(1782, 0, 1848)})
-ZA = ZA.union({(1626, 0, 1686)})
+# ZA = ZA.union(ZP2D("(2*i, 0, 52*i+66*j)", "0", "1000", "-333*i/440", "(-674*i-4)/891", "0", "0"))
+# ZA = ZA.union({(74, 0, 76)}) # <- duplicate!
+# ZA = ZA.union({(542, 0, 562)})
+# ZA = ZA.union({(0, 0, 0)})
+# ZA = ZA.union({(1084, 0, 1124)})
+# ZA = ZA.union({(1782, 0, 1848)})
+# ZA = ZA.union({(1626, 0, 1686)})
+ZA = ZA.union(ZP2D("(2*i, 0, 52*i+66*j)", "0", "1000", "-333*i/440", "(-674*i)/891", "0", "0"))
 
 print("len(ZA) =", len(ZA))
 

@@ -24,19 +24,19 @@ LATTICE:
 POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3
-Inequality: [   1   -1  ]
-Inequality: [  -1   19  ]
-Rays 2 3
-Vertex: [   1  ]/1
-Vertex: [  19  ]/1
-UNION POLYHEDRON Dimension:1
-           Constraints:2  Equations:0  Rays:2  Lines:0
-Constraints 2 3
 Inequality: [   1  -31  ]
 Inequality: [  -1   39  ]
 Rays 2 3
 Vertex: [  31  ]/1
 Vertex: [  39  ]/1
+UNION POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1   -1  ]
+Inequality: [  -1   19  ]
+Rays 2 3
+Vertex: [   1  ]/1
+Vertex: [  19  ]/1
 UNION POLYHEDRON Dimension:1
            Constraints:2  Equations:0  Rays:2  Lines:0
 Constraints 2 3

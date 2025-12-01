@@ -2,10 +2,8 @@
 # there is an infinite exact-dark shadow in this one
 
 M 1
-
-4 5
+3 5
    2    0    0    0    0 
-   0    0    0    0    0 
    8   11    0    0   10 
    0    0    0    0    1 
 
