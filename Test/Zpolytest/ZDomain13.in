@@ -26,7 +26,25 @@ D 1
 1   -729      117   -350    4561
 1   -677     -465    540    3489
 
+# complement
+# F 16
+
 # LBL2ZDomain + simplifyEmpty
 F 18
 
 
+# iscc input:
+D := {[i, j, k] -> [i, j, 0]:
+    98877 i +   189663 j +   1798 k +  705915 >=0
+and 10109 i +     5958 j +  14601 k +   31333 >= 0
+and  5405 i +    -4965 j +  -3870 k + 4303504 >= 0
+and  -729 i +      117 j +   -350 k +    4561 >= 0
+and  -677 i +     -465 j +    540 k +    3489 >= 0
+};
+D := range D; # -> but this keeps the existential variable :(
+
+# check that complement of complement = original
+U := {[i,j,k]};
+C := U - D;
+CC := U - C;
+CC = D;
