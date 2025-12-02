@@ -3437,8 +3437,8 @@ void LBLSimplify(LBL *A)
 /***************************************************************************/
 
 /*
- * Compute the disjoint union of LBL A, by performing succesive intersection
- * and difference.
+ * Compute the disjoint union of LBL A, by performing succesive intersections
+ * and differences.
  */
 LBL *LBLDisjointUnion(LBL *A)
 {
@@ -3446,9 +3446,11 @@ LBL *LBLDisjointUnion(LBL *A)
     return(NULL);
 
   // TODO: infinite loop for ZDisj11b.in
-  
-  // need a ZDomain version or inter/diff risks to loop indefinitely
-  A = LBL2ZDomain(A);
+
+  // TODO: split lattices first, then polyhedra in them
+
+  // need a ZDomain version?
+  // A = LBL2ZDomain(A);
 
   // get a copy of the first domain of A
   LBL *res = sLBLCopy(A);

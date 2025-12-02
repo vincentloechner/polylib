@@ -67,6 +67,7 @@ TEST_FILES_32 =  \
 	ZInter1.in \
 	ZInter2.in  \
 	ZInter3.in  \
+	ZInter8.in  \
 	ZInter11.in  \
 	ZInter12.in  \
 	ZPre1.in \
@@ -86,6 +87,28 @@ TEST_FILES = $(TEST_FILES_32) \
 	ZDiff11.in \
 	ZDiff11b.in \
 	ZDomain11.in
+
+# not checked:
+# - long execution time:
+# phideo1.in
+# phideo3.in
+# ZDisj11b.in
+# ZDomain13.in  # need gmp (overflow even in 64 bits)
+
+# - not yet included:
+# ZDisj8.in
+
+# - old (to be updated):
+# SplitZpol1.in
+# SplitZpol2.in
+# SplitZpol3.in
+# ZAlloc[4-7].in
+# ZCheckEmpty1.in
+
+# - temporary/no longer used:
+# LeftHermite*.in
+# ZEmpty1.in
+# ZImage[2-4]*.in
 
 
 include ../Tests.mk
