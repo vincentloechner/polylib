@@ -1947,7 +1947,6 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dimrest)
     value_set_si(val[position], 0);
   }
   else {
-    Polyhedron *res;
     // scan AP
     if(lower_upper_bounds(position, R, val, &LB, &UB) != 0) {
       // infinite AP, has an int solution.
@@ -2116,7 +2115,7 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
 
   // scan each piece of rest_AP
   for(Polyhedron *R = rest; R; R = R->next) {
-    Polyhedron *nextR, *inter, *end, *bounded_rest;
+    Polyhedron *nextR, *inter, *bounded_rest;
     Polyhedron *new_not_a_hole = NULL;
     // nullify next R to ensure we work on a single rest
     nextR = R->next; // save and
