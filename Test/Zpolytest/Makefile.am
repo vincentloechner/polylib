@@ -27,6 +27,7 @@ TEST_FILES_32 =  \
 	LatInter5.in \
 	LatInter6.in \
 	LatInter7.in \
+	phideo2.in \
 	ZAlloc1.in \
 	ZAlloc1b.in \
 	ZAlloc1c.in \
