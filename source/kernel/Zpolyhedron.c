@@ -45,12 +45,7 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D);
 static Polyhedron *domain_project(Polyhedron *P, int eliminate);
 static Polyhedron *domain_insert_dim(Polyhedron *D, int move);
 static void LBL_Remove_Empty(LBL *A);
-
-// typedef struct forsimplify {
-//   Polyhedron *Pol;
-//   LatticeUnion *LatUni;
-//   struct forsimplify *next;
-// } ForSimplify;
+static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref);
 
 
 /*
@@ -873,7 +868,7 @@ static LBL *sLBLComplement(LBL *A)
     Domain_Free(holes);
   }
 
-  CanonicalLBL(Result);
+  // CanonicalLBL(Result);
 
   // Don't need to simplify (remove integer-empty polyhedra)
   // LBLSimplifyEmpty(Result);
@@ -903,6 +898,8 @@ LBL *LBLComplement(LBL *A)
     LBLFree(comp);
     Result = inter;
   }
+
+  CanonicalLBL(Result);
 
   return(Result);
 } /* LBLComplement */
@@ -1234,6 +1231,11 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
 } /* sLBLPreimage */
 
 
+// typedef struct forsimplify {
+//   Polyhedron *Pol;
+//   LatticeUnion *LatUni;
+//   struct forsimplify *next;
+// } ForSimplify;
 // /*
 //  * Return the simplified representation of the Z-domain 'ZDom'. It attempts to
 //  * convexize unions of polyhedra when they correspond to the same lattices and
@@ -2733,7 +2735,7 @@ static Polyhedron *domain_insert_dim(Polyhedron *D, int move)
  * of remove_equalities)
  * In place: modifies A.
  */
-void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
+static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
 {
   // A->Lat is included in ref, so we know that
   // the pivots of A are multiple of the pivots of ref.

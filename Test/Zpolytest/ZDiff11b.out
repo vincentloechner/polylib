@@ -130,11 +130,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0  -10    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -153,11 +153,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0   -9    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -176,11 +176,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0   -8    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -199,11 +199,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0   -7    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -222,11 +222,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0   -6    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -245,11 +245,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0   -5    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -268,11 +268,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0   -4    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -291,11 +291,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0   -3    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -314,11 +314,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0   -2    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -337,11 +337,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [ 220 -119   44  ]
 Ray:    [ 198 -107   44  ]
 Ray:    [ 297 -160   66  ]
 Ray:    [ 165  -89   33  ]
 Vertex: [   0   -1    0  ]/11
+Ray:    [ 220 -119   44  ]
 
 UNION LBL: Dimension 3
 
@@ -360,11 +360,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [  20    7    4  ]
 Ray:    [  54   19   12  ]
 Ray:    [  81   29   18  ]
 Ray:    [  45   16    9  ]
 Vertex: [   0   -2    0  ]/3
+Ray:    [  20    7    4  ]
 
 UNION LBL: Dimension 3
 
@@ -383,11 +383,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [  20    7    4  ]
 Ray:    [  54   19   12  ]
 Ray:    [  81   29   18  ]
 Ray:    [  45   16    9  ]
 Vertex: [   0   -1    0  ]/3
+Ray:    [  20    7    4  ]
 
 UNION LBL: Dimension 3
 
@@ -406,11 +406,11 @@ Inequality: [  -1    0    5    0  ]
 Inequality: [   2    0   -9    0  ]
 Inequality: [   0    0    0    1  ]
 Rays 5 5
-Ray:    [  40   41    8  ]
 Ray:    [  36   37    8  ]
 Ray:    [  27   28    6  ]
 Ray:    [  30   31    6  ]
 Vertex: [   0   -1    0  ]/2
+Ray:    [  40   41    8  ]
 
 UNION LBL: Dimension 3
 
@@ -429,9 +429,9 @@ Inequality: [   2    0   -9    1  ]
 Inequality: [  -8    4   -1   -4  ]
 Inequality: [   0    0    0    1  ]
 Rays 6 5
-Ray:    [  18   37    4  ]
 Ray:    [  27   56    6  ]
 Ray:    [  15   31    3  ]
 Ray:    [  20   41    4  ]
 Vertex: [  16   37    4  ]/4
 Vertex: [  12   28    3  ]/3
+Ray:    [  18   37    4  ]
