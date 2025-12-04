@@ -780,6 +780,53 @@ static LBL *sLBLIntersection(LBL *A, LBL *B)
  *      = L z' such that there exist no z in A->P such that L z' = L z
  *      -> need exact shadow
  */
+static LBL *sLBLComplement2(LBL *A)
+{
+  // testing a new version, just add dimensions and 0 columns in L, and
+  // compute the complement of the coordinate polyhedron
+  // and add the holes of A at the end.
+  int nz;
+  Matrix *mat = NULL;
+  Polyhedron *univ, *comp, *holes, *next_c;
+
+  // compute holes:
+  holes = sLBLCompute_holes(A, NULL);
+
+  Matrix_identity(A->Lat->NbRows, &mat);
+  A = sLBLCopy(A);
+  sLBLMake_lattice_equal_to(A, mat);
+  Matrix_Free(mat);
+
+  // add lines in P, in the zero dimensions of Lat:
+  nz = LatCountZeroCols(A->Lat);
+  if(nz) {
+    mat = Matrix_Alloc(nz, A->P->Dimension + 2);
+    Vector_Set(mat->p[0], 0, nz * (A->P->Dimension + 2));
+    for(int i = 0; i < nz; i++) {
+      value_set_si(mat->p[i][mat->NbColumns - 2 - i], 1);
+    }
+    A->P = DomainAddRays(A->P, mat, MAXNOOFRAYS);
+    Matrix_Free(mat);
+  }
+  // fprintf(stderr, "A with (L=Id) = ");
+  // sLBLPrint(stderr, P_VALUE_FMT, A);
+
+  univ = Universe_Polyhedron(A->P->Dimension);
+  comp = DomainDifference(univ, A->P, MAXNOOFRAYS);
+  Domain_Free(univ);
+  Domain_Free(A->P);
+  for(Polyhedron *c = comp; c; c = next_c) {
+    next_c = c->next;
+    c->next = NULL;
+    holes = AddPolyToDomain(c, holes);
+  }
+  A->P = holes;
+
+  // fprintf(stderr, "comp(A) with (L=Id) = ");
+  // sLBLPrint(stderr, P_VALUE_FMT, A);
+
+  return(A);
+}
 static LBL *sLBLComplement(LBL *A)
 {
   LBL *Result = NULL;
