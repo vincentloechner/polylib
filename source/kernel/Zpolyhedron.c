@@ -787,15 +787,17 @@ static LBL *sLBLComplement2(LBL *A)
   // and add the holes of A at the end.
   int nz;
   Matrix *mat = NULL;
-  Polyhedron *univ, *comp, *holes, *next_c;
+  Polyhedron *univ, *comp, *holes;
 
-  // compute holes:
+  // compute holes of A:
   holes = sLBLCompute_holes(A, NULL);
 
   Matrix_identity(A->Lat->NbRows, &mat);
   A = sLBLCopy(A);
   sLBLMake_lattice_equal_to(A, mat);
   Matrix_Free(mat);
+  fprintf(stderr, "A lattice equal to Id = ");
+  sLBLPrint(stderr, P_VALUE_FMT, A);
 
   // add lines in P, in the zero dimensions of Lat:
   nz = LatCountZeroCols(A->Lat);
@@ -808,22 +810,28 @@ static LBL *sLBLComplement2(LBL *A)
     A->P = DomainAddRays(A->P, mat, MAXNOOFRAYS);
     Matrix_Free(mat);
   }
-  // fprintf(stderr, "A with (L=Id) = ");
-  // sLBLPrint(stderr, P_VALUE_FMT, A);
+  fprintf(stderr, "A with (L=Id) = ");
+  sLBLPrint(stderr, P_VALUE_FMT, A);
 
   univ = Universe_Polyhedron(A->P->Dimension);
   comp = DomainDifference(univ, A->P, MAXNOOFRAYS);
   Domain_Free(univ);
-  Domain_Free(A->P);
-  for(Polyhedron *c = comp; c; c = next_c) {
-    next_c = c->next;
-    c->next = NULL;
-    holes = AddPolyToDomain(c, holes);
+
+  // TODO: just link the end, they are separated.
+  // TODO: not the right dimension
+  // add comp to holes:
+  while(comp) {
+    Polyhedron *next_c = comp->next;
+    comp->next = NULL;
+    holes = AddPolyToDomain(comp, holes);
+    comp = next_c;
   }
+  Domain_Free(A->P);
   A->P = holes;
 
-  // fprintf(stderr, "comp(A) with (L=Id) = ");
-  // sLBLPrint(stderr, P_VALUE_FMT, A);
+  CanonicalLBL(A);
+  fprintf(stderr, "comp(A) with (L=Id) = ");
+  sLBLPrint(stderr, P_VALUE_FMT, A);
 
   return(A);
 }
