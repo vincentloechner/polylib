@@ -435,15 +435,11 @@ LBL *LBLDifference(LBL *A, LBL *B)
     return(LBLCopy(A));
   }
 
-  // TODO: the simple inclusion check could be merged with the main loop
-  // in that case some of the intersection LBLs could be early simplified instead of computing their complement!
-
   // simple check if A is included in inter, then inter == A and result = empty.
   if(LBL_simple_inclusion_check(A, inter)) {
     LBLFree(inter);
     return(EmptyLBL(A->Lat->NbRows - 1));
   }
-
 
   // compute res = A - inter
   // initialize result: A
@@ -465,19 +461,6 @@ LBL *LBLDifference(LBL *A, LBL *B)
     if(isEmptyLBL(res))
       break;
   }
-
-
-  // // naïve version
-  // LBL *comp;
-  // comp = LBLComplement(inter);
-  // res = LBLIntersection(comp, A);
-  // #ifdef LBLDIFF_DEBUG
-  // fprintf(stderr, "---- comp(B) = ");
-  // LBLPrint(stderr, P_VALUE_FMT, comp);
-  // fprintf(stderr, "---- A inter comp(B) = ");
-  // LBLPrint(stderr, P_VALUE_FMT, res);
-  // #endif
-  // LBLFree(comp);
 
   LBLFree(inter);
 
@@ -786,51 +769,48 @@ static LBL *sLBLComplement2(LBL *A)
   // compute the complement of the coordinate polyhedron
   // and add the holes of A at the end.
   int nz;
-  Matrix *mat = NULL;
+  Matrix *id = NULL;
   Polyhedron *univ, *comp, *holes;
 
   // compute holes of A:
   holes = sLBLCompute_holes(A, NULL);
 
-  Matrix_identity(A->Lat->NbRows, &mat);
+  Matrix_identity(A->Lat->NbRows, &id);
   A = sLBLCopy(A);
-  sLBLMake_lattice_equal_to(A, mat);
-  Matrix_Free(mat);
+  sLBLMake_lattice_equal_to(A, id);
+  Matrix_Free(id);
   fprintf(stderr, "A lattice equal to Id = ");
   sLBLPrint(stderr, P_VALUE_FMT, A);
 
-  // add lines in P, in the zero dimensions of Lat:
-  nz = LatCountZeroCols(A->Lat);
-  if(nz) {
-    mat = Matrix_Alloc(nz, A->P->Dimension + 2);
-    Vector_Set(mat->p[0], 0, nz * (A->P->Dimension + 2));
-    for(int i = 0; i < nz; i++) {
-      value_set_si(mat->p[i][mat->NbColumns - 2 - i], 1);
-    }
-    A->P = DomainAddRays(A->P, mat, MAXNOOFRAYS);
-    Matrix_Free(mat);
-  }
-  fprintf(stderr, "A with (L=Id) = ");
-  sLBLPrint(stderr, P_VALUE_FMT, A);
+  // // remove the zero dimensions of A->P:
+  // nz = LatCountZeroCols(A->Lat);
+  // Polyhedron *newP = A->P;
+  // for(int dim = 0; dim < nz; dim++) {
 
+  // }
+  // fprintf(stderr, "A expanded with lines in 0-dims = ");
+  // sLBLPrint(stderr, P_VALUE_FMT, A);
+
+  // Compute Universe - A->P
   univ = Universe_Polyhedron(A->P->Dimension);
   comp = DomainDifference(univ, A->P, MAXNOOFRAYS);
   Domain_Free(univ);
 
-  // TODO: just link the end, they are separated.
-  // TODO: not the right dimension
-  // add comp to holes:
-  while(comp) {
-    Polyhedron *next_c = comp->next;
-    comp->next = NULL;
-    holes = AddPolyToDomain(comp, holes);
-    comp = next_c;
-  }
+  fprintf(stderr, "LINKING: holes(A) = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, holes);
+  fprintf(stderr, "         with comp = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, comp);
+
+  // just link holes at the end of comp (they are separated)
+  Polyhedron *compEnd = comp;
+  while(compEnd->next)
+    compEnd = compEnd->next;
+  compEnd->next = holes;
   Domain_Free(A->P);
-  A->P = holes;
+  A->P = comp;
 
   CanonicalLBL(A);
-  fprintf(stderr, "comp(A) with (L=Id) = ");
+  fprintf(stderr, "comp(A) = ");
   sLBLPrint(stderr, P_VALUE_FMT, A);
 
   return(A);
