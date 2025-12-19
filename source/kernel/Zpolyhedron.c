@@ -29,6 +29,7 @@
 // #define SIMPLIFY2_DEBUG 1
 // #define HOLES_DEBUG 1
 
+static LBL *LBLConcatenate(LBL *A, LBL *B);
 static LBL *sLBLIntersection(LBL *, LBL *);
 static LBL *sLBLCopy(LBL *A);
 static void sLBLFree(LBL *L);
