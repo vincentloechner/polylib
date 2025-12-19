@@ -112,9 +112,8 @@ int main() {
   while((*s=='#') || (sscanf(s, "F %d", &func)<1));
 
   switch (func) {
-  case 1:
-    
-    /* just a test of polylib functions */
+
+  case 1: /* just a test of polylib functions */
     C = DomainUnion(A, B, 200);
     D = DomainConvex(C, 200);
     d = Polyhedron2Constraints(D);
@@ -132,7 +131,6 @@ int main() {
     break;
     
   case 3: /* LatticeIntersection */
-    
     c = LatticeIntersection(a,b);
     Matrix_Print(stdout, P_VALUE_FMT, c);
     break;
@@ -147,7 +145,6 @@ int main() {
     break;
   
   case 5: /* LatticeDifference */
-    
     l1 = LatticeDifference(a, b);
     l2 = LatticeDifference(b, a);
     printf("L1 - L2:\n");
@@ -159,13 +156,11 @@ int main() {
     break;
     
   case 6: /* isEmptyLBL */
-
     ZA = LBLAlloc(a,A);
     printf("is Empty? :%d\n", isEmptyLBL(ZA));
     break;
     
   case 7: /* LBLIntersection */
-        
     ZA = LBLAlloc(a, A);
     ZB = LBLAlloc(b, B);
     ZC = LBLIntersection(ZA, ZB);
@@ -173,7 +168,6 @@ int main() {
     break;
     
   case 8: /* LBLUnion */
-    
     ZA = LBLAlloc(a, A);
     ZB = LBLAlloc(b, B);
     ZC = LBLUnion(ZA,ZB);
@@ -181,7 +175,6 @@ int main() {
     break;
     
   case 9: /* LBLDifference */
-    
     ZA = LBLAlloc(a, A);
     ZB = LBLAlloc(b, B);
     ZC = LBLDifference(ZA, ZB);
@@ -195,21 +188,18 @@ int main() {
     break;
     
   case 10: /* LBLImage */
-    
     ZA = LBLAlloc(a, A);
     ZC = LBLImage(ZA, b); 
     LBLPrint(stdout, P_VALUE_FMT, ZC);
     break;
     
   case 11: /* LBLPreimage */
-    
     ZA = LBLAlloc(a, A);
     ZC = LBLPreimage(ZA, b); 
     LBLPrint(stdout, P_VALUE_FMT, ZC);
     break;
     
   case 12: /* difference between image of preimage and original*/
-
     ZA = LBLAlloc(a, A);
     ZC = LBLPreimage(ZA, b);
     ZD = LBLImage(ZC, b);
@@ -227,7 +217,6 @@ int main() {
     break;
   
   case 13:  /* LBLSimplifyEmpty */
-    
     ZA = LBLAlloc(a, A);
     printf("A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZA);
@@ -237,20 +226,18 @@ int main() {
     break;
     
   case 14:  /* EmptyLBL */
-        
     ZA = EmptyLBL(3);
     printf("is Empty? :%d\n", isEmptyLBL(ZA));
     break;
-    
+
   case 15:  /* LBLIncluded */
-  
     ZA = LBLAlloc(a, A);
     ZB = LBLAlloc(b, B);
     printf("A in B  :%d\nB in A  :%d\n", 
     LBLIncluded(ZA, ZB),
     LBLIncluded(ZB, ZA));
     break;
-  
+
   case 16:  /* LBLComplement:
       compute complement of complement and check equality with original */
     ZA = LBLAlloc(a, A);
@@ -267,7 +254,7 @@ int main() {
     printf("  C(C(A)) is included in A: %d\n", LBLIncluded(ZC, ZA));
     break;
 
-  case 17:  /* LBL2Zdomain and check that the differences are empty */
+  case 17:  /* LBL2Zdomain and check equality with original */
     ZA = LBLAlloc(a, A);
     printf("A = ");
     LBLPrint(stdout, P_VALUE_FMT, ZA);
@@ -320,7 +307,6 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     break;
 
-
   case 20:  /* LBLDisjointUnion of the difference between two LBLs */
     ZA = LBLAlloc(a, A);
     ZB = LBLAlloc(b, B);
@@ -331,7 +317,6 @@ int main() {
     printf("\nLBLDisjointUnion(B - A) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZD);
     break;
-
   
   case 100: /* just alloc and normalize */
     ZA = LBLAlloc(a,A);
