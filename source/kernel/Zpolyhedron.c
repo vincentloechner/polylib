@@ -768,7 +768,6 @@ static LBL *sLBLComplement2(LBL *A)
   // testing a new version, just add dimensions and 0 columns in L, and
   // compute the complement of the coordinate polyhedron
   // and add the holes of A at the end.
-  int nz;
   Matrix *id = NULL;
   Polyhedron *univ, *comp, *holes;
 
@@ -3514,6 +3513,5 @@ LBL *LBLDisjointUnion(LBL *A)
     tmpA->next = next;
   }
 
-  LBLFree(A);
   return(res);
 }

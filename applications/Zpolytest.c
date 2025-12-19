@@ -307,7 +307,7 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
     break;
 
-  case 20:  /* LBLDisjointUnion of the difference between two LBLs */
+    case 20:  /* LBLDisjointUnion of the difference between two LBLs */
     ZA = LBLAlloc(a, A);
     ZB = LBLAlloc(b, B);
     ZC = LBLDifference(ZB, ZA);
@@ -316,6 +316,28 @@ int main() {
     ZD = LBLDisjointUnion(ZC);
     printf("\nLBLDisjointUnion(B - A) = ");
     LBLPrint(stdout, P_VALUE_FMT, ZD);
+    break;
+  
+  case 21:  /* LBLDisjointUnion of the difference between two LBLs */
+            /* and check that the result is equal to the original  */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLAlloc(b, B);
+    printf("Computing C = B - A...\n");
+    ZC = LBLDifference(ZB, ZA);
+    // LBLPrint(stdout, P_VALUE_FMT, ZC);
+    ZD = LBLDisjointUnion(ZC);
+    printf("Computing D = LBLDisjointUnion(C)...\n");
+    // LBLPrint(stdout, P_VALUE_FMT, ZD);
+    LBLFree(ZA); ZA = NULL;
+    printf("Computing C - D...\n");
+    ZA = LBLDifference(ZC, ZD);
+    LBLSimplify(ZA);
+    printf("Checking that C - D is empty: %d\n", isEmptyLBL(ZA));
+    LBLFree(ZA); ZA = NULL;
+    printf("Computing D - C...\n");
+    ZA = LBLDifference(ZD, ZC);
+    LBLSimplify(ZA);
+    printf("Checking that D - C is empty: %d\n", isEmptyLBL(ZA));
     break;
   
   case 100: /* just alloc and normalize */
