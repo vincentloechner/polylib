@@ -20,8 +20,8 @@ F 3
 
 # (image) y and z intersect, so the resulting lattice is of smaller dimension!
 # result should be:
-  1 0
-  0 5
+  1 0
+  0 5
   0 0
   0 1
 

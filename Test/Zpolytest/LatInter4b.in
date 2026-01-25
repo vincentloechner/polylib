@@ -10,10 +10,9 @@ M 2
 4 3
   2 18 4
   5 60 10
-  1 2 3
+  1 2 4
   0 0 1
 
 D 0
 F 3
 
-# result should be empty since there are no integer solutions in y
