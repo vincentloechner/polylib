@@ -4,7 +4,7 @@ M 2
   2 0 0 
   0 1 0
   0 0 1
-# Function
+# Function (i, j) -> (i, i)
 3 2
   1 0
   1 0
@@ -19,6 +19,3 @@ D 1
 
 # is Image of Preimage included in the original?
 F 12
-
-
-

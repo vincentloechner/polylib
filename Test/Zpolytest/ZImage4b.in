@@ -10,7 +10,7 @@ M 2
   0 0 1 0
   0 0 0 1
 
-# affine function (i, j, k) -> i
+# affine function (i, j, k) -> (i)
 2 4
   1 0 0 0
   0 0 0 1
@@ -22,7 +22,7 @@ D 1
   1  1  0  0 0
   1 -1  0  0 100
   1 -1  2  0 0    # j >= i/2
-  1  1 -1  0 1    # j <= i+1 -> dimension j should be thick enough for proj.
+  1  1 -1  0 1    # j <= i+1 -> dimension j is thick enough for proj.
   1 -1  0  4 0    # k >= i/4
   1  1  0 -3 0    # k <= i/3 -> but k is not
 
