@@ -1,0 +1,20 @@
+# a ZAlloc of a pointy polyhedron being projected along a dimension
+
+M 1
+
+# take only the projection on i
+2 4
+1 1 0 0
+0 0 0 1
+
+D 1
+
+#
+3 5
+1 1 0 0 0
+1 -1 0 0 10
+0 1 -2 0 0  # AND j = i/2 only even i works
+
+# ZAlloc test
+F 100
+
