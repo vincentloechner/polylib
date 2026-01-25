@@ -1,0 +1,24 @@
+M 2
+
+# L1
+3 3
+1 0 0
+0 2 1
+0 0 1
+
+# L2
+3 3
+2 0 0
+0 24 3
+0 0 1
+
+D 0
+
+# Lattice Intersection
+F 5
+
+# intersection :
+3 3
+   2    0    0
+   0   24    3
+   0    0    1
