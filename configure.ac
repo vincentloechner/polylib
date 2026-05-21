@@ -30,7 +30,7 @@ dnl	Makefile in this directory.
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([polylib],[7.01])
+AC_INIT([polylib],[6.01])
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE([gnu])
 AC_CONFIG_SRCDIR(include/polylib/polylib.h.in)
@@ -40,7 +40,7 @@ AC_PREREQ([2.71])
 
 # libtool versioning info (this is not the package version!)
 AC_SUBST(versioninfo)
-versioninfo=11:1:0
+versioninfo=10:1:0
 
 if test "x$prefix" != "xNONE"; then
     prefix_wd=`cd $prefix && pwd`
