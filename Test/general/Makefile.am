@@ -1,10 +1,10 @@
 #
 # $Id: Makefile.am,v 1.3 2007/02/21 21:26:35 skimo Exp $
+# Modified: Vincent Loechner, 2025
 #
 
-OBJ_DIR = $(top_builddir)
-
-GENERAL =  \
+TEST_EXE = $(top_builddir)/polytest
+TEST_FILES =  \
 	convex1.in \
 	convex2.in \
 	gauss1.in \
@@ -20,28 +20,5 @@ GENERAL =  \
 	simpl9.in \
 	test1.in
 
-EXTRA_DIST = $(GENERAL) \
-	$(GENERAL:%.in=%.out) 
 
-#	test.in
-
-tests:
-	@failedtest=0; \
-	for x in $(GENERAL) ; do \
-		echo "Verify file $$x"; \
-		$(OBJ_DIR)/polytest$(TEST_BITS) < $(srcdir)/$$x > xyz;\
-		diff -w xyz $(srcdir)/`basename $$x .in`.out ; \
-		result=$$?; \
-		if [ "$$result" -eq "1" ]; then \
-			echo "Error: $$x is not the same"; \
-			failedtest=`expr $$failedtest + 1`; \
-		else \
-			echo "$$x passed"; \
-	        fi; \
-	done ; \
-        if [ $$failedtest != 0 ]; then \
-		echo "$$failedtest tests failed"; \
-	else \
-	        echo "Test polytest works correctly"; \
-        fi
-CLEANFILES=xyz
+include ../Tests.mk

@@ -114,7 +114,7 @@ int main(int argc, char **argv)
     Matrix *C1, *P1;
     Polyhedron *C, *P;
     Enumeration *en;
-    const char **param_name;
+    char **param_name;
     int c, ind = 0;
     int hom = 0;
   
@@ -154,13 +154,13 @@ int main(int argc, char **argv)
     /* Read the name of the parameters */
     param_name = Read_ParamNames(stdin,C->Dimension - hom);
     if (hom) {
-	const char **param_name2;
-	param_name2 = (const char**)malloc(sizeof(char*) * (C->Dimension));
-	for (i = 0; i < C->Dimension - 1; i++)
-	    param_name2[i] = param_name[i];
-	param_name2[C->Dimension-1] = "_H";
-	free(param_name);
-	param_name=param_name2;
+        char **param_name2;
+        param_name2 = (char**)malloc(sizeof(char*) * (C->Dimension));
+        for (i = 0; i < C->Dimension - 1; i++)
+            param_name2[i] = param_name[i];
+        param_name2[C->Dimension-1] = "_H";
+        free(param_name);
+        param_name=param_name2;
     }
 
     en = Polyhedron_Enumerate(P,C,WS,param_name);

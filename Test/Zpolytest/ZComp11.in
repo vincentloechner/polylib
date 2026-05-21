@@ -1,0 +1,41 @@
+# from Bcomp in ZDiff11
+
+M 1
+
+# Bcomp =
+4 4
+   2    0    0    0
+   0    0    0    0
+  52   66    0    0
+   0    0    0    1
+
+D 1
+
+5 5
+1  -150 -198    1    0 
+1   200  264   -1    0 
+1     2    0   -9    0 
+1    -1    0    0   50 
+1    -1    0    5    0 
+
+# LBL2ZD
+# F 17
+
+# LBLComplement and check empty intersection
+F 19
+
+
+The complement of A is:
+2 0 1 + everything inside
+2 0 0
+and
+  0 2 1
+  1 3 1
+  1 3 2
+  8 11 1-10  + everything inside
+
+Z^d and everything outside
+
+and the holes in:
+  2  0  0  0
+  52 66 0  0

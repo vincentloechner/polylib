@@ -1,0 +1,20 @@
+A - B = LBL: Dimension 2
+
+<empty>
+
+
+B - A = LBL: Dimension 2
+
+LATTICE:
+3 2
+   2    0 
+   0    3 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1    0  ]
+Inequality: [  -1    9  ]
+Rays 2 3
+Vertex: [   0  ]/1
+Vertex: [   9  ]/1

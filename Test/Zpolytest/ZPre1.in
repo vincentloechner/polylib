@@ -1,21 +1,31 @@
-# Preimage by readMat["(i,j->3i+1,2i+5j)"] of readMat["(i,j->2i,2i+j)"]
 M 2
+
+# lattice: (2i, j)
 3 3
-2 0 0 
-2 1 0
-0 0 1
+  2 0 0
+  0 1 0
+  0 0 1
+
+# non unimodular function: (2i+10, 3i+j+1)
 3 3
-3 0 1
-2 5 0
-0 0 1
-#readDom["{i,j| 1<= i,j<=10}"]
+  2 0 10
+  3 1 1
+  0 0 1
+
 D 1
+
+# coordinate polyhedron: { (i,j) | 1 <= i,j <= 100}
 4 4
-	  1 1 0 -1
-          1 0 1 -1
-          1 -1 0 100
-          1 0 -1 100
+  1 1 0 -1
+  1 0 1 -1
+  1 -1 0 100
+  1 0 -1 100
+
+# preimage
 F 11
 
-
-
+# ZP = { (2i,j) | (i,j) \in Z^2, 1 <= i,j <= 100 }
+# 
+# T = (i,j) -> (2i+10, 3i+j+1)
+# T is not unimodular, but spreads the same lattice as the Z-polyhedron
+# so this preimage is in Z^d and keeps the same number of points.

@@ -166,7 +166,7 @@ enode *ecopy(enode *e) {
 @param pname array of strings, name of the parameters
 
 */
-void print_evalue(FILE *DST, evalue *e, const char **pname) {
+void print_evalue(FILE *DST, evalue *e, char **pname) {
   if (value_notzero_p(e->d)) {
     if (value_notone_p(e->d)) {
       value_print(DST, VALUE_FMT, e->x.n);
@@ -187,7 +187,7 @@ void print_evalue(FILE *DST, evalue *e, const char **pname) {
 @param pname array of strings, name of the parameters
 
 */
-void print_enode(FILE *DST, enode *p, const char **pname) {
+void print_enode(FILE *DST, enode *p, char **pname) {
   int i;
 
   if (!p) {
@@ -734,13 +734,12 @@ polyhedron. Then it builds the hypercube and returns it.
 @param MAXRAYS
 
 */
-
 Polyhedron *Polyhedron_Preprocess(Polyhedron *D, Value *size,
                                   unsigned MAXRAYS) {
   Matrix *M;
   int i, j, d;
   Polyhedron *T, *S, *H, *C;
-  Value *min;
+  Vector *min;
 
   d = D->Dimension;
   if (MAXRAYS < 2 * D->NbConstraints)
@@ -795,13 +794,8 @@ Polyhedron *Polyhedron_Preprocess(Polyhedron *D, Value *size,
   }
 
   /* Ok, now find the lexicographical min of T */
-  min = (Value *)malloc(sizeof(Value) * (d + 2));
-  for (i = 0; i <= d; i++) {
-    value_init(min[i]);
-    value_set_si(min[i], 0);
-  }
-  value_init(min[i]);
-  value_set_si(min[i], 1);
+  min = Vector_Alloc(d+2);
+  value_set_si(min->p[d+1], 1);
   C = Universe_Polyhedron(0);
   S = Polyhedron_Scan(T, C, MAXRAYS);
   Polyhedron_Free(C);
@@ -817,40 +811,40 @@ Polyhedron *Polyhedron_Preprocess(Polyhedron *D, Value *size,
   fprintf(stderr, "\n");
 #endif
 
-  if (!cherche_min(min, S, 1)) {
+  if (!cherche_min(min->p, S, 1)) {
     for (i = 0; i <= (d + 1); i++)
-      value_clear(min[i]);
+      value_clear(min->p[i]);
     return (NULL);
   }
   Domain_Free(S);
 
 #ifdef EDEBUG6
-  fprintf(stderr, "min = ( ");
-  value_print(stderr, P_VALUE_FMT, min[1]);
+  fprintf(stderr, "min->p = ( ");
+  value_print(stderr, P_VALUE_FMT, min->p[1]);
   for (i = 2; i <= d; i++) {
     fprintf(stderr, ", ");
-    value_print(stderr, P_VALUE_FMT, min[i]);
+    value_print(stderr, P_VALUE_FMT, min->p[i]);
   }
   fprintf(stderr, ")\n");
 #endif
 
-  /* Min is the point from which we can construct the hypercube */
+  /* Min->p is the point from which we can construct the hypercube */
   M = Matrix_Alloc(d * 2, d + 2);
   for (i = 0; i < d; i++) {
 
-    /* Creates inequality  1 0..0 1 0..0 -min[i+1] */
+    /* Creates inequality  1 0..0 1 0..0 -min->p[i+1] */
     value_set_si(M->p[2 * i][0], 1);
     for (j = 1; j <= d; j++)
       value_set_si(M->p[2 * i][j], 0);
     value_set_si(M->p[2 * i][i + 1], 1);
-    value_oppose(M->p[2 * i][d + 1], min[i + 1]);
+    value_oppose(M->p[2 * i][d + 1], min->p[i + 1]);
 
-    /* Creates inequality  1 0..0 -1 0..0 min[i+1]+size -1 */
+    /* Creates inequality  1 0..0 -1 0..0 min->p[i+1]+size -1 */
     value_set_si(M->p[2 * i + 1][0], 1);
     for (j = 1; j <= d; j++)
       value_set_si(M->p[2 * i + 1][j], 0);
     value_set_si(M->p[2 * i + 1][i + 1], -1);
-    value_addto(M->p[2 * i + 1][d + 1], min[i + 1], size[i]);
+    value_addto(M->p[2 * i + 1][d + 1], min->p[i + 1], size[i]);
     value_sub_int(M->p[2 * i + 1][d + 1], M->p[2 * i + 1][d + 1], 1);
   }
 
@@ -867,9 +861,7 @@ Polyhedron *Polyhedron_Preprocess(Polyhedron *D, Value *size,
 #endif
 
   Matrix_Free(M);
-  for (i = 0; i <= (d + 1); i++)
-    value_clear(min[i]);
-  free(min);
+  Vector_Free(min);
   assert(!emptyQ(H));
   return (H);
 } /* Polyhedron_Preprocess */
@@ -1153,7 +1145,7 @@ polyhedron
 */
 void count_points(int pos, Polyhedron *P, Value *context, Value *res) {
 
-  Value LB, UB, k, c;
+  Value LB, UB, c;
 
   POL_ENSURE_FACETS(P);
   POL_ENSURE_VERTICES(P);
@@ -1165,9 +1157,8 @@ void count_points(int pos, Polyhedron *P, Value *context, Value *res) {
 
   value_init(LB);
   value_init(UB);
-  value_init(k);
-  value_set_si(LB, 0);
-  value_set_si(UB, 0);
+  // value_set_si(LB, 0);
+  // value_set_si(UB, 0);
 
   if (lower_upper_bounds(pos, P, context, &LB, &UB) != 0) {
 
@@ -1175,12 +1166,11 @@ void count_points(int pos, Polyhedron *P, Value *context, Value *res) {
     fprintf(stderr, "count_points: ? infinite domain\n");
     value_clear(LB);
     value_clear(UB);
-    value_clear(k);
     value_set_si(*res, -1);
     return;
   }
 
-#ifdef EDEBUG1
+  #ifdef EDEBUG1
   if (!P->next) {
     int i;
     for (value_assign(k, LB); value_le(k, UB); value_increment(k, k)) {
@@ -1193,23 +1183,22 @@ void count_points(int pos, Polyhedron *P, Value *context, Value *res) {
       fprintf(stderr, ")\n");
     }
   }
-#endif
+  #endif
 
   value_set_si(context[pos], 0);
   if (value_lt(UB, LB)) {
     value_clear(LB);
     value_clear(UB);
-    value_clear(k);
     value_set_si(*res, 0);
     return;
   }
   if (!P->next) {
-    value_subtract(k, UB, LB);
-    value_add_int(k, k, 1);
-    value_assign(*res, k);
+    // last polyhedron to scan, just return nb iterations
+    value_subtract(LB, UB, LB);
+    value_add_int(LB, LB, 1);
+    value_assign(*res, LB);
     value_clear(LB);
     value_clear(UB);
-    value_clear(k);
     return;
   }
 
@@ -1224,9 +1213,10 @@ void count_points(int pos, Polyhedron *P, Value *context, Value *res) {
 
   value_init(c);
   value_set_si(*res, 0);
-  for (value_assign(k, LB); value_le(k, UB); value_increment(k, k)) {
-    /* Insert k in context */
-    value_assign(context[pos], k);
+  // iterate on LB -> UB
+  for(; value_le(LB, UB); value_increment(LB, LB)) {
+    /* Insert LB in context */
+    value_assign(context[pos], LB);
     count_points(pos + 1, P->next, context, &c);
     if (value_notmone_p(c))
       value_addto(*res, *res, c);
@@ -1245,7 +1235,6 @@ void count_points(int pos, Polyhedron *P, Value *context, Value *res) {
   value_set_si(context[pos], 0);
   value_clear(LB);
   value_clear(UB);
-  value_clear(k);
   return;
 } /* count_points */
 
@@ -1264,7 +1253,7 @@ void count_points(int pos, Polyhedron *P, Value *context, Value *res) {
 /*-------------------------------------------------------------------*/
 static enode *P_Enum(Polyhedron *L, Polyhedron *LQ, Value *context, int pos,
                      int nb_param, int dim, Value *lcm,
-                     const char **param_name) {
+                     char **param_name) {
   enode *res, *B, *C;
   int hdim, i, j, rank, flag;
   Value n, g, nLB, nUB, nlcm, noff, nexp, k1, nm, hdv, k, lcm_copy;
@@ -1509,7 +1498,9 @@ static enode *P_Enum(Polyhedron *L, Polyhedron *LQ, Value *context, int pos,
         fprintf(stdout, " =");
 #endif
 
-      } else { /* count is a function of other parameters */
+      }
+      else {
+        /* count is a function of other parameters */
         /* call P_Enum recursively */
         value_set_si(B->arr[i].d, 0);
         B->arr[i].x.p = P_Enum(L, LQ->next, context, pos + 1, nb_param, dim,
@@ -1677,7 +1668,7 @@ static enode *P_Enum(Polyhedron *L, Polyhedron *LQ, Value *context, int pos,
 /*    param_name : name of the parameters                         */
 /*----------------------------------------------------------------*/
 static void Scan_Vertices(Param_Polyhedron *PP, Param_Domain *Q, Matrix *CT,
-                          Value *lcm, int nbp, const char **param_name) {
+                          Value *lcm, int nbp, char **param_name) {
   Param_Vertices *V;
   int i, j, ix, l, np;
   unsigned bx;
@@ -1749,18 +1740,15 @@ Procedure to count points in a non-parameterized polytope.
 */
 Enumeration *Enumerate_NoParameters(Polyhedron *P, Polyhedron *C, Matrix *CT,
                                     Polyhedron *CEq, unsigned MAXRAYS,
-                                    const char **param_name) {
+                                    char **param_name) {
   Polyhedron *L;
   Enumeration *res;
-  Value *context;
-  int j;
+  Vector *context;
   int hdim = P->Dimension + 1;
   int r, i;
 
   /* Create a context vector size dim+2 */
-  context = (Value *)malloc((hdim + 1) * sizeof(Value));
-  for (j = 0; j <= hdim; j++)
-    value_init(context[j]);
+  context = Vector_Alloc((hdim + 1));
 
   res = (Enumeration *)malloc(sizeof(Enumeration));
   res->next = NULL;
@@ -1830,11 +1818,11 @@ Enumeration *Enumerate_NoParameters(Polyhedron *P, Polyhedron *C, Matrix *CT,
     }
     TRY {
 
-      Vector_Set(context, 0, (hdim + 1));
+      Vector_Set(context->p, 0, (hdim + 1));
 
-      /* Set context[hdim] = 1  (the constant) */
-      value_set_si(context[hdim], 1);
-      count_points(1, L, context, &res->EP.x.p->arr[0].x.n);
+      /* Set context->p[hdim] = 1  (the constant) */
+      value_set_si(context->p[hdim], 1);
+      count_points(1, L, context->p, &res->EP.x.p->arr[0].x.n);
       UNCATCH(overflow_error);
     }
   }
@@ -1852,9 +1840,7 @@ Enumeration *Enumerate_NoParameters(Polyhedron *P, Polyhedron *C, Matrix *CT,
     fprintf(stdout, "\n");
   }
 
-  for (j = 0; j <= hdim; j++)
-    value_clear(context[j]);
-  free(context);
+  Vector_Free(context);
   return (res);
 } /* Enumerate_NoParameters */
 
@@ -1868,14 +1854,14 @@ Enumeration *Enumerate_NoParameters(Polyhedron *P, Polyhedron *C, Matrix *CT,
 
 */
 Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
-                                  unsigned MAXRAYS, const char **param_name) {
+                                  unsigned MAXRAYS, char **param_name) {
   Polyhedron *L, *CQ, *CQ2, *LQ, *U, *CEq, *rVD, *P, *Ph = NULL;
   Matrix *CT;
   Param_Polyhedron *PP;
   Param_Domain *Q;
-  int i, hdim, dim, nb_param, np;
-  Value *lcm, *m1, hdv;
-  Value *context;
+  int hdim, dim, nb_param, np;
+  Vector *lcm, *m1, *context;
+  Value hdv;
   Enumeration *en, *res;
 
   if (POL_ISSET(MAXRAYS, POL_NO_DUAL))
@@ -1945,14 +1931,10 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
     }
   }
 
-  /* get memory for Values */
-  lcm = (Value *)malloc((nb_param + 1) * sizeof(Value));
-  m1 = (Value *)malloc((nb_param + 1) * sizeof(Value));
-  /* Initialize all the 'Value' variables */
-  for (np = 0; np < nb_param + 1; np++) {
-    value_init(lcm[np]);
-    value_init(m1[np]);
-  }
+  /* get memory for vector of Values */
+  // value_alloc()
+  lcm = Vector_Alloc((nb_param + 1));
+  m1 = Vector_Alloc((nb_param + 1));
   value_init(hdv);
 
   for (Q = PP->D; Q; Q = Q->next) {
@@ -1999,12 +1981,12 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
     overflow_warning_flag = 1;
 
     /* Scan the vertices and compute lcm */
-    Scan_Vertices(PP, Q, CT, lcm, nb_param, param_name);
+    Scan_Vertices(PP, Q, CT, lcm->p, nb_param, param_name);
 
 #ifdef EDEBUG2
     fprintf(stderr, "Denominator = ");
     for (np = 0; np < nb_param; np++)
-      value_print(stderr, P_VALUE_FMT, lcm[np]);
+      value_print(stderr, P_VALUE_FMT, lcm->p[np]);
     fprintf(stderr, " and hdim == %d \n", hdim);
 #endif
 
@@ -2013,21 +1995,21 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
     Polyhedron_Print(stderr, P_VALUE_FMT, CQ);
 #endif
 
-    /* Before scanning, add constraints to ensure at least hdim*lcm */
+    /* Before scanning, add constraints to ensure at least hdim*lcm->p */
     /* points in every dimension */
     value_set_si(hdv, hdim - nb_param);
 
     for (np = 0; np < nb_param + 1; np++) {
-      if (value_notzero_p(lcm[np]))
-        value_multiply(m1[np], hdv, lcm[np]);
+      if (value_notzero_p(lcm->p[np]))
+        value_multiply(m1->p[np], hdv, lcm->p[np]);
       else
-        value_set_si(m1[np], 1);
+        value_set_si(m1->p[np], 1);
     }
 
 #ifdef EDEBUG2
-    fprintf(stderr, "m1 == ");
+    fprintf(stderr, "m1->p == ");
     for (np = 0; np < nb_param; np++)
-      value_print(stderr, P_VALUE_FMT, m1[np]);
+      value_print(stderr, P_VALUE_FMT, m1->p[np]);
     fprintf(stderr, "\n");
 #endif
 
@@ -2036,7 +2018,7 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
       CQ2 = NULL;
     }
     TRY {
-      CQ2 = Polyhedron_Preprocess(CQ, m1, MAXRAYS);
+      CQ2 = Polyhedron_Preprocess(CQ, m1->p, MAXRAYS);
 
 #ifdef EDEBUG2
       fprintf(stderr, "After preprocess, CQ2 = ");
@@ -2065,8 +2047,8 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
       if (r == CQ->NbRays) {
 
         /* ok, CQ is bounded */
-        /* now find if CQ is contained in a hypercube of size m1 */
-        CQ2 = Polyhedron_Preprocess2(CQ, m1, lcm, MAXRAYS);
+        /* now find if CQ is contained in a hypercube of size m1->p */
+        CQ2 = Polyhedron_Preprocess2(CQ, m1->p, lcm->p, MAXRAYS);
       }
     }
 
@@ -2077,13 +2059,13 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
 #endif
       hom = 1;
       tmp = homogenize(CQ, MAXRAYS);
-      CQ2 = Polyhedron_Preprocess(tmp, m1, MAXRAYS);
+      CQ2 = Polyhedron_Preprocess(tmp, m1->p, MAXRAYS);
       Polyhedron_Free(tmp);
       if (!Ph)
         Ph = homogenize(P, MAXRAYS);
       for (np = 0; np < nb_param + 1; np++)
-        if (value_notzero_p(lcm[np]))
-          value_addto(m1[np], m1[np], lcm[np]);
+        if (value_notzero_p(lcm->p[np]))
+          value_addto(m1->p[np], m1->p[np], lcm->p[np]);
     }
 
     if (!CQ2 || emptyQ(CQ2)) {
@@ -2137,13 +2119,9 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
       value_set_si(res->EP.d, 0);
 
       /* Create a context vector size dim+2 */
-      context = (Value *)malloc((hdim + 1 + hom) * sizeof(Value));
-      for (i = 0; i <= (hdim + hom); i++)
-        value_init(context[i]);
-      Vector_Set(context, 0, (hdim + 1 + hom));
-
+      context = Vector_Alloc((hdim + 1 + hom));
       /* Set context[hdim] = 1  (the constant) */
-      value_set_si(context[hdim + hom], 1);
+      value_set_si(context->p[hdim + hom], 1);
 
       CATCH(overflow_error) {
         fprintf(stderr, "Enumerate: arithmetic overflow error.\n");
@@ -2153,16 +2131,14 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
         assert(overflow_warning_flag);
       }
       TRY {
-        res->EP.x.p = P_Enum(L, LQ, context, 1, nb_param + hom, dim + hom, lcm,
-                             param_name);
+        res->EP.x.p = P_Enum(L, LQ, context->p, 1, nb_param + hom, dim + hom,
+          lcm->p, param_name);
         UNCATCH(overflow_error);
       }
       if (hom)
         dehomogenize_evalue(&res->EP, nb_param + 1);
 
-      for (i = 0; i <= (hdim + hom); i++)
-        value_clear(context[i]);
-      free(context);
+      Vector_Free(context);
       Domain_Free(L);
       Domain_Free(LQ);
 
@@ -2193,13 +2169,9 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
   if (Ph)
     Polyhedron_Free(Ph);
   /* Clear all the 'Value' variables */
-  for (np = 0; np < nb_param + 1; np++) {
-    value_clear(lcm[np]);
-    value_clear(m1[np]);
-  }
   value_clear(hdv);
-  free(lcm);
-  free(m1);
+  Vector_Free(lcm);
+  Vector_Free(m1);
   /* We can't simply call Param_Polyhedron_Free because we've reused the domains
    */
   Param_Vertices_Free(PP->V);
@@ -2281,25 +2253,20 @@ Deals with the full-dimensional case.
 */
 Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
                                         unsigned MAXRAYS,
-                                        const char **param_name) {
+                                        char **param_name) {
   Polyhedron *L, *CQ, *CQ2, *LQ, *U, *CEq, *rVD, *P;
   Matrix *CT;
   Param_Polyhedron *PP;
   Param_Domain *Q;
-  int i, j, hdim, dim, nb_param, np;
-  Value *lcm, *m1, hdv;
-  Value *context;
+  int i, hdim, dim, nb_param, np;
+  Vector *lcm, *m1, *context;
+  Value hdv;
   Enumeration *en, *res;
   Value expansion_det;
   Polyhedron *Expanded;
 
-  /* used to scan the vertices */
-  Param_Vertices *V_tmp;
-
   res = NULL;
   P = Pi;
-
-  value_init(expansion_det);
 
 #ifdef EDEBUG2
   fprintf(stderr, "C = \n");
@@ -2351,14 +2318,10 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
     return NULL;
 
   /* get memory for Values */
-  lcm = (Value *)malloc(nb_param * sizeof(Value));
-  m1 = (Value *)malloc(nb_param * sizeof(Value));
-  /* Initialize all the 'Value' variables */
-  for (np = 0; np < nb_param; np++) {
-    value_init(lcm[np]);
-    value_init(m1[np]);
-  }
+  lcm = Vector_Alloc(nb_param);
+  m1 = Vector_Alloc(nb_param);
   value_init(hdv);
+  value_init(expansion_det);
 
 #if EDEBUG2
   Polyhedron_Print(stderr, P_VALUE_FMT, P);
@@ -2382,7 +2345,7 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
      knowing that lcm[i] = 1 for now, we just conservatively fool the rest of
      the function with lcm = 1 */
   for (i = 0; i < nb_param; i++)
-    value_set_si(lcm[i], 1);
+    value_set_si(lcm->p[i], 1);
 
   for (Q = PP->D; Q; Q = Q->next) {
     if (CT) {
@@ -2428,7 +2391,7 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
 #ifdef EDEBUG2
     fprintf(stderr, "Denominator = ");
     for (np = 0; np < nb_param; np++)
-      value_print(stderr, P_VALUE_FMT, lcm[np]);
+      value_print(stderr, P_VALUE_FMT, lcm->p[np]);
     fprintf(stderr, " and hdim == %d \n", hdim);
 #endif
 
@@ -2437,21 +2400,21 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
     Polyhedron_Print(stderr, P_VALUE_FMT, CQ);
 #endif
 
-    /* Before scanning, add constraints to ensure at least hdim*lcm */
+    /* Before scanning, add constraints to ensure at least hdim*lcm->p */
     /* points in every dimension */
     value_set_si(hdv, hdim - nb_param);
 
     for (np = 0; np < nb_param; np++) {
-      if (value_notzero_p(lcm[np]))
-        value_multiply(m1[np], hdv, lcm[np]);
+      if (value_notzero_p(lcm->p[np]))
+        value_multiply(m1->p[np], hdv, lcm->p[np]);
       else
-        value_set_si(m1[np], 1);
+        value_set_si(m1->p[np], 1);
     }
 
 #ifdef EDEBUG2
-    fprintf(stderr, "m1 == ");
+    fprintf(stderr, "m1->p == ");
     for (np = 0; np < nb_param; np++)
-      value_print(stderr, P_VALUE_FMT, m1[np]);
+      value_print(stderr, P_VALUE_FMT, m1->p[np]);
     fprintf(stderr, "\n");
 #endif
 
@@ -2460,7 +2423,7 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
       CQ2 = NULL;
     }
     TRY {
-      CQ2 = Polyhedron_Preprocess(CQ, m1, MAXRAYS);
+      CQ2 = Polyhedron_Preprocess(CQ, m1->p, MAXRAYS);
 
 #ifdef EDEBUG2
       fprintf(stderr, "After preprocess, CQ2 = ");
@@ -2489,8 +2452,8 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
       if (r == CQ->NbRays) {
 
         /* ok, CQ is bounded */
-        /* now find if CQ is contained in a hypercube of size m1 */
-        CQ2 = Polyhedron_Preprocess2(CQ, m1, lcm, MAXRAYS);
+        /* now find if CQ is contained in a hypercube of size m1->p */
+        CQ2 = Polyhedron_Preprocess2(CQ, m1->p, lcm->p, MAXRAYS);
       }
     }
     if (!CQ2 || emptyQ(CQ2)) {
@@ -2544,13 +2507,9 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
       value_set_si(res->EP.d, 0);
 
       /* Create a context vector size dim+2 */
-      context = (Value *)malloc((hdim + 1) * sizeof(Value));
-      for (i = 0; i <= (hdim); i++)
-        value_init(context[i]);
-      Vector_Set(context, 0, (hdim + 1));
-
+      context = Vector_Alloc(hdim + 1);
       /* Set context[hdim] = 1  (the constant) */
-      value_set_si(context[hdim], 1);
+      value_set_si(context->p[hdim], 1);
 
       CATCH(overflow_error) {
         fprintf(stderr, "Enumerate: arithmetic overflow error.\n");
@@ -2560,13 +2519,11 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
         assert(overflow_warning_flag);
       }
       TRY {
-        res->EP.x.p = P_Enum(L, LQ, context, 1, nb_param, dim, lcm, param_name);
+        res->EP.x.p = P_Enum(L, LQ, context->p, 1, nb_param, dim, lcm->p, param_name);
         UNCATCH(overflow_error);
       }
 
-      for (i = 0; i <= (hdim); i++)
-        value_clear(context[i]);
-      free(context);
+      Vector_Free(context);
       Domain_Free(L);
       Domain_Free(LQ);
 
@@ -2606,8 +2563,8 @@ Enumeration *Ehrhart_Quick_Apx_Full_Dim(Polyhedron *Pi, Polyhedron *C,
     Polyhedron_Free(P);
   /* Clear all the 'Value' variables */
   for (np = 0; np < nb_param; np++) {
-    value_clear(lcm[np]);
-    value_clear(m1[np]);
+    value_clear(lcm->p[np]);
+    value_clear(m1->p[np]);
   }
   value_clear(hdv);
 
@@ -2695,12 +2652,12 @@ Enumeration *Constraints_EhrhartQuickApx(Matrix const *M, Matrix const *C,
  * <p> Note: does not copy the parameters names themselves. </p>
  * @param nbParms the initial number of parameters
  */
-const char **parmsWithoutElim(char const **parmNames,
+char **parmsWithoutElim(char **parmNames,
                               unsigned int const *elimParms,
                               unsigned int nbParms) {
-  int i = 0, j = 0, k;
+  int i = 0, k;
   int newParmNb = nbParms - elimParms[0];
-  const char **newParmNames = (const char **)malloc(newParmNb * sizeof(char *));
+  char **newParmNames = malloc(newParmNb * sizeof(char *));
   for (k = 1; k <= elimParms[0]; k++) {
     while (i != elimParms[k]) {
       newParmNames[i - k + 1] = parmNames[i];

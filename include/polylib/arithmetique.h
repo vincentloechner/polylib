@@ -55,16 +55,6 @@ void mp_get_memory_functions(void *(**alloc_func_ptr)(size_t),
 #endif
 
 /*
-   #        ####   #    #   ####           #        ####   #    #   ####
-   #       #    #  ##   #  #    #          #       #    #  ##   #  #    #
-   #       #    #  # #  #  #               #       #    #  # #  #  #
-   #       #    #  #  # #  #  ###          #       #    #  #  # #  #  ###
-   #       #    #  #   ##  #    #          #       #    #  #   ##  #    #
-   ######   ####   #    #   ####           ######   ####   #    #   ####
-
-*/
-
-/*
  * Constants like LONG_LONG_MAX are not defined with ansi options, so they are
  * defined here.
  */
@@ -86,6 +76,17 @@ void mp_get_memory_functions(void *(**alloc_func_ptr)(size_t),
 #undef ULONG_LONG_MAX
 #define ULONG_LONG_MAX (LONG_LONG_MAX * 2ULL + 1)
 #endif
+
+
+/*
+   #        ####   #    #   ####           #        ####   #    #   ####
+   #       #    #  ##   #  #    #          #       #    #  ##   #  #    #
+   #       #    #  # #  #  #               #       #    #  # #  #  #
+   #       #    #  #  # #  #  ###          #       #    #  #  # #  #  ###
+   #       #    #  #   ##  #    #          #       #    #  #   ##  #    #
+   ######   ####   #    #   ####           ######   ####   #    #   ####
+
+*/
 
 #if defined(LINEAR_VALUE_IS_LONGLONG)
 
@@ -231,35 +232,6 @@ typedef union {
 /* end LINEAR_VALUE_IS_CHARS */
 
 /*
-    #    #    #   #####
-    #    ##   #     #
-    #    # #  #     #
-    #    #  # #     #
-    #    #   ##     #
-    #    #    #     #
-
-*/
-
-#elif defined(LINEAR_VALUE_IS_INT)
-
-#define LINEAR_VALUE_STRING "int"
-typedef int Value;
-#define VALUE_FMT "%d"
-#define VALUE_CONST(val) (val)
-#define VALUE_NAN INT_MIN
-#define VALUE_MIN (INT_MIN + 1)
-#define VALUE_MAX INT_MAX
-#define VALUE_ZERO 0
-#define VALUE_ONE 1
-#define VALUE_MONE -1
-#define VALUE_TO_LONG(val) ((long)(val))
-#define VALUE_TO_INT(val) ((int)(val))
-#define VALUE_TO_FLOAT(val) ((float)(val))
-#define VALUE_TO_DOUBLE(val) ((double)(val))
-
-/* end LINEAR_VALUE_IS_INT */
-
-/*
      #####    #     #   ######
     #     #   ##   ##   #     #
     #         # # # #   #     #
@@ -305,8 +277,39 @@ typedef cln::cl_I Value;
 
 /* end CLN */
 
+/*
+    #    #    #   #####
+    #    ##   #     #
+    #    # #  #     #
+    #    #  # #     #
+    #    #   ##     #
+    #    #    #     #
+
+*/
+
+// #elif defined(LINEAR_VALUE_IS_INT)
+#else
+
+#define LINEAR_VALUE_STRING "int"
+typedef int Value;
+#define VALUE_FMT "%d"
+#define VALUE_CONST(val) (val)
+#define VALUE_NAN INT_MIN
+#define VALUE_MIN (INT_MIN + 1)
+#define VALUE_MAX INT_MAX
+#define VALUE_ZERO 0
+#define VALUE_ONE 1
+#define VALUE_MONE -1
+#define VALUE_TO_LONG(val) ((long)(val))
+#define VALUE_TO_INT(val) ((int)(val))
+#define VALUE_TO_FLOAT(val) ((float)(val))
+#define VALUE_TO_DOUBLE(val) ((double)(val))
+
+/* end LINEAR_VALUE_IS_INT */
+
 #endif
 /* end LINEAR_VALUE_IS_* */
+
 
 /* ********************************************************************* */
 /* ***************** MACROS FOR MANIPULATING VALUES ******************** */
@@ -649,7 +652,12 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
  * they are switched to some other operation here...
  */
 #if defined(LINEAR_VALUE_IS_CHARS)
+#undef value_init
+#define value_init(val) ((val).s = NULL)
+#undef value_clear
+#define value_clear(val) (value_init(val))
 #define value_fake_binary(v1, v2) ((Value)((v1).i + (v2).i))
+#define value_fake_ternary(v0, v1, v2) ((Value)((v0).i += (v1).i + (v2).i))
 #define value_bool_binary(v1, v2) ((int)((v1).i + (v2).i))
 #undef float_to_value
 #define float_to_value(f) ((Value)f)
@@ -692,9 +700,9 @@ typedef void (*value_print_gmp_free_t)(void *, size_t);
 #undef value_modulus
 #define value_modulus(v1, v2) value_addto(v1, v2)
 #undef value_division
-#define value_division(v1, v2) value_addto(v1, v2)
+#define value_division(ref, val1, val2) (value_fake_ternary(ref, val1, val2))
 #undef value_divexact
-#define value_divexact(v1, v2) value_addto(v1, v2)
+#define value_divexact(ref, v1, v2) (value_fake_ternary(ref, val1, val2))
 #undef value_increment
 #define value_increment(v) value_addto(v, VALUE_ONE)
 #undef value_decrement

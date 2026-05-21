@@ -11,7 +11,7 @@
 /*  use default names                               */
 /* returns an n-array of strings                    */
 /****************************************************/
-const char **Read_ParamNames(FILE *in, int m) {
+char **Read_ParamNames(FILE *in, int m) {
   char **param_name;
   int c, i, j, f;
   char s[1024], param[32];
@@ -23,7 +23,7 @@ const char **Read_ParamNames(FILE *in, int m) {
       f = (fgets(s, 1024, in) != NULL);
     while (f && (*s == '#' || *s == '\n'));
 
-  param_name = (char **)malloc(m * sizeof(char *));
+  param_name = malloc(m * sizeof(char *));
   i = 0;
   if (f) {
     c = 0;
@@ -45,7 +45,7 @@ const char **Read_ParamNames(FILE *in, int m) {
       if (j == 0)
         break;
       param[j] = 0;
-      param_name[i] = (char *)malloc((j + 1) * sizeof(char));
+      param_name[i] = malloc((j + 1) * sizeof(char));
       strcpy(param_name[i], param);
     }
   }
@@ -53,15 +53,16 @@ const char **Read_ParamNames(FILE *in, int m) {
   /* Not enough parameters on input : use default names */
   if (!f || i != m) {
     for (; i < m; ++i) {
-      param_name[i] = (char *)malloc(2 * sizeof(char));
-      sprintf(param_name[i], "%c", PCHAR + i + 1);
+      param_name[i] = malloc(2 * sizeof(char));
+      snprintf(param_name[i], 2, "%c", PCHAR + i + 1);
     }
   }
-  return (const char **)param_name;
+  return param_name;
 } /* Read_ParamNames */
 
-void Free_ParamNames(const char **params, int m) {
-  while (--m >= 0)
-    free((char *)params[m]);
+void Free_ParamNames(char **params, int m) {
+  while (--m >= 0) {
+    free(params[m]);
+  }
   free(params);
 }

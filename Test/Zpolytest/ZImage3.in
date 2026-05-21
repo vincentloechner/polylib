@@ -1,0 +1,27 @@
+# Image of a Z-polyhedron by a projection affine function
+
+M 2
+# lattice
+2 2
+  2 0 
+  0 1
+
+# affine function (i) -> (i, i)
+3 2
+  1 0
+  1 0
+  0 1
+
+#readDom["{i,j| 1<= i,j<=10}"]
+D 1
+
+# polyhedron
+2 3
+  1  1 -1
+  1 -1 50
+
+# ZDomainImage
+F 10
+
+
+

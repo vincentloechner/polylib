@@ -1,0 +1,62 @@
+A = LBL: Dimension 2
+
+LATTICE:
+3 5
+   2    0    0    0    0 
+   8   11    0    0   10 
+   0    0    0    0    1 
+POLYHEDRON Dimension:4
+           Constraints:10  Equations:0  Rays:16  Lines:0
+Constraints 10 6
+Inequality: [  24   44   -1    0   40  ]
+Inequality: [ -18  -33    1    0  -30  ]
+Inequality: [ -18  -33    0    1  -30  ]
+Inequality: [  24   44    0   -1   40  ]
+Inequality: [  -1    0    0    5    0  ]
+Inequality: [   2    0    0   -9    0  ]
+Inequality: [   2    0   -9    0    0  ]
+Inequality: [  -1    0    5    0    0  ]
+Inequality: [   1    0    0    0  -51  ]
+Inequality: [   0    0    0    0    1  ]
+Rays 16 6
+Ray:    [ 495 -267   99  110  ]
+Ray:    [ 165  -89   33   33  ]
+Ray:    [ 220 -119   44   44  ]
+Ray:    [ 297 -160   66   66  ]
+Ray:    [ 495 -267  110   99  ]
+Ray:    [ 990 -535  220  198  ]
+Ray:    [ 198 -107   44   44  ]
+Ray:    [ 990 -535  198  220  ]
+Vertex: [16830 -9395 3366 3740  ]/330
+Vertex: [8415 -4689 1683 1870  ]/165
+Vertex: [2805 -1563  561  561  ]/55
+Vertex: [11220 -6269 2244 2244  ]/220
+Vertex: [5049 -2810 1122 1122  ]/99
+Vertex: [8415 -4689 1870 1683  ]/165
+Vertex: [16830 -9395 3740 3366  ]/330
+Vertex: [3366 -1879  748  748  ]/66
+LBL2ZDomain(A) = LBL: Dimension 2
+
+LATTICE:
+3 3
+   2    0    0 
+   8   11   10 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [ 119  220  200  ]
+Inequality: [   1    0  -51  ]
+Inequality: [-160 -297 -270  ]
+Inequality: [   0    0    1  ]
+Rays 4 4
+Ray:    [ 297 -160  ]
+Vertex: [11220 -6269  ]/220
+Vertex: [5049 -2810  ]/99
+Ray:    [ 220 -119  ]
+A - ZD(A) = LBL: Dimension 2
+
+<empty>
+ZD(A) - A = LBL: Dimension 2
+
+<empty>

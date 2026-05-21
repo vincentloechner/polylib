@@ -133,36 +133,6 @@ Bool isIntegral(Matrix *A) {
   return True;
 } /* isIntegral */
 
-/*
- * Check if the matrix 'A' is in Hermite normal form or not.
- */
-Bool isinHnf(Matrix *A) {
-
-  Matrix *temp;
-  unsigned i, j;
-  Value rem;
-
-  value_init(rem);
-  temp = Homogenise(A, True);
-  for (i = 0; i < temp->NbRows; i++) {
-    value_assign(rem, temp->p[i][i]);
-    for (j = 0; j < i; j++)
-      if (value_ge(temp->p[i][j], rem)) {
-        Matrix_Free(temp);
-        value_clear(rem);
-        return False;
-      }
-    for (j = i + 1; j < temp->NbColumns; j++)
-      if (value_notzero_p(temp->p[i][j])) {
-        Matrix_Free(temp);
-        value_clear(rem);
-        return False;
-      }
-  }
-  Matrix_Free(temp);
-  value_clear(rem);
-  return True;
-} /* isinHnf */
 
 /*
  * Remove the row 'Rownumber' and place it at the end of the matrix 'X'
@@ -335,98 +305,98 @@ Matrix *RemoveColumn(Matrix *M, int Columnnumber) {
   return Result;
 } /* RemoveColumn */
 
-/*
- * Given a Matrix M of dimesnion n * l and rank l1, find a unimodular matrix
- * 'Result' such that the Vector Space spanned by M is the subset of the vector
- * Space spanned by the first l1 Rows of Result. The function returns the rank
- * l1 and the Matrix Result.
- */
-int findHermiteBasis(Matrix *M, Matrix **Result) {
+// /*
+//  * Given a Matrix M of dimension n * l and rank l1, find a unimodular matrix
+//  * 'Result' such that the Vector Space spanned by M is the subset of the vector
+//  * Space spanned by the first l1 Rows of Result. The function returns the rank
+//  * l1 and the Matrix Result.
+//  */
+// int findHermiteBasis(Matrix *M, Matrix **Result) {
 
-  int i, j;
-  Matrix *C, *curMat, *temp1, *temp2;
-  Matrix *H, *U;
-  Vector *V;
-  int dim, curDim, curVect, rank;
+//   int i, j;
+//   Matrix *C, *curMat, *temp1, *temp2;
+//   Matrix *H, *U;
+//   Vector *V;
+//   int dim, curDim, curVect, rank;
 
-  if (M->NbRows == 0) {
-    Result[0] = Identity(M->NbColumns);
-    return 0;
-  }
+//   if (M->NbRows == 0) {
+//     Result[0] = Identity(M->NbColumns);
+//     return 0;
+//   }
 
-  if (M->NbRows <= M->NbColumns) {
-    Hermite(M, &H, &U);
+//   if (M->NbRows <= M->NbColumns) {
+//     Hermite(M, &H, &U);
 
-    for (i = 0; i < H->NbRows; i++)
-      if (value_zero_p(H->p[i][i]))
-        break;
+//     for (i = 0; i < H->NbRows; i++)
+//       if (value_zero_p(H->p[i][i]))
+//         break;
 
-    if (i == H->NbRows) {
-      Result[0] = Transpose(U);
-      Matrix_Free(H);
-      Matrix_Free(U);
-      return (i);
-    }
-    Matrix_Free(H);
-    Matrix_Free(U);
-  }
+//     if (i == H->NbRows) {
+//       Result[0] = Transpose(U);
+//       Matrix_Free(H);
+//       Matrix_Free(U);
+//       return (i);
+//     }
+//     Matrix_Free(H);
+//     Matrix_Free(U);
+//   }
 
-  /* Eliminating the Zero Rows  */
+//   /* Eliminating the Zero Rows  */
 
-  C = Matrix_Copy(M);
-  for (i = 0; i < C->NbRows; i++) {
-    for (j = 0; j < C->NbColumns; j++)
-      if (value_notzero_p(C->p[i][j]))
-        break;
-    if (j == C->NbColumns) {
-      Matrix *temp;
-      temp = RemoveRow(C, i);
-      Matrix_Free(C);
-      C = Matrix_Copy(temp);
-      Matrix_Free(temp);
-      i--;
-    }
-  }
+//   C = Matrix_Copy(M);
+//   for (i = 0; i < C->NbRows; i++) {
+//     for (j = 0; j < C->NbColumns; j++)
+//       if (value_notzero_p(C->p[i][j]))
+//         break;
+//     if (j == C->NbColumns) {
+//       Matrix *temp;
+//       temp = RemoveRow(C, i);
+//       Matrix_Free(C);
+//       C = Matrix_Copy(temp);
+//       Matrix_Free(temp);
+//       i--;
+//     }
+//   }
 
-  /* Eliminating the Redundant Rows */
+//   /* Eliminating the Redundant Rows */
 
-  curDim = 1;
-  curVect = 1;
-  dim = C->NbColumns;
+//   curDim = 1;
+//   curVect = 1;
+//   dim = C->NbColumns;
 
-  curMat = Matrix_Alloc(1, C->NbColumns);
-  for (i = 0; i < C->NbColumns; i++)
-    value_assign(curMat->p[0][i], C->p[0][i]);
+//   curMat = Matrix_Alloc(1, C->NbColumns);
+//   for (i = 0; i < C->NbColumns; i++)
+//     value_assign(curMat->p[0][i], C->p[0][i]);
 
-  while ((curVect < C->NbRows) && (curDim < dim)) {
-    Matrix *temp;
-    temp = AddANullRow(curMat);
-    for (i = 0; i < C->NbColumns; i++)
-      value_assign(temp->p[temp->NbRows - 1][i], C->p[curVect][i]);
+//   while ((curVect < C->NbRows) && (curDim < dim)) {
+//     Matrix *temp;
+//     temp = AddANullRow(curMat);
+//     for (i = 0; i < C->NbColumns; i++)
+//       value_assign(temp->p[temp->NbRows - 1][i], C->p[curVect][i]);
 
-    temp1 = AddANullRow(temp);
-    temp2 = AddANullColumn(temp1);
-    rank = SolveDiophantine(temp2, &U, &V);
-    if (rank == temp->NbRows) {
-      Matrix_Free(curMat);
-      curMat = Matrix_Copy(temp);
-      curDim++;
-    }
-    curVect++;
-    Matrix_Free(U);
-    Vector_Free(V);
-    Matrix_Free(temp1);
-    Matrix_Free(temp);
-    Matrix_Free(temp2);
-  }
-  Matrix_Free(C);
+//     temp1 = AddANullRow(temp);
+//     temp2 = AddANullColumn(temp1);
+//     rank = SolveDiophantine(temp2, &U, &V);
+//     if (rank == temp->NbRows) {
+//       Matrix_Free(curMat);
+//       curMat = Matrix_Copy(temp);
+//       curDim++;
+//     }
+//     curVect++;
+//     Matrix_Free(U);
+//     Vector_Free(V);
+//     Matrix_Free(temp1);
+//     Matrix_Free(temp);
+//     Matrix_Free(temp2);
+//   }
+//   Matrix_Free(C);
 
-  Hermite(curMat, &H, &U);
-  rank = curMat->NbRows;
-  Matrix_Free(curMat);
+//   Hermite(curMat, &H, &U);
+//   rank = curMat->NbRows;
+//   Matrix_Free(curMat);
 
-  Result[0] = Transpose(U);
-  Matrix_Free(H);
-  Matrix_Free(U);
-  return (rank);
-} /* findHermiteBasis */
+//   Result[0] = Transpose(U);
+//   Matrix_Free(H);
+//   Matrix_Free(U);
+//   return (rank);
+// } /* findHermiteBasis */

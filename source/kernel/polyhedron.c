@@ -47,20 +47,21 @@
 /* WSIZE is the number of bits in a word or int type */
 #define WSIZE (8 * sizeof(int))
 
-#define bexchange(a, b, l)                                                     \
-  {                                                                            \
-    char *t = (char *)malloc(l * sizeof(char));                                \
-    memcpy((t), (char *)(a), (int)(l));                                        \
-    memcpy((char *)(a), (char *)(b), (int)(l));                                \
-    memcpy((char *)(b), (t), (int)(l));                                        \
-    free(t);                                                                   \
+#define bexchange(a, b, l)                                                   \
+  {                                                                          \
+    for(int _i = 0; _i < (l); _i++) {                                        \
+      char _c;                                                               \
+      _c = *((char *)(a) + _i);                                              \
+      *((char *)(a) + _i) = *((char *)(b) + _i);                             \
+      *((char *)(b) + _i) = _c;                                              \
+    }                                                                        \
   }
 
-#define exchange(a, b, t)                                                      \
-  {                                                                            \
-    (t) = (a);                                                                 \
-    (a) = (b);                                                                 \
-    (b) = (t);                                                                 \
+#define exchange(a, b, t)                                                    \
+  {                                                                          \
+    (t) = (a);                                                               \
+    (a) = (b);                                                               \
+    (b) = (t);                                                               \
   }
 
 /*  errormsg1 is an external function which is usually supplied by the
@@ -93,7 +94,7 @@ static SatMatrix *SMAlloc(int rows, int cols) {
   int **q, *p, i;
   SatMatrix *result;
 
-  result = (SatMatrix *)malloc(sizeof(SatMatrix));
+  result = malloc(sizeof(SatMatrix));
   if (!result) {
     errormsg1("SMAlloc", "outofmem", "out of memory space");
     return 0;
@@ -102,14 +103,15 @@ static SatMatrix *SMAlloc(int rows, int cols) {
   result->NbColumns = cols;
   if (rows == 0 || cols == 0) {
     result->p = NULL;
+    result->p_init = NULL;
     return result;
   }
-  result->p = q = (int **)malloc(rows * sizeof(int *));
+  result->p = q = malloc(rows * sizeof(int *));
   if (!result->p) {
     errormsg1("SMAlloc", "outofmem", "out of memory space");
     return 0;
   }
-  result->p_init = p = (int *)malloc(rows * cols * sizeof(int));
+  result->p_init = p = malloc(rows * cols * sizeof(int));
   if (!result->p_init) {
     errormsg1("SMAlloc", "outofmem", "out of memory space");
     return 0;
@@ -141,6 +143,7 @@ static void SMFree(SatMatrix **matrix) {
  * Print the contents of a saturation matrix.
  * This function is defined only for debugging purpose.
  */
+#if defined(POLY_DEBUG) || defined(POLY_CH_DEBUG)
 static void SMPrint(SatMatrix *matrix) {
 
   int *p;
@@ -156,6 +159,7 @@ static void SMPrint(SatMatrix *matrix) {
     fprintf(stderr, "\n");
   }
 } /* SMPrint */
+#endif
 
 /*
  * Compute the bitwise OR of two saturation matrices.
@@ -349,17 +353,22 @@ static void RaySort(Matrix *Ray, SatMatrix *Sat, int NbBid, int NbRay,
   }
 } /* RaySort */
 
-static void SatMatrix_Extend(SatMatrix *Sat, Matrix *Mat, unsigned rows) {
+/*
+ * realloc a saturation matrix to a new size
+ */
+static void SatMatrix_Extend(SatMatrix *Sat, unsigned rows, unsigned cols)
+// static void SatMatrix_Extend(SatMatrix *Sat, Matrix *Mat, unsigned rows)
+{
   int i;
-  unsigned cols;
-  cols = (Mat->NbRows - 1) / (sizeof(int) * 8) + 1;
+  // unsigned cols;
+  // cols = (Mat->NbRows - 1) / (sizeof(int) * 8) + 1;
 
-  Sat->p = (int **)realloc(Sat->p, rows * sizeof(int *));
+  Sat->p = realloc(Sat->p, rows * sizeof(int *));
   if (!Sat->p) {
     errormsg1("SatMatrix_Extend", "outofmem", "out of memory space");
     return;
   }
-  Sat->p_init = (int *)realloc(Sat->p_init, rows * cols * sizeof(int));
+  Sat->p_init = realloc(Sat->p_init, rows * cols * sizeof(int));
   if (!Sat->p_init) {
     errormsg1("SatMatrix_Extend", "outofmem", "out of memory space");
     return;
@@ -408,7 +417,7 @@ static int Chernikova(Matrix *Mat, Matrix *Ray, SatMatrix *Sat, unsigned NbBid,
   RowSize1 = (Dimension + 1);
   RowSize2 = sat_nbcolumns * sizeof(int);
 
-  Temp = (int *)malloc(RowSize2);
+  Temp = malloc(RowSize2);
   if (!Temp) {
     errormsg1("Chernikova", "outofmem", "out of memory space");
     return 0;
@@ -633,10 +642,12 @@ static int Chernikova(Matrix *Mat, Matrix *Ray, SatMatrix *Sat, unsigned NbBid,
 
               if (!redundant) {
                 if (NbRay == NbMaxRays) {
+                  int nc;
                   NbMaxRays *= 2;
                   Ray->NbRows = NbRay;
                   Matrix_Extend(Ray, NbMaxRays);
-                  SatMatrix_Extend(Sat, Mat, NbMaxRays);
+                  nc = (Mat->NbRows - 1) / (sizeof(int) * 8) + 1;
+                  SatMatrix_Extend(Sat, NbMaxRays, nc);
                 }
 
                 /* Compute the new ray */
@@ -732,7 +743,7 @@ static int Gauss4(Value **p, int NbEq, int NbRows, int Dimension) {
   Value gcd;
 
   value_init(gcd);
-  column_index = (int *)malloc(Dimension * sizeof(int));
+  column_index = malloc(Dimension * sizeof(int));
   if (!column_index) {
     errormsg1("Gauss", "outofmem", "out of memory space");
     value_clear(gcd);
@@ -870,10 +881,6 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
   RowSize2 = sat_nbcolumns * sizeof(int);
 
   temp1 = Vector_Alloc(Dimension + 1);
-  if (!temp1) {
-    errormsg1("Remove_Redundants", "outofmem", "out of memory space");
-    return 0;
-  }
 
   if (Filter) {
     temp2 = (int *)calloc(sat_nbcolumns, sizeof(int));
@@ -883,10 +890,10 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
 
   /* Introduce indirections into saturation matrix 'Sat' to simplify */
   /* processing with 'Sat' and allow easy exchanges of columns.      */
-  bx = (unsigned *)malloc(NbConstraints * sizeof(unsigned));
+  bx = malloc(NbConstraints * sizeof(unsigned));
   if (!bx)
     goto oom;
-  jx = (unsigned *)malloc(NbConstraints * sizeof(unsigned));
+  jx = malloc(NbConstraints * sizeof(unsigned));
   if (!jx)
     goto oom;
   CATCH(any_exception_error) {
@@ -1329,7 +1336,7 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
     /* 'Trace' is a (1 X sat_nbcolumns) row matrix to hold the union of all */
     /* rows (corresponding to irredundant rays) of saturation matrix 'Sat'  */
     /* which saturate some constraint 'j'. See figure below:-               */
-    Trace = (unsigned *)malloc(sat_nbcolumns * sizeof(unsigned));
+    Trace = malloc(sat_nbcolumns * sizeof(unsigned));
     if (!Trace) {
       UNCATCH(any_exception_error);
       goto oom;
@@ -1417,7 +1424,7 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
     /* (corresponding to irredundant inequalities) of saturation matrix 'Sat'*/
     /* which saturate some ray 'i'. See figure below:-                       */
 
-    Trace = (unsigned *)malloc(NbRay * sizeof(unsigned));
+    Trace = malloc(NbRay * sizeof(unsigned));
     if (!Trace) {
       UNCATCH(any_exception_error);
       goto oom;
@@ -1568,10 +1575,10 @@ Polyhedron *Polyhedron_Alloc(unsigned Dimension, unsigned NbConstraints,
 
   Polyhedron *Pol;
   unsigned NbRows, NbColumns;
-  int i, j;
+  int i;
   Value *p, **q;
 
-  Pol = (Polyhedron *)malloc(sizeof(Polyhedron));
+  Pol = malloc(sizeof(Polyhedron));
   if (!Pol) {
     errormsg1("Polyhedron_Alloc", "outofmem", "out of memory space");
     return 0;
@@ -1587,7 +1594,7 @@ Polyhedron *Polyhedron_Alloc(unsigned Dimension, unsigned NbConstraints,
   NbRows = NbConstraints + NbRays;
   NbColumns = Dimension + 2;
 
-  q = (Value **)malloc(NbRows * sizeof(Value *));
+  q = malloc(NbRows * sizeof(Value *));
   if (!q) {
     errormsg1("Polyhedron_Alloc", "outofmem", "out of memory space");
     return 0;
@@ -1743,7 +1750,7 @@ Polyhedron *Empty_Polyhedron(unsigned Dimension) {
 
 /*
  * Create and return a universe polyhedron of non-homogenous dimension
- * 'Dimension'. A universe polyhedron is characterized by :-
+ * 'Dimension'. A universe polyhedron is characterized by:
  * (a) The dimension of rayspace is zero.
  * (b) The dimension of lineality space is the dimension of the polyhedron.
  * (c) There is only one constraint (positivity constraint) in the constraint
@@ -2299,6 +2306,7 @@ static SatMatrix *BuildSat(Matrix *Mat, Matrix *Ray, unsigned NbConstraints,
  * Add 'Nbconstraints' new constraints to polyhedron 'Pol'. Constraints are
  * pointed by 'Con' and the maximum allowed rays in the new polyhedron is
  * 'NbMaxRays'.
+ * Returns a newly allocated Polyhedron.
  */
 Polyhedron *AddConstraints(Value *Con, unsigned NbConstraints, Polyhedron *Pol,
                            unsigned NbMaxRays) {
@@ -2441,10 +2449,13 @@ int PolyhedronIncludes(Polyhedron *Pol1, Polyhedron *Pol2) {
 } /* PolyhedronIncludes */
 
 /*
- * Add Polyhedron 'Pol' to polhedral domain 'PolDomain'. If 'Pol' covers
- * some polyhedron in the domain 'PolDomain', it is removed from the list.
+ * Add Polyhedron 'Pol' to polyhedral domain 'PolDomain'.
+ * If 'Pol' covers some polyhedron in the domain 'PolDomain', it is removed
+ * from the domain and freed.
  * On the other hand if some polyhedron in the domain covers polyhedron
- * 'Pol' then 'Pol' is not included in the domain.
+ * 'Pol' then 'Pol' is not included and freed.
+ * 
+ * Consumes Pol and PolDomain to build the result (do not free).
  */
 Polyhedron *AddPolyToDomain(Polyhedron *Pol, Polyhedron *PolDomain) {
 
@@ -2628,7 +2639,7 @@ Polyhedron *SubConstraint(Value *Con, Polyhedron *Pol, unsigned NbMaxRays,
   return NewPol;
 } /* SubConstraint */
 
-/**
+/*
 
   Return the intersection of two polyhedral domains 'Pol1' and 'Pol2'.
   The maximum allowed rays in the new polyhedron generated is 'NbMaxRays'.
@@ -2904,8 +2915,8 @@ Polyhedron *Domain_Copy(Polyhedron *Pol) {
  *        }
  *     }
  */
-static void addToFilter(int k, unsigned *Filter, SatMatrix *Sat, Value *tmpR,
-                        Value *tmpC, int NbRays, int NbConstraints) {
+static void addToFilter(int k, unsigned *Filter, SatMatrix *Sat, int *tmpR,
+                        int *tmpC, int NbRays, int NbConstraints) {
 
   int kj, i, j, jx;
   unsigned kb, bx;
@@ -2915,24 +2926,24 @@ static void addToFilter(int k, unsigned *Filter, SatMatrix *Sat, Value *tmpR,
   kb = MSB;
   kb >>= k % WSIZE;
   Filter[kj] |= kb;
-  value_set_si(tmpC[k], -1);
+  tmpC[k] = -1;
 
   /* Remove rays excluded by constraint k */
   for (i = 0; i < NbRays; i++)
-    if (value_posz_p(tmpR[i])) {
+    if (tmpR[i] >= 0) {
       if (Sat->p[i][kj] & kb)
-        value_decrement(tmpR[i], tmpR[i]); /* adjust included ray */
+        tmpR[i]--; /* adjust included ray */
       else {
 
         /* Constraint k excludes ray i -- delete ray i */
-        value_set_si(tmpR[i], -1);
+        tmpR[i] = -1;
 
         /* Adjust non-deleted constraints */
         jx = 0;
         bx = MSB;
         for (j = 0; j < NbConstraints; j++) {
-          if (value_posz_p(tmpC[j]) && (Sat->p[i][jx] & bx))
-            value_decrement(tmpC[j], tmpC[j]);
+          if ((tmpC[j] >= 0) && (Sat->p[i][jx] & bx))
+            tmpC[j]--;
           NEXT(jx, bx);
         }
       }
@@ -2950,74 +2961,48 @@ static void addToFilter(int k, unsigned *Filter, SatMatrix *Sat, Value *tmpR,
  * constraints otherwise it is set to 0.
  */
 static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
-                       unsigned NbMaxRays) {
-
+                       unsigned NbMaxRays)
+{
   Matrix *Mat = NULL;
   SatMatrix *Sat = NULL;
   int i, j, k, jx, found;
-  Value *p1, *p2, p3;
+  Value p3;
   unsigned Dimension, NbRays, NbConstraints, bx, nc;
-  Value NbConstraintsLeft, tmp;
-  Value *tmpC = NULL, *tmpR = NULL;
+  int NbConstraintsLeft;
+  int *tmpC = NULL, *tmpR = NULL, previous_size = 0;
   Polyhedron *Pol = NULL, *Pol2 = NULL;
 
   /* Initialize all the 'Value' variables */
   value_init(p3);
-  value_init(NbConstraintsLeft);
-  value_init(tmp);
 
   CATCH(any_exception_error) {
-    if (tmpC) {
-      for (i = 0; i < NbConstraints; i++)
-        value_clear(tmpC[i]);
-      free(tmpC);
-    }
-    if (tmpR) {
-      for (i = 0; i < NbRays; i++)
-        value_clear(tmpR[i]);
-      free(tmpR);
-    }
-    if (Mat)
-      Matrix_Free(Mat);
-    if (Sat)
-      SMFree(&Sat);
+    // free memory
+    if (tmpC) free(tmpC);
+    if (Mat) Matrix_Free(Mat);
+    SMFree(&Sat);
     if (Pol2 && Pol2 != P2)
       Polyhedron_Free(Pol2);
     if (Pol && Pol != Pol2 && Pol != P2)
       Polyhedron_Free(Pol);
-
-    /* Clear all the 'Value' variables */
     value_clear(p3);
-    value_clear(NbConstraintsLeft);
-    value_clear(tmp);
     RETHROW();
   }
   TRY {
-
     Dimension = P1->Dimension + 2; /* status + homogeneous Dimension */
     Mat = Matrix_Alloc(P1->NbConstraints, Dimension);
-    if (!Mat) {
-      errormsg1("FindSimple", "outofmem", "out of memory space");
-      UNCATCH(any_exception_error);
-
-      /* Clear all the 'Value' variables */
-      value_clear(p3);
-      value_clear(NbConstraintsLeft);
-      value_clear(tmp);
-      return;
-    }
+    Sat = SMAlloc(0, 0); // initial alloc
 
     /* Post constraints in P1 already included by Filter */
     jx = 0;
     bx = MSB;
     Mat->NbRows = 0;
-    value_set_si(NbConstraintsLeft, 0);
+    NbConstraintsLeft = 0;
     for (k = 0; k < P1->NbConstraints; k++) {
       if (Filter[jx] & bx) {
         Vector_Copy(P1->Constraint[k], Mat->p[Mat->NbRows], Dimension);
         Mat->NbRows++;
       } else
-        value_increment(NbConstraintsLeft, NbConstraintsLeft);
+        NbConstraintsLeft++;
       NEXT(jx, bx);
     }
     Pol2 = P2;
@@ -3031,81 +3016,61 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
           Polyhedron_Free(Pol2), Pol2 = NULL;
       }
       if (emptyQ(Pol)) {
-        Matrix_Free(Mat), Mat = NULL;
-        Polyhedron_Free(Pol), Pol = NULL;
-        UNCATCH(any_exception_error);
-
-        /* Clear all the 'Value' variables */
+        // free memory
+        Matrix_Free(Mat);
+        Polyhedron_Free(Pol);
+        SMFree(&Sat);
+        if(tmpC) free(tmpC);
         value_clear(p3);
-        value_clear(NbConstraintsLeft);
-        value_clear(tmp);
+
+        UNCATCH(any_exception_error);
         return;
       }
       Mat->NbRows = 0; /* Reset Mat */
       Pol2 = Pol;
 
-      /* Its not enough-- find some more constraints */
+      /* It's not enough-- find some more constraints */
       Dimension = Pol->Dimension + 1; /* homogeneous Dimension */
       NbRays = Pol->NbRays;
       NbConstraints = P1->NbConstraints;
-      tmpR = (Value *)malloc(NbRays * sizeof(Value));
-      if (!tmpR) {
-        errormsg1("FindSimple", "outofmem", "out of memory space");
-        UNCATCH(any_exception_error);
-
-        /* Clear all the 'Value' variables */
-        value_clear(p3);
-        value_clear(NbConstraintsLeft);
-        value_clear(tmp);
-        return;
+      if(NbConstraints + NbRays > previous_size) {
+        // realloc array if necessary:
+        tmpC = realloc(tmpC, (NbConstraints + NbRays) * sizeof(int));
+        if (!tmpC) {
+          errormsg1("FindSimple", "outofmem", "out of memory space");
+          UNCATCH(any_exception_error);
+    
+          /* Clear all the 'Value' variables */
+          value_clear(p3);
+          return;
+        }
+        previous_size = NbConstraints + NbRays;
       }
-      for (i = 0; i < NbRays; i++)
-        value_init(tmpR[i]);
-      tmpC = (Value *)malloc(NbConstraints * sizeof(Value));
-      if (!tmpC) {
-        errormsg1("FindSimple", "outofmem", "out of memory space");
-        UNCATCH(any_exception_error);
-
-        /* Clear all the 'Value' variables */
-        value_clear(p3);
-        value_clear(NbConstraintsLeft);
-        value_clear(tmp);
-        for (i = 0; i < NbRays; i++)
-          value_clear(tmpR[i]);
-        free(tmpR);
-        return;
+      tmpR = tmpC + NbConstraints;
+      for(i = 0; i < NbConstraints + NbRays; i++) {
+        tmpC[i] = 0;
       }
-      for (i = 0; i < NbConstraints; i++)
-        value_init(tmpC[i]);
-      Vector_Set(tmpR, 0, NbRays);
-      Vector_Set(tmpC, 0, NbConstraints);
-
+  
       /* Build the Sat matrix */
       nc = (NbConstraints - 1) / (sizeof(int) * 8) + 1;
-      Sat = SMAlloc(NbRays, nc);
-      Sat->NbRows = NbRays;
+      // Sat = SMAlloc(NbRays, nc); // -> reuse memory
+      SatMatrix_Extend(Sat, NbRays, nc);
       SMVector_Init(Sat->p_init, nc * NbRays);
 
       jx = 0;
       bx = MSB;
       for (k = 0; k < NbConstraints; k++) {
         if (Filter[jx] & bx)
-          value_set_si(tmpC[k], -1);
+          tmpC[k] = -1;
         else
-          for (i = 0; i < NbRays; i++) {
-            p1 = Pol->Ray[i] + 1;
-            p2 = P1->Constraint[k] + 1;
-            value_set_si(p3, 0);
-            for (j = 0; j < Dimension; j++) {
-              value_addmul(p3, *p1, *p2);
-              p1++;
-              p2++;
-            }
+          for (i = 0; i < NbRays; i++) { 
+            Inner_Product(Pol->Ray[i] + 1, P1->Constraint[k] + 1, Dimension,
+              &p3);
             if (value_zero_p(p3) ||
-                (value_pos_p(p3) && value_notzero_p(P1->Constraint[k][0]))) {
+              (value_pos_p(p3) && value_notzero_p(P1->Constraint[k][0]))) {
               Sat->p[i][jx] |= bx; /* constraint includes ray, set flag */
-              value_increment(tmpR[i], tmpR[i]);
-              value_increment(tmpC[k], tmpC[k]);
+              tmpR[i]++;
+              tmpC[k]++;
             }
           }
         NEXT(jx, bx);
@@ -3114,21 +3079,20 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       do { /* find all of the essential constraints */
         found = 0;
         for (i = 0; i < NbRays; i++)
-          if (value_posz_p(tmpR[i])) {
-            value_add_int(tmp, tmpR[i], 1);
-            if (value_eq(tmp, NbConstraintsLeft)) {
+          if (tmpR[i] >= 0) {
+            if ((tmpR[i] + 1 == NbConstraintsLeft)) {
 
               /* Ray i is excluded by only one constraint... find it */
               jx = 0;
               bx = MSB;
               for (k = 0; k < NbConstraints; k++) {
-                if (value_posz_p(tmpC[k]) && ((Sat->p[i][jx] & bx) == 0)) {
+                if ((tmpC[k] >= 0) && ((Sat->p[i][jx] & bx) == 0)) {
                   addToFilter(k, Filter, Sat, tmpR, tmpC, NbRays,
                               NbConstraints);
                   Vector_Copy(P1->Constraint[k], Mat->p[Mat->NbRows],
                               Dimension + 1);
                   Mat->NbRows++;
-                  value_decrement(NbConstraintsLeft, NbConstraintsLeft);
+                  NbConstraintsLeft--;
                   found = 1;
                   break;
                 }
@@ -3141,52 +3105,34 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
 
       if (!Mat->NbRows) { /* Well then, just use a stupid heuristic */
         /* find the constraint which excludes the most */
-        Value cmax;
-        value_init(cmax);
+        long int cmax;
 
-#ifndef LINEAR_VALUE_IS_CHARS
-        value_set_si(cmax, (NbRays * NbConstraints + 1));
-#else
-        value_set_si(cmax, 1);
-#endif
-
+        cmax = (NbRays * NbConstraints + 1);
         j = -1;
         for (k = 0; k < NbConstraints; k++)
-          if (value_posz_p(tmpC[k])) {
-            if (value_gt(cmax, tmpC[k])) {
-              value_assign(cmax, tmpC[k]);
+          if (tmpC[k] >= 0) {
+            if (cmax > tmpC[k]) {
+              cmax = tmpC[k];
               j = k;
             }
           }
-        value_clear(cmax);
         if (j < 0) {
           errormsg1("DomSimplify", "logerror", "logic error");
-        } else {
+        }
+        else {
           addToFilter(j, Filter, Sat, tmpR, tmpC, NbRays, NbConstraints);
           Vector_Copy(P1->Constraint[j], Mat->p[Mat->NbRows], Dimension + 1);
           Mat->NbRows++;
-          value_decrement(NbConstraintsLeft, NbConstraintsLeft);
+          NbConstraintsLeft--;
         }
       }
-      SMFree(&Sat), Sat = NULL;
-      for (i = 0; i < NbConstraints; i++)
-        value_clear(tmpC[i]);
-      free(tmpC), tmpC = NULL;
-      for (i = 0; i < NbRays; i++)
-        value_clear(tmpR[i]);
-      free(tmpR), tmpR = NULL;
-    }
+    } /* end forever */
   } /* end of TRY */
-
+  
   /* Clear all the 'Value' variables */
   value_clear(p3);
-  value_clear(NbConstraintsLeft);
-  value_clear(tmp);
-  /*  for(i=0;i<NbRays;i++)
-        value_clear(tmpR[i]);
-      for(i=0;i<NbRays;i++)
-        value_clear(tmpC[i]);
-  */
+  if(tmpC) free(tmpC);
+  SMFree(&Sat);
   UNCATCH(any_exception_error);
 } /* FindSimple */
 
@@ -3213,8 +3159,7 @@ static int SimplifyConstraints(Polyhedron *Pol1, Polyhedron *Pol2,
       Matrix_Free(Mat);
     if (Ray)
       Matrix_Free(Ray);
-    if (Sat)
-      SMFree(&Sat);
+    SMFree(&Sat);
     RETHROW();
   }
   TRY {
@@ -3276,7 +3221,7 @@ static int SimplifyConstraints(Polyhedron *Pol1, Polyhedron *Pol2,
     /* Polyhedron_Print(stderr,"%4d",Pol1); */
 
     Polyhedron_Free(Pol), Pol = NULL;
-    SMFree(&Sat), Sat = NULL;
+    SMFree(&Sat);
     Matrix_Free(Ray), Ray = NULL;
     Matrix_Free(Mat), Mat = NULL;
 
@@ -3385,7 +3330,7 @@ Polyhedron *DomainSimplify(Polyhedron *Pol1, Polyhedron *Pol2,
     nbentries = (NbConstraints + NbCon - 1) / (sizeof(int) * 8) + 1;
 
     /* Allocate space for array 'Filter' */
-    Filter = (unsigned *)malloc(nbentries * sizeof(int));
+    Filter = malloc(nbentries * sizeof(int));
     if (!Filter) {
       errormsg1("DomSimplify", "outofmem", "out of memory space\n");
       Pol_status = 1;
@@ -3513,7 +3458,7 @@ Polyhedron *Stras_DomainSimplify(Polyhedron *Pol1, Polyhedron *Pol2,
       nbentries = (NbConstraints + NbCon - 1) / (sizeof(int) * 8) + 1;
 
       /* Allocate space for array 'Filter' */
-      Filter = (unsigned *)malloc(nbentries * sizeof(int));
+      Filter = malloc(nbentries * sizeof(int));
       if (!Filter) {
         errormsg1("DomainSimplify", "outofmem", "out of memory space");
         UNCATCH(any_exception_error);
@@ -3579,7 +3524,7 @@ Polyhedron *Stras_DomainSimplify(Polyhedron *Pol1, Polyhedron *Pol2,
 } /* DomainSimplify */
 
 /*
- * Return the Union of two polyhedral domains 'Pol1' and Pol2'. The result is
+ * Return the union of two polyhedral domains 'Pol1' and Pol2'. The result is
  * a new polyhedral domain.
  */
 Polyhedron *DomainUnion(Polyhedron *Pol1, Polyhedron *Pol2,
@@ -3588,8 +3533,10 @@ Polyhedron *DomainUnion(Polyhedron *Pol1, Polyhedron *Pol2,
   Polyhedron *PolA, *PolEndA, *PolB, *PolEndB, *p1, *p2;
   int Redundant;
 
-  if (!Pol1 || !Pol2)
-    return (Polyhedron *)0;
+  if (!Pol1)
+    return Domain_Copy(Pol2);
+  if (!Pol2)
+    return Domain_Copy(Pol1);
   if (Pol1->Dimension != Pol2->Dimension) {
     errormsg1("DomainUnion", "diffdim", "operation on different dimensions");
     return (Polyhedron *)0;
@@ -3689,7 +3636,7 @@ Polyhedron *DomainConvex(Polyhedron *Pol, unsigned NbMaxConstrs) {
 
 /*
  * Given polyhedral domains 'Pol1' and 'Pol2', create a new polyhedral
- * domain which is mathematically the differnce of the two domains.
+ * domain which is mathematically the difference Pol1 - Pol2
  */
 Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
                              unsigned NbMaxRays) {
@@ -3697,8 +3644,10 @@ Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
   Polyhedron *p1, *p2, *p3, *d;
   int i;
 
-  if (!Pol1 || !Pol2)
-    return (Polyhedron *)0;
+  if (!Pol1)
+    return(NULL);
+  if (!Pol2)
+    return(Polyhedron_Copy(Pol1));
   if (Pol1->Dimension != Pol2->Dimension) {
     errormsg1("DomainDifference", "diffdim",
               "operation on different dimensions");
@@ -3747,12 +3696,14 @@ Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
 
 /*
  * Given a polyhedral domain 'Pol', convert it to a new polyhedral domain
- * with dimension expanded to 'align_dimension'. 'NbMaxRays' is the maximum
- * allowed rays in the new polyhedra.
+ * with dimension expanded to 'align_dimension'. The first dimensions are
+ * free variables.
+ * 
+ * 'NbMaxRays' is the maximum allowed rays in the new polyhedra.
  */
 Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
 
-  int i, j, k;
+  int i, k;
   Polyhedron *p = NULL, **next, *result = NULL;
   unsigned dim;
 
@@ -3828,13 +3779,15 @@ Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
   return result;
 } /* align_context */
 
-/*----------------------------------------------------------------------*/
-/* Polyhedron *Polyhedron_Scan(D, C, NbMaxRays)                         */
-/*       D : Domain to be scanned (single polyhedron only)              */
-/*       C : Context domain                                             */
-/*       NbMaxRays : Workspace size                                     */
-/* Returns a linked list of scan domains, outer loop first              */
-/*----------------------------------------------------------------------*/
+/*
+ * Polyhedron *Polyhedron_Scan(D, C, NbMaxRays)
+ *  D : Domain to be scanned (need to be a single polyhedron only)
+ *  C : Context domain
+ *  NbMaxRays : Workspace size
+ *  The context corresponds to the last dimensions of D.
+ * 
+ * Returns a linked list of scan domains, outer loop first
+ */
 Polyhedron *Polyhedron_Scan(Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
 
   int i, j, dim;
@@ -3893,15 +3846,16 @@ Polyhedron *Polyhedron_Scan(Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
   return res;
 } /* Polyhedron_Scan */
 
-/*---------------------------------------------------------------------*/
-/* int lower_upper_bounds(pos,P,context,LBp,UBp)                       */
-/*    pos : index position of current loop index (1..hdim-1)           */
-/*    P: loop domain                                                   */
-/*    context : context values for fixed indices                       */
-/*              notice that context[hdim] must be 1                    */
-/*    LBp, UBp : pointers to resulting bounds                          */
-/* returns the flag = (UB_INFINITY, LB_INFINITY)                       */
-/*---------------------------------------------------------------------*/
+/*
+ * int lower_upper_bounds(pos, P, context, LBp, UBp)
+ *    pos : index position of current loop index (1..hdim-1)
+ *    P: loop domain
+ *    context : context values for fixed dimensions
+ *              context[pos] is set to 0
+ *    LBp, UBp : pointers to resulting bounds
+ * returns the flag = (UB_INFINITY, LB_INFINITY)
+ *
+ */
 int lower_upper_bounds(int pos, Polyhedron *P, Value *context, Value *LBp,
                        Value *UBp) {
 
@@ -3923,11 +3877,20 @@ int lower_upper_bounds(int pos, Polyhedron *P, Value *context, Value *LBp,
   value_set_si(LB, 0);
   value_set_si(UB, 0);
 
+  //             0  1 .. pos pos+1..hdim  hdim+1
+  // context :   0   * *  0    0...0        1
+  // notice that, in PolyhedronEnumerate() (ehrhart.c), the context between
+  // pos+1 and hdim can be != 0.
+
+  // ensure that context[pos] = 0
+  value_set_si(context[pos], 0);
+
   /* Compute Upper Bound and Lower Bound for current loop */
   flag = LB_INFINITY | UB_INFINITY;
   for (i = 0; i < P->NbConstraints; i++) {
     value_assign(d, P->Constraint[i][pos]);
-    Inner_Product(&context[1], &(P->Constraint[i][1]), P->Dimension + 1, &n);
+    Inner_Product(&context[1], &(P->Constraint[i][1]), P->Dimension, &n);
+    value_addto(n, n, P->Constraint[i][P->Dimension + 1]);
     if (value_zero_p(d)) {
       /* If context doesn't satisfy constraints, return empty loop. */
       if (value_neg_p(n) ||
@@ -3967,14 +3930,14 @@ int lower_upper_bounds(int pos, Polyhedron *P, Value *context, Value *LBp,
     }
 
     if (value_pos_p(d)) { /* Lower Bound */
-      value_modulus(tmp, n, d);
+      value_modulus(tmp, n, d); // tmp = n % d
 
       /* n1 = ceiling(n/d) */
-      if (value_pos_p(n) && value_notzero_p(tmp)) {
+      if (value_pos_p(n) && value_notzero_p(tmp)) { // n>0 && tmp!=0
         value_division(n1, n, d);
-        value_add_int(n1, n1, 1);
+        value_add_int(n1, n1, 1);  // n1 = n/d+1
       } else
-        value_division(n1, n, d);
+        value_division(n1, n, d);  // n1 = n/d
       if (flag & LB_INFINITY) {
         value_assign(LB, n1);
         flag ^= LB_INFINITY;
@@ -4371,7 +4334,7 @@ Interval *DomainCost(Polyhedron *Pol, Value *Cost) {
     Ray = Pol->Ray;
     NbRay = Pol->NbRays;
     Dim = Pol->Dimension + 1; /* Homogenous Dimension */
-    I = (Interval *)malloc(sizeof(Interval));
+    I = malloc(sizeof(Interval));
     if (!I) {
       errormsg1("DomainCost", "outofmem", "out of memory space\n");
       UNCATCH(any_exception_error);
@@ -4563,8 +4526,8 @@ Polyhedron *Disjoint_Domain(Polyhedron *P, int flag, unsigned NbMaxRays) {
       /* dx = DomainIntersection(reste,lR->P,WS); */
       dx = (Polyhedron *)0;
       for (p1 = reste; p1; p1 = p1->next) {
-        p3 =
-            AddConstraints(lR->Constraint[0], lR->NbConstraints, p1, NbMaxRays);
+        p3 = AddConstraints(lR->Constraint[0], lR->NbConstraints, p1,
+          NbMaxRays);
         dx = AddPolyToDomain(p3, dx);
       }
 
@@ -4795,6 +4758,7 @@ static Polyhedron *p_simplify_constraints(Polyhedron *P, Vector *row, Value *g,
  * or just returns P in case no changes were made
  */
 Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
+  if(!P) return(NULL);
   Polyhedron **prev;
   int len = P->Dimension + 2;
   Vector *row = Vector_Alloc(len);

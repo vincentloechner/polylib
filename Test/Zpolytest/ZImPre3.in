@@ -1,0 +1,25 @@
+# in this example, removing the equalities in the preimage gets a rational
+# bottom right coefficient in the result, which is expected since no odd value
+# (from the function) can map to an even value of the ZP
+
+M 2
+# Lattice
+3 3
+  2 0 0 
+  0 1 0
+  0 0 1
+# Function
+3 3
+  2 0 1
+  0 2 0
+  0 0 1
+
+D 1
+4 4
+  1 1 0 -1
+  1 0 1 -1
+  1 -1 0 100
+  1 0 -1 100
+
+# is Image of Preimage included in the original?
+F 12

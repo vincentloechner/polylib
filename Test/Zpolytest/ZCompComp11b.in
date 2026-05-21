@@ -1,0 +1,26 @@
+# from ZDiff11b (first LBL)
+
+M 1
+4 4
+   2    0    0    0 
+   0    5    0    0 
+  52   27   66    0 
+   0    0    0    1 
+
+
+D 1
+# first polyhedron: {-50 <= i,j,k <= 50}
+6 5
+  1 1 0 0  50
+  1 -1 0 0 50
+  1 0 1 0  50
+  1 0 -1 0 50
+  1 0 0 1  50
+  1 0 0 -1 50
+
+
+# LBLComplement and check empty intersection
+# F 19
+
+# LBLComplement **2 and check equality
+F 16

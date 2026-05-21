@@ -11,49 +11,49 @@ char s[128];
 
 int main() {
   
-  Matrix *a=NULL, *b=NULL, *c=NULL, *d, *e, *g;
-  LatticeUnion *l1,*l2,*l3,*l4,*temp;
-  Polyhedron *A=NULL, *B=NULL, *C=NULL, *D;
-  ZPolyhedron *ZA, *ZB, *ZC, *ZD, *Zlast;
-  int  nbPol, nbMat, func, rank ;
-  Vector *v=NULL;
-    
-  /* The structure of the input file to this program  is the following: 
-       First a line containing        
-           M nbMat
-       Where nbMat is an integer indicating how many Matrices will 
-       be described in the following. temporary debugging. Next 
-       the matrice are described. For each matrix, the first row is two
-       integers:
-           nbRows nbColumns 
-       Then the matrix is written row by row. a line starting with 
-      a `#' is considered as a comment 
+  Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *e=NULL, *f=NULL, *g;
+  LatticeUnion *l1, *l2;
+  Polyhedron *A=NULL, *B=NULL, *C=NULL, *D = NULL;
+  LBL *ZA=NULL, *ZB=NULL, *ZC=NULL, *ZD=NULL;
+  int  nbPol, nbMat, func;
 
-      Then a line containing 
-           D nbDomain
-      where nbDomain is an integer indicating how many domain will 
-       be described in the following. Domains are describled as for 
-       polylib,  the first row is two integers:
-          nbConstraints dimension
-      then the constraints are described in the Polylib format.
-      The last line of the input file contains :
-          F numTest
-          which indicates which test will be performed on the data.
-      Warning, currently no more than 3 matrice of Polyhedra can be read*/
+  // The structure of the input file to this program is the following:
+
+  // A line starting with a `#' is considered as a comment.
+
+  // - First a line containing:
+  //     M nbMat
+  //   Where nbMat is an integer indicating how many Matrices will be given in
+  //   the following (max 3). Next the matrices are given in PolyLib format.
+  //   For each matrix, the first row is two integers:
+  //     nbRows nbColumns
+  //   Then the matrix is given row by row.
+
+  // - Then a line containing:
+  //     D nbDomain
+  //   where nbDomain is an integer indicating how many domains will be given
+  //   in the following (max 3). Domains are given in PolyLib format:
+  //     the first row is two integers:
+  //       nbConstraints dimension
+  //     then the constraints line by line in Polylib format.
+
+  // - The last line of the input file contains:
+  //     F numTest
+  //   which indicates which test will be performed.
   
-  fgets(s, 128, stdin);
+  // All lines below are ignored.
+  
   nbPol = nbMat = 0;
-  while ( (*s=='#') ||
-	  ((sscanf(s, "D %d", &nbPol)<1) && (sscanf(s, "M %d", &nbMat)<1)) )
+  // read matrices
+  do {
     fgets(s, 128, stdin);
-  
-  
-  /* debug */
-  /*     fprintf(stdout,"nbMat=%d",nbMat);fflush(stdout); */
-  
+  }
+  while ((*s=='#') ||
+	  ((sscanf(s, "D %d", &nbPol)<1) && (sscanf(s, "M %d", &nbMat)<1)));
+
   switch (nbMat) {
-    
-  case 1: 
+
+  case 1:
     a = Matrix_Read();
     break;
   
@@ -62,309 +62,311 @@ int main() {
     b = Matrix_Read();
     break;
   
-  case 3: a = Matrix_Read();
+  case 3:
+    a = Matrix_Read();
     b = Matrix_Read();
     c = Matrix_Read();
     break;
   }
-  
+
+  // read polyhedra
   fgets(s, 128, stdin);
   while ((*s=='#') ||
 	 ((sscanf(s, "D %d", &nbPol)<1) && (sscanf(s, "M %d", &nbMat)<1)) )
     fgets(s, 128, stdin);
   
-  
-  /* debug */
-  /*  fprintf(stdout,"nbPol=%d",nbPol);fflush(stdout);  */
-  
   switch (nbPol) { 
   
   case 1:  
     g = Matrix_Read();
-    A = Constraints2Polyhedron(g,WS);
+    A = Constraints2Polyhedron(g, WS);
     Matrix_Free(g);
     break;
   
   case 2:         
     g = Matrix_Read();
-    A = Constraints2Polyhedron(g,WS);
+    A = Constraints2Polyhedron(g, WS);
     Matrix_Free(g);
     g = Matrix_Read();
-    B = Constraints2Polyhedron(g,WS);
+    B = Constraints2Polyhedron(g, WS);
     Matrix_Free(g);
     break;
   
   case 3:
     g = Matrix_Read();
-    A = Constraints2Polyhedron(g,WS);
+    A = Constraints2Polyhedron(g, WS);
     Matrix_Free(g);
     g = Matrix_Read();
-    B = Constraints2Polyhedron(g,WS);
+    B = Constraints2Polyhedron(g, WS);
     Matrix_Free(g);
     g = Matrix_Read();
-    C = Constraints2Polyhedron(g,WS);
+    C = Constraints2Polyhedron(g, WS);
     Matrix_Free(g);
     break;
   }
-  
-  fgets(s, 128, stdin);
-  while ((*s=='#') || (sscanf(s, "F %d", &func)<1) ) fgets(s, 128, stdin);
-  
+
+  // read function
+  do {
+    fgets(s, 128, stdin);
+  }
+  while((*s=='#') || (sscanf(s, "F %d", &func)<1));
 
   switch (func) {
-    
-  case 1:
-    
-    /* just a  test of polylib functions */
+
+  case 1: /* just a test of polylib functions */
     C = DomainUnion(A, B, 200);
     D = DomainConvex(C, 200);
     d = Polyhedron2Constraints(D);
-    Matrix_Print(stdout,P_VALUE_FMT, d);
-    Matrix_Free(d);
-    Domain_Free(D);
+    Matrix_Print(stdout, P_VALUE_FMT, d);
     break;
     
   case 2: /* AffineHermite */
-    
+    if(isNormalLattice(a))
+      printf("input matrix is normal\n");
+    else
+      printf("input matrix is not normal\n");
     AffineHermite(a,&b,&c);
-    Matrix_Print(stdout,P_VALUE_FMT, b);
-    Matrix_Print(stdout,P_VALUE_FMT, c);
+    Matrix_Print(stdout, P_VALUE_FMT, b);
+    Matrix_Print(stdout, P_VALUE_FMT, c);
     break;
     
   case 3: /* LatticeIntersection */
-    
     c = LatticeIntersection(a,b);
-    Matrix_Print(stdout,P_VALUE_FMT, c);
+    Matrix_Print(stdout, P_VALUE_FMT, c);
     break;
     
-  case 4: /* LatticeDifference */
-        
-    fprintf(stdout," 2 in 1 : %d\n",LatticeIncludes(b,a));
-    fprintf(stdout," 1 in 3 : %d\n",LatticeIncludes(c,a));
-    fprintf(stdout," 1 in 2 : %d\n",LatticeIncludes(a,b));
+  case 4: /* LatticeIncluded */
+    AffineHermite(a, &d, NULL);
+    AffineHermite(b, &e, NULL);
+    AffineHermite(c, &f, NULL);
+    printf(" 2 in 1: %d\n", LatticeIncluded(e, d));
+    printf(" 1 in 3: %d\n", LatticeIncluded(f, d));
+    printf(" 1 in 2: %d\n", LatticeIncluded(d, e));
     break;
   
   case 5: /* LatticeDifference */
-    
-    l1=LatticeDifference(a,b);
-    l2=LatticeDifference(b,a);
-    l3=LatticeDifference(c,a);
-    l4=LatticeDifference(b,c);
-    fprintf(stdout,"L1 - L2 :\n");
-    temp=l1;
-    while (temp!=NULL) {
-      
-      Matrix_Print(stdout,P_VALUE_FMT,temp->M);
-      temp=temp->next; 
-    };
-    fprintf(stdout,"Diff2:\n");
-    temp=l2;
-    while (temp!=NULL) {
-      Matrix_Print(stdout,P_VALUE_FMT, temp->M);
-      temp=temp->next; 
-    };
-    fprintf(stdout,"Diff3:\n");
-    temp=l3;
-    while (temp!=NULL) {
-      Matrix_Print(stdout,P_VALUE_FMT, temp->M);
-      temp=temp->next; 
-    };
-    fprintf(stdout,"Diff4:\n");
-    temp=l4;
-    while (temp!=NULL) {
-      Matrix_Print(stdout,P_VALUE_FMT, temp->M);
-      temp=temp->next; 
-    };
-    break;
-    
-  case 6: /* isEmptyZPolyhedron */
-    
-    ZA=ZPolyhedron_Alloc(a,A);
-    fprintf(stdout,"is Empty? :%d \n", isEmptyZPolyhedron(ZA));
-    ZDomain_Free(ZA);
-    break;
-    
-  case 7: /* ZDomainIntersection */
-        
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(b,B);
-    ZC = ZDomainIntersection(ZA,ZB);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    ZDomain_Free(ZA);
-    ZDomain_Free(ZB);
-    ZDomain_Free(ZC);
-    break;
-    
-  case 8: /* ZDomainUnion */
-    
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(b,B);
-    ZC = ZDomainUnion(ZA,ZB);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    break;
-    
-  case 9: /* ZDomainDifference */
-    
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(b,B);
-    ZC = ZDomainDifference(ZA,ZB);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    break;
-    
-  case 10: /* ZDomainImage */
-    
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZC = ZDomainImage(ZA,b); 
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    break;
-    
-  case 11: /* ZDomainPreimage */
-    
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZC = ZDomainPreimage(ZA,b); 
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    break;
-    
-  case 12: /* ZDomainDifference */
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZC = ZDomainPreimage(ZA,b); 
-    ZD = ZDomainImage(ZC,b); 
-    Zlast=ZDomainDifference(ZD,ZC);
-    fprintf(stdout,"the Two zpol are equal? :%d\n",
-	    isEmptyZPolyhedron(Zlast));
-    break;
-  
-  case 13:  /* ZDomainSimplify */
-    
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZA->next = ZPolyhedron_Alloc(b,B);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZA);
-    ZD = ZDomainSimplify(ZA);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZD);
-    break;
-    
-  case 14:  /* EmptyZpolyhedron */
-        
-    ZA=EmptyZPolyhedron(3);
-    fprintf(stdout,"is Empty? :%d \n", isEmptyZPolyhedron(ZA));
-    ZDomain_Free(ZA);
-    break;
-    
-  case 15:  /* ZDomainInclude */
-  
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(b,B);
-    fprintf(stdout,"A in B  :%d \nB in A  :%d \n", 
-	    ZPolyhedronIncludes(ZA,ZB),
-	    ZPolyhedronIncludes(ZB,ZA));
-    break;
-  
-  case 16: /* LatticePreimage */
-        
-    c = LatticePreimage(a,b);
-    Matrix_Print(stdout,P_VALUE_FMT, c);
-    AffineHermite(c,&d,&e);
-    Matrix_Print(stdout,P_VALUE_FMT, d);
-    break;
-    
-  case 17: /* LatticeImage */
-    
-    c = LatticeImage(a,b);
-    Matrix_Print(stdout,P_VALUE_FMT, c);
-    AffineHermite(c,&d,&e);
-    Matrix_Print(stdout,P_VALUE_FMT, d);
-    break;
-      
-  case 18:  /* EmptyLattice */
-        
-    fprintf(stdout,"is Empty? :%d \n", isEmptyLattice(a));
-    fprintf(stdout,"is Empty? :%d \n", isEmptyLattice(EmptyLattice(3)));
-    break;
-  
-  case 19:  /* CanonicalForm */
-     
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZB=ZPolyhedron_Alloc(a,B);
-    CanonicalForm(ZA,&ZC,&c);
-    CanonicalForm(ZB,&ZD,&d);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZD);
-    break;
-    
-  case 20: /* LatticeSimplify */
-    
-    l1=LatticeUnion_Alloc();
-    l2=LatticeUnion_Alloc();
-    l1->M=Matrix_Copy(a);
-    l1->next=l2;
-    l2->M=Matrix_Copy(b);
-    l1=LatticeSimplify(l1);
-    PrintLatticeUnion(stdout,P_VALUE_FMT,l1); 
+    l1 = LatticeDifference(a, b);
+    l2 = LatticeDifference(b, a);
+    printf("L1 - L2:\n");
+    PrintLatticeUnion(stdout, P_VALUE_FMT, l1);
+    printf("L2 - L1:\n");
+    PrintLatticeUnion(stdout, P_VALUE_FMT, l2);
     LatticeUnion_Free(l1);
+    LatticeUnion_Free(l2);
     break;
     
-  case 21: /* AffineSmith */
-  
-    AffineSmith(a,&b,&c, &d);
-    Matrix_Print(stdout,P_VALUE_FMT, b); 
-    Matrix_Print(stdout,P_VALUE_FMT, c);
-    Matrix_Print(stdout,P_VALUE_FMT, d);
-    Matrix_Free(d);
+  case 6: /* isEmptyLBL */
+    ZA = LBLAlloc(a,A);
+    printf("is Empty? :%d\n", isEmptyLBL(ZA));
     break;
-  
-  case 22: /* SolveDiophantine */
-        
-    rank=SolveDiophantine(a,&d,&v); 
-    Matrix_Print(stdout,P_VALUE_FMT, a);
-    fprintf(stdout," rank: %d \n ",rank);
-    Matrix_Print(stdout,P_VALUE_FMT, d); 
-    Vector_Print(stdout,P_VALUE_FMT, v);
-    rank=SolveDiophantine(b,&d,&v); 
-    Matrix_Print(stdout,P_VALUE_FMT, b);
-    fprintf(stdout," rank: %d \n ",rank);
-    Matrix_Print(stdout,P_VALUE_FMT, d); 
-    Vector_Print(stdout,P_VALUE_FMT, v);
-    rank=SolveDiophantine(c,&d,&v); 
-    Matrix_Print(stdout,P_VALUE_FMT, c);
-    fprintf(stdout," rank: %d \n ",rank);
-    Matrix_Print(stdout,P_VALUE_FMT, d); 
-    Vector_Print(stdout,P_VALUE_FMT, v);
-    Vector_Free(v);
-    break;
-
-  case 23: /* SplitZPolyhedron */
-        
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZC = SplitZpolyhedron(ZA,b);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZC);
-    break;
-
-
-  case 100: /* debug */
     
-    ZA=ZPolyhedron_Alloc(a,A);
-    ZDomainPrint(stdout,P_VALUE_FMT, ZA);
-    ZDomain_Free(ZA);
+  case 7: /* LBLIntersection */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLAlloc(b, B);
+    ZC = LBLIntersection(ZA, ZB);
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    break;
+    
+  case 8: /* LBLUnion */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLAlloc(b, B);
+    ZC = LBLUnion(ZA,ZB);
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    break;
+    
+  case 9: /* LBLDifference */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLAlloc(b, B);
+    ZC = LBLDifference(ZA, ZB);
+    ZD = LBLDifference(ZB, ZA);
+    LBLSimplifyEmpty(ZC);
+    LBLSimplifyEmpty(ZD);
+    printf("A - B = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    printf("\n\nB - A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZD);
+    break;
+    
+  case 10: /* LBLImage */
+    ZA = LBLAlloc(a, A);
+    ZC = LBLImage(ZA, b); 
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    break;
+    
+  case 11: /* LBLPreimage */
+    ZA = LBLAlloc(a, A);
+    ZC = LBLPreimage(ZA, b); 
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    break;
+    
+  case 12: /* difference between image of preimage and original*/
+    ZA = LBLAlloc(a, A);
+    ZC = LBLPreimage(ZA, b);
+    ZD = LBLImage(ZC, b);
+
+    printf("PreIm(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    printf("Im(PreIm(A)) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    // ZD should be included in ZA
+    printf("The image of the preimage is included in the original LBL ");
+    printf("(should always be true)? %d\n", LBLIncluded(ZD, ZA));
+    ZB = LBLDifference(ZA, ZD);
+    printf("The image of the preimage is exactly the original LBL? %d\n",
+	    isEmptyLBL(ZB));
+    break;
+  
+  case 13:  /* LBLSimplifyEmpty */
+    ZA = LBLAlloc(a, A);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    LBLSimplifyEmpty(ZA);
+    printf("LBLSimplifyEmpty(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    break;
+    
+  case 14:  /* EmptyLBL */
+    ZA = EmptyLBL(3);
+    printf("is Empty? :%d\n", isEmptyLBL(ZA));
+    break;
+
+  case 15:  /* LBLIncluded */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLAlloc(b, B);
+    printf("A in B  :%d\nB in A  :%d\n", 
+    LBLIncluded(ZA, ZB),
+    LBLIncluded(ZB, ZA));
+    break;
+
+  case 16:  /* LBLComplement:
+      compute complement of complement and check equality with original */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLComplement(ZA);
+    ZC = LBLComplement(ZB);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    printf("\nComplement(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+    printf("\nComplement(Complement(A)) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    printf("\nIs the the complement of the complement the original?\n");
+    printf("  A is included in C(C(A)): %d\n", LBLIncluded(ZA, ZC));
+    printf("  C(C(A)) is included in A: %d\n", LBLIncluded(ZC, ZA));
+    break;
+
+  case 17:  /* LBL2Zdomain and check equality with original */
+    ZA = LBLAlloc(a, A);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    ZB = LBL2ZDomain(ZA);
+    printf("LBL2ZDomain(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+
+    // check equality between ZA and ZB
+    ZC = LBLDifference(ZA, ZB);
+    LBLSimplifyEmpty(ZC);
+    printf("A - ZD(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    ZD = LBLDifference(ZB, ZA);
+    LBLSimplifyEmpty(ZD);
+    printf("ZD(A) - A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZD);
+    break;
+
+  case 18:  /* simple LBL2Zdomain + LBLSimplifyEmpty */
+    ZA = LBLAlloc(a, A);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    ZB = LBL2ZDomain(ZA);
+    LBLSimplifyEmpty(ZB);
+    printf("LBLSimplifyEmpty(LBL2ZDomain(A)) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+    break;
+
+  case 19:  /* check that complement(A) inter A = empty */
+            /* and complement(A) union A = universe */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLComplement(ZA);
+    printf("A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
+    printf("\nComplement(A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+
+    ZC = LBLIntersection(ZA, ZB);
+    LBLSimplifyEmpty(ZC);
+    printf("\nA inter Complement(A) (should be empty) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    LBLFree(ZC);
+
+    ZC = UniverseLBL(ZA->Lat->NbRows - 1);
+    ZD = LBLUnion(ZA, ZB);
+    LBLFree(ZB);
+    ZB = LBLDifference(ZC, ZD);
+    LBLSimplifyEmpty(ZB);
+    printf("\nUniverse - (A union Complement(A)) (should be empty) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+    break;
+
+    case 20:  /* LBLDisjointUnion of the difference between two LBLs */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLAlloc(b, B);
+    ZC = LBLDifference(ZB, ZA);
+    printf("\nC = B - A = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    ZD = LBLDisjointUnion(ZC);
+    printf("\nLBLDisjointUnion(B - A) = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZD);
+    break;
+  
+  case 21:  /* LBLDisjointUnion of the difference between two LBLs */
+            /* and check that the result is equal to the original  */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLAlloc(b, B);
+    printf("Computing C = B - A...\n");
+    ZC = LBLDifference(ZB, ZA);
+    // LBLPrint(stdout, P_VALUE_FMT, ZC);
+    ZD = LBLDisjointUnion(ZC);
+    printf("Computing D = LBLDisjointUnion(C)...\n");
+    // LBLPrint(stdout, P_VALUE_FMT, ZD);
+    LBLFree(ZA); ZA = NULL;
+    printf("Computing C - D...\n");
+    ZA = LBLDifference(ZC, ZD);
+    LBLSimplify(ZA);
+    printf("Checking that C - D is empty: %d\n", isEmptyLBL(ZA));
+    LBLFree(ZA); ZA = NULL;
+    printf("Computing D - C...\n");
+    ZA = LBLDifference(ZD, ZC);
+    LBLSimplify(ZA);
+    printf("Checking that D - C is empty: %d\n", isEmptyLBL(ZA));
+    break;
+  
+  case 100: /* just alloc and normalize */
+    ZA = LBLAlloc(a,A);
+    LBLPrint(stdout, P_VALUE_FMT, ZA);
     break;
     
   default:
     printf("? unknown function\n");
   }
 
-  /*    Polyhedron_Free(A); */
-  if (a)
-    Matrix_Free(a);
-  if (b)
-    Matrix_Free(b);
-  if (c)
-    Matrix_Free(c);
+  // free 4 allocated matrices, polyhedra, Z-polyhedra.
+  if (a)    Matrix_Free(a);
+  if (b)    Matrix_Free(b);
+  if (c)    Matrix_Free(c);
+  if (d)    Matrix_Free(d);
 
-  if (A)
-    Domain_Free(A);
-  if (B)
-    Domain_Free(B);
-  if (C)
-    Domain_Free(C);
+  if (A)    Domain_Free(A);
+  if (B)    Domain_Free(B);
+  if (C)    Domain_Free(C);
+  if (D)    Domain_Free(D);
+
+  if (ZA)    LBLFree(ZA);
+  if (ZB)    LBLFree(ZB);
+  if (ZC)    LBLFree(ZC);
+  if (ZD)    LBLFree(ZD);
   
+  // free all remaining cache memory of PolyLib:
+  polylib_close();
+
   return 0;
 } /* main */

@@ -1,0 +1,46 @@
+A = LBL: Dimension 3
+
+LATTICE:
+4 4
+   2    0    0    0 
+   0    0    0    0 
+  52   66    0    0 
+   0    0    0    1 
+POLYHEDRON Dimension:3
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 5
+Inequality: [-150 -198    1    0  ]
+Inequality: [ 200  264   -1    0  ]
+Inequality: [   2    0   -9    0  ]
+Inequality: [  -1    0    0 1000  ]
+Inequality: [  -1    0    5    0  ]
+Rays 5 5
+Vertex: [   0    0    0  ]/1
+Vertex: [297000 -224750 66000  ]/297
+Vertex: [891000 -674000 198000  ]/891
+Vertex: [99000 -74900 19800  ]/99
+Vertex: [11000 -8325 2200  ]/11
+LBL2ZDomain(A) = LBL: Dimension 3
+
+LATTICE:
+4 3
+   2    0    0 
+   0    0    0 
+  52   66    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 1000  ]
+Inequality: [-674 -891    0  ]
+Inequality: [ 333  440    0  ]
+Rays 3 4
+Vertex: [891000 -674000  ]/891
+Vertex: [11000 -8325  ]/11
+Vertex: [   0    0  ]/1
+A - ZD(A) = LBL: Dimension 3
+
+<empty>
+ZD(A) - A = LBL: Dimension 3
+
+<empty>

@@ -1,0 +1,26 @@
+# union of two identical LBLs, represented in different dimension spaces
+# {(2i, i) | 1 <= i <= 20}, and {(i, j) | 1<=j<=20, 2j = i}
+
+M 2
+3 2
+  2 0 
+  1 0
+  0 1
+
+3 3
+  1 0 0
+  0 1 0
+  0 0 1
+
+D 2
+2 3
+  1 1 -1
+  1 -1 20
+
+3 4
+  1 0 1 -1
+  1 0 -1 20
+  0 1 -2 0
+
+# union
+F 8

@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-extern const char **Read_ParamNames(FILE *in, int m);
-extern void Free_ParamNames(const char **params, int m);
+extern char **Read_ParamNames(FILE *in, int m);
+extern void Free_ParamNames(char **params, int m);
 
 #if defined(__cplusplus)
 }

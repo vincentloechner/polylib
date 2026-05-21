@@ -1,0 +1,95 @@
+A = LBL: Dimension 1
+
+LATTICE:
+2 3
+   1    0    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0  100  ]
+Inequality: [  -1   30    0  ]
+Inequality: [   1  -20    0  ]
+Rays 3 4
+Vertex: [   0    0  ]/1
+Vertex: [ 300   10  ]/3
+Vertex: [ 100    5  ]/1
+
+Complement(A) = LBL: Dimension 1
+
+LATTICE:
+2 2
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  -31  ]
+Inequality: [  -1   39  ]
+Rays 2 3
+Vertex: [  31  ]/1
+Vertex: [  39  ]/1
+UNION POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1   -1  ]
+Inequality: [  -1   19  ]
+Rays 2 3
+Vertex: [   1  ]/1
+Vertex: [  19  ]/1
+UNION POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1 -101  ]
+Inequality: [   0    1  ]
+Rays 2 3
+Ray:    [   1  ]
+Vertex: [ 101  ]/1
+UNION POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [  -1   -1  ]
+Inequality: [   0    1  ]
+Rays 2 3
+Ray:    [  -1  ]
+Vertex: [  -1  ]/1
+
+Complement(Complement(A)) = LBL: Dimension 1
+
+LATTICE:
+2 1
+   0 
+   1 
+POLYHEDRON Dimension:0
+           Constraints:1  Equations:0  Rays:1  Lines:0
+Constraints 1 2
+Inequality: [   1  ]
+Rays 1 2
+Vertex: [ ]/1
+
+UNION LBL: Dimension 1
+
+LATTICE:
+2 2
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  -40  ]
+Inequality: [  -1  100  ]
+Rays 2 3
+Vertex: [  40  ]/1
+Vertex: [ 100  ]/1
+UNION POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [  -1   30  ]
+Inequality: [   1  -20  ]
+Rays 2 3
+Vertex: [  30  ]/1
+Vertex: [  20  ]/1
+
+Is the the complement of the complement the original?
+  A is included in C(C(A)): 1
+  C(C(A)) is included in A: 1

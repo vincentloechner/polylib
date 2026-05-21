@@ -1,0 +1,19 @@
+# pointy LBL simplified
+
+M 1
+# affine function (i, j) -> i
+2 3
+  1 0 0
+  0 0 1
+
+#readDom["{i,j| 1<= i,j<=10}"]
+D 1
+# a very pointy cone : i=0 then holes till i=29/30, then some holes, etc...
+3 4
+  1  1  0 0
+  1 -1  30 0  # j >= i/30
+  1  1 -29 0  # j <= i/29
+
+
+# LBL2ZDom
+F 17

@@ -1,0 +1,26 @@
+# from Bcomp in ZDiff11
+
+M 1
+
+# Bcomp =
+4 4
+   2    0    0    0
+   0    0    0    0
+  52   66    0    0
+   0    0    0    1
+
+D 1
+
+5 5
+##   i.   k.    j.    in zdomain11.py
+1  -150 -198    1    0    # k <= (-150i+j)/198
+1   200  264   -1    0    # k >= (-200i+j)/264
+1     2    0   -9    0    # j <= 2i/9
+1    -1    0    0   1000
+1    -1    0    5    0    # j >= i/5
+
+# LBL2ZDomain
+F 17
+
+# for i <= 40 (<= 80 in the image LBL) there are mostly holes
+

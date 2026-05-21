@@ -1,0 +1,21 @@
+M 2
+# Lattice
+3 3
+  2 0 0 
+  0 1 0
+  0 0 1
+# Function (i, j) -> (i, i)
+3 2
+  1 0
+  1 0
+  0 1
+
+D 1
+4 4
+  1 1 0 -1
+  1 0 1 -1
+  1 -1 0 100
+  1 0 -1 100
+
+# is Image of Preimage included in the original?
+F 12

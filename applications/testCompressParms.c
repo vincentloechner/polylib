@@ -30,7 +30,7 @@ int test_Polyhedron_Remove_parm_eqs(Matrix * A, Matrix * B);
 int test_Constraints_fullDimensionize(Matrix * A, Matrix * B, 
 				      unsigned int nbSamples);
 
-const char *origNames[] =
+char *origNames[] =
 	{"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
 
 int main(int argc, char ** argv) {
@@ -58,7 +58,7 @@ int main(int argc, char ** argv) {
  */
 int test_Constraints_Remove_parm_eqs(Matrix * A, Matrix * B) {
   int isOk = 1;
-  Matrix * M, *C, *Cp, * Eqs, *M1, *C1;
+  Matrix * M, *C, * Eqs, *M1, *C1;
   Polyhedron *Pm, *Pc, *Pcp, *Peqs, *Pint;
   unsigned int * elimParms;
   printf("----- test_Constraints_Remove_parm_eqs() -----\n");
@@ -219,9 +219,9 @@ void valuesWithoutElim(Matrix * origParms, unsigned int * elimParms,
  * reused if not.
  * @return the number of names in the returned list.
  */
-unsigned int namesWithoutElim(const char **parms, unsigned nbParms,
+unsigned int namesWithoutElim(char **parms, unsigned nbParms,
 			      unsigned int * elimParms,
-			      const char ***newParms)
+			      char ***newParms)
 {
   unsigned int i, j=0;
   unsigned int newSize = nbParms -elimParms[0];
@@ -271,7 +271,7 @@ int test_Constraints_fullDimensionize(Matrix * A, Matrix * B,
   Polyhedron * P, *PC;
   Matrix * M, *C;
   Enumeration * origEP, * fullEP=NULL;
-  const char **fullNames = NULL;
+  char **fullNames = NULL;
   int isOk = 1; /* holds the result */
 
   /* compute the origial Ehrhart polynomial */

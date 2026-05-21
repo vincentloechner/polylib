@@ -1,0 +1,2370 @@
+A = LBL: Dimension 2
+
+LATTICE:
+3 4
+   1    0    0    0 
+   0    1    0    0 
+   0    0    0    1 
+POLYHEDRON Dimension:3
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 5
+Inequality: [98877 189663 1798 705915  ]
+Inequality: [10109 5958 14601 31333  ]
+Inequality: [-729  117 -350 4561  ]
+Inequality: [-677 -465  540 3489  ]
+Inequality: [1081 -993 -774 860700  ]
+Rays 5 5
+Vertex: [  21  -22  -12  ]/3
+Vertex: [-23188225191 11786923147 11131499217  ]/52732272
+Vertex: [-12900879 19916763 719333  ]/39828
+Vertex: [-4021497 27434329 18239129  ]/53104
+Vertex: [-10264944 4979798 23564103  ]/39828
+LBLSimplifyEmpty(LBL2ZDomain(A)) = LBL: Dimension 2
+
+LATTICE:
+3 3
+   1    0    0 
+   0    1    0 
+   0    0    1 
+POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [  -1    0  -75  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  109  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [ -75  510  ]/1
+Vertex: [-5469 37157  ]/72
+Vertex: [-1635 7708  ]/15
+Vertex: [-109   51  ]/1
+Vertex: [ -75   34  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [  -1    0  -75  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   0   -1  513  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  154  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [ -75  510  ]/1
+Vertex: [-122  513  ]/1
+Vertex: [-1434 9747  ]/19
+Vertex: [-2310 7663  ]/15
+Vertex: [-308  147  ]/2
+Vertex: [ -75   34  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [  -1    0  -75  ]
+Inequality: [   0   -1  510  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  199  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [ -75  510  ]/1
+Vertex: [-167  510  ]/1
+Vertex: [-2985 7618  ]/15
+Vertex: [-199   96  ]/1
+Vertex: [ -75   34  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [  -1    0  -75  ]
+Inequality: [   0   -1  507  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  244  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [-3660 7573  ]/15
+Vertex: [-212  507  ]/1
+Vertex: [ -75  507  ]/1
+Vertex: [ -75   34  ]/1
+Vertex: [-488  237  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [  -1    0  -75  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    0   80  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [-1200 7744  ]/15
+Vertex: [ -75  510  ]/1
+Vertex: [-2433 16529  ]/32
+Vertex: [ -75   34  ]/1
+Vertex: [-160   73  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0  -93  ]
+Inequality: [   1    0   96  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-480 2576  ]/5
+Vertex: [-465 2577  ]/5
+Vertex: [ -93   43  ]/1
+Vertex: [-192   89  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -111  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  154  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-2310 7663  ]/15
+Vertex: [-1665 7706  ]/15
+Vertex: [-111   52  ]/1
+Vertex: [-308  147  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -111  ]
+Inequality: [   1    0  112  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-1680 7712  ]/15
+Vertex: [-555 2571  ]/5
+Vertex: [-111   52  ]/1
+Vertex: [-224  105  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -115  ]
+Inequality: [   1    0  125  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-1875 7699  ]/15
+Vertex: [-1725 7709  ]/15
+Vertex: [-115   54  ]/1
+Vertex: [-125   59  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -138  ]
+Inequality: [   1    0  141  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-705 2561  ]/5
+Vertex: [-690 2562  ]/5
+Vertex: [-276  131  ]/2
+Vertex: [-141   67  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -156  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  199  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-2985 7618  ]/15
+Vertex: [-2340 7661  ]/15
+Vertex: [-312  149  ]/2
+Vertex: [-199   96  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -156  ]
+Inequality: [   1    0  157  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-2355 7667  ]/15
+Vertex: [-780 2556  ]/5
+Vertex: [-312  149  ]/2
+Vertex: [-157   75  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -160  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Inequality: [   1    0  170  ]
+Rays 4 4
+Vertex: [-2550 7654  ]/15
+Vertex: [-340  163  ]/2
+Vertex: [-320  153  ]/2
+Vertex: [-2400 7664  ]/15
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -183  ]
+Inequality: [   1    0  186  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-930 2546  ]/5
+Vertex: [-915 2547  ]/5
+Vertex: [-183   88  ]/1
+Vertex: [-372  179  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -201  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  244  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-3660 7573  ]/15
+Vertex: [-3015 7616  ]/15
+Vertex: [-201   97  ]/1
+Vertex: [-488  237  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -201  ]
+Inequality: [   1    0  202  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-3030 7622  ]/15
+Vertex: [-1005 2541  ]/5
+Vertex: [-201   97  ]/1
+Vertex: [-404  195  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -205  ]
+Inequality: [   1    0  215  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-3225 7609  ]/15
+Vertex: [-3075 7619  ]/15
+Vertex: [-205   99  ]/1
+Vertex: [-215  104  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -228  ]
+Inequality: [   1    0  231  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-1155 2531  ]/5
+Vertex: [-1140 2532  ]/5
+Vertex: [-456  221  ]/2
+Vertex: [-231  112  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0 -246  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    2    7  ]
+Inequality: [   1    0  289  ]
+Rays 5 4
+Vertex: [-3156747 1550662  ]/10923
+Vertex: [-4335 7528  ]/15
+Vertex: [-3690 7571  ]/15
+Vertex: [-492  239  ]/2
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -246  ]
+Inequality: [   1    0  247  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-3705 7577  ]/15
+Vertex: [-1230 2526  ]/5
+Vertex: [-492  239  ]/2
+Vertex: [-247  120  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -250  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Inequality: [   1    0  260  ]
+Rays 4 4
+Vertex: [-3900 7564  ]/15
+Vertex: [-520  253  ]/2
+Vertex: [-500  243  ]/2
+Vertex: [-3750 7574  ]/15
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0 -273  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    0  276  ]
+Rays 4 4
+Vertex: [-1004916 491273  ]/3641
+Vertex: [-1380 2516  ]/5
+Vertex: [-1365 2517  ]/5
+Vertex: [-993993 485362  ]/3641
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0 -291  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  321  ]
+Rays 4 4
+Vertex: [-4815 7496  ]/15
+Vertex: [-1168761 579938  ]/3641
+Vertex: [-96321 47348  ]/331
+Vertex: [-4365 7526  ]/15
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0 -291  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    0  292  ]
+Rays 4 4
+Vertex: [-3189516 1568395  ]/10923
+Vertex: [-4380 7532  ]/15
+Vertex: [-1455 2511  ]/5
+Vertex: [-96321 47348  ]/331
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0 -295  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    0  305  ]
+Rays 4 4
+Vertex: [-3331515 1645238  ]/10923
+Vertex: [-4575 7519  ]/15
+Vertex: [-4425 7529  ]/15
+Vertex: [-3222285 1586128  ]/10923
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [-2371  993 -1263438  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   0    1 -499  ]
+Inequality: [   1    0  324  ]
+Rays 4 4
+Vertex: [-11189289 17270669  ]/34572
+Vertex: [-767931 1183129  ]/2371
+Vertex: [-324  499  ]/1
+Vertex: [-4860 7493  ]/15
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -324  ]
+Inequality: [   0    1 -499  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-324  499  ]/1
+Vertex: [-321732 496366  ]/993
+Vertex: [-769063 1183129  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0 -318  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    0  321  ]
+Rays 4 4
+Vertex: [-1168761 579938  ]/3641
+Vertex: [-1605 2501  ]/5
+Vertex: [-1590 2502  ]/5
+Vertex: [-1157838 574027  ]/3641
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0 -279  ]
+Inequality: [   1    0  289  ]
+Inequality: [   1  -15 7824  ]
+Rays 4 4
+Vertex: [-3156747 1550662  ]/10923
+Vertex: [-1015839 497184  ]/3641
+Vertex: [-279  503  ]/1
+Vertex: [-867 1507  ]/3
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -234  ]
+Inequality: [   1    0  244  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-732 1516  ]/3
+Vertex: [-234  506  ]/1
+Vertex: [-468  227  ]/2
+Vertex: [-488  237  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -189  ]
+Inequality: [   1    0  199  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-597 1525  ]/3
+Vertex: [-189  509  ]/1
+Vertex: [-189   91  ]/1
+Vertex: [-199   96  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -144  ]
+Inequality: [   1    0  154  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-462 1534  ]/3
+Vertex: [-144  512  ]/1
+Vertex: [-288  137  ]/2
+Vertex: [-308  147  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0  -99  ]
+Inequality: [   1    0  109  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-327 1543  ]/3
+Vertex: [ -99  515  ]/1
+Vertex: [ -99   46  ]/1
+Vertex: [-109   51  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [ -19   -3  111  ]
+Inequality: [  -1   15 -7818  ]
+Inequality: [   1  -15 7824  ]
+Inequality: [   1    0   80  ]
+Rays 4 4
+Vertex: [-1200 7738  ]/15
+Vertex: [-1200 7744  ]/15
+Vertex: [-7269 49589  ]/96
+Vertex: [-2421 16517  ]/32
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  498  ]
+Inequality: [  -1    0  -72  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-768923 1180758  ]/2371
+Vertex: [ -72  491  ]/1
+Vertex: [-1389 9462  ]/19
+Vertex: [-144   65  ]/2
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [  -1    0  -72  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   0   -1  494  ]
+Inequality: [   0    1 -487  ]
+Inequality: [2371 -993 1264570  ]
+Rays 5 4
+Vertex: [-1377 9386  ]/19
+Vertex: [ -72  491  ]/1
+Vertex: [ -72  487  ]/1
+Vertex: [-780979 1154677  ]/2371
+Vertex: [-774028 1171274  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:7  Equations:0  Rays:7  Lines:0
+Constraints 7 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  485  ]
+Inequality: [  -1    0  -68  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Inequality: [   1    0  439  ]
+Rays 7 4
+Vertex: [-435927 222568  ]/993
+Vertex: [-4795197 2437312  ]/10923
+Vertex: [-204 1397  ]/3
+Vertex: [-1350 9215  ]/19
+Vertex: [-136   61  ]/2
+Vertex: [-238773 116240  ]/899
+Vertex: [-781832 1149935  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -331  ]
+Inequality: [   0    1 -480  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-331  480  ]/1
+Vertex: [-109561 159923  ]/331
+Vertex: [-787930 1138080  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -334  ]
+Inequality: [   0    1 -473  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-334  473  ]/1
+Vertex: [-110554 157552  ]/331
+Vertex: [-794881 1121483  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -342  ]
+Inequality: [   0   -1  451  ]
+Inequality: [   0    1 -449  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [-342  449  ]/1
+Vertex: [-342  451  ]/1
+Vertex: [-816727 1069321  ]/2371
+Vertex: [-818713 1064579  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -347  ]
+Inequality: [   0    1 -444  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-347  444  ]/1
+Vertex: [-344571 441833  ]/993
+Vertex: [-823678 1052724  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -349  ]
+Inequality: [   0   -1  432  ]
+Inequality: [   0    1 -430  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [-349  430  ]/1
+Vertex: [-349  432  ]/1
+Vertex: [-835594 1024272  ]/2371
+Vertex: [-837580 1019530  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -360  ]
+Inequality: [   0   -1  408  ]
+Inequality: [   0    1 -406  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [-360  406  ]/1
+Vertex: [-360  408  ]/1
+Vertex: [-859426 967368  ]/2371
+Vertex: [-861412 962626  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -360  ]
+Inequality: [   0    1 -413  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-360  413  ]/1
+Vertex: [-357480 411010  ]/993
+Vertex: [-854461 979223  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -356  ]
+Inequality: [   0    1 -423  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-356  423  ]/1
+Vertex: [-353508 420494  ]/993
+Vertex: [-844531 1002933  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -349  ]
+Inequality: [   0    1 -437  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-349  437  ]/1
+Vertex: [-115519 145697  ]/331
+Vertex: [-830629 1036127  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -342  ]
+Inequality: [   0    1 -456  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-342  456  ]/1
+Vertex: [-339606 453688  ]/993
+Vertex: [-811762 1081176  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -338  ]
+Inequality: [   0    1 -466  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-338  466  ]/1
+Vertex: [-335634 463172  ]/993
+Vertex: [-801832 1104886  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:7  Equations:0  Rays:7  Lines:0
+Constraints 7 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  460  ]
+Inequality: [  -1    0  -62  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Inequality: [   1    0  439  ]
+Rays 7 4
+Vertex: [-435927 222568  ]/993
+Vertex: [-4795197 2437312  ]/10923
+Vertex: [-186 1283  ]/3
+Vertex: [-1275 8740  ]/19
+Vertex: [-124   55  ]/2
+Vertex: [-238773 116240  ]/899
+Vertex: [-806657 1090660  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ -19   -3  111  ]
+Inequality: [   0   -1  454  ]
+Inequality: [   0    1 -442  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    0  347  ]
+Rays 5 4
+Vertex: [-1215 8398  ]/19
+Vertex: [-812615 1076434  ]/2371
+Vertex: [-1251 8626  ]/19
+Vertex: [-114857 146900  ]/331
+Vertex: [-347  442  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  422  ]
+Inequality: [  -1    0  -60  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-844391 1000562  ]/2371
+Vertex: [ -60  415  ]/1
+Vertex: [-1161 8018  ]/19
+Vertex: [-120   53  ]/2
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  403  ]
+Inequality: [  -1    0  -57  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-863258 955513  ]/2371
+Vertex: [ -57  396  ]/1
+Vertex: [-1104 7657  ]/19
+Vertex: [ -57   25  ]/1
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  390  ]
+Inequality: [  -1    0  -53  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-876167 924690  ]/2371
+Vertex: [-159 1112  ]/3
+Vertex: [-1065 7410  ]/19
+Vertex: [ -53   23  ]/1
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  365  ]
+Inequality: [  -1    0  -47  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-900992 865415  ]/2371
+Vertex: [-141  998  ]/3
+Vertex: [-990 6935  ]/19
+Vertex: [ -47   20  ]/1
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ -19   -3  111  ]
+Inequality: [   0   -1  359  ]
+Inequality: [   0    1 -347  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    0  387  ]
+Rays 5 4
+Vertex: [-930 6593  ]/19
+Vertex: [-906950 851189  ]/2371
+Vertex: [-966 6821  ]/19
+Vertex: [-384291 345860  ]/993
+Vertex: [-387  347  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  327  ]
+Inequality: [  -1    0  -45  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-938726 775317  ]/2371
+Vertex: [ -45  320  ]/1
+Vertex: [-876 6213  ]/19
+Vertex: [ -45   19  ]/1
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  308  ]
+Inequality: [  -1    0  -42  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-957593 730268  ]/2371
+Vertex: [ -42  301  ]/1
+Vertex: [-819 5852  ]/19
+Vertex: [ -84   35  ]/2
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:7  Equations:0  Rays:7  Lines:0
+Constraints 7 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  295  ]
+Inequality: [  -1    0  -38  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Inequality: [   1    0  439  ]
+Rays 7 4
+Vertex: [-435927 222568  ]/993
+Vertex: [-4795197 2437312  ]/10923
+Vertex: [-114  827  ]/3
+Vertex: [-780 5605  ]/19
+Vertex: [ -76   31  ]/2
+Vertex: [-238773 116240  ]/899
+Vertex: [-970502 699445  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:7  Equations:0  Rays:7  Lines:0
+Constraints 7 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  270  ]
+Inequality: [  -1    0  -32  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Inequality: [   1    0  439  ]
+Rays 7 4
+Vertex: [-435927 222568  ]/993
+Vertex: [-4795197 2437312  ]/10923
+Vertex: [ -96  713  ]/3
+Vertex: [-705 5130  ]/19
+Vertex: [ -64   25  ]/2
+Vertex: [-238773 116240  ]/899
+Vertex: [-995327 640170  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ -19   -3  111  ]
+Inequality: [   0   -1  264  ]
+Inequality: [   0    1 -252  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    0  427  ]
+Rays 5 4
+Vertex: [-645 4788  ]/19
+Vertex: [-1001285 625944  ]/2371
+Vertex: [-681 5016  ]/19
+Vertex: [-424011 251020  ]/993
+Vertex: [-427  252  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  232  ]
+Inequality: [  -1    0  -30  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-1033061 550072  ]/2371
+Vertex: [ -30  225  ]/1
+Vertex: [-591 4408  ]/19
+Vertex: [ -60   23  ]/2
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  213  ]
+Inequality: [  -1    0  -27  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [-534 4047  ]/19
+Vertex: [ -27  206  ]/1
+Vertex: [-2484216 1259043  ]/5911
+Vertex: [-238773 116240  ]/899
+Vertex: [ -27   10  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  200  ]
+Inequality: [  -1    0  -23  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [-495 3800  ]/19
+Vertex: [ -69  542  ]/3
+Vertex: [-2342217 1182200  ]/5911
+Vertex: [-238773 116240  ]/899
+Vertex: [ -23    8  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  175  ]
+Inequality: [  -1    0  -17  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [-420 3325  ]/19
+Vertex: [ -51  428  ]/3
+Vertex: [-2069142 1034425  ]/5911
+Vertex: [-238773 116240  ]/899
+Vertex: [ -17    5  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ -19   -3  111  ]
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  169  ]
+Inequality: [   0    1 -157  ]
+Inequality: [   1    0  338  ]
+Rays 5 4
+Vertex: [-396 3211  ]/19
+Vertex: [-360 2983  ]/19
+Vertex: [-1872528 928027  ]/5911
+Vertex: [-3691974 1840301  ]/10923
+Vertex: [-338  169  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  137  ]
+Inequality: [  -1    0  -15  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [-306 2603  ]/19
+Vertex: [ -15  130  ]/1
+Vertex: [-71916 35209  ]/257
+Vertex: [-238773 116240  ]/899
+Vertex: [ -15    4  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  118  ]
+Inequality: [  -1    0  -12  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-249 2242  ]/19
+Vertex: [ -12  111  ]/1
+Vertex: [ -24    5  ]/2
+Vertex: [-243  118  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  105  ]
+Inequality: [  -1    0   -8  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-210 1995  ]/19
+Vertex: [ -24  257  ]/3
+Vertex: [ -16    1  ]/2
+Vertex: [-217  105  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1   80  ]
+Inequality: [  -1    0   -2  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-135 1520  ]/19
+Vertex: [  -6  143  ]/3
+Vertex: [  -4   -5  ]/2
+Vertex: [-167   80  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [ -19   -3  111  ]
+Inequality: [   0   -1   74  ]
+Inequality: [   0    1  -62  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [-111 1406  ]/19
+Vertex: [ -75 1178  ]/19
+Vertex: [-131   62  ]/1
+Vertex: [-155   74  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1   42  ]
+Inequality: [  -1    0    0  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [ -21  798  ]/19
+Vertex: [   0   35  ]/1
+Vertex: [   0   -7  ]/2
+Vertex: [ -91   42  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1   23  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [  -1    0    3  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [   3   16  ]/1
+Vertex: [  36  437  ]/19
+Vertex: [ -53   23  ]/1
+Vertex: [   3   -5  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [   0   -1   10  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 3 4
+Vertex: [  75  190  ]/19
+Vertex: [ -27   10  ]/1
+Vertex: [  33  -34  ]/5
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [   0   -1   10  ]
+Inequality: [  -1    0    4  ]
+Inequality: [   1    2    7  ]
+Rays 3 4
+Vertex: [   4   10  ]/1
+Vertex: [ -27   10  ]/1
+Vertex: [   8  -11  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [   0   -1   17  ]
+Inequality: [  -1    0    3  ]
+Inequality: [   1    2    7  ]
+Rays 3 4
+Vertex: [   3   17  ]/1
+Vertex: [ -41   17  ]/1
+Vertex: [   3   -5  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1   29  ]
+Inequality: [  -1    0    1  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [  18  551  ]/19
+Vertex: [   3   86  ]/3
+Vertex: [   1   -4  ]/1
+Vertex: [ -65   29  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1   29  ]
+Inequality: [  -1    0    1  ]
+Inequality: [   0    1  -23  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [   1   23  ]/1
+Vertex: [   1   29  ]/1
+Vertex: [ -65   29  ]/1
+Vertex: [ -53   23  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1   36  ]
+Inequality: [  -1    0    0  ]
+Inequality: [   0    1  -23  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [   0   23  ]/1
+Vertex: [   0   36  ]/1
+Vertex: [ -79   36  ]/1
+Vertex: [ -53   23  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1   48  ]
+Inequality: [  -1    0   -2  ]
+Inequality: [   0    1  -42  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [  -2   42  ]/1
+Vertex: [  -2   48  ]/1
+Vertex: [-103   48  ]/1
+Vertex: [ -91   42  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ -19   -3  111  ]
+Inequality: [   0   -1   74  ]
+Inequality: [  -1    0   -5  ]
+Inequality: [   0    1  -42  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [-111 1406  ]/19
+Vertex: [  -5   42  ]/1
+Vertex: [ -15  206  ]/3
+Vertex: [ -91   42  ]/1
+Vertex: [-155   74  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1   86  ]
+Inequality: [  -1    0   -8  ]
+Inequality: [   0    1  -80  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [  -8   80  ]/1
+Vertex: [  -8   86  ]/1
+Vertex: [-179   86  ]/1
+Vertex: [-167   80  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  105  ]
+Inequality: [  -1    0  -11  ]
+Inequality: [   0    1  -80  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [ -11   80  ]/1
+Vertex: [ -11  105  ]/1
+Vertex: [-217  105  ]/1
+Vertex: [-167   80  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  112  ]
+Inequality: [  -1    0  -12  ]
+Inequality: [   0    1  -80  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [ -12   80  ]/1
+Vertex: [ -12  112  ]/1
+Vertex: [-231  112  ]/1
+Vertex: [-167   80  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  124  ]
+Inequality: [  -1    0  -14  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [ -42  371  ]/3
+Vertex: [-267 2356  ]/19
+Vertex: [-255  124  ]/1
+Vertex: [ -28    7  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  124  ]
+Inequality: [  -1    0  -14  ]
+Inequality: [   0    1 -118  ]
+Inequality: [   1    2    7  ]
+Rays 4 4
+Vertex: [ -14  118  ]/1
+Vertex: [ -14  124  ]/1
+Vertex: [-255  124  ]/1
+Vertex: [-243  118  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  131  ]
+Inequality: [  -1    0  -15  ]
+Inequality: [   0    1 -118  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [-1588530 774341  ]/5911
+Vertex: [ -15  118  ]/1
+Vertex: [ -15  131  ]/1
+Vertex: [-243  118  ]/1
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  143  ]
+Inequality: [  -1    0  -17  ]
+Inequality: [   0    1 -137  ]
+Rays 4 4
+Vertex: [-1719606 845273  ]/5911
+Vertex: [ -17  143  ]/1
+Vertex: [ -17  137  ]/1
+Vertex: [-71916 35209  ]/257
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ -19   -3  111  ]
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  169  ]
+Inequality: [  -1    0  -20  ]
+Inequality: [   0    1 -137  ]
+Rays 5 4
+Vertex: [-396 3211  ]/19
+Vertex: [ -60  491  ]/3
+Vertex: [-2003604 998959  ]/5911
+Vertex: [-71916 35209  ]/257
+Vertex: [ -20  137  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  181  ]
+Inequality: [  -1    0  -23  ]
+Inequality: [   0    1 -175  ]
+Rays 4 4
+Vertex: [-2134680 1069891  ]/5911
+Vertex: [ -23  181  ]/1
+Vertex: [ -23  175  ]/1
+Vertex: [-2069142 1034425  ]/5911
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  200  ]
+Inequality: [  -1    0  -26  ]
+Inequality: [   0    1 -175  ]
+Rays 4 4
+Vertex: [-2342217 1182200  ]/5911
+Vertex: [ -26  200  ]/1
+Vertex: [ -26  175  ]/1
+Vertex: [-2069142 1034425  ]/5911
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  207  ]
+Inequality: [  -1    0  -27  ]
+Inequality: [   0    1 -175  ]
+Rays 4 4
+Vertex: [-2418678 1223577  ]/5911
+Vertex: [ -27  207  ]/1
+Vertex: [ -27  175  ]/1
+Vertex: [-2069142 1034425  ]/5911
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  219  ]
+Inequality: [  -1    0  -29  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [ -87  656  ]/3
+Vertex: [-552 4161  ]/19
+Vertex: [-2549754 1294509  ]/5911
+Vertex: [-238773 116240  ]/899
+Vertex: [ -29   11  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  219  ]
+Inequality: [  -1    0  -29  ]
+Inequality: [   0    1 -213  ]
+Rays 4 4
+Vertex: [-2549754 1294509  ]/5911
+Vertex: [ -29  219  ]/1
+Vertex: [ -29  213  ]/1
+Vertex: [-2484216 1259043  ]/5911
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  226  ]
+Inequality: [  -1    0  -30  ]
+Inequality: [   0    1 -213  ]
+Inequality: [2371 -993 1263437  ]
+Rays 5 4
+Vertex: [-1039019 535846  ]/2371
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [ -30  226  ]/1
+Vertex: [-2484216 1259043  ]/5911
+Vertex: [ -30  213  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  238  ]
+Inequality: [  -1    0  -32  ]
+Inequality: [   0    1 -232  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-1027103 564298  ]/2371
+Vertex: [-1033061 550072  ]/2371
+Vertex: [ -32  232  ]/1
+Vertex: [ -32  238  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ -19   -3  111  ]
+Inequality: [   0   -1  264  ]
+Inequality: [  -1    0  -35  ]
+Inequality: [   0    1 -232  ]
+Inequality: [2371 -993 1263437  ]
+Rays 5 4
+Vertex: [-1033061 550072  ]/2371
+Vertex: [-1001285 625944  ]/2371
+Vertex: [ -35  232  ]/1
+Vertex: [-681 5016  ]/19
+Vertex: [-105  776  ]/3
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  276  ]
+Inequality: [  -1    0  -38  ]
+Inequality: [   0    1 -270  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-989369 654396  ]/2371
+Vertex: [-995327 640170  ]/2371
+Vertex: [ -38  270  ]/1
+Vertex: [ -38  276  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  295  ]
+Inequality: [  -1    0  -41  ]
+Inequality: [   0    1 -270  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-970502 699445  ]/2371
+Vertex: [-995327 640170  ]/2371
+Vertex: [ -41  270  ]/1
+Vertex: [ -41  295  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  302  ]
+Inequality: [  -1    0  -42  ]
+Inequality: [   0    1 -270  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-963551 716042  ]/2371
+Vertex: [-995327 640170  ]/2371
+Vertex: [ -42  270  ]/1
+Vertex: [ -42  302  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:7  Equations:0  Rays:7  Lines:0
+Constraints 7 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  314  ]
+Inequality: [  -1    0  -44  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Inequality: [   1    0  439  ]
+Rays 7 4
+Vertex: [-435927 222568  ]/993
+Vertex: [-4795197 2437312  ]/10923
+Vertex: [-837 5966  ]/19
+Vertex: [-132  941  ]/3
+Vertex: [ -88   37  ]/2
+Vertex: [-238773 116240  ]/899
+Vertex: [-951635 744494  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  314  ]
+Inequality: [  -1    0  -44  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   0    1 -308  ]
+Rays 4 4
+Vertex: [-957593 730268  ]/2371
+Vertex: [ -44  308  ]/1
+Vertex: [-951635 744494  ]/2371
+Vertex: [ -44  314  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  321  ]
+Inequality: [  -1    0  -45  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   0    1 -308  ]
+Rays 4 4
+Vertex: [-957593 730268  ]/2371
+Vertex: [ -45  308  ]/1
+Vertex: [-944684 761091  ]/2371
+Vertex: [ -45  321  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  333  ]
+Inequality: [  -1    0  -47  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   0    1 -327  ]
+Rays 4 4
+Vertex: [-938726 775317  ]/2371
+Vertex: [ -47  327  ]/1
+Vertex: [-932768 789543  ]/2371
+Vertex: [ -47  333  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ -19   -3  111  ]
+Inequality: [   0   -1  359  ]
+Inequality: [  -1    0  -50  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   0    1 -327  ]
+Rays 5 4
+Vertex: [-938726 775317  ]/2371
+Vertex: [ -50  327  ]/1
+Vertex: [-906950 851189  ]/2371
+Vertex: [-966 6821  ]/19
+Vertex: [-150 1061  ]/3
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  371  ]
+Inequality: [  -1    0  -53  ]
+Inequality: [   0    1 -365  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-895034 879641  ]/2371
+Vertex: [-900992 865415  ]/2371
+Vertex: [ -53  365  ]/1
+Vertex: [ -53  371  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  390  ]
+Inequality: [  -1    0  -56  ]
+Inequality: [   0    1 -365  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-876167 924690  ]/2371
+Vertex: [-900992 865415  ]/2371
+Vertex: [ -56  365  ]/1
+Vertex: [ -56  390  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  397  ]
+Inequality: [  -1    0  -57  ]
+Inequality: [   0    1 -365  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-869216 941287  ]/2371
+Vertex: [-900992 865415  ]/2371
+Vertex: [ -57  365  ]/1
+Vertex: [ -57  397  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [   0   -1  409  ]
+Inequality: [  -1    0  -59  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-857300 969739  ]/2371
+Vertex: [-1122 7771  ]/19
+Vertex: [-177 1226  ]/3
+Vertex: [ -59   26  ]/1
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  409  ]
+Inequality: [  -1    0  -59  ]
+Inequality: [   0    1 -403  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-857300 969739  ]/2371
+Vertex: [-863258 955513  ]/2371
+Vertex: [ -59  403  ]/1
+Vertex: [ -59  409  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  416  ]
+Inequality: [  -1    0  -60  ]
+Inequality: [   0    1 -403  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-850349 986336  ]/2371
+Vertex: [-863258 955513  ]/2371
+Vertex: [ -60  403  ]/1
+Vertex: [ -60  416  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  428  ]
+Inequality: [  -1    0  -62  ]
+Inequality: [   0    1 -422  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-838433 1014788  ]/2371
+Vertex: [-844391 1000562  ]/2371
+Vertex: [ -62  422  ]/1
+Vertex: [ -62  428  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [ -19   -3  111  ]
+Inequality: [   0   -1  454  ]
+Inequality: [  -1    0  -65  ]
+Inequality: [   0    1 -422  ]
+Inequality: [2371 -993 1263437  ]
+Rays 5 4
+Vertex: [-844391 1000562  ]/2371
+Vertex: [-812615 1076434  ]/2371
+Vertex: [ -65  422  ]/1
+Vertex: [-1251 8626  ]/19
+Vertex: [-195 1346  ]/3
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  466  ]
+Inequality: [  -1    0  -68  ]
+Inequality: [   0    1 -460  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-800699 1104886  ]/2371
+Vertex: [-806657 1090660  ]/2371
+Vertex: [ -68  460  ]/1
+Vertex: [ -68  466  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  485  ]
+Inequality: [  -1    0  -71  ]
+Inequality: [   0    1 -460  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-781832 1149935  ]/2371
+Vertex: [-806657 1090660  ]/2371
+Vertex: [ -71  460  ]/1
+Vertex: [ -71  485  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  492  ]
+Inequality: [  -1    0  -72  ]
+Inequality: [   0    1 -460  ]
+Inequality: [2371 -993 1263437  ]
+Rays 4 4
+Vertex: [-774881 1166532  ]/2371
+Vertex: [-806657 1090660  ]/2371
+Vertex: [ -72  460  ]/1
+Vertex: [ -72  492  ]/1
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   0   -1  492  ]
+Inequality: [  -1    0  -72  ]
+Inequality: [   0    1 -487  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [ -72  487  ]/1
+Vertex: [ -72  492  ]/1
+Vertex: [-776014 1166532  ]/2371
+Vertex: [-780979 1154677  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:7  Equations:0  Rays:7  Lines:0
+Constraints 7 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0  -74  ]
+Inequality: [ -19   -3  105  ]
+Inequality: [   0   -1  504  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  289  ]
+Inequality: [   1    2    7  ]
+Rays 7 4
+Vertex: [-257  504  ]/1
+Vertex: [-1407 9576  ]/19
+Vertex: [-4335 7528  ]/15
+Vertex: [-222 1511  ]/3
+Vertex: [-3156747 1550662  ]/10923
+Vertex: [-238773 116240  ]/899
+Vertex: [-148   67  ]/2
+UNION POLYHEDRON Dimension:2
+           Constraints:6  Equations:0  Rays:6  Lines:0
+Constraints 6 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0  -74  ]
+Inequality: [   0   -1  501  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  321  ]
+Inequality: [   1    2    7  ]
+Rays 6 4
+Vertex: [-1168761 579938  ]/3641
+Vertex: [-4815 7496  ]/15
+Vertex: [-302  501  ]/1
+Vertex: [ -74  501  ]/1
+Vertex: [-148   67  ]/2
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [5911 10923 157617  ]
+Inequality: [  -1    0  -74  ]
+Inequality: [   0   -1  499  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [   1    2    7  ]
+Rays 5 4
+Vertex: [-1744629504 886808275  ]/3971007
+Vertex: [-767930 1183129  ]/2371
+Vertex: [ -74  499  ]/1
+Vertex: [-148   67  ]/2
+Vertex: [-238773 116240  ]/899
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [  -1    0  -74  ]
+Inequality: [   0    1 -498  ]
+Inequality: [   0   -1  504  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  289  ]
+Rays 5 4
+Vertex: [-257  504  ]/1
+Vertex: [ -74  498  ]/1
+Vertex: [ -74  504  ]/1
+Vertex: [-289  498  ]/1
+Vertex: [-4335 7528  ]/15
+UNION POLYHEDRON Dimension:2
+           Constraints:5  Equations:0  Rays:5  Lines:0
+Constraints 5 4
+Inequality: [   0   -1  511  ]
+Inequality: [  -1    0  -75  ]
+Inequality: [   0    1 -498  ]
+Inequality: [   1  -15 7817  ]
+Inequality: [   1    0  154  ]
+Rays 5 4
+Vertex: [-152  511  ]/1
+Vertex: [ -75  498  ]/1
+Vertex: [ -75  511  ]/1
+Vertex: [-154  498  ]/1
+Vertex: [-2310 7663  ]/15
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -364  ]
+Inequality: [2371 -993 1263437  ]
+Inequality: [5911 10923 157721  ]
+Inequality: [   1    0  439  ]
+Rays 4 4
+Vertex: [-4795197 2437208  ]/10923
+Vertex: [-435927 222568  ]/993
+Vertex: [-361452 400393  ]/993
+Vertex: [-3975972 1993883  ]/10923
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -365  ]
+Inequality: [   0    1 -401  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-365  401  ]/1
+Vertex: [-362445 399155  ]/993
+Vertex: [-866377 950771  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -367  ]
+Inequality: [   0   -1  389  ]
+Inequality: [   0    1 -387  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [-367  387  ]/1
+Vertex: [-367  389  ]/1
+Vertex: [-878293 922319  ]/2371
+Vertex: [-880279 917577  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -378  ]
+Inequality: [   0    1 -370  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-378  370  ]/1
+Vertex: [-375354 368332  ]/993
+Vertex: [-897160 877270  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -381  ]
+Inequality: [   0    1 -363  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-381  363  ]/1
+Vertex: [-378333 361219  ]/993
+Vertex: [-904111 860673  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -383  ]
+Inequality: [   0    1 -358  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-383  358  ]/1
+Vertex: [-380319 356477  ]/993
+Vertex: [-909076 848818  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -385  ]
+Inequality: [   0   -1  346  ]
+Inequality: [   0    1 -344  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [-385  344  ]/1
+Vertex: [-385  346  ]/1
+Vertex: [-920992 820366  ]/2371
+Vertex: [-922978 815624  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -396  ]
+Inequality: [   0    1 -327  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-396  327  ]/1
+Vertex: [-393228 325654  ]/993
+Vertex: [-939859 775317  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -399  ]
+Inequality: [   0   -1  303  ]
+Inequality: [   0    1 -301  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [-399  301  ]/1
+Vertex: [-399  303  ]/1
+Vertex: [-963691 718413  ]/2371
+Vertex: [-965677 713671  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -414  ]
+Inequality: [   0    1 -284  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-414  284  ]/1
+Vertex: [-411102 282976  ]/993
+Vertex: [-982558 673364  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -417  ]
+Inequality: [   0   -1  260  ]
+Inequality: [   0    1 -258  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [-417  258  ]/1
+Vertex: [-417  260  ]/1
+Vertex: [-1006390 616460  ]/2371
+Vertex: [-1008376 611718  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -427  ]
+Inequality: [   0    1 -251  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-427  251  ]/1
+Vertex: [-141337 84051  ]/331
+Vertex: [-1015327 595121  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -431  ]
+Inequality: [   0    1 -241  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-431  241  ]/1
+Vertex: [-427983 242669  ]/993
+Vertex: [-1025257 571411  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -435  ]
+Inequality: [   0   -1  229  ]
+Inequality: [2371 -993 1264570  ]
+Inequality: [5911 10923 157721  ]
+Rays 4 4
+Vertex: [-435  229  ]/1
+Vertex: [-1037173 542959  ]/2371
+Vertex: [-13969515063 7100916779  ]/31768056
+Vertex: [-4751505 2413564  ]/10923
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -435  ]
+Inequality: [   0    1 -234  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-435  234  ]/1
+Vertex: [-431955 233185  ]/993
+Vertex: [-1032208 554814  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -417  ]
+Inequality: [   0   -1  272  ]
+Inequality: [   0    1 -265  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [-417  265  ]/1
+Vertex: [-417  272  ]/1
+Vertex: [-994474 644912  ]/2371
+Vertex: [-1001425 628315  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -417  ]
+Inequality: [   0    1 -277  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-417  277  ]/1
+Vertex: [-414081 275863  ]/993
+Vertex: [-989509 656767  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -409  ]
+Inequality: [   0    1 -294  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-409  294  ]/1
+Vertex: [-135379 98277  ]/331
+Vertex: [-972628 697074  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [  -1    0 -399  ]
+Inequality: [   0   -1  315  ]
+Inequality: [   0    1 -308  ]
+Inequality: [2371 -993 1264570  ]
+Rays 4 4
+Vertex: [-399  308  ]/1
+Vertex: [-399  315  ]/1
+Vertex: [-951775 746865  ]/2371
+Vertex: [-958726 730268  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -399  ]
+Inequality: [   0    1 -320  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-399  320  ]/1
+Vertex: [-396207 318541  ]/993
+Vertex: [-946810 758720  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -391  ]
+Inequality: [   0    1 -337  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-391  337  ]/1
+Vertex: [-129421 112503  ]/331
+Vertex: [-929929 799027  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -385  ]
+Inequality: [   0    1 -351  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-385  351  ]/1
+Vertex: [-127435 117245  ]/331
+Vertex: [-916027 832221  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -374  ]
+Inequality: [   0    1 -380  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-374  380  ]/1
+Vertex: [-371382 377816  ]/993
+Vertex: [-887230 900980  ]/2371
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  -1    0 -367  ]
+Inequality: [   0    1 -394  ]
+Inequality: [2371 -993 1264570  ]
+Rays 3 4
+Vertex: [-367  394  ]/1
+Vertex: [-121477 131471  ]/331
+Vertex: [-873328 934174  ]/2371
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  291 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  411  ]
+Inequality: [  -1 -409  ]
+Rays 2 3
+Vertex: [-409  ]/1
+Vertex: [-411  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   0 -308 
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1 -153  ]
+Inequality: [  -1  501  ]
+Rays 2 3
+Vertex: [ 501  ]/1
+Vertex: [ 153  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  334 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  393  ]
+Inequality: [  -1 -391  ]
+Rays 2 3
+Vertex: [-391  ]/1
+Vertex: [-393  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   0 -263 
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1 -128  ]
+Inequality: [  -1  504  ]
+Rays 2 3
+Vertex: [ 504  ]/1
+Vertex: [ 128  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  377 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  375  ]
+Inequality: [  -1 -374  ]
+Rays 2 3
+Vertex: [-374  ]/1
+Vertex: [-375  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   0 -218 
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1 -106  ]
+Inequality: [  -1  507  ]
+Rays 2 3
+Vertex: [ 507  ]/1
+Vertex: [ 106  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  499 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  324  ]
+Inequality: [  -1  -74  ]
+Rays 2 3
+Vertex: [ -74  ]/1
+Vertex: [-324  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   0 -173 
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  -83  ]
+Inequality: [  -1  510  ]
+Rays 2 3
+Vertex: [ 510  ]/1
+Vertex: [  83  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  327 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  395  ]
+Inequality: [  -1  -46  ]
+Rays 2 3
+Vertex: [ -46  ]/1
+Vertex: [-395  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   0 -128 
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  -61  ]
+Inequality: [  -1  513  ]
+Rays 2 3
+Vertex: [ 513  ]/1
+Vertex: [  61  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  308 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  403  ]
+Inequality: [  -1  -43  ]
+Rays 2 3
+Vertex: [ -43  ]/1
+Vertex: [-403  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   0  -83 
+   1    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  -38  ]
+Inequality: [  -1  516  ]
+Rays 2 3
+Vertex: [ 516  ]/1
+Vertex: [  38  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  270 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  419  ]
+Inequality: [  -1  -37  ]
+Rays 2 3
+Vertex: [ -37  ]/1
+Vertex: [-419  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  498 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  324  ]
+Inequality: [  -1  -73  ]
+Rays 2 3
+Vertex: [ -73  ]/1
+Vertex: [-324  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0   23 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1   53  ]
+Inequality: [  -1    2  ]
+Rays 2 3
+Vertex: [   2  ]/1
+Vertex: [ -53  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  463 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  339  ]
+Inequality: [  -1 -338  ]
+Rays 2 3
+Vertex: [-338  ]/1
+Vertex: [-339  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0   42 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1   91  ]
+Inequality: [  -1   -1  ]
+Rays 2 3
+Vertex: [  -1  ]/1
+Vertex: [ -91  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  420 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  357  ]
+Inequality: [  -1 -356  ]
+Rays 2 3
+Vertex: [-356  ]/1
+Vertex: [-357  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0   56 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  119  ]
+Inequality: [  -1   -3  ]
+Rays 2 3
+Vertex: [  -3  ]/1
+Vertex: [-119  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  460 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  340  ]
+Inequality: [  -1  -67  ]
+Rays 2 3
+Vertex: [ -67  ]/1
+Vertex: [-340  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0   80 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  167  ]
+Inequality: [  -1   -7  ]
+Rays 2 3
+Vertex: [  -7  ]/1
+Vertex: [-167  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  436 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  350  ]
+Inequality: [  -1  -63  ]
+Rays 2 3
+Vertex: [ -63  ]/1
+Vertex: [-350  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  118 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  243  ]
+Inequality: [  -1  -13  ]
+Rays 2 3
+Vertex: [ -13  ]/1
+Vertex: [-243  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  422 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  356  ]
+Inequality: [  -1  -61  ]
+Rays 2 3
+Vertex: [ -61  ]/1
+Vertex: [-356  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  137 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  279  ]
+Inequality: [  -1  -16  ]
+Rays 2 3
+Vertex: [ -16  ]/1
+Vertex: [-279  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  403 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  364  ]
+Inequality: [  -1  -58  ]
+Rays 2 3
+Vertex: [ -58  ]/1
+Vertex: [-364  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  151 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  305  ]
+Inequality: [  -1  -18  ]
+Rays 2 3
+Vertex: [ -18  ]/1
+Vertex: [-305  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  365 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  380  ]
+Inequality: [  -1  -52  ]
+Rays 2 3
+Vertex: [ -52  ]/1
+Vertex: [-380  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  175 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  350  ]
+Inequality: [  -1  -22  ]
+Rays 2 3
+Vertex: [ -22  ]/1
+Vertex: [-350  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  341 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  390  ]
+Inequality: [  -1  -48  ]
+Rays 2 3
+Vertex: [ -48  ]/1
+Vertex: [-390  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  213 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  420  ]
+Inequality: [  -1  -28  ]
+Rays 2 3
+Vertex: [ -28  ]/1
+Vertex: [-420  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  246 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  429  ]
+Inequality: [  -1  -33  ]
+Rays 2 3
+Vertex: [ -33  ]/1
+Vertex: [-429  ]/1
+
+UNION LBL: Dimension 2
+
+LATTICE:
+3 2
+   1    0 
+   0  232 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [   1  435  ]
+Inequality: [  -1  -31  ]
+Rays 2 3
+Vertex: [ -31  ]/1
+Vertex: [-435  ]/1

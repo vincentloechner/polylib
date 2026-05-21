@@ -1,0 +1,30 @@
+# Difference of these two linear lattices
+M 2
+
+4 4
+   1    0    0    0
+   0    1    0    0
+   0    0    1    0
+   0    0    0    1
+
+4 4
+   3    0    0    1
+   0    1    0    0
+   0    0    1    0
+   0    0    0    1
+
+D 0
+
+F 5
+
+
+# Inter = 4 4
+   3    0    0    1
+   0    1    0    0
+   0    0    1    0
+   0    0    0    1
+
+# result should be
+  3 0 0 0/2
+/
+  empty

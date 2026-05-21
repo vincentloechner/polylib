@@ -7,10 +7,8 @@
 
 int main( int argc, char **argv)
 {
-  int i;
-  const char **param_name;
+  char **param_name;
   Matrix *C1, *P1;
-  Polyhedron *P, *C;
   Enumeration *e, *en;
 
   Matrix * Validity_Lattice;
@@ -61,14 +59,14 @@ int main( int argc, char **argv)
       fflush(stdin);
       printf("Enter %d parameters : ",nb_parms);
       for(k=0;k<nb_parms;++k) {
-	scanf("%s",str);
-	value_read(p[k],str);
+        scanf("%s",str);
+        value_read(p[k],str);
       }
       fprintf(stdout,"EP( ");
       value_print(stdout,VALUE_FMT,p[0]);
       for(k=1;k<nb_parms;++k) {
-	fprintf(stdout,",");
-	value_print(stdout,VALUE_FMT,p[k]);
+        fprintf(stdout,",");
+        value_print(stdout,VALUE_FMT,p[k]);
       }
       fprintf(stdout," ) = ");
       value_print(stdout,VALUE_FMT,*(tmp=compute_poly(en,p)));

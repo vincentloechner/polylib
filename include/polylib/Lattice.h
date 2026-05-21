@@ -5,30 +5,24 @@
 extern "C" {
 #endif
 
-extern void AffineHermite(Lattice *A, Lattice **H, Matrix **U);
-extern void AffineSmith(Lattice *A, Lattice **U, Lattice **V, Lattice **Diag);
-extern Lattice *ChangeLatticeDimension(Lattice *A, int dimension);
-extern Lattice *EmptyLattice(int dimension);
-extern Lattice *ExtractLinearPart(Lattice *A);
-extern int FindHermiteBasisofDomain(Polyhedron *A, Matrix **B);
-extern Lattice *Homogenise(Lattice *A, Bool Forward);
-extern int intcompare(const void *a, const void *b);
-extern Bool isEmptyLattice(Lattice *A);
-extern Bool isfulldim(Matrix *m);
-extern Bool IsLattice(Matrix *m);
-extern Bool isLinear(Lattice *A);
-extern LatticeUnion *LatticeDifference(Lattice *A, Lattice *B);
-extern Lattice *LatticeImage(Lattice *A, Matrix *M);
-extern Bool LatticeIncludes(Lattice *A, Lattice *B);
-extern Lattice *LatticeIntersection(Lattice *X, Lattice *Y);
-extern Lattice *LatticePreimage(Lattice *L, Matrix *G);
-extern LatticeUnion *LatticeSimplify(LatticeUnion *latlist);
+extern void AffineHermite(Matrix *A, Matrix **H, Matrix **U);
+extern Bool isEmptyLattice(Matrix *A);
 extern LatticeUnion *LatticeUnion_Alloc(void);
 extern void LatticeUnion_Free(LatticeUnion *Head);
+extern LatticeUnion *LatticeDifference(Matrix *A, Matrix *B);
+extern Bool LatticeIncluded(Matrix *A, Matrix *B);    // True if A \in B
+extern Matrix *LatticeIntersection(Matrix *X, Matrix *Y);
 extern void PrintLatticeUnion(FILE *fp, char *format, LatticeUnion *Head);
-extern Bool sameAffinepart(Lattice *A, Lattice *B);
-extern Bool sameLattice(Lattice *A, Lattice *B);
-extern LatticeUnion *Lattice2LatticeUnion(Lattice *X, Lattice *Y);
+extern int LatCountZeroCols(Matrix* M);
+extern Bool isEqualLattice(Matrix *A, Matrix *B);     // exact equality
+extern Bool isSameLatticeSpace(Matrix *A, Matrix *B); // spread the same points
+extern void Matrix_Move_Homogeneous_Dim_First(Matrix *A);
+extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
+extern Bool isNormalLattice(Matrix *A);
+
+// removed:
+// extern void AffineSmith(Matrix *A, Matrix **U, Matrix **V, Matrix **Diag);
+// extern LatticeUnion *LatticeSimplify(LatticeUnion *latlist);
 
 #if defined(__cplusplus)
 }

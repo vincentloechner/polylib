@@ -1,0 +1,28 @@
+# Difference of Zpol, lattices of different dimensions (columns)
+M 2
+
+3 3
+    2 0 0 
+    0 1 0
+    0 0 1
+
+3 3
+    3 0 0 
+    0 1 0
+    0 0 1
+
+
+D 2
+4 4
+    1 1 0 -1
+    1 0 1 -1
+    1 -1 0 10
+    1 0 -1 10
+3 4
+    1 1 0 -1
+    1 -1 0 20
+    0 0 -1 5 # j = 5! equality, reduced.
+
+# ZP diff
+F 9
+

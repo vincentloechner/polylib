@@ -7,10 +7,8 @@
 
 int main( int argc, char **argv)
 {
-  int i;
-  const char **param_name;
+  char **param_name;
   Matrix *C1, *P1;
-  Polyhedron *P, *C;
   Enumeration *e, *en;
 
   Matrix * Validity_Lattice;

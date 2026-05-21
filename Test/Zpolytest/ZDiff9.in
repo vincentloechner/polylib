@@ -1,0 +1,33 @@
+# Difference of the two Zpolyhedra of Iooss2010 (p. 4)
+M 2
+
+4 3
+  1 0 0
+  0 1 0
+  0 0 0
+  0 0 1
+
+4 3
+  1 0 0
+  0 0 0
+  0 1 0
+  0 0 1
+
+D 2
+
+3 4
+  1  0  1  0  # y >= 0
+  1  1 -4  0  # x >= 4y
+  1 -1 -4  4  # 4 − x ≥ 4y
+
+3 4
+  1  0  1  0  # y >= 0
+  1  1 -4  0  # x >= 4y
+  1 -1 -4  4  # 4 − x ≥ 4y
+
+# ZP diff
+F 9
+
+# result should be empty.
+# Note: there is a hidden equality in the coordinate polyhedron
+# (4y <= x <= 4-4y implies 8y <= 4 implies integer y=0)

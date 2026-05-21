@@ -1,0 +1,38 @@
+# Intersection of these two linear lattices
+M 2
+
+
+4 3
+  1 0 0
+  0 2 1
+  0 5 0
+  0 0 1
+
+4 3
+  1 0 0
+  0 6 31
+  0 10 75
+  0 0 1
+
+D 0
+F 3
+
+# should be:
+# 1   0
+# 0  31
+# 0  75
+# 0   1
+(smaller dimension since those lattices intersect in one dimension only)
+
+H:
+8 6
+   1    0    0    0       0    0 
+   0    1    0    0       0    0 
+   1    0    2    0       0    0 
+   0    0    0    5       0    0 
+   
+   0    0    0    0       1    0 
+   0    0    0    0       0    1 
+ -30    0   -4    6      31    0 
+ -75    0  -10   15      75    0    <- ok!
+

@@ -1,0 +1,38 @@
+M 2
+
+# L1
+3 3
+  1 0 0
+  0 2 1
+  0 0 1
+
+# L2
+3 3
+  2 0 0
+  0 24 3
+  0 0 1
+
+D 0
+
+# Lattice difference
+F 5
+
+###
+# intersection =
+3 3
+   2    0    0
+   0   24    3
+   0    0    1
+
+#
+First row alternatives:
+   2    0    0 (-)
+   2    0    1 
+Second row alternatives- divisors: (2, 2, 3) times pivot of L1 (2) to get pivots -> (4, 8, 6)
+   0    4    1
+   0    4    3 (-)
+   0    8    3 (-)
+   0    8    7
+   0    6    1
+   0    6    3 (-)
+   0    6    5

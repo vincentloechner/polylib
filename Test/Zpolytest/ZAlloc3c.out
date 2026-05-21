@@ -1,0 +1,14 @@
+LBL: Dimension 1 
+
+LATTICE: 
+2 2
+   2    0 
+   0    1 
+POLYHEDRON Dimension:1
+           Constraints:2  Equations:0  Rays:2  Lines:0
+Constraints 2 3
+Inequality: [  -1    5  ]
+Inequality: [   1    0  ]
+Rays 2 3
+Vertex: [   0  ]/1
+Vertex: [   5  ]/1

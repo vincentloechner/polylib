@@ -19,10 +19,10 @@ int main() {
 	  ((sscanf(s, "D %d", &nbPol)<1) && (sscanf(s, "M %d", &nbMat)<1)) )
     fgets(s, 128, stdin);
 
-  for (i=0, A=last=(Polyhedron *)0; i<nbPol; i++) {
+  for (i=0, A=last=NULL; i<nbPol; i++) {
     a = Matrix_Read();
     tmp = Constraints2Polyhedron(a,WS);
-    Matrix_Free(a);
+    Matrix_Free(a); a = NULL;
     if (!last) A = last = tmp;
     else {
       last->next = tmp;
@@ -42,16 +42,17 @@ int main() {
     for (i=0, B=last=(Polyhedron *)0; i<nbPol; i++) {
       b = Matrix_Read();
       tmp = Constraints2Polyhedron(b,WS);
-      Matrix_Free(b);
+      Matrix_Free(b); b = NULL;
       if (!last) B = last = tmp;
       else {
-	last->next = tmp;
-	last = tmp;
+        last->next = tmp;
+        last = tmp;
       }
     }
     
-    if (nbMat)
-      {  b = Matrix_Read(); }
+    if (nbMat) {
+      b = Matrix_Read();
+    }
     
     fgets(s, 128, stdin);
     while ((*s=='#') || (sscanf(s, "F %d", &func)<1))
@@ -67,6 +68,7 @@ int main() {
       Domain_Free(C);
       Domain_Free(D);
       break;
+
     case 2:
       D = DomainSimplify(A, B, WS);
       d = Polyhedron2Constraints(D);
@@ -74,18 +76,23 @@ int main() {
       Matrix_Free(d);
       Domain_Free(D);
       break;
+
     case 3:
+      Matrix_Free(a);
       a = Polyhedron2Constraints(A);
       Matrix_Print(stdout,P_VALUE_FMT,a);
+      Matrix_Free(b);
       b = Polyhedron2Constraints(B);
       Matrix_Print(stdout,P_VALUE_FMT,b);
       break;
+
     case 4:
+      Matrix_Free(a);
       a = Polyhedron2Rays(A);
       Matrix_Print(stdout,P_VALUE_FMT,a);
       break;
+
     case 5:
-      
       /* a = ec , da = c , ed = 1 */
       right_hermite(a,&c,&d,&e);
       Matrix_Print(stdout,P_VALUE_FMT,c);
@@ -102,9 +109,14 @@ int main() {
       f = Matrix_Alloc(e->NbRows, d->NbColumns);
       Matrix_Product(e,d,f);
       Matrix_Print(stdout,P_VALUE_FMT,f);
+      Matrix_Free(f);
+
+      Matrix_Free(c);
+      Matrix_Free(d);
+      Matrix_Free(e);
       break;
+
     case 6:
-      
       /* a = ce , ad = c , de = 1 */
       left_hermite(a,&c,&d,&e);
       Matrix_Print(stdout,P_VALUE_FMT,c);
@@ -121,22 +133,27 @@ int main() {
       f = Matrix_Alloc(d->NbRows, e->NbColumns);
       Matrix_Product(d,e,f);
       Matrix_Print(stdout,P_VALUE_FMT,f);
+      Matrix_Free(f);
+
+      Matrix_Free(c);
+      Matrix_Free(d);
+      Matrix_Free(e);
       break;
+
     case 7:	          
-     
       /* Polyhedron_Print(stdout,"%5d", A); */
       /* Matrix_Print(stdout,"%4d", b);     */
       
       C = Polyhedron_Image(A, b, WS);
       Polyhedron_Print(stdout,P_VALUE_FMT,C);
       break;
+
     case 8:
-      
       printf("%s\n",
 	     Polyhedron_Not_Empty(A,B,WS) ? "Not Empty" : "Empty");
       break;
+
     case 9:
-      
       i = PolyhedronLTQ(A,B,1,0,WS);
       printf("%s\n",
 	     i==-1 ? "A<B" : i==1 ? "A>B" : i==0 ? "A><B" : "error");
@@ -153,9 +170,15 @@ int main() {
       printf("? unknown function\n");
     }
     
+    // free memory:
+    if(a)
+      Matrix_Free(a);
+    if(b)
+      Matrix_Free(b);
     Domain_Free(A);
     Domain_Free(B);
-    
+    polylib_close();
+
     return 0;
 }
 

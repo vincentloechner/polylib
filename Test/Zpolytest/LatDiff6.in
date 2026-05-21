@@ -1,0 +1,18 @@
+# diff of these two linear lattices of different dimensions
+# this should fail since the difference can be a non-finite union in general:
+# for example here, take all even i's and remove i=4 from it,
+# you get the infinite union of all i's = -oo .. -4 -2 0 2  *  6 8 10 12 .. +oo
+M 2
+
+2 2
+  2 0
+  0 1
+
+2 1
+  4
+  1
+
+D 0
+# lattice difference
+F 5
+

@@ -1,0 +1,41 @@
+# Difference of these two linear lattices
+M 2
+
+# A =
+3 3
+   1    0    0
+   0    3    1
+   0    0    1
+
+# B =
+3 3
+   3    0    1
+   1    6    1
+   0    0    1
+
+D 0
+
+F 5
+
+# intersection: I =
+3 3
+   9    0    1
+   3    6    1
+   0    0    1
+
+
+B - intersection =
+3 0 1  -  9 0 1
+ =   9 0 7   +   9 0 4   +   9 0 1
+(original version)
+     -> 3 6 1   i=9x+7, j=3x+6y+1 --- x=0 -> i=7 -> j=
+     => 3 6 _0_
+                 -> 3 6 1  -> 1 + 3
+                 => 3 6 _2_ ->
+                             -> 3 6 1 
+                                 XXX
+(new version) B-I
+    9 0 7
+    -> 1 6 1   i=3x+1 j=x+6y+1   --- x=2, y=0 => i=7 && j=3
+               i=9x+7 j=x+6y+1+c --- x=0, y=0 => i=7 && j=1+c
+        1 6 3.

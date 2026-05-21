@@ -1,12 +1,11 @@
 #
 # $Id: Makefile.am,v 1.2 2005/10/20 11:35:25 verdoolaege Exp $
+# Modified: Vincent Loechner, 2025
 #
 
-OBJ_DIR = $(top_builddir)
-
-PP =  \
+TEST_EXE = $(top_builddir)/pp
+TEST_FILES =  \
 	c6.in \
-	c7.in \
 	salvatore.in \
 	salvatore_new1.in \
 	salvatore_new2.in \
@@ -15,31 +14,14 @@ PP =  \
 	ray2.in \
 	ray3.in
 
+# this one is pretty long...
+#	c7.in \
+#
+
+# check those
 #	c5.in \
 #	c4.in \
 #	c9.in
 #	c10.in
 
-EXTRA_DIST = $(PP) \
-	$(PP:%.in=%.out) 
-
-tests:
-	@failedtest=0; \
-	for x in $(PP) ; do \
-		echo "Verify file $$x"; \
-		$(OBJ_DIR)/pp$(TEST_BITS) < $(srcdir)/$$x > xyz;\
-		diff -w xyz $(srcdir)/`basename $$x .in`.out ; \
-		result=$$?; \
-		if [ "$$result" -eq "1" ]; then \
-			echo "Error: $$x is not the same"; \
-			failedtest=`expr $$failedtest + 1`; \
-		else \
-			echo "$$x passed"; \
-	        fi; \
-	done ; \
-        if [ $$failedtest != 0 ]; then \
-		echo "$$failedtest tests failed"; \
-	else \
-	        echo "Test pp works correctly"; \
-        fi
-CLEANFILES=xyz
+include ../Tests.mk
