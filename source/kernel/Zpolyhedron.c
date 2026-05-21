@@ -26,8 +26,6 @@
 #define SIMPLIFY_DEBUG 1
 #define SIMPLIFY2_DEBUG 1
 #endif
-// #define SIMPLIFY2_DEBUG 1
-// #define HOLES_DEBUG 1
 
 static LBL *LBLConcatenate(LBL *A, LBL *B);
 static LBL *sLBLIntersection(LBL *, LBL *);
@@ -2415,6 +2413,8 @@ static void sLBL_Lat_Normalize(LBL *A)
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "New Lat (HNF): ");
       Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+      fprintf(stderr, "U = ");
+      Matrix_Print(stderr, P_VALUE_FMT, U);
     #endif
 
     // Now update of A->P using the preimage by U (is unimodular)
