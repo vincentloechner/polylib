@@ -1,0 +1,6 @@
+21/05/2026:
+  Merge of the LBL branch to master: replaced all old Z-polyhedra manipulation
+  functions into the new LBL functions. Can now manipulate full LBLs
+  efficiently, see the IMPACT paper in the doc/ subdirectory.
+
+older log not available.
