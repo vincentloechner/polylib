@@ -339,7 +339,25 @@ int main() {
     LBLSimplify(ZA);
     printf("Checking that D - C is empty: %d\n", isEmptyLBL(ZA));
     break;
-  
+
+  case 22: /* LBLDifference and LBLIntersection, check equality of the union */
+    ZA = LBLAlloc(a, A);
+    ZB = LBLAlloc(b, B);
+    ZC = LBLIntersection(ZA, ZB);
+    ZD = LBLDifference(ZA, ZB);
+    printf("A inter B = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZC);
+    printf("\n\nA - B = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZD);
+    LBLFree(ZB);
+    ZB = LBLUnion(ZC, ZD);
+    printf("\n\ninter union diff = ");
+    LBLPrint(stdout, P_VALUE_FMT, ZB);
+    // check if ZA == ZB:
+    printf("  A is included in (inter union diff): %d\n", LBLIncluded(ZA, ZB));
+    printf("  (inter union diff) is included in A: %d\n", LBLIncluded(ZB, ZA));
+    break;
+
   case 100: /* just alloc and normalize */
     ZA = LBLAlloc(a,A);
     LBLPrint(stdout, P_VALUE_FMT, ZA);
