@@ -1,0 +1,32 @@
+# Difference of Zpol, lattices of different dimensions (columns)
+M 2
+
+3 3
+    1 0 0 
+    0 1 0
+    0 0 1
+
+3 3
+    2 0 0
+    0 1 0
+    0 0 1
+
+D 2
+4 4
+	1 1 0 -1
+    1 0 1 -1
+    1 -1 0 20
+    1 0 -1 20
+3 4
+    1 1 0 -1
+    1 -1 0 50
+    0 0 -1 10  # here, j=10, so the dimension is reduced !
+
+# ZP inter
+# F 7
+
+# ZP diff
+# F 9
+
+# ZPDiff + ZPInter and check equality to original
+F 22

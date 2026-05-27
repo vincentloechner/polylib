@@ -53,6 +53,7 @@ TEST_FILES_32 =  \
 	ZDiff10.in \
 	ZDiff12.in \
 	ZDiff13.in \
+	ZDiffInter6a.in \
 	ZDomain2b.in \
 	ZDomain3.in \
 	ZDomain4.in \
