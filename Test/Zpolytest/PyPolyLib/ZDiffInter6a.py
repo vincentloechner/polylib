@@ -19,6 +19,7 @@ print("inter = a inter b =", inter)
 # inter should be equal to: {(2i, 10) | 1 <= i <= 10}
 
 # diff = pypolylib.LBLdifference(a, b)
+# or : diff = a - b
 # or:
 diff = a.difference(b)
 print("diff = a - b =", diff)
@@ -31,7 +32,8 @@ print("diff = a - b =", diff)
 
 
 # compute diff + inter (should be equal to original LBL, as a union)
-# u = pypolylib.LBLunion(diff, inter)
+# or : u = pypolylib.LBLunion(diff, inter)
+# or : u = a + b
 # or:
 u = diff.union(inter)
 print("u = diff union inter =", u)
@@ -43,3 +45,4 @@ check2 = a.included(u)
 # or: check1 = pypolylib.LBLincluded(u, a) ...
 
 print("Check inclusion (both ways):", check1, check2)
+
