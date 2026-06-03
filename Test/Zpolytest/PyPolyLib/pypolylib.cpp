@@ -64,6 +64,14 @@ PYBIND11_MODULE(pypolylib, m) {
         return MatrixPtr(Matrix_Alloc(nbrows, nbcols));
     }, py::arg("nbrows"), py::arg("nbcols"));
 
+    m.def("MatrixReadFromString", [](const std::string &s) {
+        FILE *old_stdin = stdin;
+        stdin = fmemopen((void*)s.c_str(), s.size(), "r");
+        Matrix *mat = Matrix_Read();
+        fclose(stdin);
+        stdin = old_stdin;
+        return MatrixPtr(mat);
+    });
 
     // --- Polyhedron ---
     py::class_<Polyhedron, PolyhedronPtr>(m, "Polyhedron")
@@ -100,8 +108,12 @@ PYBIND11_MODULE(pypolylib, m) {
         mpz_set_si(mat->p[i][j], val);   // ← mpz_set_si au lieu de value_assign
     }, py::arg("mat"), py::arg("i"), py::arg("j"), py::arg("val"));
 
+    m.def("MatrixGetValue", [](Matrix *mat, int i, int j) -> long {
+        return mpz_get_si(mat->p[i][j]);
+    }, py::arg("mat"), py::arg("i"), py::arg("j"));
+
     // Affichage d'un LBL
     m.def("LBLPrint", [](LBL *l) {
-        LBLPrint(stdout, "%i", l);        // ← 3 arguments : fp, format, lbl
+        LBLPrint(stdout, "%Zd", l);   // ← format GMP correct
     });
  }
