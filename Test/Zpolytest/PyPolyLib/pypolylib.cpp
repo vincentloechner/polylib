@@ -91,4 +91,17 @@ PYBIND11_MODULE(pypolylib, m) {
     m.def("LBLAlloc", [](Matrix *lat, Polyhedron *domain) {
         return LBLPtr(LBLAlloc(lat, domain));
     }, py::arg("lat"), py::arg("domain"));
-}
+
+
+
+
+    // Setter pour remplir une matrice case par case
+    m.def("MatrixSetValue", [](Matrix *mat, int i, int j, long val) {
+        mpz_set_si(mat->p[i][j], val);   // ← mpz_set_si au lieu de value_assign
+    }, py::arg("mat"), py::arg("i"), py::arg("j"), py::arg("val"));
+
+    // Affichage d'un LBL
+    m.def("LBLPrint", [](LBL *l) {
+        LBLPrint(stdout, "%i", l);        // ← 3 arguments : fp, format, lbl
+    });
+ }
