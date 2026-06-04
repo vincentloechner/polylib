@@ -1,4 +1,4 @@
-import pypolylib
+import pypolylib_core as pl 
 import re
 
 
@@ -136,7 +136,7 @@ def LBLRead(s):
     lat_values.append(1)
 
     lat_str = _matrix_to_polylib_string(nb_rows_lat, nb_cols_lat, lat_values)
-    lat = pypolylib.MatrixReadFromString(lat_str)
+    lat = pl.MatrixReadFromString(lat_str)
 
     #  Matrice de contraintes 
     constraint_rows = _parse_constraints(rhs_str, variables)
@@ -148,10 +148,10 @@ def LBLRead(s):
         poly_values.extend(row)
 
     cmat_str = _matrix_to_polylib_string(nb_rows_poly, nb_cols_poly, poly_values)
-    cmat = pypolylib.MatrixReadFromString(cmat_str)
+    cmat = pl.MatrixReadFromString(cmat_str)
 
-    poly = pypolylib.Constraints2Polyhedron(cmat, 0)
-    return pypolylib.LBLAlloc(lat, poly)
+    poly = pl.Constraints2Polyhedron(cmat, 0)
+    return pl.LBLAlloc(lat, poly)
 
 
 class LBL:
@@ -166,7 +166,7 @@ class LBL:
         if self._lbl is None:
             print("LBL vide")
             return
-        pypolylib.LBLPrint(self._lbl)
+        pl.LBLPrint(self._lbl)
 
     def __repr__(self):
         if self._lbl is None:
