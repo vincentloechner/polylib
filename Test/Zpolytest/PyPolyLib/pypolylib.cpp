@@ -65,11 +65,16 @@ PYBIND11_MODULE(pypolylib, m) {
     }, py::arg("nbrows"), py::arg("nbcols"));
 
     m.def("MatrixReadFromString", [](const std::string &s) {
-        FILE *old_stdin = stdin;
-        stdin = fmemopen((void*)s.c_str(), s.size(), "r");
-        Matrix *mat = Matrix_Read();
-        fclose(stdin);
-        stdin = old_stdin;
+        FILE *f = tmpfile();
+        fputs(s.c_str(), f);
+        rewind(f);
+        // Lire dimensions
+        unsigned nb_rows, nb_cols;
+        fscanf(f, "%u %u", &nb_rows, &nb_cols);
+        // Allouer et remplir
+        Matrix *mat = Matrix_Alloc(nb_rows, nb_cols);
+        Matrix_Read_InputFile(mat, f);
+        fclose(f);
         return MatrixPtr(mat);
     });
 
@@ -114,6 +119,6 @@ PYBIND11_MODULE(pypolylib, m) {
 
     // Affichage d'un LBL
     m.def("LBLPrint", [](LBL *l) {
-        LBLPrint(stdout, "%Zd", l);   // ← format GMP correct
+        LBLPrint(stdout, " %s", l);
     });
  }
