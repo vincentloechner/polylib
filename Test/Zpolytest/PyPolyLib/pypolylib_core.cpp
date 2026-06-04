@@ -1,5 +1,6 @@
 // Commande de compilation de ce fichier source en un module python :
 // (à partir du répertoire Test/Zpolytest/PyPolyLib/)
+// c++ -Wall -shared -std=c++11 -fPIC pypolylib_core.cpp ../../../.libs/libpolylibgmp.so    $(python3 -m pybind11 --includes) -o pypolylib_core$(python3-config --extension-suffix)      -I../../../include
 // c++ -Wall -shared -std=c++11 -fPIC pypolylib.cpp ../../../.libs/libpolylibgmp.so /
 //     $(python3 -m pybind11 --includes) /
 //     -o pypolylib$(python3-config --extension-suffix) /
