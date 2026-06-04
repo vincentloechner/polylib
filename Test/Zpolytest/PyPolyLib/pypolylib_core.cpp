@@ -54,7 +54,7 @@ struct PolyhedronDeleter {
 using PolyhedronPtr = std::unique_ptr<Polyhedron, PolyhedronDeleter>;
 
 
-PYBIND11_MODULE(pypolylib, m) {
+PYBIND11_MODULE(pypolylib_core, m) {
 
     // --- Matrix ---
     py::class_<Matrix, MatrixPtr>(m, "Matrix")
