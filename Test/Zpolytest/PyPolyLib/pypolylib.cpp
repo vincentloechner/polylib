@@ -99,7 +99,17 @@ PYBIND11_MODULE(pypolylib, m) {
             py::return_value_policy::reference)
         .def_property_readonly("next",
             [](LBL &l) { return l.next; },
-            py::return_value_policy::reference);
+            py::return_value_policy::reference)
+        .def("__repr__", [](LBL *l) {
+            char *buf = nullptr;
+            size_t size = 0;
+            FILE *f = open_memstream(&buf, &size);
+            LBLPrint(f, " %s", l);
+            fclose(f);
+            std::string result(buf, size);
+            free(buf);
+            return result;
+        });
 
     m.def("LBLAlloc", [](Matrix *lat, Polyhedron *domain) {
         return LBLPtr(LBLAlloc(lat, domain));
