@@ -1,26 +1,26 @@
-import pypolylib
-from lbl_read import LBLRead
-pypolylib.LBLRead = LBLRead
+import pypolylib_core as pl
+from pypolylib import LBLRead
+pl.LBLRead = LBLRead
 
 # This is a test python program (inspired from ZDiffInter6a.in)
 
 # Create two LBLs from strings:
-a = pypolylib.LBLRead("{(i, j)  | 1 <= i <= 20, 1 <= j <= 20}")
-b = pypolylib.LBLRead("{(2i, j) | 1 <= i <= 50, j = 10}")
-# or: b = pypolylib.LBLRead("{(2i, 10) | 1 <= i <= 50}")
+a = pl.LBLRead("{(i, j)  | 1 <= i <= 20, 1 <= j <= 20}")
+b = pl.LBLRead("{(2i, j) | 1 <= i <= 50, j = 10}")
+# or: b = pl.LBLRead("{(2i, 10) | 1 <= i <= 50}")
 
 # in a: all integer (i,j) in [1, 20]
 # in b: only even i's up to 100, and j = 10.
 print("a =", a)
 print("b =", b)
 
-# inter = pypolylib.LBLintersection(a, b)
+# inter = pl.LBLintersection(a, b)
 # or:
 inter = a.intersection(b)
 print("inter = a inter b =", inter)
 # inter should be equal to: {(2i, 10) | 1 <= i <= 10}
 
-# diff = pypolylib.LBLdifference(a, b)
+# diff = pl.LBLdifference(a, b)
 # or : diff = a - b
 # or:
 diff = a.difference(b)
@@ -34,7 +34,7 @@ print("diff = a - b =", diff)
 
 
 # compute diff + inter (should be equal to original LBL, as a union)
-# or : u = pypolylib.LBLunion(diff, inter)
+# or : u = pl.LBLunion(diff, inter)
 # or : u = a + b
 # or:
 u = diff.union(inter)
@@ -44,7 +44,7 @@ print("u = diff union inter =", u)
 check1 = u.included(a)
 # check if a is included in u
 check2 = a.included(u)
-# or: check1 = pypolylib.LBLincluded(u, a) ...
+# or: check1 = pl.LBLincluded(u, a) ...
 
 print("Check inclusion (both ways):", check1, check2)
 

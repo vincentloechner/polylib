@@ -1,12 +1,12 @@
-import pypolylib
-from lbl_read import LBLRead
-pypolylib.LBLRead = LBLRead
+import pypolylib_core as pl
+from pypolylib import LBLRead
+pl.LBLRead = LBLRead
 
 
 # This is a test python program (inspired from ZDomain11.in)
 
 # Create an LBL from a string:
-a = pypolylib.LBLRead("{(2i, 0, 52i+66j) | 198k <= -150i+j, 264k >= -200i+j, 9j <= 2i, 5j >= i, i <= 1000}")
+a = pl.LBLRead("{(2i, 0, 52i+66j) | 198k <= -150i+j, 264k >= -200i+j, 9j <= 2i, 5j >= i, i <= 1000}")
 
 print("a =", a)
 # should be something like:
@@ -25,6 +25,6 @@ print("a.zdomain =", b)
 check1 = a.included(b)
 # check if b is included in a
 check2 = b.included(a)
-# or: check1 = pypolylib.LBLincluded(a, b) ...
+# or: check1 = pl.LBLincluded(a, b) ...
 
 print("Check inclusion (both ways):", check1, check2)

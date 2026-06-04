@@ -1,4 +1,4 @@
-import pypolylib
+import pypolylib_core as pl
 from lbl_read import LBLRead, _parse_lhs, _parse_constraints, _matrix_to_polylib_string
 import re
 
@@ -21,7 +21,7 @@ for j in range(n):
     lat_values.append(0)
 lat_values.append(1)
 lat_str = _matrix_to_polylib_string(nb_rows_lat, nb_cols_lat, lat_values)
-lat = pypolylib.MatrixReadFromString(lat_str)
+lat = pl.MatrixReadFromString(lat_str)
 
 constraint_rows = _parse_constraints(rhs_str.strip(), variables)
 nb_rows_poly = len(constraint_rows)
@@ -30,20 +30,20 @@ poly_values = []
 for row in constraint_rows:
     poly_values.extend(row)
 cmat_str = _matrix_to_polylib_string(nb_rows_poly, nb_cols_poly, poly_values)
-cmat = pypolylib.MatrixReadFromString(cmat_str)
+cmat = pl.MatrixReadFromString(cmat_str)
 
 print("cmat_str =")
 print(cmat_str)
 print("cmat lu: nbrows=", cmat.nbrows, "nbcols=", cmat.nbcolumns)
 
-poly = pypolylib.Constraints2Polyhedron(cmat, 0)
+poly = pl.Constraints2Polyhedron(cmat, 0)
 print("poly dimension=", poly.dimension)
 
-a = pypolylib.LBLAlloc(lat, poly)
+a = pl.LBLAlloc(lat, poly)
 print("LBL cree")
 
 lat2 = a.Lat
 print("Lat apres LBLAlloc: nbrows=", lat2.nbrows, "nbcols=", lat2.nbcolumns)
 for i in range(lat2.nbrows):
     for j in range(lat2.nbcolumns):
-        print(f"  [{i}][{j}] =", pypolylib.MatrixGetValue(lat2, i, j))
+        print(f"  [{i}][{j}] =", pl.MatrixGetValue(lat2, i, j))

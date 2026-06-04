@@ -169,4 +169,27 @@ class LBL:
     def __repr__(self):
         if self._lbl is None:
             return "LBL(vide)"
-        return "LBL(non vide)"
+        return repr(self._lbl)
+
+    def intersection(self, other):
+        result = LBL()
+        result._lbl = self._lbl.intersection(other._lbl)
+        return result
+
+    def difference(self, other):
+        result = LBL()
+        result._lbl = self._lbl.difference(other._lbl)
+        return result
+
+    def union(self, other):
+        result = LBL()
+        result._lbl = self._lbl.union(other._lbl)
+        return result
+
+    def included(self, other):
+        return self._lbl.included(other._lbl)
+
+    def zdomain(self):
+        result = LBL()
+        result._lbl = self._lbl.zdomain()
+        return result

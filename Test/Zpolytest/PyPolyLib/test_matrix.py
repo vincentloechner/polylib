@@ -1,5 +1,6 @@
 from lbl_read import _parse_lhs, _parse_constraints, _matrix_to_polylib_string
-import pypolylib, re
+import pypolylib_core as pl
+import re
 
 s = "(i+j) | 0 <= i <= 10, i = 2j"
 lhs_str, rhs_str = s.split('|', 1)
@@ -24,8 +25,8 @@ lat_str = _matrix_to_polylib_string(nb_rows_lat, nb_cols_lat, lat_values)
 print("lat_str =")
 print(lat_str)
 
-lat = pypolylib.MatrixReadFromString(lat_str)
+lat = pl.MatrixReadFromString(lat_str)
 print("lu: nbrows=", lat.nbrows, "nbcols=", lat.nbcolumns)
 for i in range(lat.nbrows):
     for j in range(lat.nbcolumns):
-        print(f"  [{i}][{j}] =", pypolylib.MatrixGetValue(lat, i, j))
+        print(f"  [{i}][{j}] =", pl.MatrixGetValue(lat, i, j))
