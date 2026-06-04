@@ -5,7 +5,7 @@
 //     $(python3 -m pybind11 --includes) /
 //     -o pypolylib$(python3-config --extension-suffix) /
 //     -I../../../include
-//
+// 
 // export LD_LIBRARY_PATH=$HOME/polylib/.libs/
 // python3
 // >>> import pypolylib
