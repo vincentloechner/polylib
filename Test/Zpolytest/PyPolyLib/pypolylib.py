@@ -98,75 +98,73 @@ def _matrix_to_polylib_string(nb_rows, nb_cols, values):
         idx += nb_cols
     return s
 
-
 def LBLRead(s):
-    """
-    Parse une chaîne du type "{(2i, j) | 0 <= i <= 10, i = 2j}"
-    et retourne un objet LBL de pypolylib.
-    """
-    s = s.strip()
-    if not (s.startswith('{') and s.endswith('}')):
-        raise ValueError("La chaîne doit commencer par '{' et finir par '}'")
-    s = s[1:-1]
-
-    if '|' not in s:
-        raise ValueError("Il manque le séparateur '|'")
-    lhs_str, rhs_str = s.split('|', 1)
-    lhs_str = lhs_str.strip()
-    rhs_str = rhs_str.strip()
-
-    all_text = lhs_str + rhs_str
-    variables = sorted(set(re.findall(r'[a-z](?![a-z])', all_text)))
-    n = len(variables)
-
-    #  Matrice lattice 
-    lhs_coeffs = _parse_lhs(lhs_str, variables)
-    nb_out = len(lhs_coeffs)
-    nb_rows_lat = nb_out + 1
-    nb_cols_lat = n + 1
-
-    lat_values = []
-    for coeffs in lhs_coeffs:
-        for v in variables:
-            lat_values.append(coeffs[v])
-        lat_values.append(coeffs['cte'])
-    # ligne homogene
-    for j in range(n):
-        lat_values.append(0)
-    lat_values.append(1)
-
-    lat_str = _matrix_to_polylib_string(nb_rows_lat, nb_cols_lat, lat_values)
-    lat = pl.MatrixReadFromString(lat_str)
-
-    #  Matrice de contraintes 
-    constraint_rows = _parse_constraints(rhs_str, variables)
-    nb_rows_poly = len(constraint_rows)
-    nb_cols_poly = n + 2  # type + variables + constante
-
-    poly_values = []
-    for row in constraint_rows:
-        poly_values.extend(row)
-
-    cmat_str = _matrix_to_polylib_string(nb_rows_poly, nb_cols_poly, poly_values)
-    cmat = pl.MatrixReadFromString(cmat_str)
-
-    poly = pl.Constraints2Polyhedron(cmat, 0)
-    return pl.LBLAlloc(lat, poly)
-
+    return LBL(s)
 
 class LBL:
     """Classe Python enveloppant un LBL de PolyLib."""
 
+    def _LBLRead(self, s):
+        """
+        Parse une chaîne du type "{(2i, j) | 0 <= i <= 10, i = 2j}"
+        et retourne un objet LBL de pypolylib.
+        """
+        s = s.strip()
+        if not (s.startswith('{') and s.endswith('}')):
+            raise ValueError("La chaîne doit commencer par '{' et finir par '}'")
+        s = s[1:-1]
+
+        if '|' not in s:
+            raise ValueError("Il manque le séparateur '|'")
+        lhs_str, rhs_str = s.split('|', 1)
+        lhs_str = lhs_str.strip()
+        rhs_str = rhs_str.strip()
+
+        all_text = lhs_str + rhs_str
+        variables = sorted(set(re.findall(r'[a-z](?![a-z])', all_text)))
+        n = len(variables)
+
+        #  Matrice lattice 
+        lhs_coeffs = _parse_lhs(lhs_str, variables)
+        nb_out = len(lhs_coeffs)
+        nb_rows_lat = nb_out + 1
+        nb_cols_lat = n + 1
+
+        lat_values = []
+        for coeffs in lhs_coeffs:
+            for v in variables:
+                lat_values.append(coeffs[v])
+            lat_values.append(coeffs['cte'])
+        # ligne homogene
+        for j in range(n):
+            lat_values.append(0)
+        lat_values.append(1)
+
+        lat_str = _matrix_to_polylib_string(nb_rows_lat, nb_cols_lat, lat_values)
+        lat = pl.MatrixReadFromString(lat_str)
+
+        #  Matrice de contraintes 
+        constraint_rows = _parse_constraints(rhs_str, variables)
+        nb_rows_poly = len(constraint_rows)
+        nb_cols_poly = n + 2  # type + variables + constante
+
+        poly_values = []
+        for row in constraint_rows:
+            poly_values.extend(row)
+
+        cmat_str = _matrix_to_polylib_string(nb_rows_poly, nb_cols_poly, poly_values)
+        cmat = pl.MatrixReadFromString(cmat_str)
+
+        poly = pl.Constraints2Polyhedron(cmat, 0)
+        return pl.LBLAlloc(lat, poly)
+
     def __init__(self, s=None):
         self._lbl = None
         if s is not None:
-            self._lbl = LBLRead(s)
+            self._lbl = self._LBLRead(s)
 
     def Print(self):
-        if self._lbl is None:
-            print("LBL vide")
-            return
-        pl.LBLPrint(self._lbl)
+        print(self.__repr__())
 
     def __repr__(self):
         if self._lbl is None:
