@@ -1,4 +1,6 @@
 import pypolylib
+from lbl_read import LBLRead
+pypolylib.LBLRead = LBLRead
 
 # This is a test python program (inspired from ZDiffInter6a.in)
 

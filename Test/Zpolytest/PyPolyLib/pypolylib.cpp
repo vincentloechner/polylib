@@ -109,7 +109,23 @@ PYBIND11_MODULE(pypolylib, m) {
             std::string result(buf, size);
             free(buf);
             return result;
+        })
+        .def("intersection", [](LBL *a, LBL *b) {
+            return LBLPtr(LBLIntersection(a, b));
+        })
+        .def("difference", [](LBL *a, LBL *b) {
+            return LBLPtr(LBLDifference(a, b));
+        })
+        .def("union", [](LBL *a, LBL *b) {
+            return LBLPtr(LBLUnion(a, b));  
+        })
+        .def("included", [](LBL *a, LBL *b) {
+            return (bool)LBLIncluded(a, b);
+        })
+        .def("zdomain", [](LBL *a) {
+            return LBLPtr(LBL2ZDomain(a));
         });
+
 
     m.def("LBLAlloc", [](Matrix *lat, Polyhedron *domain) {
         return LBLPtr(LBLAlloc(lat, domain));
