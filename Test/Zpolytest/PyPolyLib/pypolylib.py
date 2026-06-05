@@ -231,3 +231,60 @@ class LBL:
         result = LBL()
         result._lbl = self._lbl.zdomain()
         return result
+
+    def image(self, transfo):
+        result = LBL()
+        result._lbl = pl.LBLImage(self._lbl, transfo._mat)
+        return result
+
+
+class Transfo:
+    """
+    Représente une transformation linéaire affine.
+    Ex: (i,j -> 3i+1, 2i+5j)
+    """
+
+    def __init__(self, s=None):
+        self._mat = None
+        if s is not None:
+            self._mat = self._parse(s)
+
+    def _parse(self, s):
+        s = s.strip()
+        if s.startswith('(') and s.endswith(')'):
+            s = s[1:-1]
+        if '->' not in s:
+            raise ValueError("Il manque '->' dans la transformation")
+
+        lhs_str, rhs_str = s.split('->', 1)
+
+        # Variables d'entrée : i, j, k, ...
+        variables = [v.strip() for v in lhs_str.split(',')]
+        n = len(variables)
+
+        # Expressions de sortie
+        out_exprs = [e.strip() for e in rhs_str.split(',')]
+        nb_out = len(out_exprs)
+
+        # Matrice (nb_out+1) x (n+1)
+        nb_rows = nb_out + 1
+        nb_cols = n + 1
+
+        values = []
+        for expr in out_exprs:
+            coeffs = _parse_linear(expr, variables)
+            for v in variables:
+                values.append(coeffs[v])
+            values.append(coeffs['cte'])
+        # ligne homogène
+        for j in range(n):
+            values.append(0)
+        values.append(1)
+
+        mat_str = _matrix_to_polylib_string(nb_rows, nb_cols, values)
+        return pl.MatrixReadFromString(mat_str)
+
+    def __repr__(self):
+        if self._mat is None:
+            return "Transfo(vide)"
+        return f"Transfo({self._mat.nbrows-1} sorties, {self._mat.nbcolumns-1} variables)"

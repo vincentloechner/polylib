@@ -140,7 +140,9 @@ PYBIND11_MODULE(pypolylib_core, m) {
         return LBLPtr(LBLAlloc(lat, domain));
     }, py::arg("lat"), py::arg("domain"));
 
-
+    m.def("LBLImage", [](LBL *a, Matrix *func) {
+        return LBLPtr(LBLImage(a, func));
+    }, py::arg("lbl"), py::arg("func"));
 
 
     // Setter pour remplir une matrice case par case
