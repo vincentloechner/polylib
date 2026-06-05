@@ -144,6 +144,10 @@ PYBIND11_MODULE(pypolylib_core, m) {
         return LBLPtr(LBLImage(a, func));
     }, py::arg("lbl"), py::arg("func"));
 
+    m.def("LBLPreimage", [](LBL *a, Matrix *func) {
+        return LBLPtr(LBLPreimage(a, func));
+    }, py::arg("lbl"), py::arg("func"));
+
 
     // Setter pour remplir une matrice case par case
     m.def("MatrixSetValue", [](Matrix *mat, int i, int j, long val) {

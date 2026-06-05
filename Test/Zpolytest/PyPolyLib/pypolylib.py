@@ -238,6 +238,12 @@ class LBL:
         return result
 
 
+    def preimage(self, transfo):
+        result = LBL()
+        result._lbl = pl.LBLPreimage(self._lbl, transfo._mat)
+        return result
+
+
 class Transfo:
     """
     Représente une transformation linéaire affine.
