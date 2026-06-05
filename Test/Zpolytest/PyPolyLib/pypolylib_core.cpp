@@ -83,7 +83,15 @@ PYBIND11_MODULE(pypolylib_core, m) {
     py::class_<Polyhedron, PolyhedronPtr>(m, "Polyhedron")
         .def_readonly("dimension",      &Polyhedron::Dimension)
         .def_readonly("nbconstraints",  &Polyhedron::NbConstraints)
-        .def_readonly("nbrays",         &Polyhedron::NbRays);
+        .def_readonly("nbrays",         &Polyhedron::NbRays)
+        .def_property_readonly("constraints", [](Polyhedron &p) {
+            // Construire une Matrix depuis les contraintes du polyèdre
+            Matrix *mat = Matrix_Alloc(p.NbConstraints, p.Dimension + 2);
+            for (unsigned i = 0; i < p.NbConstraints; i++)
+                for (unsigned j = 0; j < p.Dimension + 2; j++)
+                    mpz_set(mat->p[i][j], p.Constraint[i][j]);
+            return MatrixPtr(mat);
+        });
 
     m.def("Constraints2Polyhedron", [](Matrix *m, unsigned flags) {
         return PolyhedronPtr(Constraints2Polyhedron(m, flags));

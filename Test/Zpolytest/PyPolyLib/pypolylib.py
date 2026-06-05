@@ -1,6 +1,7 @@
 import pypolylib_core as pl 
 import re
 
+from lbl_repr import _lbl_repr
 
 # Utilitaire : parser une expression lineaire
 
@@ -169,7 +170,7 @@ class LBL:
     def __repr__(self):
         if self._lbl is None:
             return "LBL(vide)"
-        return repr(self._lbl)
+        return _lbl_repr(self._lbl)
 
     def intersection(self, other):
         result = LBL()
