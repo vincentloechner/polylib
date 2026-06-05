@@ -85,6 +85,43 @@ def _parse_constraints(rhs_str, variables):
             rhs = _parse_linear(parts[1].strip(), variables)
             row = [1] + [lhs[v] - rhs[v] for v in variables] + [lhs['cte'] - rhs['cte']]
             rows.append(row)
+        elif c.count('<') == 2 and '<=' not in c:
+            parts = re.split(r'<', c)
+            lhs0 = _parse_linear(parts[0].strip(), variables)
+            mid  = _parse_linear(parts[1].strip(), variables)
+            rhs0 = _parse_linear(parts[2].strip(), variables)
+            # lhs0 < mid < rhs0
+            # mid - lhs0 >= 1  et  rhs0 - mid >= 1
+            row1 = [1] + [mid[v] - lhs0[v] for v in variables] + [mid['cte'] - lhs0['cte'] - 1]
+            row2 = [1] + [rhs0[v] - mid[v] for v in variables] + [rhs0['cte'] - mid['cte'] - 1]
+            rows.append(row1)
+            rows.append(row2)
+
+        elif c.count('>') == 2 and '>=' not in c:
+            parts = re.split(r'>', c)
+            lhs0 = _parse_linear(parts[0].strip(), variables)
+            mid  = _parse_linear(parts[1].strip(), variables)
+            rhs0 = _parse_linear(parts[2].strip(), variables)
+            # lhs0 > mid > rhs0
+            row1 = [1] + [lhs0[v] - mid[v] for v in variables] + [lhs0['cte'] - mid['cte'] - 1]
+            row2 = [1] + [mid[v] - rhs0[v] for v in variables] + [mid['cte'] - rhs0['cte'] - 1]
+            rows.append(row1)
+            rows.append(row2)            
+        elif '<' in c and '<=' not in c:
+            parts = re.split(r'<', c)
+            lhs = _parse_linear(parts[0].strip(), variables)
+            rhs = _parse_linear(parts[1].strip(), variables)
+            # lhs < rhs  ->  rhs - lhs >= 1  ->  rhs - lhs - 1 >= 0
+            row = [1] + [rhs[v] - lhs[v] for v in variables] + [rhs['cte'] - lhs['cte'] - 1]
+            rows.append(row)
+
+        elif '>' in c and '>=' not in c:
+            parts = re.split(r'>', c)
+            lhs = _parse_linear(parts[0].strip(), variables)
+            rhs = _parse_linear(parts[1].strip(), variables)
+            # lhs > rhs  ->  lhs - rhs >= 1  ->  lhs - rhs - 1 >= 0
+            row = [1] + [lhs[v] - rhs[v] for v in variables] + [lhs['cte'] - rhs['cte'] - 1]
+            rows.append(row)
         else:
             raise ValueError(f"Contrainte incomprise : '{c}'")
     return rows
