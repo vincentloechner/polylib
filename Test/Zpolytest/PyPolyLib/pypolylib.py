@@ -426,6 +426,11 @@ class LBL:
     def __mul__(self, other):
         """Intersection : a * b  ≡  a.intersection(b)"""
         return self.intersection(other)
+    
+    def plot(self):
+        """Affiche le LBL avec matplotlib (dimension 2 uniquement)."""
+        from lbl_plot import lbl_plot
+        lbl_plot(self)
 
 
 # ──────────────────────────────────────────────────────────────
