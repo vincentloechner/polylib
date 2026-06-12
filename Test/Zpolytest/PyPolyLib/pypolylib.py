@@ -243,6 +243,15 @@ class LBL:
         result._lbl = pl.LBLPreimage(self._lbl, transfo._mat)
         return result
 
+    def __add__(self, other):
+        return self.union(other)
+
+    def __sub__(self, other):
+        return self.difference(other)
+
+    def __mul__(self, other):
+        return self.intersection(other)
+
 
 class Transfo:
     """
