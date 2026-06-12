@@ -302,4 +302,30 @@ class Transfo:
     def __repr__(self):
         if self._mat is None:
             return "Transfo(vide)"
-        return f"Transfo({self._mat.nbrows-1} sorties, {self._mat.nbcolumns-1} variables)"
+        nb_out = self._mat.nbrows - 1
+        nb_vars = self._mat.nbcolumns - 1
+        var_names = [chr(ord('i') + v) for v in range(nb_vars)]
+        
+        # Partie gauche : variables d'entrée
+        lhs = ", ".join(var_names)
+        
+        # Partie droite : expressions de sortie
+        from lbl_repr import _terms_to_str
+        out_exprs = []
+        for r in range(nb_out):
+            terms = []
+            for c in range(nb_vars):
+                coef = pl.MatrixGetValue(self._mat, r, c)
+                if coef == 0:
+                    continue
+                vname = var_names[c]
+                if coef == 1:   terms.append(vname)
+                elif coef == -1: terms.append(f"-{vname}")
+                else:            terms.append(f"{coef}{vname}")
+            cte = pl.MatrixGetValue(self._mat, r, nb_vars)
+            if cte != 0:
+                terms.append(str(cte))
+            out_exprs.append(_terms_to_str(terms) if terms else "0")
+        
+        rhs = ", ".join(out_exprs)
+        return f"({lhs} -> {rhs})"
