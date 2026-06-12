@@ -14,6 +14,15 @@ def _lbl_repr(lbl_core):
 
 
 def _single_lbl_repr(node):
+    """
+    Construit la représentation symbolique d'un seul nœud LBL.
+
+    Args:
+        node: Nœud LBL (pypolylib_core.LBL)
+
+    Returns:
+        str: Représentation symbolique, ex: "{(3i) | i >= 0, i <= 5}"
+    """
     lat = node.Lat
     poly = node.P
 
@@ -122,6 +131,15 @@ def _single_lbl_repr(node):
 
 
 def _terms_to_str(terms):
+    """
+    Convertit une liste de termes en expression linéaire.
+
+    Args:
+        terms (list): Liste de chaînes, ex: ["2i", "-3j", "1"]
+
+    Returns:
+        str: Expression linéaire, ex: "2i-3j+1"
+    """
     if not terms:
         return "0"
     expr = terms[0]
