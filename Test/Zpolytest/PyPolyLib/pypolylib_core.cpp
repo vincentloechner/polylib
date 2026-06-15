@@ -92,6 +92,13 @@ PYBIND11_MODULE(pypolylib_core, m) {
                 for (unsigned j = 0; j < p.Dimension + 2; j++)
                     mpz_set(mat->p[i][j], p.Constraint[i][j]);
             return MatrixPtr(mat);
+        })
+        .def_property_readonly("rays", [](Polyhedron &p) {
+            Matrix *mat = Matrix_Alloc(p.NbRays, p.Dimension + 2);
+            for (unsigned i = 0; i < p.NbRays; i++)
+                for (unsigned j = 0; j < p.Dimension + 2; j++)
+                    mpz_set(mat->p[i][j], p.Ray[i][j]);
+            return MatrixPtr(mat);
         });
 
     m.def("Constraints2Polyhedron", [](Matrix *m, unsigned flags) {

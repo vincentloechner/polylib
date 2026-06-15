@@ -458,9 +458,12 @@ class LBL:
             nb_constraints = poly.nbconstraints
             cmat = poly.constraints
 
-            # Vérifier si le polyèdre est borné : NbBid == 0 et pas de ray infini
-            if poly.nbbid > 0:
-                raise ValueError("Le polyèdre n'est pas borné, énumération impossible")
+            # Vérifier si le polyèdre est borné : dernière colonne de chaque ray = 1 (vertex)
+            rmat = poly.rays
+            for r in range(poly.nbrays):
+                last_col = pl.MatrixGetValue(rmat, r, poly.dimension + 1)
+                if last_col == 0:  # ray infini
+                    raise ValueError("Le polyèdre n'est pas borné, énumération impossible")
 
             # Extraire les contraintes : coeffs * x + cte >= 0
             constraints = []
