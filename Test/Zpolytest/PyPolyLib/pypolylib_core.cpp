@@ -162,4 +162,22 @@ PYBIND11_MODULE(pypolylib_core, m) {
     m.def("LBLPrint", [](LBL *l) {
         LBLPrint(stdout, " %s", l);
     });
+    // Produit de deux matrices
+    m.def("MatrixProduct", [](Matrix *a, Matrix *b) {
+        Matrix *result = Matrix_Alloc(a->NbRows, b->NbColumns);
+        Matrix_Product(a, b, result);
+        return MatrixPtr(result);
+    }, py::arg("a"), py::arg("b"));
+
+    // Inverse d'une matrice
+    m.def("MatrixInverse", [](Matrix *mat) {
+        Matrix *result = Matrix_Alloc(mat->NbRows, mat->NbColumns);
+        int ok = Matrix_Inverse(mat, result);
+        if (!ok) {
+            Matrix_Free(result);
+            throw std::runtime_error("La matrice n'est pas inversible");
+        }
+        return MatrixPtr(result);
+    }, py::arg("mat"));
+
  }

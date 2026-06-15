@@ -540,3 +540,35 @@ class Transfo:
 
         rhs = ", ".join(out_exprs)
         return f"({lhs} -> {rhs})"
+
+    def compose(self, other):
+        """
+        Compose deux transformations : self * other.
+
+        Args:
+            other (Transfo): L'autre transformation
+
+        Returns:
+            Transfo: La composition des deux transformations
+        """
+        result = Transfo()
+        result._mat = pl.MatrixProduct(self._mat, other._mat)
+        return result
+
+    def inverse(self):
+        """
+        Calcule l'inverse de cette transformation.
+
+        Returns:
+            Transfo: La transformation inverse
+
+        Raises:
+            RuntimeError: Si la matrice n'est pas inversible
+        """
+        result = Transfo()
+        result._mat = pl.MatrixInverse(self._mat)
+        return result
+
+    def __mul__(self, other):
+        """Composition : f * g  ≡  f.compose(g)"""
+        return self.compose(other)
