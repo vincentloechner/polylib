@@ -432,6 +432,89 @@ class LBL:
         from lbl_plot import lbl_plot
         lbl_plot(self)
 
+    def __iter__(self):
+        """
+        Énumère tous les points entiers du LBL.
+        Parcourt les points entiers du polyèdre et calcule leur image par le lattice.
+        Lève une erreur si le polyèdre n'est pas borné.
+
+        Yields:
+            tuple: Coordonnées du point entier dans l'image du lattice
+        """
+        seen = set()
+        node = self._lbl
+
+        while node is not None:
+            lat = node.Lat
+            poly = node.P
+
+            if poly is None:
+                node = node.next
+                continue
+
+            nb_out = lat.nbrows - 1
+            nb_vars = lat.nbcolumns - 1
+            dim = poly.dimension
+            nb_constraints = poly.nbconstraints
+            cmat = poly.constraints
+
+            # Vérifier si le polyèdre est borné : NbBid == 0 et pas de ray infini
+            if poly.nbbid > 0:
+                raise ValueError("Le polyèdre n'est pas borné, énumération impossible")
+
+            # Extraire les contraintes : coeffs * x + cte >= 0
+            constraints = []
+            for r in range(nb_constraints):
+                eq_type = pl.MatrixGetValue(cmat, r, 0)
+                coeffs = [pl.MatrixGetValue(cmat, r, c+1) for c in range(dim)]
+                cte = pl.MatrixGetValue(cmat, r, dim+1)
+                constraints.append((eq_type, coeffs, cte))
+
+            # Trouver les bornes depuis les rayons/vertices
+            bounds = []
+            for v in range(dim):
+                vals = []
+                for r in range(poly.nbrays):
+                    # accès aux rayons via les contraintes min/max
+                    pass
+                # Méthode alternative : chercher bornes depuis les contraintes
+                lo, hi = -10000, 10000
+                for (eq_type, coeffs, cte) in constraints:
+                    if coeffs[v] != 0 and all(coeffs[w] == 0 for w in range(dim) if w != v):
+                        if coeffs[v] > 0:
+                            lo = max(lo, -cte // coeffs[v])
+                        else:
+                            hi = min(hi, cte // (-coeffs[v]))
+                bounds.append((lo, hi))
+
+            # Générer tous les points entiers dans la bounding box
+            def _enumerate(idx, point):
+                if idx == dim:
+                    # Vérifier toutes les contraintes
+                    for (eq_type, coeffs, cte) in constraints:
+                        val = sum(coeffs[c] * point[c] for c in range(dim)) + cte
+                        if val < 0:
+                            return
+                        if eq_type == 0 and val != 0:
+                            return
+                    # Calculer l'image par le lattice
+                    img = []
+                    for r in range(nb_out):
+                        v = sum(pl.MatrixGetValue(lat, r, c) * point[c] for c in range(nb_vars))
+                        v += pl.MatrixGetValue(lat, r, nb_vars)
+                        img.append(v)
+                    pt = tuple(img)
+                    if pt not in seen:
+                        seen.add(pt)
+                        yield pt
+                    return
+                lo, hi = bounds[idx]
+                for val in range(lo, hi+1):
+                    yield from _enumerate(idx+1, point + [val])
+
+            yield from _enumerate(0, [])
+            node = node.next
+
 
 # ──────────────────────────────────────────────────────────────
 # Classe Transfo

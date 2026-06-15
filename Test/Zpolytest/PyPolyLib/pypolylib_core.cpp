@@ -84,6 +84,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def_readonly("dimension",      &Polyhedron::Dimension)
         .def_readonly("nbconstraints",  &Polyhedron::NbConstraints)
         .def_readonly("nbrays",         &Polyhedron::NbRays)
+        .def_readonly("nbbid",          &Polyhedron::NbBid)
         .def_property_readonly("constraints", [](Polyhedron &p) {
             // Construire une Matrix depuis les contraintes du polyèdre
             Matrix *mat = Matrix_Alloc(p.NbConstraints, p.Dimension + 2);
@@ -179,5 +180,6 @@ PYBIND11_MODULE(pypolylib_core, m) {
         }
         return MatrixPtr(result);
     }, py::arg("mat"));
+
 
  }
