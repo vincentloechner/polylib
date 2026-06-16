@@ -1,17 +1,15 @@
-import pypolylib_core as pl
 from pypolylib import LBLRead
-pl.LBLRead = LBLRead
 
+# Test inspiré de ZAlloc3d.in (exemple IMPACT paper)
+print("=== ZAlloc3d ===")
 
-# This is a test python program (inspired from ZAlloc3d.in: IMPACT paper example)
-
-# Create an LBL from a string:
-a = pl.LBLRead("{(i+j)  | 0 <= i <= 10, i = 2j}")
-
-# should be (k is arbitrary and projected out, but I added constraint k>=0):
-# a = pl.LBLRead("{(i+j)  | 0 <= i <= 10, i = 2j, k >= 0}")
-
+a = LBLRead("{(i+j) | 0 <= i <= 10, i = 2j}")
 print("a =", a)
+# attendu : {(3i) | 0 <= i <= 5}
 
-# should be something like:
-# {(3i)  | 0 <= i <= 5}
+expected = LBLRead("{(3i) | 0 <= i <= 5}")
+check1 = a.included(expected)
+check2 = expected.included(a)
+print("Check (a == expected):", check1 and check2)
+assert check1 and check2, "ERREUR : résultat inattendu !"
+print("OK")
