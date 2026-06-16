@@ -251,14 +251,37 @@ static Bool LBL_simple_inclusion_check(LBL *A, LBL *B)
     if(! tmpB)
       return(False);  // did not find A->Lat in B
   
+
     // check if A->P is included in tmpB->P
-    // (A->P - tmpB->P) should be empty.
-    ddiff = DomainDifference(A->P, tmpB->P, MAXNOOFRAYS);
-    if(! emptyQ(ddiff)) {
-      Domain_Free(ddiff);
-      return(False);  // not included
+
+    // if tmpB->P is a single polyhedron, a simple inclusion check of all
+    // parts of A->P is enough:
+    if(tmpB->P->next == NULL) {
+      for(Polyhedron *Apart = A->P; Apart; Apart = Apart->next) {
+        // no need to unlink and relink next (next is just ignored)
+        // Polyhedron *next = Apart->next;
+        // // unlink next: the inclusion test only handles single polyhedra
+        // Apart->next = NULL;
+        if(! PolyhedronIncludes(tmpB->P, Apart))
+        {
+          // Apart->next = next;
+          return(False);
+        }
+        // // relink next
+        // Apart->next = next;
+      }
     }
-    Domain_Free(ddiff);
+    else {
+      // if tmpB->P is a domain, need to explicitly compute the difference and
+      // check its emptiness:
+      // (A->P - tmpB->P) should be empty.
+      ddiff = DomainDifference(A->P, tmpB->P, MAXNOOFRAYS);
+      if(! emptyQ(ddiff)) {
+        Domain_Free(ddiff);
+        return(False);  // not included
+      }
+      Domain_Free(ddiff);
+    }
   }
   // every part of A was found in B
   return(True);
@@ -279,8 +302,8 @@ Bool LBLIncluded(LBL *A, LBL *B)
   }
 
   // Could we do better on ZDomains?
-  // the answer is no: the complicated part of the difference is not executed
-  // anyway when the input LBLs are ZDomains.
+  // the answer is no: the complicated part of the difference computation is
+  // not executed anyway when the input LBLs are ZDomains.
 
   diff = LBLDifference(A, B);
 
