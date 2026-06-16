@@ -6,9 +6,35 @@ pour manipuler des ensembles de points entiers (Z-polyèdres) en Python.
 
 Utilisation typique :
     from pypolylib import LBLRead, Transfo
+
+    # Créer un LBL
     a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
+    b = LBLRead("{(2i, j) | 1 <= i <= 50, j = 10}")
+
+    # Opérations ensemblistes
+    inter = a * b          # intersection
+    diff  = a - b          # différence
+    union = a + b          # union
+
+    # Tester l'inclusion
+    print(a.included(b))   # True ou False
+
+    # Image par une transformation
     f = Transfo("(i,j -> 2i+1, i+3j)")
-    print(a.image(f))
+    print(a.image(f))      # image de a par f
+    print(a.preimage(f))   # préimage de a par f
+
+    # Composer et inverser des transformations
+    g = Transfo("(i,j -> i+1, 2j)")
+    h = f * g              # composition
+    fi = f.inverse()       # inverse
+
+    # Énumérer les points entiers
+    for pt in a:
+        print(pt)          # affiche chaque point entier
+
+    # Visualiser (dimension 2 uniquement)
+    a.plot()
 """
 
 import pypolylib_core as pl
