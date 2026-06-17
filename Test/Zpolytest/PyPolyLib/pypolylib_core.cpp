@@ -14,14 +14,14 @@
 
 
 //import pypolylib
-//# Créer une matrice 2x3
+//# Create Matrix 2x3
 //m = pypolylib.MatrixAlloc(2, 3)
 //print(m.nbrows, m.nbcolumns)  # -> 2 3
 
 
 
 
-#include <gmpxx.h>   // DOIT être avant polylibgmp.h
+#include <gmpxx.h>   // MUST come before polylibgmp.h
 #include <pybind11/pybind11.h>
 
 extern "C" {
@@ -30,7 +30,7 @@ extern "C" {
 
 namespace py = pybind11;
 
-// --- Destructeur personnalisé pour LBL ---
+// --- Custom Shredder for LBL ---
 struct LBLDeleter {
     void operator()(LBL* p) const {
         if (p) LBLFree(p);
@@ -38,7 +38,7 @@ struct LBLDeleter {
 };
 using LBLPtr = std::unique_ptr<LBL, LBLDeleter>;
 
-// --- Idem pour Matrix et Polyhedron ---
+// --- The same goes for Matrix and Polyhedron ---
 struct MatrixDeleter {
     void operator()(Matrix* p) const {
         if (p) Matrix_Free(p);
@@ -69,10 +69,10 @@ PYBIND11_MODULE(pypolylib_core, m) {
         FILE *f = tmpfile();
         fputs(s.c_str(), f);
         rewind(f);
-        // Lire dimensions
+        // read dimensions
         unsigned nb_rows, nb_cols;
         fscanf(f, "%u %u", &nb_rows, &nb_cols);
-        // Allouer et remplir
+        // Allocate and Fill
         Matrix *mat = Matrix_Alloc(nb_rows, nb_cols);
         Matrix_Read_InputFile(mat, f);
         fclose(f);
@@ -86,7 +86,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def_readonly("nbrays",         &Polyhedron::NbRays)
         .def_readonly("nbbid",          &Polyhedron::NbBid)
         .def_property_readonly("constraints", [](Polyhedron &p) {
-            // Construire une Matrix depuis les contraintes du polyèdre
+            // Constructing a Matrix from the constraints of the polyhedron
             Matrix *mat = Matrix_Alloc(p.NbConstraints, p.Dimension + 2);
             for (unsigned i = 0; i < p.NbConstraints; i++)
                 for (unsigned j = 0; j < p.Dimension + 2; j++)
@@ -157,33 +157,33 @@ PYBIND11_MODULE(pypolylib_core, m) {
     }, py::arg("lbl"), py::arg("func"));
 
 
-    // Setter pour remplir une matrice case par case
+    // Setter to fill a matrix cell by cell
     m.def("MatrixSetValue", [](Matrix *mat, int i, int j, long val) {
-        mpz_set_si(mat->p[i][j], val);   // ← mpz_set_si au lieu de value_assign
+        mpz_set_si(mat->p[i][j], val);   // ← mpz_set_si instead of value_assign
     }, py::arg("mat"), py::arg("i"), py::arg("j"), py::arg("val"));
 
     m.def("MatrixGetValue", [](Matrix *mat, int i, int j) -> long {
         return mpz_get_si(mat->p[i][j]);
     }, py::arg("mat"), py::arg("i"), py::arg("j"));
 
-    // Affichage d'un LBL
+    // Displaying an LBL
     m.def("LBLPrint", [](LBL *l) {
         LBLPrint(stdout, " %s", l);
     });
-    // Produit de deux matrices
+    // Product of two matrices
     m.def("MatrixProduct", [](Matrix *a, Matrix *b) {
         Matrix *result = Matrix_Alloc(a->NbRows, b->NbColumns);
         Matrix_Product(a, b, result);
         return MatrixPtr(result);
     }, py::arg("a"), py::arg("b"));
 
-    // Inverse d'une matrice
+    // Inverse of a matrix
     m.def("MatrixInverse", [](Matrix *mat) {
         Matrix *result = Matrix_Alloc(mat->NbRows, mat->NbColumns);
         int ok = Matrix_Inverse(mat, result);
         if (!ok) {
             Matrix_Free(result);
-            throw std::runtime_error("La matrice n'est pas inversible");
+            throw std::runtime_error("The matrix is not invertible");
         }
         return MatrixPtr(result);
     }, py::arg("mat"));

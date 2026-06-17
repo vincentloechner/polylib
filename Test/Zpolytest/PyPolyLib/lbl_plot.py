@@ -1,9 +1,7 @@
 """
-lbl_plot.py — Visualisation de Z-polyèdres avec matplotlib.
+lbl_plot.py — Visualizing Z-polyhedra with matplotlib.
 
-Utilise plot_polyhedron.py du prof pour afficher les LBL 2D.
-
-Utilisation typique :
+Typical usage:
     from pypolylib import LBLRead
     a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
     a.plot()   # affiche le LBL avec matplotlib
@@ -23,29 +21,29 @@ import pypolylib_core as pl
 
 def lbl_plot(lbl_obj):
     """
-    Affiche un LBL 2D avec matplotlib.
+    Plots a 2D LBL using matplotlib.
 
-    Extrait les contraintes du polyèdre de chaque nœud du LBL
-    et appelle plot_polyhedra pour les afficher.
+    Extracts the polyhedron constraints from each node of the LBL
+    and calls `plot_polyhedra` to display them.
 
-    Fonctionne uniquement pour les LBL de dimension 2.
-    Les nœuds d'une autre dimension sont ignorés avec un message d'avertissement.
-    Les unions sont affichées avec des couleurs différentes.
+    Works only for 2-dimensional LBLs.
+    Nodes of other dimensions are ignored, and a warning message is displayed.
+    Unions are displayed in different colors.
 
     Args:
-        lbl_obj (LBL): Objet LBL Python (classe LBL de pypolylib.py)
+        lbl_obj (LBL): Python LBL object (LBL class from pypolylib.py)
 
-    Exemple:
+    Example:
         >>> from pypolylib import LBLRead
-        >>> a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
+        >>> a = LBLRead(“{(i, j) | 1 <= i <= 10, 1 <= j <= 10}”)
         >>> a.plot()
 
-        >>> # Afficher une union
-        >>> b = LBLRead("{(i, j) | 5 <= i <= 15, 5 <= j <= 15}")
+        >>> # Display a union
+        >>> b = LBLRead(“{(i, j) | 5 <= i <= 15, 5 <= j <= 15}”)
         >>> (a + b).plot()
 
     Note:
-        Nécessite matplotlib et shapely installés :
+        Requires matplotlib and shapely to be installed:
             pip install matplotlib shapely
     """
     list_of_polyhedra = []
@@ -60,7 +58,7 @@ def lbl_plot(lbl_obj):
 
         dim = poly.dimension
         if dim != 2:
-            print(f"Attention : dimension {dim}, seule la dimension 2 est supportée.")
+            print(f"Warning : dimension {dim}; only dimension 2 is supported.")
             node = node.next
             continue
 
@@ -76,14 +74,14 @@ def lbl_plot(lbl_obj):
             # PolyLib : ax + by + c >= 0
             inequalities.append((a, b, c))
             if eq_type == 0:
-                # Égalité : aussi ajouter -ax - by - c >= 0
+                # Equality: also add -ax - by - c >= 0
                 inequalities.append((-a, -b, -c))
 
         list_of_polyhedra.append(inequalities)
         node = node.next
 
     if not list_of_polyhedra:
-        print("Rien à afficher.")
+        print("Nothing to display.")
         return
 
     plot_polyhedra(list_of_polyhedra)

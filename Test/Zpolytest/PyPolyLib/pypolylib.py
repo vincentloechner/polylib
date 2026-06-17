@@ -1,39 +1,39 @@
 """
-pypolylib.py — Interface Python pour la bibliothèque PolyLib (Z-polyèdres).
+pypolylib.py — Python interface to the PolyLib library (Z-polyhedra).
 
-Ce module expose les types LBL (Lattice-Based Lattice) et Transfo
-pour manipuler des ensembles de points entiers (Z-polyèdres) en Python.
+This module exposes the LBL (Lattice-Based Lattice) and Transfo types
+for manipulating sets of integer points (Z-polyhedra) in Python.
 
-Utilisation typique :
+Typical usage:
     from pypolylib import LBLRead, Transfo
 
-    # Créer un LBL
+    #Create an LBL
     a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
     b = LBLRead("{(2i, j) | 1 <= i <= 50, j = 10}")
 
-    # Opérations ensemblistes
+    #  Set operations
     inter = a * b          # intersection
     diff  = a - b          # différence
     union = a + b          # union
 
-    # Tester l'inclusion
-    print(a.included(b))   # True ou False
+    #  Check for inclusion
+    print(a.included(b))   # True or False
 
-    # Image par une transformation
+    #Image under a transformation
     f = Transfo("(i,j -> 2i+1, i+3j)")
-    print(a.image(f))      # image de a par f
-    print(a.preimage(f))   # préimage de a par f
+    print(a.image(f))      # image of a under f
+    print(a.preimage(f))   # preimage of a under f
 
-    # Composer et inverser des transformations
+    # Composing and inverting transformations
     g = Transfo("(i,j -> i+1, 2j)")
     h = f * g              # composition
     fi = f.inverse()       # inverse
 
-    # Énumérer les points entiers
+    # Iterate over integer points
     for pt in a:
-        print(pt)          # affiche chaque point entier
+        print(pt)          # prints each integer point
 
-    # Visualiser (dimension 2 uniquement)
+    # Plot (2D only)
     a.plot()
 """
 
@@ -44,19 +44,19 @@ from lbl_repr import _lbl_repr
 
 
 # ──────────────────────────────────────────────────────────────
-# Fonctions internes de parsing
+# Internal parsing functions
 # ──────────────────────────────────────────────────────────────
 
 def _parse_linear(expr, variables):
     """
-    Parse une expression linéaire en termes des variables données.
+    Parse a linear expression in terms of the given variables.
 
     Args:
-        expr (str): Expression linéaire, ex: "2i+3j-1"
-        variables (list): Liste des noms de variables, ex: ['i', 'j']
+        expr (str): Linear expression, e.g.: “2i+3j-1”
+        variables (list): List of variable names, e.g.: [‘i’, ‘j’]
 
     Returns:
-        dict: Coefficients par variable + constante, ex: {'i':2, 'j':3, 'cte':-1}
+        dict: Coefficients per variable + constant, e.g.: {‘i’:2, ‘j’:3, ‘cte’:-1}
     """
     coeffs = {v: 0 for v in variables}
     coeffs['cte'] = 0
@@ -80,20 +80,20 @@ def _parse_linear(expr, variables):
             try:
                 coeffs['cte'] += int(term)
             except ValueError:
-                raise ValueError(f"Terme incompris : '{term}' dans '{expr}'")
+                raise ValueError(f"Misunderstood Term : '{term}' in '{expr}'")
     return coeffs
 
 
 def _parse_lhs(lhs_str, variables):
     """
-    Parse la partie gauche d'un LBL : "(expr1, expr2, ...)".
+    Parses the left-hand side of an LBL: “(expr1, expr2, ...)”.
 
     Args:
-        lhs_str (str): Partie gauche, ex: "(i+j)" ou "(2i, j+1)"
-        variables (list): Liste des noms de variables
+        lhs_str (str): Left-hand side, e.g.: “(i+j)” or “(2i, j+1)”
+        variables (list): List of variable names
 
     Returns:
-        list: Liste de dicts de coefficients, un par expression de sortie
+        list: List of dictionaries containing coefficients, one per output expression
     """
     lhs_str = lhs_str.strip()
     if lhs_str.startswith('(') and lhs_str.endswith(')'):
@@ -104,18 +104,18 @@ def _parse_lhs(lhs_str, variables):
 
 def _parse_constraints(rhs_str, variables):
     """
-    Parse les contraintes d'un LBL en lignes au format PolyLib.
+    Parse the constraints of an LBL into lines in PolyLib format.
 
-    Supporte : >=, <=, =, >, <, doubles inégalités (ex: 0 <= i <= 10).
-    Chaque ligne retournée a la forme [type, coeff_v1, ..., coeff_vn, constante]
-    où type=0 pour égalité et type=1 pour inégalité (>= 0).
+    Supports: >=, <=, =, >, <, double inequalities (e.g., 0 <= i <= 10).
+    Each returned line has the form [type, coeff_v1, ..., coeff_vn, constant]
+    where type=0 for equality and type=1 for inequality (>= 0).
 
     Args:
-        rhs_str (str): Partie droite, ex: "0 <= i <= 10, i = 2j"
-        variables (list): Liste des noms de variables
+        rhs_str (str): Right-hand side, e.g., “0 <= i <= 10, i = 2j”
+        variables (list): List of variable names
 
     Returns:
-        list: Liste de listes d'entiers représentant les contraintes PolyLib
+        list: List of lists of integers representing the PolyLib constraints
     """
     rows = []
     constraints = [c.strip() for c in rhs_str.split(',')]
@@ -192,21 +192,21 @@ def _parse_constraints(rhs_str, variables):
             row = [1] + [lhs[v] - rhs[v] for v in variables] + [lhs['cte'] - rhs['cte'] - 1]
             rows.append(row)
         else:
-            raise ValueError(f"Contrainte incomprise : '{c}'")
+            raise ValueError(f"Misunderstood Constraint: '{c}'")
     return rows
 
 
 def _matrix_to_polylib_string(nb_rows, nb_cols, values):
     """
-    Construit une chaîne au format PolyLib pour Matrix_Read.
+    Constructs a string in PolyLib format for Matrix_Read.
 
     Args:
-        nb_rows (int): Nombre de lignes
-        nb_cols (int): Nombre de colonnes
-        values (list): Valeurs de la matrice, ligne par ligne
+        nb_rows (int): Number of rows
+        nb_cols (int): Number of columns
+        values (list): Matrix values, row by row
 
     Returns:
-        str: Chaîne au format PolyLib, ex: "2 3\\n1 0 0\\n0 1 0\\n"
+        str: String in PolyLib format, e.g., “2 3\\n1 0 0\\n0 1 0\\n”
     """
     s = f"{nb_rows} {nb_cols}\n"
     idx = 0
@@ -218,15 +218,15 @@ def _matrix_to_polylib_string(nb_rows, nb_cols, values):
 
 def LBLRead(s):
     """
-    Crée un LBL depuis une chaîne symbolique.
+    Creates an LBL from a symbolic string.
 
-    C'est un raccourci pour LBL(s).
+    This is a shortcut for LBL(s).
 
     Args:
-        s (str): Chaîne au format "{(expr1, ...) | contraintes}"
+        s (str): String in the format “{(expr1, ...) | constraints}”
 
     Returns:
-        LBL: L'objet LBL correspondant
+        LBL: The corresponding LBL object
 
     Exemple:
         >>> a = LBLRead("{(i+j) | 0 <= i <= 10, i = 2j}")
@@ -242,42 +242,42 @@ def LBLRead(s):
 
 class LBL:
     """
-    Z-polyèdre (Lattice-Based Lattice) — ensemble de points entiers.
+    Z-polyhedron (Lattice-Based Lattice) — set of integer points.
 
-    Un LBL est défini par un lattice (matrice de transformation) et
-    un polyèdre de contraintes. Il représente l'image d'un ensemble
-    de points entiers par une fonction linéaire affine.
+    An LBL is defined by a lattice (transformation matrix) and
+    a constraint polyhedron. It represents the image of a set
+    of integer points under a linear affine function.
 
-    Création :
+    Creation :
         a = LBL("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
-        # ou :
+        # or :
         a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
 
-    Opérations :
+    Operations :
         a + b   # union
-        a - b   # différence
+        a - b   # difference
         a * b   # intersection
     """
 
     def _LBLRead(self, s):
         """
-        Parse une chaîne symbolique et construit le LBL interne.
+        Parse a symbolic string and constructs the internal LBL.
 
         Args:
-            s (str): Chaîne au format "{(expr1, ...) | contraintes}"
-                     Les variables sont des lettres minuscules (i, j, k, ...).
-                     Contraintes supportées : <=, >=, =, <, >, doubles inégalités.
+            s (str): String in the format “{(expr1, ...) | constraints}”
+                     Variables are lowercase letters (i, j, k, ...).
+                     Supported constraints: <=, >=, =, <, >, double inequalities.
 
         Returns:
-            pypolylib_core.LBL: L'objet LBL C correspondant
+            pypolylib_core.LBL: The corresponding C LBL object
         """
         s = s.strip()
         if not (s.startswith('{') and s.endswith('}')):
-            raise ValueError("La chaîne doit commencer par '{' et finir par '}'")
+            raise ValueError("The string must begin with ‘{’ and end with '}'")
         s = s[1:-1]
 
         if '|' not in s:
-            raise ValueError("Il manque le séparateur '|'")
+            raise ValueError("The separator ‘|’ is missing")
         lhs_str, rhs_str = s.split('|', 1)
         lhs_str = lhs_str.strip()
         rhs_str = rhs_str.strip()
@@ -286,7 +286,7 @@ class LBL:
         variables = sorted(set(re.findall(r'[a-z](?![a-z])', all_text)))
         n = len(variables)
 
-        # Matrice lattice
+        # Lattice matrix
         lhs_coeffs = _parse_lhs(lhs_str, variables)
         nb_out = len(lhs_coeffs)
         nb_rows_lat = nb_out + 1
@@ -297,7 +297,7 @@ class LBL:
             for v in variables:
                 lat_values.append(coeffs[v])
             lat_values.append(coeffs['cte'])
-        # ligne homogène
+        # uniform line
         for j in range(n):
             lat_values.append(0)
         lat_values.append(1)
@@ -305,7 +305,7 @@ class LBL:
         lat_str = _matrix_to_polylib_string(nb_rows_lat, nb_cols_lat, lat_values)
         lat = pl.MatrixReadFromString(lat_str)
 
-        # Matrice de contraintes
+        # Constraints Matrix
         constraint_rows = _parse_constraints(rhs_str, variables)
         nb_rows_poly = len(constraint_rows)
         nb_cols_poly = n + 2  # type + variables + constante
@@ -322,35 +322,35 @@ class LBL:
 
     def __init__(self, s=None):
         """
-        Initialise un LBL, optionnellement depuis une chaîne symbolique.
+        Initializes an LBL, optionally from a symbolic string.
 
-        Args:
-            s (str, optional): Chaîne au format "{(expr) | contraintes}".
-                               Si None, crée un LBL vide.
+        Arguments:
+            s (str, optional): string in the format “{(expr) | constraints}”.
+                               If None, creates an empty LBL.
         """
         self._lbl = None
         if s is not None:
             self._lbl = self._LBLRead(s)
 
     def Print(self):
-        """Affiche le LBL sous forme symbolique."""
+        """Displays the LBL in symbolic form."""
         print(self.__repr__())
 
     def __repr__(self):
-        """Retourne une représentation symbolique du LBL, ex: {(3i) | i >= 0, i <= 5}"""
+        """Returns a symbolic representation of the LBL, e.g., {(3i) | i >= 0, i <= 5}"""
         if self._lbl is None:
-            return "LBL(vide)"
+            return "LBL(empty)"
         return _lbl_repr(self._lbl)
 
     def intersection(self, other):
         """
-        Calcule l'intersection de ce LBL avec un autre.
+        Calculates the intersection of this LBL with another one.
 
         Args:
-            other (LBL): L'autre LBL (même dimension)
+            other (LBL): The other LBL (same dimension)
 
         Returns:
-            LBL: L'intersection des deux LBL
+            LBL: The intersection of the two LBLs
         """
         result = LBL()
         result._lbl = self._lbl.intersection(other._lbl)
@@ -358,13 +358,13 @@ class LBL:
 
     def difference(self, other):
         """
-        Calcule la différence de ce LBL avec un autre (self - other).
+        Calculates the difference between this LBL and another one (self - other).
 
         Args:
-            other (LBL): L'autre LBL (même dimension)
+            other (LBL): The other LBL (same dimension)
 
         Returns:
-            LBL: La différence des deux LBL
+            LBL: The difference between the two LBLs
         """
         result = LBL()
         result._lbl = self._lbl.difference(other._lbl)
@@ -372,13 +372,13 @@ class LBL:
 
     def union(self, other):
         """
-        Calcule l'union de ce LBL avec un autre.
+        Calculates the union of this LBL with another one.
 
         Args:
-            other (LBL): L'autre LBL (même dimension)
+            other (LBL): The other LBL (same dimension)
 
         Returns:
-            LBL: L'union des deux LBL
+            LBL: The union of the two LBLs
         """
         result = LBL()
         result._lbl = self._lbl.union(other._lbl)
@@ -386,23 +386,23 @@ class LBL:
 
     def included(self, other):
         """
-        Teste si ce LBL est inclus dans un autre.
+        Checks whether this LBL is contained within another one.
 
         Args:
-            other (LBL): L'autre LBL
+            other (LBL): The other LBL
 
         Returns:
-            bool: True si self ⊆ other, False sinon
+            bool: True if self ⊆ other, False otherwise
         """
         return self._lbl.included(other._lbl)
 
     def zdomain(self):
         """
-        Calcule le domaine entier (Z-domain) de ce LBL,
-        en éliminant les variables existentielles.
+        Calculate the entire domain (Z-domain) of this LBL,
+        by eliminating the existential variables.
 
         Returns:
-            LBL: Le Z-domain correspondant
+            LBL: The corresponding Z-domain
         """
         result = LBL()
         result._lbl = self._lbl.zdomain()
@@ -410,13 +410,13 @@ class LBL:
 
     def image(self, transfo):
         """
-        Calcule l'image de ce LBL par une transformation affine.
+        Calculates the image of this LBL under an affine transformation.
 
         Args:
-            transfo (Transfo): La transformation à appliquer
+            transfo (Transfo): The transformation to apply
 
         Returns:
-            LBL: L'image du LBL par la transformation
+            LBL: The image of the LBL under the transformation
 
         Exemple:
             >>> a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
@@ -429,13 +429,13 @@ class LBL:
 
     def preimage(self, transfo):
         """
-        Calcule la préimage de ce LBL par une transformation affine.
+        Calculates the preimage of this LBL under an affine transformation.
 
         Args:
-            transfo (Transfo): La transformation à inverser
+            transfo (Transfo): The transformation to be inverted
 
         Returns:
-            LBL: La préimage du LBL par la transformation
+            LBL: The preimage of the LBL under the transformation
         """
         result = LBL()
         result._lbl = pl.LBLPreimage(self._lbl, transfo._mat)
@@ -446,7 +446,7 @@ class LBL:
         return self.union(other)
 
     def __sub__(self, other):
-        """Différence : a - b  ≡  a.difference(b)"""
+        """Difference : a - b  ≡  a.difference(b)"""
         return self.difference(other)
 
     def __mul__(self, other):
@@ -454,18 +454,18 @@ class LBL:
         return self.intersection(other)
     
     def plot(self):
-        """Affiche le LBL avec matplotlib (dimension 2 uniquement)."""
+        """Displays the LBL using matplotlib (2D only)."""
         from lbl_plot import lbl_plot
         lbl_plot(self)
 
     def __iter__(self):
         """
-        Énumère tous les points entiers du LBL.
-        Parcourt les points entiers du polyèdre et calcule leur image par le lattice.
-        Lève une erreur si le polyèdre n'est pas borné.
+        Lists all the integer points of the LBL.
+        Iterates through the integer points of the polyhedron and calculates their image under the lattice.
+        Throws an error if the polyhedron is unbounded.
 
         Yields:
-            tuple: Coordonnées du point entier dans l'image du lattice
+            tuple: Coordinates of the integer point in the lattice image
         """
         seen = set()
         node = self._lbl
@@ -484,14 +484,14 @@ class LBL:
             nb_constraints = poly.nbconstraints
             cmat = poly.constraints
 
-            # Vérifier si le polyèdre est borné : dernière colonne de chaque ray = 1 (vertex)
+            # Check whether the polyhedron is bounded: the last column of each row =1 (vertex)
             rmat = poly.rays
             for r in range(poly.nbrays):
                 last_col = pl.MatrixGetValue(rmat, r, poly.dimension + 1)
                 if last_col == 0:  # ray infini
-                    raise ValueError("Le polyèdre n'est pas borné, énumération impossible")
+                    raise ValueError("The polyhedron is unbounded; enumeration is impossible")
 
-            # Extraire les contraintes : coeffs * x + cte >= 0
+            # Extract the constraints: coefficients * x + constant >= 0
             constraints = []
             for r in range(nb_constraints):
                 eq_type = pl.MatrixGetValue(cmat, r, 0)
@@ -499,14 +499,14 @@ class LBL:
                 cte = pl.MatrixGetValue(cmat, r, dim+1)
                 constraints.append((eq_type, coeffs, cte))
 
-            # Trouver les bornes depuis les rayons/vertices
+            # Find the endpoints from the edges/vertices
             bounds = []
             for v in range(dim):
                 vals = []
                 for r in range(poly.nbrays):
-                    # accès aux rayons via les contraintes min/max
+                    # Accessing Rows Using Min/Max Constraints
                     pass
-                # Méthode alternative : chercher bornes depuis les contraintes
+                # Alternative method: Find boundary points based on constraints
                 lo, hi = -10000, 10000
                 for (eq_type, coeffs, cte) in constraints:
                     if coeffs[v] != 0 and all(coeffs[w] == 0 for w in range(dim) if w != v):
@@ -516,17 +516,17 @@ class LBL:
                             hi = min(hi, cte // (-coeffs[v]))
                 bounds.append((lo, hi))
 
-            # Générer tous les points entiers dans la bounding box
+            # Generate all integer points within the bounding box
             def _enumerate(idx, point):
                 if idx == dim:
-                    # Vérifier toutes les contraintes
+                    # Check all constraints
                     for (eq_type, coeffs, cte) in constraints:
                         val = sum(coeffs[c] * point[c] for c in range(dim)) + cte
                         if val < 0:
                             return
                         if eq_type == 0 and val != 0:
                             return
-                    # Calculer l'image par le lattice
+                    # Compute the image using the lattice
                     img = []
                     for r in range(nb_out):
                         v = sum(pl.MatrixGetValue(lat, r, c) * point[c] for c in range(nb_vars))
@@ -551,24 +551,24 @@ class LBL:
 
 class Transfo:
     """
-    Transformation linéaire affine sur des points entiers.
+    Linear affine transformation on integer points.
 
-    Une Transfo est définie par une notation symbolique de la forme
-    "(i,j -> 3i+1, 2i+5j)", qui est convertie en matrice PolyLib.
+    A Transfo is defined by a symbolic notation of the form
+    “(i,j -> 3i+1, 2i+5j)”, which is converted to a PolyLib matrix.
 
-    Utilisation :
-        f = Transfo("(i,j -> 3i+1, 2i+5j)")
-        b = a.image(f)      # image d'un LBL par f
-        c = a.preimage(f)   # préimage d'un LBL par f
+    Usage:
+        f = Transfo(“(i,j -> 3i+1, 2i+5j)”)
+        b = a.image(f)      # image of an LBL under f
+        c = a.preimage(f)   # preimage of an LBL under f
     """
 
     def __init__(self, s=None):
         """
-        Initialise une Transfo depuis une chaîne symbolique.
+        Initializes a Transfo from a symbolic string.
 
         Args:
-            s (str, optional): Chaîne au format "(var1,var2,... -> expr1, expr2, ...)".
-                               Si None, crée une Transfo vide.
+            s (str, optional): String in the format “(var1, var2, ... -> expr1, expr2, ...)”.
+                               If None, creates an empty Transfo.
         """
         self._mat = None
         if s is not None:
@@ -576,31 +576,31 @@ class Transfo:
 
     def _parse(self, s):
         """
-        Parse la chaîne symbolique et construit la matrice interne.
+        Parse the symbolic string and constructs the internal matrix.
 
         Args:
-            s (str): Chaîne au format "(i,j -> 3i+1, 2i+5j)"
+            s (str): String in the format “(i,j -> 3i+1, 2i+5j)”
 
         Returns:
-            pypolylib_core.Matrix: La matrice de transformation PolyLib
+            pypolylib_core.Matrix: The PolyLib transformation matrix
         """
         s = s.strip()
         if s.startswith('(') and s.endswith(')'):
             s = s[1:-1]
         if '->' not in s:
-            raise ValueError("Il manque '->' dans la transformation")
+            raise ValueError("'->' is missing from the transformation")
 
         lhs_str, rhs_str = s.split('->', 1)
 
-        # Variables d'entrée : i, j, k, ...
+        # Input variables : i, j, k, ...
         variables = [v.strip() for v in lhs_str.split(',')]
         n = len(variables)
 
-        # Expressions de sortie
+        # Output expressions
         out_exprs = [e.strip() for e in rhs_str.split(',')]
         nb_out = len(out_exprs)
 
-        # Matrice (nb_out+1) x (n+1)
+        # Matrix (nb_out+1) x (n+1)
         nb_rows = nb_out + 1
         nb_cols = n + 1
 
@@ -610,7 +610,7 @@ class Transfo:
             for v in variables:
                 values.append(coeffs[v])
             values.append(coeffs['cte'])
-        # ligne homogène
+        # uniform lign
         for j in range(n):
             values.append(0)
         values.append(1)
@@ -620,10 +620,10 @@ class Transfo:
 
     def __repr__(self):
         """
-        Retourne la représentation symbolique de la transformation.
+        Returns the symbolic representation of the transformation.
 
         Returns:
-            str: Ex: "(i, j -> 3i+1, 2i+5j)"
+            str: Example: “(i, j -> 3i+1, 2i+5j)”
         """
         if self._mat is None:
             return "Transfo(vide)"
@@ -655,13 +655,13 @@ class Transfo:
 
     def compose(self, other):
         """
-        Compose deux transformations : self * other.
+        Composes two transformations: self * other.
 
         Args:
-            other (Transfo): L'autre transformation
+            other (Transfo): The other transformation
 
         Returns:
-            Transfo: La composition des deux transformations
+            Transfo: The composition of the two transformations
         """
         result = Transfo()
         result._mat = pl.MatrixProduct(self._mat, other._mat)
@@ -669,13 +669,13 @@ class Transfo:
 
     def inverse(self):
         """
-        Calcule l'inverse de cette transformation.
+        Calculates the inverse of this transformation.
 
         Returns:
-            Transfo: La transformation inverse
+            Transfo: The inverse transformation
 
         Raises:
-            RuntimeError: Si la matrice n'est pas inversible
+            RuntimeError: If the matrix is not invertible
         """
         result = Transfo()
         result._mat = pl.MatrixInverse(self._mat)

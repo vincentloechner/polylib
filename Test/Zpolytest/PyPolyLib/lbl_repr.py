@@ -2,7 +2,7 @@ import pypolylib_core as pl
 
 def _lbl_repr(lbl_core):
     """
-    Construit une représentation symbolique d'un LBL.
+    Constructs a symbolic representation of an LBL.
     Ex: {(3i) | 0 <= i <= 5}
     """
     parts = []
@@ -10,29 +10,29 @@ def _lbl_repr(lbl_core):
     while node is not None:
         parts.append(_single_lbl_repr(node))
         node = node.next
-    return " UNION\n".join(parts)
+    return " UNION \n" .join(parts)
 
 
 def _single_lbl_repr(node):
     """
-    Construit la représentation symbolique d'un seul nœud LBL.
+    Constructs the symbolic representation of a single LBL node.
 
     Args:
-        node: Nœud LBL (pypolylib_core.LBL)
+        node: LBL node (pypolylib_core.LBL)
 
     Returns:
-        str: Représentation symbolique, ex: "{(3i) | i >= 0, i <= 5}"
+        str: Symbolic representation, e.g., “{(3i) | i >= 0, i <= 5}”
     """
     lat = node.Lat
     poly = node.P
 
-    nb_out = lat.nbrows - 1      # nombre de sorties (sans ligne homogène)
-    nb_vars = lat.nbcolumns - 1  # nombre de variables d'entrée
+    nb_out = lat.nbrows - 1      # number of outputs (excluding the homogeneous line)
+    nb_vars = lat.nbcolumns - 1  # number of input variables
 
-    # Noms des variables : i, j, k, l, ...
+    # Variable Names : i, j, k, l, ...
     var_names = [chr(ord('i') + v) for v in range(nb_vars)]
 
-    # ── Partie gauche : expressions de sortie ──
+    # ── Left side: output expressions ──
     out_exprs = []
     for r in range(nb_out):
         terms = []
@@ -65,7 +65,7 @@ def _single_lbl_repr(node):
     if len(out_exprs) > 1 or True:
         lhs = f"({lhs})"
 
-    # ── Partie droite : contraintes ──
+    # ── Right side: constraints ──
     if poly is None:
         return "{" + lhs + " | <empty>}"
 
@@ -73,12 +73,12 @@ def _single_lbl_repr(node):
     dim = poly.dimension
     cmat = poly.constraints
 
-    # Noms des variables du polyèdre
+    # Names of the polyhedron's variables
     poly_vars = [chr(ord('i') + v) for v in range(dim)]
 
     constraints = []
     for r in range(nb_constraints):
-        eq_type = pl.MatrixGetValue(cmat, r, 0)  # 0=égalité, 1=inégalité
+        eq_type = pl.MatrixGetValue(cmat, r, 0)  # 0 = equality, 1 = inequality
         coeffs = [pl.MatrixGetValue(cmat, r, c+1) for c in range(dim)]
         cte = pl.MatrixGetValue(cmat, r, dim+1)
 
@@ -96,15 +96,15 @@ def _single_lbl_repr(node):
                 terms.append(f"{coef}{vname}")
 
         if eq_type == 0:
-            # Égalité : expr + cte = 0
+            # Equality : expr + cte = 0
             expr = _terms_to_str(terms)
             if cte != 0:
                 constraints.append(f"{expr} = {-cte}")
             else:
                 constraints.append(f"{expr} = 0")
         else:
-            # Inégalité : expr + cte >= 0
-            # On cherche à écrire sous forme a <= var <= b si possible
+            # Inequality: expr + cte >= 0
+            # We want to write this in the form a <= var <= b if possible
             non_zero = [(c, coeffs[c]) for c in range(dim) if coeffs[c] != 0]
             if len(non_zero) == 1:
                 c, coef = non_zero[0]
@@ -132,13 +132,13 @@ def _single_lbl_repr(node):
 
 def _terms_to_str(terms):
     """
-    Convertit une liste de termes en expression linéaire.
+    Converts a list of terms into a linear expression.
 
     Args:
-        terms (list): Liste de chaînes, ex: ["2i", "-3j", "1"]
+        terms (list): List of strings, e.g., [“2i”, “-3j”, “1”]
 
     Returns:
-        str: Expression linéaire, ex: "2i-3j+1"
+        str: Linear expression, e.g., “2i-3j+1”
     """
     if not terms:
         return "0"
