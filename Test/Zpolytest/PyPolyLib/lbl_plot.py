@@ -1,87 +1,98 @@
 """
 lbl_plot.py — Visualizing Z-polyhedra with matplotlib.
-
 Typical usage:
     from pypolylib import LBLRead
     a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
-    a.plot()   # affiche le LBL avec matplotlib
-
-    # Ou directement :
-    from lbl_plot import lbl_plot
-    lbl_plot(a)
+    a.plot()
 """
-
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../Verif'))
-
 from plot_polyhedron import plot_polyhedra
 import pypolylib_core as pl
 
 
 def lbl_plot(lbl_obj):
     """
-    Plots a 2D LBL using matplotlib.
-
-    Extracts the polyhedron constraints from each node of the LBL
-    and calls `plot_polyhedra` to display them.
-
-    Works only for 2-dimensional LBLs.
-    Nodes of other dimensions are ignored, and a warning message is displayed.
-    Unions are displayed in different colors.
-
+    Plots a 2D or 3D LBL using matplotlib.
+    - 2D: displays the polyhedron region + integer points.
+    - 3D: displays integer points as a 3D scatter plot (interactive).
+    Nodes of other dimensions are ignored with a warning.
     Args:
-        lbl_obj (LBL): Python LBL object (LBL class from pypolylib.py)
-
-    Example:
-        >>> from pypolylib import LBLRead
-        >>> a = LBLRead(“{(i, j) | 1 <= i <= 10, 1 <= j <= 10}”)
-        >>> a.plot()
-
-        >>> # Display a union
-        >>> b = LBLRead(“{(i, j) | 5 <= i <= 15, 5 <= j <= 15}”)
-        >>> (a + b).plot()
-
-    Note:
-        Requires matplotlib and shapely to be installed:
-            pip install matplotlib shapely
+        lbl_obj (LBL): Python LBL object (from pypolylib.py)
     """
+    # Detect dimension from first valid node
+    dim = None
+    node = lbl_obj._lbl
+    while node is not None:
+        if node.P is not None:
+            dim = node.P.dimension
+            break
+        node = node.next
+
+    if dim is None:
+        print("Nothing to display.")
+        return
+
+    if dim == 2:
+        _plot_2d(lbl_obj)
+    elif dim == 3:
+        _plot_3d(lbl_obj)
+    else:
+        print(f"Warning: dimension {dim} is not supported (only 2D and 3D).")
+
+
+def _plot_2d(lbl_obj):
+    """2D plot using plot_polyhedra (polygon + integer points)."""
     list_of_polyhedra = []
     node = lbl_obj._lbl
-
     while node is not None:
         poly = node.P
-
         if poly is None:
             node = node.next
             continue
-
-        dim = poly.dimension
-        if dim != 2:
-            print(f"Warning : dimension {dim}; only dimension 2 is supported.")
+        if poly.dimension != 2:
             node = node.next
             continue
-
         cmat = poly.constraints
         nb_constraints = poly.nbconstraints
-
         inequalities = []
         for r in range(nb_constraints):
             eq_type = pl.MatrixGetValue(cmat, r, 0)
             a = pl.MatrixGetValue(cmat, r, 1)
             b = pl.MatrixGetValue(cmat, r, 2)
             c = pl.MatrixGetValue(cmat, r, 3)
-            # PolyLib : ax + by + c >= 0
             inequalities.append((a, b, c))
             if eq_type == 0:
-                # Equality: also add -ax - by - c >= 0
                 inequalities.append((-a, -b, -c))
-
         list_of_polyhedra.append(inequalities)
         node = node.next
-
     if not list_of_polyhedra:
         print("Nothing to display.")
         return
-
     plot_polyhedra(list_of_polyhedra)
+
+
+def _plot_3d(lbl_obj):
+    """3D scatter plot of integer points (interactive: rotate/zoom)."""
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    pts = list(lbl_obj)
+    if not pts:
+        print("Nothing to display.")
+        return
+
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    zs = [p[2] for p in pts]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(xs, ys, zs, c='steelblue', marker='o', s=30)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.title("LBL 3D")
+    plt.tight_layout()
+    plt.show()
