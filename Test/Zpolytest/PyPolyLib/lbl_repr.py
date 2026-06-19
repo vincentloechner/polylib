@@ -8,12 +8,15 @@ def _lbl_repr(lbl_core):
     parts = []
     node = lbl_core
     while node is not None:
-        parts.append(_single_lbl_repr(node))
+        P = node.P
+        while P:
+            parts.append(_single_lbl_repr(node.Lat, P))
+            P = P.next
         node = node.next
     return " UNION \n" .join(parts)
 
 
-def _single_lbl_repr(node):
+def _single_lbl_repr(lat, poly):
     """
     Constructs the symbolic representation of a single LBL node.
 
@@ -23,8 +26,8 @@ def _single_lbl_repr(node):
     Returns:
         str: Symbolic representation, e.g., “{(3i) | i >= 0, i <= 5}”
     """
-    lat = node.Lat
-    poly = node.P
+    # lat = node.Lat
+    # poly = node.P
 
     nb_out = lat.nbrows - 1      # number of outputs (excluding the homogeneous line)
     nb_vars = lat.nbcolumns - 1  # number of input variables

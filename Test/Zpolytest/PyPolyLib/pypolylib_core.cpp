@@ -85,6 +85,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def_readonly("nbconstraints",  &Polyhedron::NbConstraints)
         .def_readonly("nbrays",         &Polyhedron::NbRays)
         .def_readonly("nbbid",          &Polyhedron::NbBid)
+        .def_readonly("next",           &Polyhedron::next)
         .def_property_readonly("constraints", [](Polyhedron &p) {
             // Constructing a Matrix from the constraints of the polyhedron
             Matrix *mat = Matrix_Alloc(p.NbConstraints, p.Dimension + 2);
