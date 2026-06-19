@@ -452,7 +452,19 @@ class LBL:
     def __mul__(self, other):
         """Intersection : a * b  ≡  a.intersection(b)"""
         return self.intersection(other)
-    
+
+    def __eq__(self, other):
+        """Equality : A == B  ≡  A ⊆ B et B ⊆ A"""
+        if not isinstance(other, LBL):
+            return NotImplemented
+        return self.included(other) and other.included(self)
+
+    def __contains__(self, other):
+        """Inclusion : other in self  ≡  other ⊆ self"""
+        if not isinstance(other, LBL):
+            return NotImplemented
+        return other.included(self)
+
     def plot(self):
         """Displays the LBL using matplotlib (2D only)."""
         from lbl_plot import lbl_plot
@@ -499,21 +511,24 @@ class LBL:
                 cte = pl.MatrixGetValue(cmat, r, dim+1)
                 constraints.append((eq_type, coeffs, cte))
 
-            # Find the endpoints from the edges/vertices
+            # Find bounds from vertices of the polyhedron
+            import math
             bounds = []
+            vertices = []
+            for r in range(poly.nbrays):
+                last_col = pl.MatrixGetValue(rmat, r, poly.dimension + 1)
+                if last_col != 0:  # vertex (not an infinite ray)
+                    pt = [pl.MatrixGetValue(rmat, r, c+1) / last_col for c in range(dim)]
+                    vertices.append(pt)
+
+            if not vertices:
+                node = node.next
+                continue
+
             for v in range(dim):
-                vals = []
-                for r in range(poly.nbrays):
-                    # Accessing Rows Using Min/Max Constraints
-                    pass
-                # Alternative method: Find boundary points based on constraints
-                lo, hi = -10000, 10000
-                for (eq_type, coeffs, cte) in constraints:
-                    if coeffs[v] != 0 and all(coeffs[w] == 0 for w in range(dim) if w != v):
-                        if coeffs[v] > 0:
-                            lo = max(lo, -cte // coeffs[v])
-                        else:
-                            hi = min(hi, cte // (-coeffs[v]))
+                vals = [pt[v] for pt in vertices]
+                lo = math.floor(min(vals))
+                hi = math.ceil(max(vals))
                 bounds.append((lo, hi))
 
             # Generate all integer points within the bounding box
