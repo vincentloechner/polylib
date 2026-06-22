@@ -486,77 +486,72 @@ class LBL:
             lat = node.Lat
             poly = node.P
 
-            if poly is None:
-                node = node.next
-                continue
+            # Boucle interne : union de polyèdres dans le même node
+            while poly is not None:
+                nb_out = lat.nbrows - 1
+                nb_vars = lat.nbcolumns - 1
+                dim = poly.dimension
+                nb_constraints = poly.nbconstraints
+                cmat = poly.constraints
 
-            nb_out = lat.nbrows - 1
-            nb_vars = lat.nbcolumns - 1
-            dim = poly.dimension
-            nb_constraints = poly.nbconstraints
-            cmat = poly.constraints
+                # Check whether the polyhedron is bounded
+                rmat = poly.rays
+                for r in range(poly.nbrays):
+                    last_col = pl.MatrixGetValue(rmat, r, poly.dimension + 1)
+                    if last_col == 0:  # rayon infini
+                        raise ValueError("The polyhedron is unbounded; enumeration is impossible")
 
-            # Check whether the polyhedron is bounded: the last column of each row =1 (vertex)
-            rmat = poly.rays
-            for r in range(poly.nbrays):
-                last_col = pl.MatrixGetValue(rmat, r, poly.dimension + 1)
-                if last_col == 0:  # ray infini
-                    raise ValueError("The polyhedron is unbounded; enumeration is impossible")
+                # Extract the constraints: coefficients * x + constant >= 0
+                constraints = []
+                for r in range(nb_constraints):
+                    eq_type = pl.MatrixGetValue(cmat, r, 0)
+                    coeffs = [pl.MatrixGetValue(cmat, r, c+1) for c in range(dim)]
+                    cte = pl.MatrixGetValue(cmat, r, dim+1)
+                    constraints.append((eq_type, coeffs, cte))
 
-            # Extract the constraints: coefficients * x + constant >= 0
-            constraints = []
-            for r in range(nb_constraints):
-                eq_type = pl.MatrixGetValue(cmat, r, 0)
-                coeffs = [pl.MatrixGetValue(cmat, r, c+1) for c in range(dim)]
-                cte = pl.MatrixGetValue(cmat, r, dim+1)
-                constraints.append((eq_type, coeffs, cte))
+                # Find bounds from vertices of the polyhedron
+                import math
+                bounds = []
+                vertices = []
+                for r in range(poly.nbrays):
+                    last_col = pl.MatrixGetValue(rmat, r, poly.dimension + 1)
+                    if last_col != 0:  # vertex (not an infinite ray)
+                        pt = [pl.MatrixGetValue(rmat, r, c+1) / last_col for c in range(dim)]
+                        vertices.append(pt)
 
-            # Find bounds from vertices of the polyhedron
-            import math
-            bounds = []
-            vertices = []
-            for r in range(poly.nbrays):
-                last_col = pl.MatrixGetValue(rmat, r, poly.dimension + 1)
-                if last_col != 0:  # vertex (not an infinite ray)
-                    pt = [pl.MatrixGetValue(rmat, r, c+1) / last_col for c in range(dim)]
-                    vertices.append(pt)
+                if vertices:
+                    for v in range(dim):
+                        vals = [pt[v] for pt in vertices]
+                        lo = math.floor(min(vals))
+                        hi = math.ceil(max(vals))
+                        bounds.append((lo, hi))
 
-            if not vertices:
-                node = node.next
-                continue
-
-            for v in range(dim):
-                vals = [pt[v] for pt in vertices]
-                lo = math.floor(min(vals))
-                hi = math.ceil(max(vals))
-                bounds.append((lo, hi))
-
-            # Generate all integer points within the bounding box
-            def _enumerate(idx, point):
-                if idx == dim:
-                    # Check all constraints
-                    for (eq_type, coeffs, cte) in constraints:
-                        val = sum(coeffs[c] * point[c] for c in range(dim)) + cte
-                        if val < 0:
+                    # Generate all integer points within the bounding box
+                    def _enumerate(idx, point):
+                        if idx == dim:
+                            for (eq_type, coeffs, cte) in constraints:
+                                val = sum(coeffs[c] * point[c] for c in range(dim)) + cte
+                                if val < 0:
+                                    return
+                                if eq_type == 0 and val != 0:
+                                    return
+                            img = []
+                            for r in range(nb_out):
+                                v = sum(pl.MatrixGetValue(lat, r, c) * point[c] for c in range(nb_vars))
+                                v += pl.MatrixGetValue(lat, r, nb_vars)
+                                img.append(v)
+                            pt = tuple(img)
+                            if pt not in seen:
+                                seen.add(pt)
+                                yield pt
                             return
-                        if eq_type == 0 and val != 0:
-                            return
-                    # Compute the image using the lattice
-                    img = []
-                    for r in range(nb_out):
-                        v = sum(pl.MatrixGetValue(lat, r, c) * point[c] for c in range(nb_vars))
-                        v += pl.MatrixGetValue(lat, r, nb_vars)
-                        img.append(v)
-                    pt = tuple(img)
-                    if pt not in seen:
-                        seen.add(pt)
-                        yield pt
-                    return
-                lo, hi = bounds[idx]
-                for val in range(lo, hi+1):
-                    yield from _enumerate(idx+1, point + [val])
+                        lo, hi = bounds[idx]
+                        for val in range(lo, hi+1):
+                            yield from _enumerate(idx+1, point + [val])
 
-            yield from _enumerate(0, [])
+                    yield from _enumerate(0, [])
+
+                poly = poly.next  # polyèdre suivant dans le même node
             node = node.next
 
 
