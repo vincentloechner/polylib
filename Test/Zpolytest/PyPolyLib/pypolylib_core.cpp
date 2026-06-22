@@ -102,6 +102,14 @@ PYBIND11_MODULE(pypolylib_core, m) {
             return MatrixPtr(mat);
         });
 
+    m.def("PolyhedronCopy", [](Polyhedron *P) {
+        return Polyhedron_Copy(P);
+    }, py::return_value_policy::reference);
+
+    m.def("PolyhedronScan", [](Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
+        return Polyhedron_Scan(D, C, NbMaxRays);
+    }, py::return_value_policy::reference);
+
     m.def("Constraints2Polyhedron", [](Matrix *m, unsigned flags) {
         return PolyhedronPtr(Constraints2Polyhedron(m, flags));
     }, py::arg("matrix"), py::arg("flags") = 0);

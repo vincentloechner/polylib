@@ -509,47 +509,59 @@ class LBL:
                     cte = pl.MatrixGetValue(cmat, r, dim+1)
                     constraints.append((eq_type, coeffs, cte))
 
-                # Find bounds from vertices of the polyhedron
+                    # Use Polyhedron_Scan for optimal per-dimension bounds
                 import math
-                bounds = []
-                vertices = []
-                for r in range(poly.nbrays):
-                    last_col = pl.MatrixGetValue(rmat, r, poly.dimension + 1)
-                    if last_col != 0:  # vertex (not an infinite ray)
-                        pt = [pl.MatrixGetValue(rmat, r, c+1) / last_col for c in range(dim)]
-                        vertices.append(pt)
+                ctx_mat = pl.MatrixReadFromString("0 2\n")
+                ctx = pl.Constraints2Polyhedron(ctx_mat)
+                poly_single = pl.PolyhedronCopy(poly)
+                scan = pl.PolyhedronScan(poly_single, ctx, 1024)
 
-                if vertices:
-                    for v in range(dim):
-                        vals = [pt[v] for pt in vertices]
-                        lo = math.floor(min(vals))
-                        hi = math.ceil(max(vals))
-                        bounds.append((lo, hi))
+                # Collect scan polyhedra into a list (one per dimension)
+                scan_list = []
+                s = scan
+                while s is not None:
+                    scan_list.append(s)
+                    s = s.next
 
-                    # Generate all integer points within the bounding box
-                    def _enumerate(idx, point):
-                        if idx == dim:
-                            for (eq_type, coeffs, cte) in constraints:
-                                val = sum(coeffs[c] * point[c] for c in range(dim)) + cte
-                                if val < 0:
-                                    return
-                                if eq_type == 0 and val != 0:
-                                    return
-                            img = []
-                            for r in range(nb_out):
-                                v = sum(pl.MatrixGetValue(lat, r, c) * point[c] for c in range(nb_vars))
-                                v += pl.MatrixGetValue(lat, r, nb_vars)
-                                img.append(v)
-                            pt = tuple(img)
-                            if pt not in seen:
-                                seen.add(pt)
-                                yield pt
-                            return
-                        lo, hi = bounds[idx]
-                        for val in range(lo, hi+1):
-                            yield from _enumerate(idx+1, point + [val])
+                def get_bounds(scan_poly, k, point):
+                    import math
+                    cmat = scan_poly.constraints
+                    lo = None
+                    hi = None
+                    for r in range(scan_poly.nbconstraints):
+                        coeff_k = pl.MatrixGetValue(cmat, r, k + 1)
+                        if coeff_k == 0:
+                            continue
+                        val = pl.MatrixGetValue(cmat, r, dim + 1)
+                        for d in range(k):
+                            val += pl.MatrixGetValue(cmat, r, d + 1) * point[d]
+                        if coeff_k > 0:
+                            lo_c = math.ceil(-val / coeff_k)
+                            lo = lo_c if lo is None else max(lo, lo_c)
+                        else:
+                            hi_c = math.floor(val / (-coeff_k))
+                            hi = hi_c if hi is None else min(hi, hi_c)
+                    return lo, hi
 
-                    yield from _enumerate(0, [])
+                def _enumerate(k, point):
+                    if k == dim:
+                        img = []
+                        for r in range(nb_out):
+                            v = sum(pl.MatrixGetValue(lat, r, c) * point[c] for c in range(nb_vars))
+                            v += pl.MatrixGetValue(lat, r, nb_vars)
+                            img.append(v)
+                        pt = tuple(img)
+                        if pt not in seen:
+                            seen.add(pt)
+                            yield pt
+                        return
+                    lo, hi = get_bounds(scan_list[k], k, point)
+                    if lo is None or hi is None:
+                        return
+                    for val in range(lo, hi + 1):
+                        yield from _enumerate(k + 1, point + [val])
+
+                yield from _enumerate(0, [])
 
                 poly = poly.next  # polyèdre suivant dans le même node
             node = node.next
