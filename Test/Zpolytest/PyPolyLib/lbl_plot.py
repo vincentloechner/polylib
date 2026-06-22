@@ -48,24 +48,24 @@ def _plot_2d(lbl_obj):
     node = lbl_obj._lbl
     while node is not None:
         poly = node.P
-        if poly is None:
-            node = node.next
-            continue
-        if poly.dimension != 2:
-            node = node.next
-            continue
-        cmat = poly.constraints
-        nb_constraints = poly.nbconstraints
-        inequalities = []
-        for r in range(nb_constraints):
-            eq_type = pl.MatrixGetValue(cmat, r, 0)
-            a = pl.MatrixGetValue(cmat, r, 1)
-            b = pl.MatrixGetValue(cmat, r, 2)
-            c = pl.MatrixGetValue(cmat, r, 3)
-            inequalities.append((a, b, c))
-            if eq_type == 0:
-                inequalities.append((-a, -b, -c))
-        list_of_polyhedra.append(inequalities)
+        # Boucle interne : union de polyèdres dans le même node
+        while poly is not None:
+            if poly.dimension != 2:
+                poly = poly.next
+                continue
+            cmat = poly.constraints
+            nb_constraints = poly.nbconstraints
+            inequalities = []
+            for r in range(nb_constraints):
+                eq_type = pl.MatrixGetValue(cmat, r, 0)
+                a = pl.MatrixGetValue(cmat, r, 1)
+                b = pl.MatrixGetValue(cmat, r, 2)
+                c = pl.MatrixGetValue(cmat, r, 3)
+                inequalities.append((a, b, c))
+                if eq_type == 0:
+                    inequalities.append((-a, -b, -c))
+            list_of_polyhedra.append(inequalities)
+            poly = poly.next
         node = node.next
     if not list_of_polyhedra:
         print("Nothing to display.")
