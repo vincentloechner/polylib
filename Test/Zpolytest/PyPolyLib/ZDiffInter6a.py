@@ -40,11 +40,11 @@ print("diff = a - b =", diff)
 u = diff.union(inter)
 print("u = diff union inter =", u)
 
-# check if u is included in a
-check1 = u.included(a)
-# check if a is included in u
-check2 = a.included(u)
-# or: check1 = pl.LBLincluded(u, a) ...
+# # check if u is included in a
+# check1 = u.included(a)
+# # check if a is included in u
+# check2 = a.included(u)
+# # or: check1 = pl.LBLincluded(u, a) ...
 
-print("Check inclusion (both ways):", check1, check2)
+print("Check equality:", u == a)
 

@@ -7,7 +7,6 @@ Typical usage:
 """
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '../Verif'))
 from plot_polyhedron import plot_polyhedra
 import pypolylib_core as pl
 

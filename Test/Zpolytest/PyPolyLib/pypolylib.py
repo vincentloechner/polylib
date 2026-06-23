@@ -36,11 +36,15 @@ Typical usage:
     # Plot (2D only)
     a.plot()
 """
+#export LD_LIBRARY_PATH=$(pwd)/../../../.libs
+
 
 import pypolylib_core as pl
 import re
-
+import math
 from lbl_repr import _lbl_repr
+from lbl_repr import _terms_to_str
+from lbl_plot import lbl_plot
 
 
 # ──────────────────────────────────────────────────────────────
@@ -380,6 +384,8 @@ class LBL:
         Returns:
             LBL: The union of the two LBLs
         """
+        if self._lbl.P.dimension != other._lbl.P.dimension:
+            raise ValueError(f"Incompatible dimensions: {self._lbl.P.dimension} vs {other._lbl.P.dimension}")
         result = LBL()
         result._lbl = self._lbl.union(other._lbl)
         return result
@@ -467,7 +473,6 @@ class LBL:
 
     def plot(self):
         """Displays the LBL using matplotlib (2D only)."""
-        from lbl_plot import lbl_plot
         lbl_plot(self)
 
     def __iter__(self):
@@ -491,8 +496,6 @@ class LBL:
                 nb_out = lat.nbrows - 1
                 nb_vars = lat.nbcolumns - 1
                 dim = poly.dimension
-                nb_constraints = poly.nbconstraints
-                cmat = poly.constraints
 
                 # Check whether the polyhedron is bounded
                 rmat = poly.rays
@@ -501,16 +504,17 @@ class LBL:
                     if last_col == 0:  # rayon infini
                         raise ValueError("The polyhedron is unbounded; enumeration is impossible")
 
-                # Extract the constraints: coefficients * x + constant >= 0
-                constraints = []
-                for r in range(nb_constraints):
-                    eq_type = pl.MatrixGetValue(cmat, r, 0)
-                    coeffs = [pl.MatrixGetValue(cmat, r, c+1) for c in range(dim)]
-                    cte = pl.MatrixGetValue(cmat, r, dim+1)
-                    constraints.append((eq_type, coeffs, cte))
+                # # Extract the constraints: coefficients * x + constant >= 0
+                # constraints = []
+                # nb_constraints = poly.nbconstraints
+                # cmat = poly.constraints
+                # for r in range(nb_constraints):
+                #     eq_type = pl.MatrixGetValue(cmat, r, 0)
+                #     coeffs = [pl.MatrixGetValue(cmat, r, c+1) for c in range(dim)]
+                #     cte = pl.MatrixGetValue(cmat, r, dim+1)
+                #     constraints.append((eq_type, coeffs, cte))
 
                     # Use Polyhedron_Scan for optimal per-dimension bounds
-                import math
                 ctx_mat = pl.MatrixReadFromString("0 2\n")
                 ctx = pl.Constraints2Polyhedron(ctx_mat)
                 poly_single = pl.PolyhedronCopy(poly)
@@ -524,7 +528,6 @@ class LBL:
                     s = s.next
 
                 def get_bounds(scan_poly, k, point):
-                    import math
                     cmat = scan_poly.constraints
                     lo = None
                     hi = None
@@ -655,7 +658,6 @@ class Transfo:
 
         lhs = ", ".join(var_names)
 
-        from lbl_repr import _terms_to_str
         out_exprs = []
         for r in range(nb_out):
             terms = []
