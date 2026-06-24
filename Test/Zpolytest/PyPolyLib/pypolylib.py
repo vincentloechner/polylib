@@ -356,6 +356,8 @@ class LBL:
         Returns:
             LBL: The intersection of the two LBLs
         """
+        if self._lbl.P.dimension != other._lbl.P.dimension:
+            raise ValueError(f"Incompatible dimensions: {self._lbl.P.dimension} vs {other._lbl.P.dimension}")
         result = LBL()
         result._lbl = self._lbl.intersection(other._lbl)
         return result
@@ -370,6 +372,8 @@ class LBL:
         Returns:
             LBL: The difference between the two LBLs
         """
+        if self._lbl.P.dimension != other._lbl.P.dimension:
+            raise ValueError(f"Incompatible dimensions: {self._lbl.P.dimension} vs {other._lbl.P.dimension}")
         result = LBL()
         result._lbl = self._lbl.difference(other._lbl)
         return result
