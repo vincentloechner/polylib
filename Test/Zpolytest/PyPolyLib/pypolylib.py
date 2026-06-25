@@ -356,8 +356,8 @@ class LBL:
         Returns:
             LBL: The intersection of the two LBLs
         """
-        if self._lbl.P.dimension != other._lbl.P.dimension:
-            raise ValueError(f"Incompatible dimensions: {self._lbl.P.dimension} vs {other._lbl.P.dimension}")
+        if self._lbl.Lat.nbrows - 1 != other._lbl.Lat.nbrows - 1:
+            raise ValueError(f"Incompatible dimensions: {self._lbl.Lat.nbrows - 1} vs {other._lbl.Lat.nbrows - 1}")
         result = LBL()
         result._lbl = self._lbl.intersection(other._lbl)
         return result
@@ -372,8 +372,8 @@ class LBL:
         Returns:
             LBL: The difference between the two LBLs
         """
-        if self._lbl.P.dimension != other._lbl.P.dimension:
-            raise ValueError(f"Incompatible dimensions: {self._lbl.P.dimension} vs {other._lbl.P.dimension}")
+        if self._lbl.Lat.nbrows - 1 != other._lbl.Lat.nbrows - 1:
+            raise ValueError(f"Incompatible dimensions: {self._lbl.Lat.nbrows - 1} vs {other._lbl.Lat.nbrows - 1}")
         result = LBL()
         result._lbl = self._lbl.difference(other._lbl)
         return result
@@ -388,8 +388,8 @@ class LBL:
         Returns:
             LBL: The union of the two LBLs
         """
-        if self._lbl.P.dimension != other._lbl.P.dimension:
-            raise ValueError(f"Incompatible dimensions: {self._lbl.P.dimension} vs {other._lbl.P.dimension}")
+        if self._lbl.Lat.nbrows - 1 != other._lbl.Lat.nbrows - 1:
+            raise ValueError(f"Incompatible dimensions: {self._lbl.Lat.nbrows - 1} vs {other._lbl.Lat.nbrows - 1}")
         result = LBL()
         result._lbl = self._lbl.union(other._lbl)
         return result
