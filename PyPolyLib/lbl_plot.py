@@ -5,10 +5,10 @@ Typical usage:
     a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
     a.plot()
 """
-import sys
-import os
-from plot_polyhedron import plot_polyhedra
 import pypolylib_core as pl
+from plot_polyhedron import plot_polyhedra
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 
 def lbl_plot(lbl_obj):
@@ -74,8 +74,6 @@ def _plot_2d(lbl_obj):
 
 def _plot_3d(lbl_obj):
     """3D scatter plot of integer points (interactive: rotate/zoom)."""
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
 
     pts = list(lbl_obj)
     if not pts:
