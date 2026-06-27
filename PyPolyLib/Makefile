@@ -4,6 +4,7 @@
 # POLYLIB=$(shell pkg-config -cflags -libs polylibgmp)
 
 # using built uninstalled version of polylib
+# (don't forget to set LD_LIBRARY_PATH to find the lib at runtime)
 POLYLIB_BUILD=../build/
 POLYLIB=$(shell pkg-config -cflags -libs ${POLYLIB_BUILD}/polylibgmp-uninstalled.pc)
 
