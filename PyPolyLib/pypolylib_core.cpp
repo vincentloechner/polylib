@@ -61,6 +61,20 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def_readonly("nbrows",    &Matrix::NbRows)
         .def_readonly("nbcolumns", &Matrix::NbColumns);
 
+    // Setter to fill a matrix cell by cell
+    m.def("MatrixSetValue", [](Matrix *mat, int i, int j, long val) {
+        mpz_set_si(mat->p[i][j], val);   // ← mpz_set_si instead of value_assign
+    }, py::arg("mat"), py::arg("i"), py::arg("j"), py::arg("val"));
+
+    m.def("MatrixGetValue", [](Matrix *mat, int i, int j) -> long {
+        return mpz_get_si(mat->p[i][j]);
+    }, py::arg("mat"), py::arg("i"), py::arg("j"));
+
+    m.def("MatrixPrint", [](Matrix *mat) {
+        Matrix_Print(stdout, " %s", mat);
+    }), py::arg("mat");
+
+    
     m.def("MatrixAlloc", [](unsigned nbrows, unsigned nbcols) {
         return MatrixPtr(Matrix_Alloc(nbrows, nbcols));
     }, py::arg("nbrows"), py::arg("nbcols"));
@@ -78,6 +92,24 @@ PYBIND11_MODULE(pypolylib_core, m) {
         fclose(f);
         return MatrixPtr(mat);
     });
+    // Product of two matrices
+    m.def("MatrixProduct", [](Matrix *a, Matrix *b) {
+        Matrix *result = Matrix_Alloc(a->NbRows, b->NbColumns);
+        Matrix_Product(a, b, result);
+        return MatrixPtr(result);
+    }, py::arg("a"), py::arg("b"));
+
+    // Inverse of a matrix
+    m.def("MatrixInverse", [](Matrix *mat) {
+        Matrix *result = Matrix_Alloc(mat->NbRows, mat->NbColumns);
+        int ok = Matrix_Inverse(mat, result);
+        if (!ok) {
+            Matrix_Free(result);
+            throw std::runtime_error("The matrix is not invertible");
+        }
+        return MatrixPtr(result);
+    }, py::arg("mat"));
+
 
     // --- Polyhedron ---
     py::class_<Polyhedron, PolyhedronPtr>(m, "Polyhedron")
@@ -114,6 +146,9 @@ PYBIND11_MODULE(pypolylib_core, m) {
         return PolyhedronPtr(Constraints2Polyhedron(m, flags));
     }, py::arg("matrix"), py::arg("flags") = 0);
 
+    m.def("PolyhedronImage", [](Matrix *m, Polyhedron *P, unsigned flags) {
+        return PolyhedronPtr(Polyhedron_Image(P, m, flags));
+    }, py::arg("matrix"), py::arg("polyhedron"), py::arg("flags") = 0);
 
     // --- LBL ---
     py::class_<LBL, LBLPtr>(m, "LBL")
@@ -165,37 +200,9 @@ PYBIND11_MODULE(pypolylib_core, m) {
         return LBLPtr(LBLPreimage(a, func));
     }, py::arg("lbl"), py::arg("func"));
 
-
-    // Setter to fill a matrix cell by cell
-    m.def("MatrixSetValue", [](Matrix *mat, int i, int j, long val) {
-        mpz_set_si(mat->p[i][j], val);   // ← mpz_set_si instead of value_assign
-    }, py::arg("mat"), py::arg("i"), py::arg("j"), py::arg("val"));
-
-    m.def("MatrixGetValue", [](Matrix *mat, int i, int j) -> long {
-        return mpz_get_si(mat->p[i][j]);
-    }, py::arg("mat"), py::arg("i"), py::arg("j"));
-
     // Displaying an LBL
     m.def("LBLPrint", [](LBL *l) {
         LBLPrint(stdout, " %s", l);
     });
-    // Product of two matrices
-    m.def("MatrixProduct", [](Matrix *a, Matrix *b) {
-        Matrix *result = Matrix_Alloc(a->NbRows, b->NbColumns);
-        Matrix_Product(a, b, result);
-        return MatrixPtr(result);
-    }, py::arg("a"), py::arg("b"));
-
-    // Inverse of a matrix
-    m.def("MatrixInverse", [](Matrix *mat) {
-        Matrix *result = Matrix_Alloc(mat->NbRows, mat->NbColumns);
-        int ok = Matrix_Inverse(mat, result);
-        if (!ok) {
-            Matrix_Free(result);
-            throw std::runtime_error("The matrix is not invertible");
-        }
-        return MatrixPtr(result);
-    }, py::arg("mat"));
-
 
  }

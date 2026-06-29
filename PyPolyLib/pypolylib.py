@@ -5,11 +5,11 @@ This module exposes the LBL (Lattice-Based Lattice) and Transfo types
 for manipulating sets of integer points (Z-polyhedra) in Python.
 
 Typical usage:
-    from pypolylib import LBLRead, Transfo
+    from pypolylib import LBL, Transfo
 
     #Create an LBL
-    a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
-    b = LBLRead("{(2i, j) | 1 <= i <= 50, j = 10}")
+    a = LBL("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
+    b = LBL("{(2i, j) | 1 <= i <= 50, j = 10}")
 
     #  Set operations
     inter = a * b          # intersection
@@ -19,7 +19,10 @@ Typical usage:
     #  Check for inclusion
     print(a.included(b))   # True or False
 
-    #Image under a transformation
+    #  Check for equality (mutual inclusion)
+    print(a == b)   # True or False
+
+    # Image under a transformation
     f = Transfo("(i,j -> 2i+1, i+3j)")
     print(a.image(f))      # image of a under f
     print(a.preimage(f))   # preimage of a under f
@@ -29,21 +32,19 @@ Typical usage:
     h = f * g              # composition
     fi = f.inverse()       # inverse
 
-    # Iterate over integer points
+    # Iterate over LBL points
     for pt in a:
-        print(pt)          # prints each integer point
+        print(pt)          # print each point (as a tuple of integers)
 
-    # Plot (2D only)
+    # Plot (2D and 3D only)
     a.plot()
 """
-#export LD_LIBRARY_PATH=$(pwd)/../../../.libs
 
 
 import pypolylib_core as pl
 import re
 import math
-from lbl_repr import _lbl_repr
-from lbl_repr import _terms_to_str
+from lbl_repr import _lbl_repr, _terms_to_str
 from lbl_plot import lbl_plot
 
 
