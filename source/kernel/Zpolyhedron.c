@@ -3237,8 +3237,8 @@ static LBL *sLBL2ZDomain(LBL *A)
  */
 LBL *LBL2ZDomain(LBL *A)
 {
-  LBL *Result = NULL;
-  for(LBL *Z = A; Z; Z = Z->next)
+  LBL *Result = sLBL2ZDomain(A);
+  for(LBL *Z = A->next; Z; Z = Z->next)
   {
     LBL *tmp;
     tmp = sLBL2ZDomain(Z);
