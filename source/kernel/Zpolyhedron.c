@@ -253,6 +253,8 @@ static Bool LBL_simple_inclusion_check(LBL *A, LBL *B)
   
 
     // check if A->P is included in tmpB->P
+    if(! tmpB->P)
+      return(False);  // B is empty
 
     // if tmpB->P is a single polyhedron, a simple inclusion check of all
     // parts of A->P is enough:
