@@ -9,6 +9,8 @@ def _lbl_repr(lbl_core):
     node = lbl_core
     while node is not None:
         P = node.P
+        if P is None:
+            return(_single_lbl_repr(node.Lat, P))
         while P:
             parts.append(_single_lbl_repr(node.Lat, P))
             P = P.next

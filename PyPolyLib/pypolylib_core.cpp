@@ -134,12 +134,18 @@ PYBIND11_MODULE(pypolylib_core, m) {
             return MatrixPtr(mat);
         });
 
-    m.def("PolyhedronCopy", [](Polyhedron *P) {
-        return Polyhedron_Copy(P);
-    }, py::return_value_policy::reference);
+    // unused
+    // m.def("PolyhedronCopy", [](Polyhedron *P) {
+    //     return PolyhedronPtr(Polyhedron_Copy(P));
+    // }, py::return_value_policy::reference);
 
     m.def("PolyhedronScan", [](Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
-        return Polyhedron_Scan(D, C, NbMaxRays);
+        // single polyhedron scan, set next to NULL and restore after calling scan
+        Polyhedron *next = D->next;
+        D->next = NULL;
+        Polyhedron *res = Polyhedron_Scan(D, C, NbMaxRays);
+        D->next = next;
+        return PolyhedronPtr(res);
     }, py::return_value_policy::reference);
 
     m.def("Constraints2Polyhedron", [](Matrix *m, unsigned flags) {

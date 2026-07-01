@@ -337,7 +337,7 @@ class LBL:
         if s is not None:
             self._lbl = self._LBLRead(s)
 
-    def Print(self):
+    def print(self):
         """Displays the LBL in symbolic form."""
         print(self.__repr__())
 
@@ -480,6 +480,7 @@ class LBL:
         """Displays the LBL using matplotlib (2D only)."""
         lbl_plot(self)
 
+
     def __iter__(self):
         """
         Lists all the integer points of the LBL.
@@ -489,89 +490,86 @@ class LBL:
         Yields:
             tuple: Coordinates of the integer point in the lattice image
         """
+        def iter_single_lbl(lat, poly, seen):
+            """
+            Lists all the integer points of a single LBL (lat, poly)
+            Yields:
+                tuple: Coordinates of the integer point in the lattice image
+            """
+
+            def get_bounds(scan_poly, k, point):
+                cmat = scan_poly.constraints
+                lo = None
+                hi = None
+                for r in range(scan_poly.nbconstraints):
+                    coeff_k = pl.MatrixGetValue(cmat, r, k + 1)
+                    if coeff_k == 0:
+                        continue
+                    val = pl.MatrixGetValue(cmat, r, dim + 1)
+                    for d in range(k):
+                        val += pl.MatrixGetValue(cmat, r, d + 1) * point[d]
+                    if coeff_k > 0:
+                        lo_c = math.ceil(-val / coeff_k)
+                        lo = lo_c if lo is None else max(lo, lo_c)
+                    else:
+                        hi_c = math.floor(val / (-coeff_k))
+                        hi = hi_c if hi is None else min(hi, hi_c)
+                return lo, hi
+
+            def _enumerate(k, point):
+                if k == dim:
+                    # got a point being scanned
+                    img = []
+                    nb_vars = lat.nbcolumns - 1
+                    for r in range(lat.nbrows - 1):
+                        v = sum(pl.MatrixGetValue(lat, r, c) * point[c] for c in range(nb_vars))
+                        v += pl.MatrixGetValue(lat, r, nb_vars)
+                        img.append(v)
+                    pt = tuple(img)
+                    if pt not in seen:
+                        seen.add(pt)
+                        yield pt
+                    return
+                # else, continue scanning inside dimensions
+                lo, hi = get_bounds(scan_list[k], k, point)
+                if lo is None or hi is None:
+                    return
+                for val in range(lo, hi + 1):
+                    yield from _enumerate(k + 1, point + [val])
+
+            dim = poly.dimension
+
+            # Check whether the polyhedron is bounded
+            if poly.nbbid != 0:
+                raise ValueError("unbounded; enumeration is impossible")
+            if pl.MatrixGetValue(poly.rays, 0, dim + 1) == 0:
+                # infinite ray
+                raise ValueError("unbounded; enumeration is impossible")
+
+            # Use Polyhedron_Scan for optimal per-dimension bounds
+            ctx_mat = pl.MatrixReadFromString("0 2\n")
+            ctx = pl.Constraints2Polyhedron(ctx_mat)
+            scan = pl.PolyhedronScan(poly, ctx, 1024)
+
+            # Collect scan polyhedra into a list (one per dimension)
+            scan_list = []
+            while scan is not None:
+                scan_list.append(scan)
+                scan = scan.next
+
+            yield from _enumerate(0, [])
+
+        # iterate over single LBLs and call an iterator over each of them
         seen = set()
         node = self._lbl
 
         while node is not None:
-            lat = node.Lat
             poly = node.P
-
-            # Boucle interne : union de polyèdres dans le même node
             while poly is not None:
-                nb_out = lat.nbrows - 1
-                nb_vars = lat.nbcolumns - 1
-                dim = poly.dimension
+                yield from iter_single_lbl(node.Lat, poly, seen)
 
-                # Check whether the polyhedron is bounded
-                rmat = poly.rays
-                for r in range(poly.nbrays):
-                    last_col = pl.MatrixGetValue(rmat, r, poly.dimension + 1)
-                    if last_col == 0:  # rayon infini
-                        raise ValueError("The polyhedron is unbounded; enumeration is impossible")
+                poly = poly.next
 
-                # # Extract the constraints: coefficients * x + constant >= 0
-                # constraints = []
-                # nb_constraints = poly.nbconstraints
-                # cmat = poly.constraints
-                # for r in range(nb_constraints):
-                #     eq_type = pl.MatrixGetValue(cmat, r, 0)
-                #     coeffs = [pl.MatrixGetValue(cmat, r, c+1) for c in range(dim)]
-                #     cte = pl.MatrixGetValue(cmat, r, dim+1)
-                #     constraints.append((eq_type, coeffs, cte))
-
-                    # Use Polyhedron_Scan for optimal per-dimension bounds
-                ctx_mat = pl.MatrixReadFromString("0 2\n")
-                ctx = pl.Constraints2Polyhedron(ctx_mat)
-                poly_single = pl.PolyhedronCopy(poly)
-                scan = pl.PolyhedronScan(poly_single, ctx, 1024)
-
-                # Collect scan polyhedra into a list (one per dimension)
-                scan_list = []
-                s = scan
-                while s is not None:
-                    scan_list.append(s)
-                    s = s.next
-
-                def get_bounds(scan_poly, k, point):
-                    cmat = scan_poly.constraints
-                    lo = None
-                    hi = None
-                    for r in range(scan_poly.nbconstraints):
-                        coeff_k = pl.MatrixGetValue(cmat, r, k + 1)
-                        if coeff_k == 0:
-                            continue
-                        val = pl.MatrixGetValue(cmat, r, dim + 1)
-                        for d in range(k):
-                            val += pl.MatrixGetValue(cmat, r, d + 1) * point[d]
-                        if coeff_k > 0:
-                            lo_c = math.ceil(-val / coeff_k)
-                            lo = lo_c if lo is None else max(lo, lo_c)
-                        else:
-                            hi_c = math.floor(val / (-coeff_k))
-                            hi = hi_c if hi is None else min(hi, hi_c)
-                    return lo, hi
-
-                def _enumerate(k, point):
-                    if k == dim:
-                        img = []
-                        for r in range(nb_out):
-                            v = sum(pl.MatrixGetValue(lat, r, c) * point[c] for c in range(nb_vars))
-                            v += pl.MatrixGetValue(lat, r, nb_vars)
-                            img.append(v)
-                        pt = tuple(img)
-                        if pt not in seen:
-                            seen.add(pt)
-                            yield pt
-                        return
-                    lo, hi = get_bounds(scan_list[k], k, point)
-                    if lo is None or hi is None:
-                        return
-                    for val in range(lo, hi + 1):
-                        yield from _enumerate(k + 1, point + [val])
-
-                yield from _enumerate(0, [])
-
-                poly = poly.next  # polyèdre suivant dans le même node
             node = node.next
 
 
