@@ -1,16 +1,14 @@
 """
-test_ZDomain.py — Teste que zdomain(a) == a pour plusieurs LBLs.
-Inspiré de ZDomain3.in, ZDomain4.in, ZDomain6.in, ZDomain10.in, ZDomain11.in.
- 
-Usage:
-    export LD_LIBRARY_PATH=~/polylib/.libs:$LD_LIBRARY_PATH
-    python3 test_ZDomain.py
+test_ZDomain.py — Check if zdomain(a) == a for several example LBLs.
 """
-import subprocess, sys
- 
+import sys
+
 # (nom, lbl_string)
 # Vérification : a.included(zdomain(a)) and zdomain(a).included(a)
 tests = [
+    ("empty    ",
+     "{(i) | 1<0}"),
+
     ("ZDomain2b",
      "{(i) | 0 <= i, 30j >= i, 29j <= i}"),
 
@@ -33,9 +31,9 @@ tests = [
     # ("ZDomain11",
     #  "{(2i, 0, 52i+66j) | 198k <= -150i+j, 264k >= -200i+j, 9j <= 2i, 5j >= i, i <= 1000}"),
 ]
- 
+
 from pypolylib import LBL
- 
+
 passed = 0
 failed = 0
 
@@ -44,15 +42,18 @@ for name, lbl_str in tests:
         print(f"{name}... ", end="", flush=True)
         a = LBL(lbl_str)
         b = a.zdomain()
-        # assert a.included(b), "a not included in zdomain(a)"
-        # assert b.included(a), "zdomain(a) not included in a"
-        assert a == b
+        assert a.included(b), "a not included in zdomain(a)"
+        assert b.included(a), "zdomain(a) not included in a"
+        # less precise output, but basically same computation:
+        # assert a == b
         print("OK")
         passed += 1
-    except AssertionError:
-        print("FAIL")
+    except:
+        print("\033[31mFAIL\033[0m")
+        print(f"a = {a}")
+        print(f"a.zdomain() = {b}")
         failed += 1
- 
+
 print(f"\n  {passed} passed, {failed} failed")
 if failed:
     sys.exit(1)
