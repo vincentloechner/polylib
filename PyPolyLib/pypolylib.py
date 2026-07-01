@@ -43,6 +43,7 @@ Typical usage:
 
 import pypolylib_core as pl
 import re
+import unicodedata
 import math
 from lbl_repr import _lbl_repr, _terms_to_str
 from lbl_plot import lbl_plot
@@ -288,6 +289,11 @@ class LBL:
         rhs_str = rhs_str.strip()
 
         all_text = lhs_str + rhs_str
+        for i, c in enumerate(all_text):
+            if ord(c) > 127:
+                print(f"\nWarning: non ASCII char {c!r} at position {i} "
+                      f"(U+{ord(c):04X}, {unicodedata.name(c, 'UNKNOWN')})\n")
+
         # variables = sorted(set(re.findall(r'[a-z](?![a-z])', all_text)))
         # Modified this: do not sort, enable multicharacter variables
         variables = set(re.findall(r'[a-zA-Z][a-zA-Z0-9_]*(?![a-zA-Z0-9_])', all_text))
