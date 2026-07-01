@@ -288,7 +288,9 @@ class LBL:
         rhs_str = rhs_str.strip()
 
         all_text = lhs_str + rhs_str
-        variables = sorted(set(re.findall(r'[a-z](?![a-z])', all_text)))
+        # variables = sorted(set(re.findall(r'[a-z](?![a-z])', all_text)))
+        # Modified this: do not sort, enable multicharacter variables
+        variables = set(re.findall(r'[a-zA-Z][a-zA-Z0-9_]*(?![a-zA-Z0-9_])', all_text))
         n = len(variables)
 
         # Lattice matrix
