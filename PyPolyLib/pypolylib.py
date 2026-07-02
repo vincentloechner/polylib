@@ -550,7 +550,7 @@ class LBL:
             # Check whether the polyhedron is bounded
             if poly.nbbid != 0:
                 raise ValueError("unbounded; enumeration is impossible")
-            if poly.rays[0, dim + 1] == 0:
+            if poly.ray[0, dim + 1] == 0:
                 # infinite ray
                 raise ValueError("unbounded; enumeration is impossible")
 
