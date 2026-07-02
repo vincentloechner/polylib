@@ -46,7 +46,7 @@ def _single_lbl_repr(lat, poly):
     for r in range(nb_out):
         terms = []
         for c in range(nb_vars):
-            coef = pl.MatrixGetValue(lat, r, c)
+            coef = lat[r, c]
             if coef == 0:
                 continue
             vname = var_names[c]
@@ -56,7 +56,7 @@ def _single_lbl_repr(lat, poly):
                 terms.append(f"-{vname}")
             else:
                 terms.append(f"{coef}{vname}")
-        cte = pl.MatrixGetValue(lat, r, nb_vars)
+        cte = lat[r, nb_vars]
         if cte != 0:
             terms.append(str(cte))
         if not terms:
@@ -87,9 +87,13 @@ def _single_lbl_repr(lat, poly):
 
     constraints = []
     for r in range(nb_constraints):
-        eq_type = pl.MatrixGetValue(cmat, r, 0)  # 0 = equality, 1 = inequality
-        coeffs = [pl.MatrixGetValue(cmat, r, c+1) for c in range(dim)]
-        cte = pl.MatrixGetValue(cmat, r, dim+1)
+        eq_type = cmat[r, 0]  # 0 = equality, 1 = inequality
+        coeffs = [cmat[r, c+1] for c in range(dim)]
+        cte = cmat[r, dim+1]
+
+        if coeffs == [0]*dim and cte == 1:
+            # positivity constraint, don't print.
+            continue
 
         # Construire l'expression : sum(coeff*var) + cte >= 0
         terms = []

@@ -510,12 +510,12 @@ class LBL:
                 lo = None
                 hi = None
                 for r in range(scan_poly.nbconstraints):
-                    coeff_k = pl.MatrixGetValue(cmat, r, k + 1)
+                    coeff_k = cmat[r, k + 1]
                     if coeff_k == 0:
                         continue
-                    val = pl.MatrixGetValue(cmat, r, dim + 1)
+                    val = cmat[r, dim + 1]
                     for d in range(k):
-                        val += pl.MatrixGetValue(cmat, r, d + 1) * point[d]
+                        val += cmat[r, d + 1] * point[d]
                     if coeff_k > 0:
                         lo_c = math.ceil(-val / coeff_k)
                         lo = lo_c if lo is None else max(lo, lo_c)
@@ -530,8 +530,8 @@ class LBL:
                     img = []
                     nb_vars = lat.nbcolumns - 1
                     for r in range(lat.nbrows - 1):
-                        v = sum(pl.MatrixGetValue(lat, r, c) * point[c] for c in range(nb_vars))
-                        v += pl.MatrixGetValue(lat, r, nb_vars)
+                        v = sum(lat[r, c] * point[c] for c in range(nb_vars))
+                        v += lat[r, nb_vars]
                         img.append(v)
                     pt = tuple(img)
                     if pt not in seen:
@@ -550,7 +550,7 @@ class LBL:
             # Check whether the polyhedron is bounded
             if poly.nbbid != 0:
                 raise ValueError("unbounded; enumeration is impossible")
-            if pl.MatrixGetValue(poly.rays, 0, dim + 1) == 0:
+            if poly.rays[0, dim + 1] == 0:
                 # infinite ray
                 raise ValueError("unbounded; enumeration is impossible")
 
@@ -673,14 +673,14 @@ class Transfo:
         for r in range(nb_out):
             terms = []
             for c in range(nb_vars):
-                coef = pl.MatrixGetValue(self._mat, r, c)
+                coef = self._mat[r, c]
                 if coef == 0:
                     continue
                 vname = var_names[c]
                 if coef == 1:    terms.append(vname)
                 elif coef == -1: terms.append(f"-{vname}")
                 else:            terms.append(f"{coef}{vname}")
-            cte = pl.MatrixGetValue(self._mat, r, nb_vars)
+            cte = self._mat[r, nb_vars]
             if cte != 0:
                 terms.append(str(cte))
             out_exprs.append(_terms_to_str(terms) if terms else "0")
