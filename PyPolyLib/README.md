@@ -59,11 +59,11 @@ Run `python3` and type:
 >>> a
 {(2i, j) | i <= 5, -2i+j - 1 >= 0, 3i-j >= 0}
 >>> b
-{(i, j) | j <= 4, 0 + 1 >= 0}
+{(i, j) | j <= 4}
 >>> # union
 >>> a + b
 {(2i, j) | i <= 5, -2i+j - 1 >= 0, 3i-j >= 0} UNION
-{(i, j) | j <= 4, 0 + 1 >= 0}
+{(i, j) | j <= 4}
 >>> # difference
 >>> a - b
 {(2i, j) | i <= 5, -2i+j - 1 >= 0, 3i-j >= 0, j >= 5}
