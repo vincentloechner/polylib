@@ -56,8 +56,9 @@ using PolyhedronPtr = std::unique_ptr<Polyhedron, PolyhedronDeleter>;
 
 PYBIND11_MODULE(pypolylib_core, m) {
 
-    // --- Matrix ---
+    // ----------------------- Matrix ----------------------
     py::class_<Matrix, MatrixPtr>(m, "Matrix")
+        // Matrix properties
         .def_readonly("nbrows",    &Matrix::NbRows)
         .def_readonly("nbcolumns", &Matrix::NbColumns);
 
@@ -111,36 +112,26 @@ PYBIND11_MODULE(pypolylib_core, m) {
     }, py::arg("mat"));
 
 
-    // --- Polyhedron ---
+    // --------------------- Polyhedron ---------------------------
     py::class_<Polyhedron, PolyhedronPtr>(m, "Polyhedron")
+        // Polyhedron properties
         .def_readonly("dimension",      &Polyhedron::Dimension)
         .def_readonly("nbconstraints",  &Polyhedron::NbConstraints)
         .def_readonly("nbrays",         &Polyhedron::NbRays)
         .def_readonly("nbbid",          &Polyhedron::NbBid)
-        .def_property_readonly("next", [](Polyhedron &p) -> Polyhedron* { return p.next; }, py::return_value_policy::reference)
+        .def_property_readonly("next",
+            [](Polyhedron &p) -> Polyhedron* { return p.next; },
+            py::return_value_policy::reference)
         .def_property_readonly("constraints", [](Polyhedron &p) {
-            // Constructing a Matrix from the constraints of the polyhedron
-            Matrix *mat = Matrix_Alloc(p.NbConstraints, p.Dimension + 2);
-            for (unsigned i = 0; i < p.NbConstraints; i++)
-                for (unsigned j = 0; j < p.Dimension + 2; j++)
-                    mpz_set(mat->p[i][j], p.Constraint[i][j]);
-            return MatrixPtr(mat);
+            return MatrixPtr(Polyhedron2Constraints(&p));
         })
         .def_property_readonly("rays", [](Polyhedron &p) {
-            Matrix *mat = Matrix_Alloc(p.NbRays, p.Dimension + 2);
-            for (unsigned i = 0; i < p.NbRays; i++)
-                for (unsigned j = 0; j < p.Dimension + 2; j++)
-                    mpz_set(mat->p[i][j], p.Ray[i][j]);
-            return MatrixPtr(mat);
+            return MatrixPtr(Polyhedron2Rays(&p));
         });
 
-    // unused
-    // m.def("PolyhedronCopy", [](Polyhedron *P) {
-    //     return PolyhedronPtr(Polyhedron_Copy(P));
-    // }, py::return_value_policy::reference);
-
+    // -- Polyhedron methods --
     m.def("PolyhedronScan", [](Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
-        // single polyhedron scan, set next to NULL and restore after calling scan
+        // single polyhedron scan only, unset/restore next:
         Polyhedron *next = D->next;
         D->next = NULL;
         Polyhedron *res = Polyhedron_Scan(D, C, NbMaxRays);
@@ -156,7 +147,9 @@ PYBIND11_MODULE(pypolylib_core, m) {
         return PolyhedronPtr(Polyhedron_Image(P, m, flags));
     }, py::arg("matrix"), py::arg("polyhedron"), py::arg("flags") = 0);
 
-    // --- LBL ---
+
+
+    // ---------------------------- LBL ------------------------------
     py::class_<LBL, LBLPtr>(m, "LBL")
         .def_property_readonly("Lat",
             [](LBL &l) { return l.Lat; },

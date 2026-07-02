@@ -1,12 +1,15 @@
 import pypolylib_core as pl
 
-def _lbl_repr(lbl_core):
+def _lbl_repr(lbl):
     """
-    Constructs a symbolic representation of an LBL.
+    Constructs a string representation of an LBL.
     Ex: {(3i) | 0 <= i <= 5}
+
+    Args:
+        node: LBL node (pypolylib_core.LBL)
     """
     parts = []
-    node = lbl_core
+    node = lbl
     while node is not None:
         P = node.P
         if P is None:
@@ -15,15 +18,16 @@ def _lbl_repr(lbl_core):
             parts.append(_single_lbl_repr(node.Lat, P))
             P = P.next
         node = node.next
-    return " UNION \n" .join(parts)
+    return " UNION\n  " .join(parts)
 
 
 def _single_lbl_repr(lat, poly):
     """
-    Constructs the symbolic representation of a single LBL node.
+    Constructs the string representation of a single LBL node.
 
     Args:
-        node: LBL node (pypolylib_core.LBL)
+        lat: lattice function (pypolylib_core.Matrix)
+        poly: polyhedron (pypolylib_core.Polyhedron)
 
     Returns:
         str: Symbolic representation, e.g., “{(3i) | i >= 0, i <= 5}”
