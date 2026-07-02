@@ -80,7 +80,7 @@ def _single_lbl_repr(lat, poly):
 
     nb_constraints = poly.nbconstraints
     dim = poly.dimension
-    cmat = poly.constraints
+    cmat = poly.constraint
 
     # Names of the polyhedron's variables
     poly_vars = [chr(ord('i') + v) for v in range(dim)]

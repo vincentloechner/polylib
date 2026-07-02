@@ -64,13 +64,13 @@ def _plot_2d(lbl_obj, show_points):
                 return
 
             vertices = []
-            rays = poly.rays
-            for v in range(rays.nbrows):
+            ray = poly.ray
+            for v in range(poly.nbrays):
                 # no need, this is always 1 (no bid lines):
-                # v_type = rays[v, 0]
-                a = rays[v, 1]
-                b = rays[v, 2]
-                c = rays[v, 3]
+                # v_type = ray[v, 0]
+                a = ray[v, 1]
+                b = ray[v, 2]
+                c = ray[v, 3]
                 if c == 0:
                     print("Warning: trying to plot an unbounded polyhedron. Canceling.")
                     return

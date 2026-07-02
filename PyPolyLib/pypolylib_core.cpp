@@ -53,29 +53,15 @@ struct PolyhedronDeleter {
 };
 using PolyhedronPtr = std::unique_ptr<Polyhedron, PolyhedronDeleter>;
 
+// just another name for the polyhedra Constraints and Rays accessors:
+struct ConstraintsView {
+    Polyhedron *poly;
+};
+struct RaysView {
+    Polyhedron *poly;
+};
 
 PYBIND11_MODULE(pypolylib_core, m) {
-
-    // // ----------------------- GMP Values ----------------------
-    // py::class_<Value>(m, "Value")
-    // .def("__getitem__", [](Value &v, py::tuple idx) -> py::object {
-    //     int i = idx[0].cast<int>();
-    //     int j = idx[1].cast<int>();
-
-    //     char *s = mpz_get_str(nullptr, 10, v.p[i][j]);
-    //     py::int_ x(s);
-    //     free(s);
-
-    //     return x;
-    // })
-
-    // .def("__setitem__", [](Value &v, py::tuple idx, py::object val) {
-    //     int i = idx[0].cast<int>();
-    //     int j = idx[1].cast<int>();
-
-    //     std::string s = py::str(val);
-    //     mpz_set_str(v.p[i][j], s.c_str(), 10);
-    // });
 
 
     // ----------------------- Matrix ----------------------
@@ -90,9 +76,12 @@ PYBIND11_MODULE(pypolylib_core, m) {
             int j = idx[1].cast<int>();
     
             char *s = mpz_get_str(nullptr, 10, m.p[i][j]);
-            py::object val = py::module_::import("builtins").attr("int")(s);
+            PyObject *obj = PyLong_FromString(s, nullptr, 10);
             free(s);
-            return val;
+            return py::reinterpret_steal<py::int_>(obj);
+            // py::object val = py::module_::import("builtins").attr("int")(s);
+            // free(s);
+            // return val;
         })
         .def("__setitem__", [](Matrix &m, py::tuple idx, py::object val) {
             int i = idx[0].cast<int>();
@@ -102,16 +91,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
             mpz_set_str(m.p[i][j], s.c_str(), 10);
         });
 
-    // not necessary
-    // // Setter to fill a matrix cell by cell
-    // m.def("MatrixSetValue", [](Matrix *mat, int i, int j, long val) {
-    //     mpz_set_si(mat->p[i][j], val);   // ← mpz_set_si instead of value_assign
-    // }, py::arg("mat"), py::arg("i"), py::arg("j"), py::arg("val"));
-
-    m.def("MatrixGetValue", [](Matrix *mat, int i, int j) -> long {
-        return mpz_get_si(mat->p[i][j]);
-    }, py::arg("mat"), py::arg("i"), py::arg("j"));
-
+    // --- methods on Matrices ---
     m.def("MatrixPrint", [](Matrix *mat) {
         Matrix_Print(stdout, " %s", mat);
     }), py::arg("mat");
@@ -134,14 +114,14 @@ PYBIND11_MODULE(pypolylib_core, m) {
         fclose(f);
         return MatrixPtr(mat);
     });
-    // Product of two matrices
+    // Product
     m.def("MatrixProduct", [](Matrix *a, Matrix *b) {
         Matrix *result = Matrix_Alloc(a->NbRows, b->NbColumns);
         Matrix_Product(a, b, result);
         return MatrixPtr(result);
     }, py::arg("a"), py::arg("b"));
 
-    // Inverse of a matrix
+    // Inverse
     m.def("MatrixInverse", [](Matrix *mat) {
         Matrix *result = Matrix_Alloc(mat->NbRows, mat->NbColumns);
         int ok = Matrix_Inverse(mat, result);
@@ -154,6 +134,32 @@ PYBIND11_MODULE(pypolylib_core, m) {
 
 
     // --------------------- Polyhedron ---------------------------
+    py::class_<ConstraintsView>(m, "ConstraintsView")
+        .def("__getitem__", [](ConstraintsView &p, py::tuple idx) {
+            int i = idx[0].cast<int>();
+            int j = idx[1].cast<int>();
+
+            char *s = mpz_get_str(nullptr, 10, p.poly->Constraint[i][j]);
+            // py::object v = py::module_::import("builtins").attr("int")(s);
+            PyObject *obj = PyLong_FromString(s, nullptr, 10);
+            free(s);
+
+            // return v;
+            return py::reinterpret_steal<py::int_>(obj);
+        });
+    py::class_<RaysView>(m, "RaysView")
+        .def("__getitem__", [](RaysView &p, py::tuple idx) {
+            int i = idx[0].cast<int>();
+            int j = idx[1].cast<int>();
+
+            char *s = mpz_get_str(nullptr, 10, p.poly->Ray[i][j]);
+            // py::object v = py::module_::import("builtins").attr("int")(s);
+            PyObject *obj = PyLong_FromString(s, nullptr, 10);
+            free(s);
+
+            // return v;
+            return py::reinterpret_steal<py::int_>(obj);
+        });
     py::class_<Polyhedron, PolyhedronPtr>(m, "Polyhedron")
         // Polyhedron properties
         .def_readonly("dimension",      &Polyhedron::Dimension)
@@ -163,12 +169,19 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def_property_readonly("next",
             [](Polyhedron &p) -> Polyhedron* { return p.next; },
             py::return_value_policy::reference)
-        .def_property_readonly("constraints", [](Polyhedron &p) {
-            return MatrixPtr(Polyhedron2Constraints(&p));
-        })
-        .def_property_readonly("rays", [](Polyhedron &p) {
-            return MatrixPtr(Polyhedron2Rays(&p));
-        });
+        // constraint and ray accessors
+        .def_property_readonly("constraint", [](Polyhedron &p) {
+            return ConstraintsView{&p};   // return a constraints view of the polyhedron
+        }, py::return_value_policy::move)
+        .def_property_readonly("ray", [](Polyhedron &p) {
+            return RaysView{&p};   // return a rays view of the polyhedron
+        }, py::return_value_policy::move);
+        // .def_property_readonly("constraints", [](Polyhedron &p) {
+        //     return MatrixPtr(Polyhedron2Constraints(&p));
+        // })
+        // .def_property_readonly("rays", [](Polyhedron &p) {
+        //     return MatrixPtr(Polyhedron2Rays(&p));
+        // });
 
     // -- Polyhedron methods --
     m.def("PolyhedronScan", [](Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {

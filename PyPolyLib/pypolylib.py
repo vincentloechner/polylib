@@ -506,7 +506,7 @@ class LBL:
             """
 
             def get_bounds(scan_poly, k, point):
-                cmat = scan_poly.constraints
+                cmat = scan_poly.constraint
                 lo = None
                 hi = None
                 for r in range(scan_poly.nbconstraints):
