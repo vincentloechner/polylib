@@ -56,16 +56,57 @@ using PolyhedronPtr = std::unique_ptr<Polyhedron, PolyhedronDeleter>;
 
 PYBIND11_MODULE(pypolylib_core, m) {
 
+    // // ----------------------- GMP Values ----------------------
+    // py::class_<Value>(m, "Value")
+    // .def("__getitem__", [](Value &v, py::tuple idx) -> py::object {
+    //     int i = idx[0].cast<int>();
+    //     int j = idx[1].cast<int>();
+
+    //     char *s = mpz_get_str(nullptr, 10, v.p[i][j]);
+    //     py::int_ x(s);
+    //     free(s);
+
+    //     return x;
+    // })
+
+    // .def("__setitem__", [](Value &v, py::tuple idx, py::object val) {
+    //     int i = idx[0].cast<int>();
+    //     int j = idx[1].cast<int>();
+
+    //     std::string s = py::str(val);
+    //     mpz_set_str(v.p[i][j], s.c_str(), 10);
+    // });
+
+
     // ----------------------- Matrix ----------------------
     py::class_<Matrix, MatrixPtr>(m, "Matrix")
         // Matrix properties
         .def_readonly("nbrows",    &Matrix::NbRows)
-        .def_readonly("nbcolumns", &Matrix::NbColumns);
+        .def_readonly("nbcolumns", &Matrix::NbColumns)
+        // .def_readonly("value",     &Matrix::p)
+        // --- accessors to gmp values ---
+        .def("__getitem__", [](Matrix &m, py::tuple idx) -> py::object {
+            int i = idx[0].cast<int>();
+            int j = idx[1].cast<int>();
+    
+            char *s = mpz_get_str(nullptr, 10, m.p[i][j]);
+            py::object val = py::module_::import("builtins").attr("int")(s);
+            free(s);
+            return val;
+        })
+        .def("__setitem__", [](Matrix &m, py::tuple idx, py::object val) {
+            int i = idx[0].cast<int>();
+            int j = idx[1].cast<int>();
+    
+            std::string s = py::str(val);
+            mpz_set_str(m.p[i][j], s.c_str(), 10);
+        });
 
-    // Setter to fill a matrix cell by cell
-    m.def("MatrixSetValue", [](Matrix *mat, int i, int j, long val) {
-        mpz_set_si(mat->p[i][j], val);   // ← mpz_set_si instead of value_assign
-    }, py::arg("mat"), py::arg("i"), py::arg("j"), py::arg("val"));
+    // not necessary
+    // // Setter to fill a matrix cell by cell
+    // m.def("MatrixSetValue", [](Matrix *mat, int i, int j, long val) {
+    //     mpz_set_si(mat->p[i][j], val);   // ← mpz_set_si instead of value_assign
+    // }, py::arg("mat"), py::arg("i"), py::arg("j"), py::arg("val"));
 
     m.def("MatrixGetValue", [](Matrix *mat, int i, int j) -> long {
         return mpz_get_si(mat->p[i][j]);
