@@ -1,51 +1,55 @@
 """
-pypolylib.py — Python interface to the PolyLib library (Z-polyhedra).
+pypolylib.py — Python interface to the PolyLib library (LBLs).
 
-This module exposes the LBL (Lattice-Based Lattice) and Transfo types
-for manipulating sets of integer points (Z-polyhedra) in Python.
+This module exposes the LBL (image of Z-polyhedron) and Transfo (matrix)
+types for manipulating sets of integer points in Python.
 
 Typical usage:
-    from pypolylib import LBL, Transfo
 
-    #Create an LBL
-    a = LBL("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
-    b = LBL("{(2i, j) | 1 <= i <= 50, j = 10}")
+```
+from pypolylib import LBL, Transfo
 
-    #  Set operations
-    inter = a * b          # intersection
-    diff  = a - b          # différence
-    union = a + b          # union
+# Create an LBL
+a = LBL("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
+b = LBL("{(2i, j) | 1 <= i <= 50, j = 10}")
 
-    #  Check for inclusion
-    print(a.included(b))   # True or False
+#  Set operations
+inter = a * b          # intersection
+diff  = a - b          # difference
+union = a + b          # union
 
-    #  Check for equality (mutual inclusion)
-    print(a == b)   # True or False
+#  Check for inclusion
+print(a.included(b))   # True or False
 
-    # Image under a transformation
-    f = Transfo("(i,j -> 2i+1, i+3j)")
-    print(a.image(f))      # image of a under f
-    print(a.preimage(f))   # preimage of a under f
+#  Check for equality (mutual inclusion)
+print(a == b)   # True or False
 
-    # Composing and inverting transformations
-    g = Transfo("(i,j -> i+1, 2j)")
-    h = f * g              # composition
-    fi = f.inverse()       # inverse
+# Image under a transformation
+f = Transfo("(i,j -> 2i+1, i+3j)")
+print(a.image(f))      # image of a under f
+print(a.preimage(f))   # preimage of a under f
 
-    # Iterate over LBL points
-    for pt in a:
-        print(pt)          # print each point (as a tuple of integers)
+# Composing and inverting transformations
+g = Transfo("(i,j -> i+1, 2j)")
+h = f * g              # composition
+fi = f.inverse()       # inverse
 
-    # Plot (2D and 3D only)
-    a.plot()
+# Iterate over LBL points (bounded LBL)
+for pt in a:
+    print(pt)          # print each point (as a tuple of integers)
+# get (python) set of points (bounded LBL)
+s = set(a)
+
+# Plot (2D and 3D only, bounded LBL only)
+a.plot()
+```
 """
 
 
 import pypolylib_core as pl
 import re
-import unicodedata
 import math
-from lbl_repr import _lbl_repr, _terms_to_str
+from lbl_io import _lbl_repr, _terms_to_str
 from lbl_plot import lbl_plot
 
 
@@ -248,11 +252,9 @@ def LBLRead(s):
 
 class LBL:
     """
-    Z-polyhedron (Lattice-Based Lattice) — set of integer points.
+    An LBL is a union of affine image of Z-domains — set of integer points.
 
-    An LBL is defined by a lattice (transformation matrix) and
-    a constraint polyhedron. It represents the image of a set
-    of integer points under a linear affine function.
+    An LBL is stored as a polylib _lbl: a list of (lattice, polyhedral domain)
 
     Creation :
         a = LBL("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
@@ -264,6 +266,18 @@ class LBL:
         a - b   # difference
         a * b   # intersection
     """
+
+    def __init__(self, s=None):
+        """
+        Initializes an LBL, optionally from a symbolic string.
+
+        Arguments:
+            s (str, optional): string in the format “{(expr) | constraints}”.
+                               If None, creates an empty LBL.
+        """
+        self._lbl = None
+        if s is not None:
+            self._lbl = self._LBLRead(s)
 
     def _LBLRead(self, s):
         """
@@ -292,10 +306,9 @@ class LBL:
         for i, c in enumerate(all_text):
             if ord(c) > 127:
                 print(f"\nWarning: non ASCII char {c!r} at position {i} "
-                      f"(U+{ord(c):04X}, {unicodedata.name(c, 'UNKNOWN')})\n")
+                      f"(U+{ord(c):04X})\n")
 
-        # variables = sorted(set(re.findall(r'[a-z](?![a-z])', all_text)))
-        # Modified this: do not sort, enable multicharacter variables
+        # enable multicharacter variables
         variables = set(re.findall(r'[a-zA-Z][a-zA-Z0-9_]*(?![a-zA-Z0-9_])', all_text))
         n = len(variables)
 
@@ -332,18 +345,6 @@ class LBL:
 
         poly = pl.Constraints2Polyhedron(cmat, 0)
         return pl.LBLAlloc(lat, poly)
-
-    def __init__(self, s=None):
-        """
-        Initializes an LBL, optionally from a symbolic string.
-
-        Arguments:
-            s (str, optional): string in the format “{(expr) | constraints}”.
-                               If None, creates an empty LBL.
-        """
-        self._lbl = None
-        if s is not None:
-            self._lbl = self._LBLRead(s)
 
     def print(self):
         """Displays the LBL in symbolic form."""
