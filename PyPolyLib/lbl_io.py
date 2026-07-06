@@ -19,6 +19,11 @@ def _LBLRead(s):
     Returns:
         pypolylib_core.LBL: The corresponding C LBL object
     """
+    for i, c in enumerate(s):
+        if ord(c) > 127:
+            raise ValueError(f"non ASCII char {c!r} at position {i} "
+                    f"(U+{ord(c):04X})\n")
+
     s = s.strip()
     if not (s.startswith('{') and s.endswith('}')):
         raise ValueError("The string must begin with ‘{’ and end with '}'")
@@ -31,10 +36,6 @@ def _LBLRead(s):
     rhs_str = rhs_str.strip()
 
     all_text = lhs_str + rhs_str
-    for i, c in enumerate(all_text):
-        if ord(c) > 127:
-            print(f"\nWarning: non ASCII char {c!r} at position {i} "
-                    f"(U+{ord(c):04X})\n")
 
     # enable multicharacter variables
     variables = set(re.findall(r'[a-zA-Z][a-zA-Z0-9_]*(?![a-zA-Z0-9_])', all_text))

@@ -42,7 +42,25 @@ assert len(sA) == 15
 for z in a:
   assert z in sA
 
-"""--------------------- Tranformations ---------------------"""
+"""--------------------- Errors over LBLs ---------------------"""
+# incompatible dimensions
+c = LBL("{(i, j, k) | 0 <= i <=5, 0 <= j <= i, 0 <= k <= i}")  
+try: a+c; assert False
+except ValueError: pass
+
+# enumerate unbounded LBL
+try: list(b); assert False
+except ValueError: pass
+
+# parse error
+try: d = LBL("{nothing}"); assert False
+except ValueError: pass
+
+# parse error (UTF-8)
+try: d = LBL("{(x)|x≤2}"); assert False
+except ValueError: pass
+
+"""--------------------- Transformations ---------------------"""
 t = Transfo("(i,j -> 3i+1, i+j)")
 assert str(t) == "(i, j -> 3i+1, i+j)"
 c = a.image(t)      # c = image of a under t
