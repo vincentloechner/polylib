@@ -3059,12 +3059,11 @@ static void sLBLCanonical(LBL *A)
     Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
   #endif
   
-  if(!A->P) {
-    return;
-  }
-  if (A->P->Dimension+1 != A->Lat->NbColumns) {
-    errormsg1("sLBLCanonical", "dimincomp", "incompatible dimensions");
-    return;
+  if (A->P) {
+    if( A->P->Dimension+1 != A->Lat->NbColumns) {
+      errormsg1("sLBLCanonical", "dimincomp", "incompatible dimensions");
+      return;
+    }
   }
 
   // ************************
