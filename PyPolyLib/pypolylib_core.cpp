@@ -13,13 +13,6 @@
 
 
 
-//import pypolylib
-//# Create Matrix 2x3
-//m = pypolylib.MatrixAlloc(2, 3)
-//print(m.nbrows, m.nbcolumns)  # -> 2 3
-
-
-
 
 #include <gmpxx.h>   // MUST come before polylibgmp.h
 #include <pybind11/pybind11.h>
@@ -176,12 +169,6 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def_property_readonly("ray", [](Polyhedron &p) {
             return RaysView{&p};   // return a rays view of the polyhedron
         }, py::return_value_policy::move);
-        // .def_property_readonly("constraints", [](Polyhedron &p) {
-        //     return MatrixPtr(Polyhedron2Constraints(&p));
-        // })
-        // .def_property_readonly("rays", [](Polyhedron &p) {
-        //     return MatrixPtr(Polyhedron2Rays(&p));
-        // });
 
     // -- Polyhedron methods --
     m.def("PolyhedronScan", [](Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
@@ -200,6 +187,10 @@ PYBIND11_MODULE(pypolylib_core, m) {
     m.def("PolyhedronImage", [](Matrix *m, Polyhedron *P, unsigned flags) {
         return PolyhedronPtr(Polyhedron_Image(P, m, flags));
     }, py::arg("matrix"), py::arg("polyhedron"), py::arg("flags") = 0);
+
+    m.def("PolyhedronPrint", [](Polyhedron *pol) {
+        Polyhedron_Print(stdout, " %s", pol);
+    }), py::arg("pol");
 
 
 

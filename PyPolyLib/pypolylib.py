@@ -94,7 +94,6 @@ class LBL:
         a - b   # difference
         a * b   # intersection
     """
-
     def __init__(self, s=None):
         """
         Initializes an LBL, optionally from a symbolic string.
@@ -246,10 +245,77 @@ class LBL:
             return NotImplemented
         return other.included(self)
 
-    def plot(self):
-        """Displays the LBL using matplotlib (2D only)."""
-        lbl_plot(self)
+    def plot(self, show_points=True, subplot=False):
+        """Displays the LBL using ."""
+        lbl_plot(self, show_points, subplot)
 
+    def _iter_single_lbl(self, lat, poly, seen):
+        """
+        Lists all the integer points of a single LBL (lat, poly)
+        Yields:
+            tuple: Coordinates of the integer point in the lattice image
+        """
+
+        def get_bounds(scan_poly, k, point):
+            cmat = scan_poly.constraint
+            lo = None
+            hi = None
+            for r in range(scan_poly.nbconstraints):
+                coeff_k = cmat[r, k + 1]
+                if coeff_k == 0:
+                    continue
+                val = cmat[r, dim + 1]
+                for d in range(k):
+                    val += cmat[r, d + 1] * point[d]
+                if coeff_k > 0:
+                    lo_c = math.ceil(-val / coeff_k)
+                    lo = lo_c if lo is None else max(lo, lo_c)
+                else:
+                    hi_c = math.floor(val / (-coeff_k))
+                    hi = hi_c if hi is None else min(hi, hi_c)
+            return lo, hi
+
+        def _enumerate(k, point):
+            if k == dim:
+                # got a point being scanned
+                img = []
+                nb_vars = lat.nbcolumns - 1
+                for r in range(lat.nbrows - 1):
+                    v = sum(lat[r, c] * point[c] for c in range(nb_vars))
+                    v += lat[r, nb_vars]
+                    img.append(v)
+                pt = tuple(img)
+                if pt not in seen:
+                    seen.add(pt)
+                    yield pt
+                return
+            # else, continue scanning inside dimensions
+            lo, hi = get_bounds(scan_list[k], k, point)
+            if lo is None or hi is None:
+                return
+            for val in range(lo, hi + 1):
+                yield from _enumerate(k + 1, point + [val])
+
+        dim = poly.dimension
+
+        # Check whether the polyhedron is bounded
+        if poly.nbbid != 0:
+            raise ValueError("unbounded; enumeration is impossible")
+        if poly.ray[0, dim + 1] == 0:
+            # infinite ray
+            raise ValueError("unbounded; enumeration is impossible")
+
+        # Use Polyhedron_Scan for optimal per-dimension bounds
+        ctx_mat = pl.MatrixReadFromString("0 2\n")
+        ctx = pl.Constraints2Polyhedron(ctx_mat)
+        scan = pl.PolyhedronScan(poly, ctx, 1024)
+
+        # Collect scan polyhedra into a list (one per dimension)
+        scan_list = []
+        while scan is not None:
+            scan_list.append(scan)
+            scan = scan.next
+        yield from _enumerate(0, [])
 
     def __iter__(self):
         """
@@ -260,74 +326,6 @@ class LBL:
         Yields:
             tuple: Coordinates of the integer point in the lattice image
         """
-        def iter_single_lbl(lat, poly, seen):
-            """
-            Lists all the integer points of a single LBL (lat, poly)
-            Yields:
-                tuple: Coordinates of the integer point in the lattice image
-            """
-
-            def get_bounds(scan_poly, k, point):
-                cmat = scan_poly.constraint
-                lo = None
-                hi = None
-                for r in range(scan_poly.nbconstraints):
-                    coeff_k = cmat[r, k + 1]
-                    if coeff_k == 0:
-                        continue
-                    val = cmat[r, dim + 1]
-                    for d in range(k):
-                        val += cmat[r, d + 1] * point[d]
-                    if coeff_k > 0:
-                        lo_c = math.ceil(-val / coeff_k)
-                        lo = lo_c if lo is None else max(lo, lo_c)
-                    else:
-                        hi_c = math.floor(val / (-coeff_k))
-                        hi = hi_c if hi is None else min(hi, hi_c)
-                return lo, hi
-
-            def _enumerate(k, point):
-                if k == dim:
-                    # got a point being scanned
-                    img = []
-                    nb_vars = lat.nbcolumns - 1
-                    for r in range(lat.nbrows - 1):
-                        v = sum(lat[r, c] * point[c] for c in range(nb_vars))
-                        v += lat[r, nb_vars]
-                        img.append(v)
-                    pt = tuple(img)
-                    if pt not in seen:
-                        seen.add(pt)
-                        yield pt
-                    return
-                # else, continue scanning inside dimensions
-                lo, hi = get_bounds(scan_list[k], k, point)
-                if lo is None or hi is None:
-                    return
-                for val in range(lo, hi + 1):
-                    yield from _enumerate(k + 1, point + [val])
-
-            dim = poly.dimension
-
-            # Check whether the polyhedron is bounded
-            if poly.nbbid != 0:
-                raise ValueError("unbounded; enumeration is impossible")
-            if poly.ray[0, dim + 1] == 0:
-                # infinite ray
-                raise ValueError("unbounded; enumeration is impossible")
-
-            # Use Polyhedron_Scan for optimal per-dimension bounds
-            ctx_mat = pl.MatrixReadFromString("0 2\n")
-            ctx = pl.Constraints2Polyhedron(ctx_mat)
-            scan = pl.PolyhedronScan(poly, ctx, 1024)
-
-            # Collect scan polyhedra into a list (one per dimension)
-            scan_list = []
-            while scan is not None:
-                scan_list.append(scan)
-                scan = scan.next
-
-            yield from _enumerate(0, [])
 
         # iterate over single LBLs and call an iterator over each of them
         seen = set()
@@ -336,7 +334,7 @@ class LBL:
         while node is not None:
             poly = node.P
             while poly is not None:
-                yield from iter_single_lbl(node.Lat, poly, seen)
+                yield from self._iter_single_lbl(node.Lat, poly, seen)
 
                 poly = poly.next
 

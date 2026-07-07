@@ -61,9 +61,9 @@ print("OK")
 print(f"LBL transformations    ", end="", flush=True)
 t = Transfo("(i,j -> 3i+1, i+j)")
 assert str(t) == "(i, j -> 3i+1, i+j)"
-c = a.image(t)      # c = image of a under t
-d = c.preimage(t)   # preimage of c under f
-assert d == a
+im_a = a.image(t)      # im_a = image of a under t
+pre = im_a.preimage(t)   # preimage of im_a under f
+assert pre == a
 print("OK")
 
 """--------------------- Errors over LBLs ---------------------"""
