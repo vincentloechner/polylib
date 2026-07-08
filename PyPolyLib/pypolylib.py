@@ -245,9 +245,9 @@ class LBL:
             return NotImplemented
         return other.included(self)
 
-    def plot(self, show_points=True, subplot=False):
+    def plot(self, *args, show_points=True, subplot=False, **kwargs):
         """Displays the LBL using ."""
-        lbl_plot(self, show_points, subplot)
+        lbl_plot(self, show_points, subplot, **kwargs)
 
     def _iter_single_lbl(self, lat, poly, seen):
         """
