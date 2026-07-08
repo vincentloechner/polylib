@@ -245,9 +245,21 @@ class LBL:
             return NotImplemented
         return other.included(self)
 
-    def plot(self, *args, show_points=True, subplot=False, **kwargs):
-        """Displays the LBL using ."""
-        lbl_plot(self, show_points, subplot, **kwargs)
+    def plot(self, *args, **kwargs):
+        """Displays the LBL.
+        
+            Optionnal arguments:
+            - show_points (boolean): draw points that are part of the LBL
+                (default True)
+            - subplot (boolean): set this to True if you want to plot
+                another LBL in the same window (it will be rendered later in
+                that case)
+            - supplementary arguments are transmitted to the pyvista
+                plotter.show() function. Example: you can set option
+                 "interactive_update=True" to continue running python and get
+                  another plot window activated.
+        """
+        lbl_plot(self, *args, **kwargs)
 
     def _iter_single_lbl(self, lat, poly, seen):
         """

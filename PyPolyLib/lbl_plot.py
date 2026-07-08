@@ -9,6 +9,7 @@ import sys
 import pypolylib_core as pl
 
 # plotting libs:
+import math
 import numpy as np
 from colorsys import hsv_to_rgb
 # # 2D -> not used anymore
@@ -20,7 +21,8 @@ from scipy.spatial import ConvexHull
 
 class WindowColorGenerator:
     def __init__(self):
-        self.hue = 0.0
+        self.hue = 0.0      # for color
+        self._3D = False    # is there a 3D polyhedron in this window?
         self.plot = pv.Plotter()
 
     def color(self):
@@ -32,7 +34,7 @@ _lbl_plot_window = None
 
 def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
     """
-    Plots a 2D or 3D LBL using pyvista.
+    Plots an LBL using pyvista.
 
     Args:
     - lbl (LBL): Python LBL object (from pypolylib.py)
@@ -49,9 +51,11 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
         _lbl_plot_window = WindowColorGenerator()
     plotter = _lbl_plot_window.plot
 
-    # loop over lattices and polyhedral domains
+    # loop over lattices and polyhedral domains to plot them
     while node is not None:
         p = node.P
+        if node.Lat.nbrows >= 4:
+            _lbl_plot_window._3D = True
         lat = lat3D(node.Lat) # always project to 3D, one way or another!
         # loop over polyhedra inside node
         while p is not None:
@@ -68,25 +72,29 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
                     opacity=.5, color=color,
                     point_size=16, render_points_as_spheres=True
                 )
-
             p = p.next
         node = node.next
 
+    # if subplot is True do not render anything yet: the next call will add
+    # some LBLs over this one in the same window and do the rendering
     if not subplot:
-        _lbl_plot_window = None # will open a new window in a next call
-        if lbl._lbl.Lat.nbrows <= 3:
-            # this is probably a 2D plot in a 3D scene
-            # FIXME: if there are 2D and 3D objects mixed in this window...
+        if not _lbl_plot_window._3D:
+            # this is a 2D plot in a 3D scene, disable z-axis:
             plotter.enable_2d_style()
             plotter.view_xy()
             plotter.reset_camera()
+
+        # set_grid_ticks_1(plotter)        
         plotter.show_grid()
+        # show_my_grid(plotter)
         plotter.show(**kwargs)
+
+        # you can not keep older windows open once you quit the main
+        # graphical loop, just reopen them if needed.
         if not kwargs:
             # ensure everything is closed properly if not running interactive
             pv.close_all()
-        # FIXME: what if I want to keep some older windows open, but not all of them?
-
+        _lbl_plot_window = None # will open a new window in a next call
 
 # original version:
     # if dim == 2:
@@ -145,6 +153,38 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
 #     elif region.geom_type == "LineString":
 #         x, y = region.xy
 #         ax.plot(x, y, color=color, linewidth=2)
+
+def set_grid_ticks_1(plotter):
+    xmin, xmax, ymin, ymax, zmin, zmax = plotter.bounds
+    xmin = math.floor(xmin)
+    xmax = math.ceil(xmax)
+    ymin = math.floor(ymin)
+    ymax = math.ceil(ymax)
+    zmin = math.floor(zmin)
+    zmax = math.ceil(zmax)
+    cube_axes_actor = pv.CubeAxesActor(plotter.camera)
+    cube_axes_actor.n_xlabels = xmax - xmin
+    cube_axes_actor.n_ylabels = ymax - ymin
+    # cube_axes_actor.n_zlabels = zmax - zmin
+    actor, property = plotter.add_actor(cube_axes_actor)
+
+
+def show_my_grid(plotter):
+    xmin, xmax, ymin, ymax, zmin, zmax = plotter.bounds
+    xmin = math.floor(xmin)
+    xmax = math.ceil(xmax)
+    ymin = math.floor(ymin)
+    ymax = math.ceil(ymax)
+    zmin = math.floor(zmin)
+    zmax = math.ceil(zmax)
+    for x in range(xmin, xmax + 1):
+        plotter.add_lines(np.array([[x, ymin, 0], [x, ymax, 0]]), color="lightgray")
+
+    for y in range(ymin, ymax + 1):
+        plotter.add_lines(np.array([[xmin, y, 0], [xmax, y, 0]]), color="lightgray")
+
+    for z in range(zmin, zmax + 1):
+        plotter.add_lines(np.array([[xmin, ymin, z], [xmax, ymin, z]]), color="lightgray")
 
 
 def poly2pyvista(poly):
