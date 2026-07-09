@@ -12,7 +12,7 @@ def test_func(a):
     # equivalent to a == b, with more precise output
 
 def fail_func(a):
-    print("a = {a}")
+    print(f"a = {a}")
     print(f"a.zdomain() = {a.zdomain()}")
 
 # list of (name:str, [a:lbl])
@@ -38,6 +38,10 @@ tests = [
     # from Pugh91 (the Omega test nightmare)
     ("ZDomain12",
      ["{(i, j) | 11i+13j>=27, 11i+13j<=45, 7i-9j+10>=0, -7i+9j+4>=0}"]),
+
+    ("ZDomain from ImFlatten",
+     ["{(i, j) | 3i-10k >= 0, i <= 100, -i+5k >= 0}"]),
+
 ]
 
 # pretty long ones below, not tested by default:

@@ -37,6 +37,7 @@ image_tests = [
      ["{(i, j) | 1 <= i <= 10, 1 <= j <= 10}"],
      ["(i, j -> i)"]),
 
+# ZImPre_flatten_pointy  FAIL!
     ("ZImPre_flatten_pointy",
      ["{(i, j) | 0 <= i <= 100, 10i <= 50j <= 15i}"],
      ["(i, j -> i)"]),
