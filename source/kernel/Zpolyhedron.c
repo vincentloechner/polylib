@@ -25,6 +25,7 @@
 #define HOLES_DEBUG 1
 #define SIMPLIFY_DEBUG 1
 #define SIMPLIFY2_DEBUG 1
+#define IMAGE_DEBUG 1
 #endif
 
 static LBL *LBLConcatenate(LBL *A, LBL *B);
@@ -1186,11 +1187,10 @@ static LBL *sLBLImage(LBL *A, Matrix *Func)
 /*
  * Return the preimage of the single LBL 'Z' under an affine
  * transformation function 'G'. The number of rows of matrix 'G' must
- * be equal to the number of rows of the matrix representing the
- * lattice of Z.
+ * be equal to the number of rows of the lattice of Z.
  * Algorithm:
  * - if G is invertible, compute the LBL {G^{-1} L, D},
- * - else, build the LBL { z' | L z = G z', z \in A->P, z' free},
+ * - else, build the LBL { z' | G z' = L z, z \in A->P, z' free},
  *         and remove z by normalizing the result
  */
 static LBL *sLBLPreimage(LBL *Z, Matrix *G)
@@ -1198,6 +1198,19 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
   LBL *Result;
   Polyhedron *P, *newP;
   Matrix *Con;
+
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "===== entering sLBLPreimage =====\n Z = ");
+  sLBLPrint(stderr, P_VALUE_FMT, Z);
+  fprintf(stderr, "G = ");
+  Matrix_Print(stderr, P_VALUE_FMT, G);
+  #endif
+
+  if(G->NbRows != Z->Lat->NbRows) {
+    // G z' = L z
+    errormsg1("sLBLPreimage", "dimincomp", "incompatible dimensions");
+    return(NULL);
+  }
 
   // first try if G is invertible
   if(G->NbColumns == G->NbRows) {
@@ -1207,6 +1220,10 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
     inv = Matrix_Alloc(dim, dim);
     if(Matrix_Inverse(tmp, inv) && value_one_p(inv->p[dim-1][dim-1])) {
       // reuse tmp to compute the product Inv Lat
+      #ifdef IMAGE_DEBUG
+      fprintf(stderr, "G is invertible\nInverse =");
+      Matrix_Print(stderr, P_VALUE_FMT, inv);
+      #endif
       Matrix_Product(inv, Z->Lat, tmp);
       Result = LBLAlloc(tmp, Z->P);
       Matrix_Free(tmp);
@@ -1217,13 +1234,12 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
     Matrix_Free(inv);
   }
 
-  if(G->NbRows != Z->Lat->NbRows) {
-    // G z' = L z
-    errormsg1("sLBLPreimage", "dimincomp", "incompatible dimensions");
-    return(NULL);
-  }
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "G is not invertible\n");
+  #endif
+  // need to build the LBL { z' | G z' = L z, z \in A->P, z' free},
 
-  // d is the dimension of Z.
+  // d is the dimension of A->P (nb columns of Lat)
   // d' is the number of columns of G = the dimension of the result
   // build the Z-polyhedron = { z' | with P in dimension d + d'
   // such that L z = G z' }
@@ -1231,7 +1247,7 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
 
   // the lattice is spreading z'
   // homogeneous d and d', homogeneous sum is d+d'-1
-  int d = Z->Lat->NbRows;
+  int d = Z->Lat->NbColumns;
   int dp = G->NbColumns;
 
   //          z'    z    cst
@@ -1249,15 +1265,24 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
     }
   }
   value_set_si(newL->p[newL->NbRows-1][newL->NbColumns-1], 1);
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "newL = ");
+  Matrix_Print(stderr, P_VALUE_FMT, newL);
+  #endif
 
   // add the extra dimension on P (first dimensions!)
   newP = align_context(Z->P, d+dp-2, MAXNOOFRAYS);
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "newP = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, newP);
+  #endif
+
 
   // build the extra constraint to be added to newP: G z' = L z
   // con =    0 |     |     |
   //          . |  G  | -L  | (g-l)
   //          0 |     |     |
-  Con = Matrix_Alloc(d-1, d+dp-1+1);
+  Con = Matrix_Alloc(G->NbRows - 1, d+dp-1+1);
   // copy G
   for(int i = 0; i < Con->NbRows; i++) {
     value_set_si(Con->p[i][0], 0); // equality
@@ -1276,6 +1301,10 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
     value_substract(Con->p[i][Con->NbColumns-1],
               Con->p[i][Con->NbColumns-1], Z->Lat->p[i][Z->Lat->NbColumns-1]);
   }
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "Con = ");
+  Matrix_Print(stderr, P_VALUE_FMT, Con);
+  #endif
 
   P = DomainAddConstraints(newP, Con, MAXNOOFRAYS);
   Matrix_Free(Con);
