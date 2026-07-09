@@ -29,7 +29,7 @@ class WindowColorGenerator:
         self.hue = (self.hue + 0.618033988749895) % 1.0
         return hsv_to_rgb(self.hue, .55, .9)
 
-# this is not very nice, but best way to do it.
+# this is not very nice, but it's the best way to do it.
 _lbl_plot_window = None
 
 def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
@@ -41,6 +41,7 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
     - show_points (boolean): draw points that are part of the LBL
     - subplot (boolean): set this to True if you want to plot another LBL
         in the same window (it will be rendered later in that case)
+    - extra arguments will be passed to the call to plotter.show()
     """
     global _lbl_plot_window
 
@@ -56,15 +57,16 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
         p = node.P
         if node.Lat.nbrows >= 4:
             _lbl_plot_window._3D = True
-        lat = lat3D(node.Lat) # always project to 3D, one way or another!
+        lat = _lat3D(node.Lat) # always project to 3D, one way or another!
         # loop over polyhedra inside node
         while p is not None:
             # each single LBL is displayed in a different color:
             color = _lbl_plot_window.color()
-            mesh = poly2pyvista(pl.PolyhedronImage(lat, p))
-            plotter.add_mesh(mesh,
-                             show_edges=True,
-                             opacity=.25, color=color)
+            mesh = _poly2pyvista(pl.PolyhedronImage(lat, p))
+            if mesh:
+                plotter.add_mesh(mesh,
+                                show_edges=True,
+                                opacity=.25, color=color)
             if show_points:
                 points = list(lbl._iter_single_lbl(lat, p, set()))
                 plotter.add_mesh(
@@ -122,7 +124,7 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
 #         p = node.P
 #         # loop on polyhedra inside node
 #         while p is not None:
-#             vertices = get_vertices(pl.PolyhedronImage(node.Lat, p))
+#             vertices = _get_vertices(pl.PolyhedronImage(node.Lat, p))
 #             plot_convex_2D(vertices, ax, colors[node_num])
 #             p = p.next
 #         node = node.next
@@ -154,44 +156,45 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
 #         x, y = region.xy
 #         ax.plot(x, y, color=color, linewidth=2)
 
-def set_grid_ticks_1(plotter):
-    xmin, xmax, ymin, ymax, zmin, zmax = plotter.bounds
-    xmin = math.floor(xmin)
-    xmax = math.ceil(xmax)
-    ymin = math.floor(ymin)
-    ymax = math.ceil(ymax)
-    zmin = math.floor(zmin)
-    zmax = math.ceil(zmax)
-    cube_axes_actor = pv.CubeAxesActor(plotter.camera)
-    cube_axes_actor.n_xlabels = xmax - xmin
-    cube_axes_actor.n_ylabels = ymax - ymin
-    # cube_axes_actor.n_zlabels = zmax - zmin
-    actor, property = plotter.add_actor(cube_axes_actor)
+# test:
+# def set_grid_ticks_1(plotter):
+#     xmin, xmax, ymin, ymax, zmin, zmax = plotter.bounds
+#     xmin = math.floor(xmin)
+#     xmax = math.ceil(xmax)
+#     ymin = math.floor(ymin)
+#     ymax = math.ceil(ymax)
+#     zmin = math.floor(zmin)
+#     zmax = math.ceil(zmax)
+#     cube_axes_actor = pv.CubeAxesActor(plotter.camera)
+#     cube_axes_actor.n_xlabels = xmax - xmin
+#     cube_axes_actor.n_ylabels = ymax - ymin
+#     # cube_axes_actor.n_zlabels = zmax - zmin
+#     actor, property = plotter.add_actor(cube_axes_actor)
+
+# test:
+# def show_my_grid(plotter):
+#     xmin, xmax, ymin, ymax, zmin, zmax = plotter.bounds
+#     xmin = math.floor(xmin)
+#     xmax = math.ceil(xmax)
+#     ymin = math.floor(ymin)
+#     ymax = math.ceil(ymax)
+#     zmin = math.floor(zmin)
+#     zmax = math.ceil(zmax)
+#     for x in range(xmin, xmax + 1):
+#         plotter.add_lines(np.array([[x, ymin, 0], [x, ymax, 0]]), color="lightgray")
+
+#     for y in range(ymin, ymax + 1):
+#         plotter.add_lines(np.array([[xmin, y, 0], [xmax, y, 0]]), color="lightgray")
+
+#     for z in range(zmin, zmax + 1):
+#         plotter.add_lines(np.array([[xmin, ymin, z], [xmax, ymin, z]]), color="lightgray")
 
 
-def show_my_grid(plotter):
-    xmin, xmax, ymin, ymax, zmin, zmax = plotter.bounds
-    xmin = math.floor(xmin)
-    xmax = math.ceil(xmax)
-    ymin = math.floor(ymin)
-    ymax = math.ceil(ymax)
-    zmin = math.floor(zmin)
-    zmax = math.ceil(zmax)
-    for x in range(xmin, xmax + 1):
-        plotter.add_lines(np.array([[x, ymin, 0], [x, ymax, 0]]), color="lightgray")
-
-    for y in range(ymin, ymax + 1):
-        plotter.add_lines(np.array([[xmin, y, 0], [xmax, y, 0]]), color="lightgray")
-
-    for z in range(zmin, zmax + 1):
-        plotter.add_lines(np.array([[xmin, ymin, z], [xmax, ymin, z]]), color="lightgray")
-
-
-def poly2pyvista(poly):
+def _poly2pyvista(poly):
     """Transform a PolyLib 3D Polyhedron into a PyVista polyhedron."""
 
     # vertices: as the list of tuples of FP coordinates
-    vertices = get_vertices(poly)
+    vertices = _get_vertices(poly)
     vertices = np.asarray(vertices, dtype=float)
 
     # faces: as the (flat) list of faces [num_vertices, vertex0, vertex1, ...]
@@ -209,18 +212,19 @@ def poly2pyvista(poly):
             if sat == 0:
                 face.append(r)
         if len(face) >= 3:
-            face = order_face_indices(vertices, face, normal)
+            face = _order_face_indices(vertices, face, normal)
             faces.extend([len(face)] + face)
+    if faces:
+        return pv.PolyData(vertices, faces)
 
-    return pv.PolyData(vertices, faces)
-    
 
-def order_face_indices(vertices, face_indices, normal):
+def _order_face_indices(vertices, face_indices, normal):
     face_indices = np.asarray(face_indices, dtype=int)
-    ordered_local = order_face(vertices[face_indices], normal)
+    ordered_local = _order_face(vertices[face_indices], normal)
     return [face_indices[i] for i in ordered_local]
 
-def order_face(vertices, normal):
+
+def _order_face(vertices, normal):
     """Order coplanar 3D vertices cyclically."""
     normal = np.asarray(normal, dtype=float)
     # Normalize normal
@@ -253,7 +257,7 @@ def order_face(vertices, normal):
         order = order[::-1]
     return order
 
-def get_vertices(poly):    
+def _get_vertices(poly):
     """ Return the vertices of poly as a list of tuples of floats.
 
     return [] if poly is not bounded (and print a message to stderr).
@@ -276,7 +280,7 @@ def get_vertices(poly):
 
     return vertices
 
-def lat3D(node_lat):
+def _lat3D(node_lat):
     """Change a Lattice to be a 3D representation/projection.
     
     - if lower than 3D -> set the plane z=0 (and y=0 if 1D)
