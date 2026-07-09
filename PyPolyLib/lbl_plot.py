@@ -19,6 +19,9 @@ from colorsys import hsv_to_rgb
 import pyvista as pv
 from scipy.spatial import ConvexHull
 
+# allow plotting polyhedra that have no integer points:
+pv.global_theme.allow_empty_mesh = True
+
 class WindowColorGenerator:
     def __init__(self):
         self.hue = 0.0      # for color
@@ -195,6 +198,8 @@ def _poly2pyvista(poly):
 
     # vertices: as the list of tuples of FP coordinates
     vertices = _get_vertices(poly)
+    if not vertices:
+        return
     vertices = np.asarray(vertices, dtype=float)
 
     # faces: as the (flat) list of faces [num_vertices, vertex0, vertex1, ...]

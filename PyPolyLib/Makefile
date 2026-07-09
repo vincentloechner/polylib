@@ -18,3 +18,6 @@ pypolylib_core${PY_EXT}: pypolylib_core.cpp
 
 clean:
 	rm pypolylib_core${PY_EXT}
+
+check:
+	python3 tests/run_tests.py tests/test_*
