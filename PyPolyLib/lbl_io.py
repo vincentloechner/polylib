@@ -7,7 +7,7 @@ The four functions (_LBL | _Transfo)(Read | Repr) are defined
 import re
 import pypolylib_core as pl
 
-def _LBLRead(s):
+def LBLRead(s):
     """
     Parse a symbolic string and constructs the internal LBL.
 
@@ -76,7 +76,7 @@ def _LBLRead(s):
     return pl.LBLAlloc(lat, poly)
 
 
-def _LBLRepr(lbl):
+def LBLRepr(lbl):
     """
     Constructs a string representation of an LBL.
     Ex: {(3i) | 0 <= i <= 5}
@@ -412,7 +412,7 @@ def _matrix_to_polylib_string(nb_rows, nb_cols, values):
         idx += nb_cols
     return s
 
-def _TransfoRead(s):
+def TransfoRead(s):
     """
     Parse the symbolic string and constructs the internal matrix.
 
@@ -456,7 +456,7 @@ def _TransfoRead(s):
     mat_str = _matrix_to_polylib_string(nb_rows, nb_cols, values)
     return pl.MatrixReadFromString(mat_str)
 
-def _TransfoRepr(mat):
+def TransfoRepr(mat):
 
     nb_out = mat.nbrows - 1
     nb_vars = mat.nbcolumns - 1

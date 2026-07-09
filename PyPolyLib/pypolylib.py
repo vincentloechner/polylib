@@ -104,7 +104,7 @@ class LBL:
         """
         self._lbl = None
         if s is not None:
-            self._lbl = io._LBLRead(s)
+            self._lbl = io.LBLRead(s)
 
     def print(self):
         """Displays the LBL in symbolic form."""
@@ -114,7 +114,7 @@ class LBL:
         """Returns a symbolic representation of the LBL, e.g., {(3i) | i >= 0, i <= 5}"""
         if self._lbl is None:
             return "None"
-        return io._LBLRepr(self._lbl)
+        return io.LBLRepr(self._lbl)
 
     def intersection(self, other):
         """
@@ -380,7 +380,7 @@ class Transfo:
         """
         self._mat = None
         if s is not None:
-            self._mat = io._TransfoRead(s)
+            self._mat = io.TransfoRead(s)
 
     def __repr__(self):
         """
@@ -391,7 +391,7 @@ class Transfo:
         """
         if self._mat is None:
             return "None"
-        return io._TransfoRepr(self._mat)
+        return io.TransfoRepr(self._mat)
 
     def __call__(self, a):
         if not isinstance(a, LBL):
