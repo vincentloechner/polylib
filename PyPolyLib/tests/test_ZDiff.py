@@ -37,6 +37,68 @@ tests = [
     ("ZDiff_triangle",
      ["{(i, j) | 0 <= i <= 8, 0 <= j <= i}",
       "{(2i, j) | 0 <= i <= 4, 0 <= j <= 2i}"]),
+
+    # this one has a single intersection point between the two LBLs (0, 0, 0),
+    # but the first one has 1030301 points
+    ("ZDiff11b",
+     ["{(2i, 5j, 52i+27j+66k) | -50 <= i <= 50, -50 <= j <= 50, -50 <= k <= 50}",
+      "{(i, j, k) | i>=0, i <= 10j, 9j <= i, j+4i <= 4k, 3k <= j+3i}"]),
+
+    # inspired from the previous one, but with a larger intersection
+    # a has 1030301 points
+    # a*b has 49007 points
+    # a-b is a union of 6 single LBLs having 981294 points = 1030301 - 49007
+    ("ZDiff11c",
+     ["{(2i, 5j, 52i+27j+66k) | -50 <= i <= 50, -50 <= j <= 50, -50 <= k <= 50}",
+      "{(i, j, k) | -200 <= i <= 200, -200 <= j <= 200, -200 <= k <= 200}"]),
+
+    # odd i's in b never intersect even i's in a
+    ("ZDiff11d",
+     ["{(2i, 5j, 52i+27j+66k) | -50 <= i <= 50, -50 <= j <= 50, -50 <= k <= 50}",
+      "{(2i+1, j, k) | -200 <= i <= 200, -200 <= j <= 200, -200 <= k <= 200}"]),
+
+    # only some j's intersect (5j == 2j'+3)
+    ("ZDiff11e",
+     ["{(2i, 5j, 52i+27j+66k) | -50 <= i <= 50, -50 <= j <= 50, -50 <= k <= 50}",
+      "{(2i, 2j+3, k) | -200 <= i <= 200, -200 <= j <= 200, -200 <= k <= 200}"]),
+
+    # TODO:
+    # in the result of ZDiff11e, the first LBL:
+    # {(2i, -250, 52i+66j-1350) | j <= 50, i >= -50, i <= 50, j >= -50}
+    # is included in the last one from the union:
+    # {(2i, 10j, 52i+54j+66k) | i >= -50, i <= 50, j >= -25, j <= 25, k >= -50, k <= 50}
+    # this could be simplified! (or not built at all, possible?)
+
+    # simpler example in 2D (inclusion test of the first on the last of the difference):
+    ("ZDiff11e_2D",
+     ["{(2i, 5j) | -50 <= i <= 50, -50 <= j <= 50}",
+      "{(2i, 2j+3) | -200 <= i <= 200, -200 <= j <= 200}"]),
+
+    # first = LBL("{(2i, -250) | i <= 50, i >= -50}")
+    # last = LBL("{(2i, 10j) | i >= -50, i <= 50, j >= -25, j <= 25}")
+    # first in last
+    # -> True
+
+
+############### error ############################
+# >>> LBL("{(2i, -250, 52i+66j-1350) | j <= 50, i >= -50, i <= 50, j >= -50}") in LBL("{(2i, 5j, 52i+27j+66k) | i >= -50, i <= 50, j >= -50, j <= 50, k >= -50, k <= 50, 52i+27j+66k - 200 >= 0}")
+# False
+# >>> LBL("{(2i, -250, 52i+66j-1350) | j <= 50, i >= -50, i <= 50, j >= -50}") in LBL("{(2i, 5j, 52i+27j+66k) | i >= -50, i <= 50, j >= -50, j <= 50, k >= -50, k <= 50, -52i-27j-66k - 200 >= 0}")
+# False
+# >>> LBL("{(2i, -250, 52i+66j-1350) | j <= 50, i >= -50, i <= 50, j >= -50}") in LBL("{(2i, 10j, 52i+54j+66k) | i >= -50, i <= 50, j >= -25, j <= 25, k >= -50, k <= 50}")
+# True
+# >>> a = LBL("{(2i, 5j) | -50 <= i <= 50, -50 <= j <= 50}")
+# >>> b=LBL("{(2i, 2j+3) | -200 <= i <= 200, -200 <= j <= 200}")
+# >>> a-b
+# {(2i, -250) | i <= 50, i >= -50} UNION
+#   {(2i, 250) | i <= 50, i >= -50} UNION
+#   {(2i, 10j) | i >= -50, i <= 50, j >= -25, j <= 25}
+# >>> LBL("{(2i, -250) | i <= 50, i >= -50}") in LBL("{(2i, 10j) | i >= -50, i <= 50, j >= -25, j <= 25}")
+# Erreur de segmentation (core dumped)
+    # happened once?! cannot reproduce...!!!
+
+
+
 ]
 
 
