@@ -2070,10 +2070,15 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dimrest)
 } /* Scan_RestAP */
 
 
-static Polyhedron *bound_polyhedron(Polyhedron *D)
+/*
+ * Bound the single polyhedron P by a box containing an integer point
+ * 
+ * returns a newly allocated polyhedron
+ */
+static Polyhedron *bound_polyhedron(Polyhedron *P)
 {
   int num_lr; // number of lines+rays
-  const int dim = D->Dimension;
+  const int dim = P->Dimension;
   Value ONE;
   Matrix *new_rays;
   Polyhedron *res;
@@ -2081,31 +2086,46 @@ static Polyhedron *bound_polyhedron(Polyhedron *D)
   value_init(ONE);
   value_set_si(ONE, 1);
 
-  // count number of lines/rays
-  for(num_lr = 0; num_lr < D->NbRays; num_lr++) {
-    if(value_notzero_p(D->Ray[num_lr][0])
-      && value_notzero_p(D->Ray[num_lr][dim + 1])) {
-      break;
+  // count number of lines and rays
+  num_lr = 0;
+  for(int r = 0; r < P->NbRays; r++) {
+    if(value_zero_p(P->Ray[r][0]) || value_zero_p(P->Ray[r][dim + 1])) {
+      num_lr++;
     }
   }
   
-  // build the matrix of vertices of the bounded D:
+  // build the matrix of vertices of the bounded P:
   // original vertices + each line/ray added to each of them.
-  new_rays = Matrix_Alloc((D->NbRays - num_lr) * (num_lr + 1), dim + 2);
+  new_rays = Matrix_Alloc((P->NbRays - num_lr) * (num_lr + 1), dim + 2);
   new_rays->NbRows = 0;
 
-  for(int v = num_lr; v < D->NbRays; v++) {
+  // scan the vertices (check each of them if it is a vertex or line/ray):
+  for(int v = 0; v < P->NbRays; v++) {
+    if(value_zero_p(P->Ray[v][0]) || value_zero_p(P->Ray[v][dim + 1])) {
+      // it's a line/ray
+      continue;
+    }
+    // P->Ray[v] is a vertex.
     // copy the original vertex v:
-    Vector_Copy(D->Ray[v], new_rays->p[new_rays->NbRows], dim + 2);
+    Vector_Copy(P->Ray[v], new_rays->p[new_rays->NbRows], dim + 2);
     new_rays->NbRows++;
     // add each line/ray to v (taking v's divisor into account)
-    for(int l = 0; l < num_lr; l++) {
-      Vector_Combine(D->Ray[v], D->Ray[l], new_rays->p[new_rays->NbRows], ONE,
-        D->Ray[v][dim + 1], dim + 1);
-      value_assign(new_rays->p[new_rays->NbRows][dim + 1], D->Ray[v][dim + 1]);
-      new_rays->NbRows++;
+    for(int l = 0; l < P->NbRays; l++) {
+      if(value_zero_p(P->Ray[l][0]) || value_zero_p(P->Ray[l][dim + 1])) {
+        // it's a line/ray
+        Vector_Combine(P->Ray[v], P->Ray[l], new_rays->p[new_rays->NbRows], ONE,
+          P->Ray[v][dim + 1], dim + 2);
+          // value_assign(new_rays->p[new_rays->NbRows][dim + 1], P->Ray[v][dim + 1]);
+        value_set_si(new_rays->p[new_rays->NbRows][0], 1);
+        new_rays->NbRows++;
+      }
     }
   }
+  #ifdef SIMPLIFY_DEBUG
+  fprintf(stderr, "new_rays = ");
+  Matrix_Print(stderr, P_VALUE_FMT, new_rays);
+  #endif
+
   res = Rays2Polyhedron(new_rays, MAXNOOFRAYS);
   Matrix_Free(new_rays);
   value_clear(ONE);
@@ -2658,6 +2678,7 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     Polyhedron *scan = NULL, *next;
     int ray;
     Bool int_solution_found = False;
+    int unbounded = 0;
 
     next = D->next;
     D->next = NULL;
@@ -2680,36 +2701,57 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     // it's not empty
     // THIS IS FALSE.
     for(ray = 0; ray < D->NbRays; ray++) {
-      if(value_zero_p(D->Ray[ray][0])                || // line, or
-         value_zero_p(D->Ray[ray][D->Dimension + 1]) || // ray, or
-         value_one_p(D->Ray[ray][D->Dimension + 1]))    // integer vertex
-      {
+      // if(value_zero_p(D->Ray[ray][0])                || // line, or
+      //    value_zero_p(D->Ray[ray][D->Dimension + 1]) || // ray, or
+      //    value_one_p(D->Ray[ray][D->Dimension + 1]))    // integer vertex
+
+      // check if there's an integer vertex
+      if(value_notzero_p(D->Ray[ray][0]) &&
+         value_one_p(D->Ray[ray][D->Dimension + 1])) {
         int_solution_found = True;
         break;
+      }
+      // check if there's a line or ray:
+      if(value_zero_p(D->Ray[ray][0]) ||
+         value_zero_p(D->Ray[ray][D->Dimension + 1])) {
+        unbounded = 1;
       }
     }
 
     // Here: could check if dark shadow to 0-dim space is non empty.
 
+
+
     if(!int_solution_found) {
       // if there is no obvious integer solution, try a scan.
+
+      // but first, bound the polyhedron if it was not.
+      Polyhedron *Dbounded = (unbounded)?bound_polyhedron(D):D;
+      #ifdef SIMPLIFY_DEBUG
+      if(unbounded) {
+        fprintf(stderr, "bounded D= ");
+        Polyhedron_Print(stderr, P_VALUE_FMT, Dbounded);
+      }
+      #endif
 
       // allocate memory if not done yet
       if(!vec)
       {
-        vec = Vector_Alloc(D->Dimension + 2);
-        Vector_Set(vec->p, 0, D->Dimension + 1);
-        value_set_si(vec->p[D->Dimension + 1], 1);
+        vec = Vector_Alloc(Dbounded->Dimension + 2);
+        Vector_Set(vec->p, 0, Dbounded->Dimension + 1);
+        value_set_si(vec->p[Dbounded->Dimension + 1], 1);
         universe = Universe_Polyhedron(0);
       }
 
-      scan = Polyhedron_Scan(D, universe, MAXNOOFRAYS);
+      scan = Polyhedron_Scan(Dbounded, universe, MAXNOOFRAYS);
       #ifdef SIMPLIFY_DEBUG
       fprintf(stderr, " scan = ");
       Polyhedron_Print(stderr, P_VALUE_FMT, scan);
       #endif
       int_solution_found = polyhedron_int_solution(scan, vec->p, 1);
 
+      if(unbounded)
+        Polyhedron_Free(Dbounded);
       Domain_Free(scan);
 
       // If found, then vec->p contains an integer solution of D,

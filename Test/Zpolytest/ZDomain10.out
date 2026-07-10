@@ -33,15 +33,15 @@ LATTICE:
 POLYHEDRON Dimension:2
            Constraints:4  Equations:0  Rays:4  Lines:0
 Constraints 4 4
-Inequality: [   1    0 -101  ]
 Inequality: [  28  -27    0  ]
 Inequality: [ -41   40    0  ]
+Inequality: [   1    0 -101  ]
 Inequality: [   0    0    1  ]
 Rays 4 4
-Ray:    [  40   41  ]
-Ray:    [  27   28  ]
 Vertex: [4040 4141  ]/40
 Vertex: [2727 2828  ]/27
+Ray:    [  40   41  ]
+Ray:    [  27   28  ]
 A - ZD(A) = LBL: Dimension 2
 
 <empty>

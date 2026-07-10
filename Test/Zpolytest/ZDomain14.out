@@ -56,9 +56,9 @@ Rays 3 4
 Line:   [   0    1  ]
 Vertex: [ 100    0  ]/1
 Vertex: [   7    0  ]/1
-A - ZD(A) = LBL: Dimension 3
+A - ZD(A) = LBL: Dimension 2
 
 <empty>
-ZD(A) - A = LBL: Dimension 3
+ZD(A) - A = LBL: Dimension 2
 
 <empty>

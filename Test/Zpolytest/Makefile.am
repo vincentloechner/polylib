@@ -57,7 +57,6 @@ TEST_FILES_32 =  \
 	ZDomain2b.in \
 	ZDomain3.in \
 	ZDomain4.in \
-	ZDomain6.in \
 	ZDomain10.in \
 	ZDomain12.in \
 	ZDomain14.in \
@@ -88,6 +87,7 @@ TEST_FILES = $(TEST_FILES_32) \
 	ZCompComp11b.in \
 	ZDiff11.in \
 	ZDiff11b.in \
+	ZDomain6.in \
 	ZDomain11.in
 
 # not checked:
