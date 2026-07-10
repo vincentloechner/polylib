@@ -9,7 +9,7 @@ import sys
 import pypolylib_core as pl
 
 # plotting libs:
-import math
+# import math
 import numpy as np
 from colorsys import hsv_to_rgb
 # # 2D -> not used anymore

@@ -1,5 +1,5 @@
 """
-test_ZPre.py — test preimage of LBLs: image(preimage(a)) \in a
+test_ZPre.py — test preimage of LBLs: image(preimage(a)) in a
 """
 from pypolylib import LBL, Transfo
 

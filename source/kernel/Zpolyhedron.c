@@ -2567,9 +2567,10 @@ static void LBL_Remove_Empty(LBL *A)
 
 /*
  * check for an integer solution of a polyhedron scan, return True if found
- * else, return False
+ * else, return False.
+ * scan should be a bounded polyhedron scan.
  * 
- * scan P, and return True as soon as an integer point is found.
+ * early exit: return True as soon as an integer point is found.
  * The found integer solution is in the array val.
  */
 static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
@@ -2631,9 +2632,13 @@ static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
  * Remove polyhedra that have no integer solutions from a domain.
  * Return a polyhedral domain, reusing the memory of D (do not free)
  * 
- * Note: DomainConstraintSimplify() has been called already by
- *       canonicalLBL, before entering this function. So if there is a line
+ * Note: DomainConstraintSimplify() has been called already before entering
+ * this function.
+ * ----
+ *  So if there is a line
  *       or ray in one of these polyhedra then it has an integer solution.
+ * ---> THIS IS NOT TRUE!
+ * TODO: FIXME
  */
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 {
@@ -2643,6 +2648,9 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
   #ifdef SIMPLIFY_DEBUG
   fprintf(stderr, "--- Entering Domain_Remove_Integer_Empty\n");
   #endif
+
+  // this should always be done already:
+  // D = DomainConstraintSimplify(D, MAXNOOFRAYS);
 
   // scan each polyhedron, if no integer solution eliminate it
   // (do not copy to result, free memory)
@@ -2664,8 +2672,13 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     Polyhedron_Print(stderr, P_VALUE_FMT, D);
     #endif
 
+    // TODO:
+    // if ray/line found, project along them (or bound the polyhedron) and
+    // continue searching for an int solution in the projection (or bounded pol)
+
     // If one of the vertices is integer or if there is a ray/line,
     // it's not empty
+    // THIS IS FALSE.
     for(ray = 0; ray < D->NbRays; ray++) {
       if(value_zero_p(D->Ray[ray][0])                || // line, or
          value_zero_p(D->Ray[ray][D->Dimension + 1]) || // ray, or
