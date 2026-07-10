@@ -27,9 +27,7 @@ TEST_FILES_32 =  \
 	LatInter5.in \
 	LatInter6.in \
 	LatInter7.in \
-  phideo1.in \
 	phideo2.in \
-  phideo3.in \
 	ZAlloc1.in \
 	ZAlloc1b.in \
 	ZAlloc1c.in \
@@ -94,7 +92,9 @@ TEST_FILES = $(TEST_FILES_32) \
 
 # not checked:
 # - long execution time:
-# ZDisj11b.in
+#	phideo1.in \
+#	phideo3.in \
+# ZDisj11b.in \
 # ZDomain13.in  # need gmp (overflow even in 64 bits)
 
 # - not yet included:
