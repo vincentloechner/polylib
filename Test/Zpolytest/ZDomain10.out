@@ -35,13 +35,35 @@ POLYHEDRON Dimension:2
 Constraints 4 4
 Inequality: [  28  -27    0  ]
 Inequality: [ -41   40    0  ]
-Inequality: [   1    0 -101  ]
+Inequality: [   0    1 -119  ]
 Inequality: [   0    0    1  ]
 Rays 4 4
-Vertex: [4040 4141  ]/40
-Vertex: [2727 2828  ]/27
 Ray:    [  40   41  ]
 Ray:    [  27   28  ]
+Vertex: [ 459  476  ]/4
+Vertex: [4760 4879  ]/41
+UNION POLYHEDRON Dimension:2
+           Constraints:4  Equations:0  Rays:4  Lines:0
+Constraints 4 4
+Inequality: [   1    0 -101  ]
+Inequality: [ -41   40    0  ]
+Inequality: [  28  -27   -8  ]
+Inequality: [   0    0    1  ]
+Rays 4 4
+Ray:    [  27   28  ]
+Ray:    [  40   41  ]
+Vertex: [4040 4141  ]/40
+Vertex: [ 909  940  ]/9
+UNION POLYHEDRON Dimension:2
+           Constraints:3  Equations:0  Rays:3  Lines:0
+Constraints 3 4
+Inequality: [  28  -27    0  ]
+Inequality: [ -28   27    6  ]
+Inequality: [   1    0 -108  ]
+Rays 3 4
+Ray:    [  27   28  ]
+Vertex: [ 108  112  ]/1
+Vertex: [ 972 1006  ]/9
 A - ZD(A) = LBL: Dimension 2
 
 <empty>

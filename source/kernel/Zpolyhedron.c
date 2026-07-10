@@ -1050,7 +1050,7 @@ LBL *LBLComplement(LBL *A)
 //   //   Polyhedron_Print(stderr, P_VALUE_FMT, ImInter);
 //   // #endif
   
-//   // // (TODO) can be simplified, Ainter not really needed!
+//   // // can be simplified, Ainter not really needed!
 
 //   // // compute the part of A that intersects the hull of B in the image space
 //   // preimA = DomainPreimage(ImInter, A->Lat, MAXNOOFRAYS);
@@ -1104,7 +1104,7 @@ LBL *LBLComplement(LBL *A)
 //   //   LatDiff = next;
 //   // }
 
-//   // // (TODO) also consider the intersection of lattices, where some points of
+//   // // could also consider the intersection of lattices, where some points of
 //   // // lattice B->Lat could have no integer antecedent in B->P and should
 //   // // be kept in the result A - B:
 //   // // Add the holes of B (that can be included in A but not in B).
@@ -1683,6 +1683,10 @@ static void sLBLSimplify_equalities(LBL *A, Matrix *Equalities)
  * 
  * consider P a single polyhedron, even if P->next is set.
  * return NULL if dark == input P
+ * 
+ * Args:
+ * - P: polyhedron (ignore ->next)
+ * - dim: 0 <= dim < P->Dimension
  */
 static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
 {
@@ -2073,7 +2077,7 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dimrest)
 /*
  * Bound the single polyhedron P by a box containing an integer point
  * 
- * returns a newly allocated polyhedron
+ * returns a newly allocated polyhedron, or P if there are no lines/rays
  */
 static Polyhedron *bound_polyhedron(Polyhedron *P)
 {
@@ -2083,9 +2087,6 @@ static Polyhedron *bound_polyhedron(Polyhedron *P)
   Matrix *new_rays;
   Polyhedron *res;
 
-  value_init(ONE);
-  value_set_si(ONE, 1);
-
   // count number of lines and rays
   num_lr = 0;
   for(int r = 0; r < P->NbRays; r++) {
@@ -2093,6 +2094,13 @@ static Polyhedron *bound_polyhedron(Polyhedron *P)
       num_lr++;
     }
   }
+  if(num_lr == 0) {
+    return(P);
+  }
+
+  value_init(ONE);
+  value_set_si(ONE, 1);
+
   
   // build the matrix of vertices of the bounded P:
   // original vertices + each line/ray added to each of them.
@@ -2144,11 +2152,6 @@ static Polyhedron *bound_polyhedron(Polyhedron *P)
  *      if there is an integer point in the intersection with the coordinate
  *      polyhedron, add it to the polyhedral domain not_a_hole
  * - return (rest - not_a_hole)
- * 
- * TODO: the output is not necessarily a bounded polyhedron!
- * we can add the rays from the rest polyhedra to the result...
- * but the rays have to be removed from rest before the scan (bound rest with
- * those rays -> vertices), else the scan is not bounded!
  */
 static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
 {
@@ -2231,14 +2234,10 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
     R->next = NULL;  // unlink next
 
     // Check if R is bounded. If it is not, just make it a bounded box
-    // (add the lines/rays to the vertices to get vertices)
+    // (add the lines/rays to the vertices to get new vertices)
     // the holes are necessarily regular in a not bounded piece of R.
     // keep memory of the lines/rays in R to add them back to the solution
-    if(value_zero_p(R->Ray[0][0])
-    || value_zero_p(R->Ray[0][R->Dimension + 1]))
-      bounded_rest = bound_polyhedron(R);
-    else
-      bounded_rest = R;
+    bounded_rest = bound_polyhedron(R);
   
     // rest_AP = bounded_rest dimension expanded to A->P
     rest_AP = bounded_rest;
@@ -2297,20 +2296,20 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
 
     // if R was unbounded
     if(bounded_rest != R) {
-      int num_lr;
       Matrix *lines_rays;
       Domain_Free(bounded_rest);
 
       if(new_not_a_hole) {
         // add lines/rays of rest to new_not_a_hole
-        for(num_lr = 0; num_lr < R->NbRays; num_lr++) {
-          if(value_notzero_p(R->Ray[num_lr][0])
-            && value_notzero_p(R->Ray[num_lr][R->Dimension + 1])) {
-            break;
-          }
+        lines_rays = Matrix_Alloc(R->NbRays, R->Dimension + 2);
+        lines_rays->NbRows = 0;
+        for(int r = 0; r < R->NbRays; r++) {
+          if(value_zero_p(R->Ray[r][0])
+            || value_zero_p(R->Ray[r][R->Dimension + 1])) {
+              Vector_Copy(R->Ray[0], lines_rays->p[lines_rays->NbRows], (R->Dimension + 2));
+              lines_rays->NbRows++;
+            }
         }
-        lines_rays = Matrix_Alloc(num_lr, R->Dimension + 2);
-        Vector_Copy(R->Ray[0], lines_rays->p[0], num_lr * (R->Dimension + 2));
         tmp = DomainAddRays(new_not_a_hole, lines_rays, MAXNOOFRAYS);
         Domain_Free(new_not_a_hole);
         new_not_a_hole = tmp;
@@ -2654,11 +2653,9 @@ static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
  * 
  * Note: DomainConstraintSimplify() has been called already before entering
  * this function.
- * ----
- *  So if there is a line
- *       or ray in one of these polyhedra then it has an integer solution.
- * ---> THIS IS NOT TRUE!
- * TODO: FIXME
+ * 
+ * Careful with unbounded polyhedra in this domain, we compute a bounding box
+ * for them
  */
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 {
@@ -2693,22 +2690,12 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     Polyhedron_Print(stderr, P_VALUE_FMT, D);
     #endif
 
-    // TODO:
-    // if ray/line found, project along them (or bound the polyhedron) and
-    // continue searching for an int solution in the projection (or bounded pol)
-
-    // If one of the vertices is integer or if there is a ray/line,
-    // it's not empty
-    // THIS IS FALSE.
     for(ray = 0; ray < D->NbRays; ray++) {
-      // if(value_zero_p(D->Ray[ray][0])                || // line, or
-      //    value_zero_p(D->Ray[ray][D->Dimension + 1]) || // ray, or
-      //    value_one_p(D->Ray[ray][D->Dimension + 1]))    // integer vertex
-
       // check if there's an integer vertex
       if(value_notzero_p(D->Ray[ray][0]) &&
          value_one_p(D->Ray[ray][D->Dimension + 1])) {
-        int_solution_found = True;
+          // One of the vertices is integer then it's not empty, algo done
+          int_solution_found = True;
         break;
       }
       // check if there's a line or ray:
@@ -2718,8 +2705,29 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
       }
     }
 
-    // Here: could check if dark shadow to 0-dim space is non empty.
-
+    // Here, check if dark shadow to 0-dim space is non empty.
+    Polyhedron *dark = D;
+    // compute dark shadow (source, no need to project) along every dimensions:
+    for(int d = 0; d < D->Dimension; d++) {
+      Polyhedron *temp = polyhedron_dark_source(dark, d);
+      if(temp) {
+        if(dark != D)
+          Polyhedron_Free(dark);
+        dark = temp;
+      }
+    }
+    // is the dark shadow empty ?
+    if(! emptyQ(dark)) {
+      #ifdef SIMPLIFY_DEBUG
+      fprintf(stderr, "The dark shadow to 0-dim is not empty! dark = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, dark);
+      fprintf(stderr, "Integer solution found = True");
+      #endif
+      int_solution_found = True;
+    }
+    if(dark != D) {
+      Polyhedron_Free(dark);
+    }
 
 
     if(!int_solution_found) {
@@ -2756,7 +2764,7 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 
       // If found, then vec->p contains an integer solution of D,
       // use it to simplify D
-      // -> at least set integer bound on first dimension
+      // -> at least we can set an integer bound on its first dimension
       // -> or can we force the vertex to be in D?
       //    splitting the polyhedron in parts? -> can be very complex in
       //    higher dimensions, don't!
@@ -2792,9 +2800,10 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     }
 
     D = next;
-  }
+  } // while(D)
+
   if(vec) {
-    // free memory used for scan, if allocated
+    // free memory used for scan, if allocated (vec and universe together)
     Polyhedron_Free(universe);
     Vector_Free(vec);
   }
