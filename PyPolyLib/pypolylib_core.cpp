@@ -202,7 +202,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
     m.def("isBoundedPolyhedron", [](Polyhedron *pol) {
         if(pol->NbBid != 0)
             return false;
-        for(int r = 0; r < pol->NbRays; r++)
+        for(unsigned r = 0; r < pol->NbRays; r++)
             if(value_zero_p(pol->Ray[r][pol->Dimension + 1]))
                 return false;
         return true;
