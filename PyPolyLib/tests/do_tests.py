@@ -1,11 +1,12 @@
 import sys
 import traceback
-from pypolylib import LBL, Transfo
+from pypolylib import LBL, Transfo, PolylibClose
 
 def do_nothing(*args):
     pass
 
-def do_tests(tests, test_func, fail_func=do_nothing):
+def run(tests, test_func, fail_func):
+
     passed = 0
     failed = 0
     for name, *test_args in tests:
@@ -36,6 +37,14 @@ def do_tests(tests, test_func, fail_func=do_nothing):
             failed += 1
 
     print(f"{passed} passed, {failed} failed")
+    return failed
+
+
+def do_tests(tests, test_func, fail_func=do_nothing):
+    failed = run(tests, test_func, fail_func)
+
+    # clean buffers
+    PolylibClose()
 
     # exit code = number of failed tests (0 == success)
     sys.exit(failed)

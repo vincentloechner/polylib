@@ -55,6 +55,10 @@ struct RaysView {
 };
 
 PYBIND11_MODULE(pypolylib_core, m) {
+    // ----------------------- Memory management ----------------------
+    m.def("PolylibClose", []() {
+        polylib_close();
+    });
 
 
     // ----------------------- Matrix ----------------------
@@ -116,8 +120,11 @@ PYBIND11_MODULE(pypolylib_core, m) {
 
     // Inverse
     m.def("MatrixInverse", [](Matrix *mat) {
+        // do a copy, Matrix_Inverse writes to its arg matrix
+        mat = Matrix_Copy(mat);
         Matrix *result = Matrix_Alloc(mat->NbRows, mat->NbColumns);
         int ok = Matrix_Inverse(mat, result);
+        Matrix_Free(mat);
         if (!ok) {
             Matrix_Free(result);
             throw std::runtime_error("The matrix is not invertible");
@@ -190,6 +197,15 @@ PYBIND11_MODULE(pypolylib_core, m) {
 
     m.def("PolyhedronPrint", [](Polyhedron *pol) {
         Polyhedron_Print(stdout, " %s", pol);
+    }), py::arg("pol");
+    
+    m.def("isBoundedPolyhedron", [](Polyhedron *pol) {
+        if(pol->NbBid != 0)
+            return false;
+        for(int r = 0; r < pol->NbRays; r++)
+            if(value_zero_p(pol->Ray[r][pol->Dimension + 1]))
+                return false;
+        return true;
     }), py::arg("pol");
 
 
