@@ -2172,8 +2172,10 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
   value_clear(hdv);
   Vector_Free(lcm);
   Vector_Free(m1);
+
   /* We can't simply call Param_Polyhedron_Free because we've reused the domains
    */
+  // Param_Polyhedron_Free(PP);
   Param_Vertices_Free(PP->V);
   while (PP->D) {
     Q = PP->D;
@@ -2181,7 +2183,10 @@ Enumeration *Polyhedron_Enumerate(Polyhedron *Pi, Polyhedron *C,
     free(Q->F);
     free(Q);
   }
+  if(PP->Constraints) Matrix_Free(PP->Constraints);
+  if(PP->Rays) Matrix_Free(PP->Rays);
   free(PP);
+
 
 out:
   if (CEq)

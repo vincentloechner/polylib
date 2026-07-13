@@ -148,6 +148,7 @@ int main( int argc, char **argv)
 	  printf( "\n-----------------------------------\n" );
 	}
 
+
     if( isatty(0) && C->Dimension != 0)
         {  /* no tty input or no polyhedron -> no evaluation. */
             printf("Evaluation of the Ehrhart polynomial :\n");
@@ -181,6 +182,13 @@ int main( int argc, char **argv)
 
             }
         }
+
+
+    Enumeration_Free(e);
+    Free_ParamNames(param_name, C->Dimension);
+    Domain_Free( P );
+    Polyhedron_Free( C );
+    polylib_close();
 
 	return( 0 );
 }

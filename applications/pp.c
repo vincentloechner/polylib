@@ -14,6 +14,7 @@ int main() {
   Param_Vertices *V;
   int i, j;
   char **param_name;
+  int nb_param;
   
   a = Matrix_Read();
   if(!a || a->NbColumns == 0) {
@@ -32,11 +33,15 @@ int main() {
   Matrix_Free(b);
   
   /* Read the name of the parameters */
-  param_name = Read_ParamNames(stdin, B->Dimension);
+  nb_param = B->Dimension;
+  param_name = Read_ParamNames(stdin, nb_param);
   PA = Polyhedron2Param_Domain(A,B,WS);
   if(!PA || PA->D==NULL) {
     printf("---------------------------------------\n");
     printf("Empty polyhedron\n");
+    Free_ParamNames(param_name, nb_param);
+    Domain_Free(A);
+    Domain_Free(B);
     return 0;
   }
   Domain_Free(A);
@@ -79,7 +84,7 @@ int main() {
   /*****************************/
   
   Param_Polyhedron_Free( PA );
-  free(param_name);
+  Free_ParamNames(param_name, nb_param);
   
   return 0;
 } /* main */ 

@@ -643,7 +643,11 @@ Polyhedron *DMUnion(Enumeration *en, unsigned MR) {
   e1 = en;
   d = e1->ValidityDomain;
   for (e1 = en->next; e1; e1 = e1->next) {
-    d = DomainUnion(d, e1->ValidityDomain, MR);
+    Polyhedron *tmp;
+    tmp = DomainUnion(d, e1->ValidityDomain, MR);
+    if(d != en->ValidityDomain)
+      Domain_Free(d);
+    d = tmp;
   }
   return d;
 }
@@ -755,13 +759,18 @@ Enumeration *Domain_Enumerate(Polyhedron *D, Polyhedron *C, unsigned MAXRAYS,
           tmp->next = res;
           res = tmp;
         }
+        else {
+          Domain_Free(d);
+        }
       }
       d = DomainDifference(en1->ValidityDomain, d2, MAXRAYS);
       if (d && !emptyQ(d) && !IncludeInRes(d, res, MAXRAYS)) {
         en1->ValidityDomain = d;
         en1->next = res;
         res = en1;
-      } else {
+      }
+      else {
+        Domain_Free(d);
         free_evalue_refs(&en1->EP);
         free(en1);
       }
@@ -774,6 +783,7 @@ Enumeration *Domain_Enumerate(Polyhedron *D, Polyhedron *C, unsigned MAXRAYS,
         en2->next = res;
         res = en2;
       } else {
+        Domain_Free(d);
         free_evalue_refs(&en2->EP);
         free(en2);
       }
