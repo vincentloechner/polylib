@@ -11,7 +11,8 @@ char s[128];
 
 int main() {
   
-  Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *e=NULL, *f=NULL, *g;
+  Matrix *a=NULL, *b=NULL, *c=NULL, *d=NULL, *e=NULL, *f=NULL;
+  Matrix *g; // temp matrix
   LatticeUnion *l1, *l2;
   Polyhedron *A=NULL, *B=NULL, *C=NULL, *D = NULL;
   LBL *ZA=NULL, *ZB=NULL, *ZC=NULL, *ZD=NULL;
@@ -372,6 +373,8 @@ int main() {
   if (b)    Matrix_Free(b);
   if (c)    Matrix_Free(c);
   if (d)    Matrix_Free(d);
+  if (e)    Matrix_Free(e);
+  if (f)    Matrix_Free(f);
 
   if (A)    Domain_Free(A);
   if (B)    Domain_Free(B);
