@@ -435,7 +435,7 @@ class Transfo:
     return result
 
 
-  def compose(self, other: Transfo):
+  def compose(self, other):
     """
     Composes two transformations: self * other.
 
