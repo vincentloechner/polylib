@@ -129,7 +129,7 @@ class LBL:
       raise ValueError(f"Incompatible dimensions: {self._lbl.Lat.nbrows - 1} "
                        f"vs {other._lbl.Lat.nbrows - 1}")
 
-  def intersection(self, other: LBL):
+  def intersection(self, other):
     """
     Calculates the intersection of this LBL with another one.
 
@@ -144,7 +144,7 @@ class LBL:
     result._lbl = self._lbl.intersection(other._lbl)
     return result
 
-  def difference(self, other: LBL):
+  def difference(self, other):
     """
     Calculates the difference between this LBL and another one (self - other).
 
@@ -159,7 +159,7 @@ class LBL:
     result._lbl = self._lbl.difference(other._lbl)
     return result
 
-  def union(self, other: LBL):
+  def union(self, other):
     """
     Calculates the union of this LBL with another one.
 
@@ -174,7 +174,7 @@ class LBL:
     result._lbl = self._lbl.union(other._lbl)
     return result
 
-  def included(self, other: LBL):
+  def included(self, other):
     """
     Checks whether this LBL is contained within another one.
 
@@ -199,7 +199,7 @@ class LBL:
     result._lbl = self._lbl.zdomain()
     return result
 
-  def image(self, transfo: Transfo):
+  def image(self, transfo):
     """
     Calculates the image of this LBL under an affine transformation.
 
@@ -222,7 +222,7 @@ class LBL:
     result._lbl = pl.LBLImage(self._lbl, transfo._mat)
     return result
 
-  def preimage(self, transfo: Transfo):
+  def preimage(self, transfo):
     """
     Calculates the preimage of this LBL under an affine transformation.
 
@@ -349,25 +349,25 @@ class LBL:
         poly = poly.next
       node = node.next
   
-  def __add__(self, other: LBL):
+  def __add__(self, other):
     """Union : a + b  ≡  a.union(b)"""
     return self.union(other)
 
-  def __sub__(self, other: LBL):
+  def __sub__(self, other):
     """Difference : a - b  ≡  a.difference(b)"""
     return self.difference(other)
 
-  def __mul__(self, other: LBL):
+  def __mul__(self, other):
     """Intersection : a * b  ≡  a.intersection(b)"""
     return self.intersection(other)
 
-  def __eq__(self, other: LBL):
+  def __eq__(self, other):
     """Equality : A == B  ≡  (A ⊆ B and B ⊆ A)"""
     if not isinstance(other, LBL):
       return NotImplemented
     return self.included(other) and other.included(self)
 
-  def __contains__(self, other: LBL):
+  def __contains__(self, other):
     """Inclusion : other in self  ≡  other ⊆ self"""
     return other.included(self)
 
@@ -411,7 +411,7 @@ class Transfo:
       return "None"
     return io.TransfoRepr(self._mat)
 
-  def __call__(self, a: LBL):
+  def __call__(self, a):
     if not isinstance(a, LBL):
       raise NotImplemented
     return a.image(self)
