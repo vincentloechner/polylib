@@ -17,6 +17,7 @@
 #include <gmpxx.h>   // MUST come before polylibgmp.h
 #include <pybind11/pybind11.h>
 
+
 extern "C" {
 #include "polylib/polylibgmp.h"
 }
@@ -265,4 +266,5 @@ PYBIND11_MODULE(pypolylib_core, m) {
         LBLPrint(stdout, " %s", l);
     });
 
- }
+}
+
