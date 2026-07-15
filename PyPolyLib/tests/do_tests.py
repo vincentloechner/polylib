@@ -18,7 +18,7 @@ def run(tests, test_func, fail_func):
         except:
             print("\033[31mFAIL\033[0m")
             print(traceback.format_exc())
-            fail_func(*lbl)
+            fail_func(*test_args)
             failed += 1
 
     print(f"{passed} passed, {failed} failed")
