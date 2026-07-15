@@ -12,22 +12,7 @@ def run(tests, test_func, fail_func):
     for name, *test_args in tests:
         print(f"{name:22s} ", end="", flush=True)
         try:
-            # init LBLs
-            lbl = list(LBL(s) for s in test_args[0])
-            trans = []
-
-            if len(test_args) == 2:
-                # init tranformation matrices
-                trans = list(Transfo(s) for s in test_args[1])
-
-        except:
-            print("\033[31mFAIL\033[0m: cannot read LBL(s)")
-            print(traceback.format_exc())
-            failed += 1
-            continue
-
-        try:
-            test_func(*lbl, *trans)
+            test_func(*test_args)
             print("OK")
             passed += 1
         except:
@@ -44,6 +29,8 @@ def do_tests(tests, test_func, fail_func=do_nothing):
     failed = run(tests, test_func, fail_func)
 
     # clean buffers
+    for i in range(len(tests)):
+        tests[i] = None 
     PolylibClose()
 
     # exit code = number of failed tests (0 == success)

@@ -24,7 +24,7 @@ timeout = args.timeout
 
 # get file names
 script_dir = Path(__file__).parent
-files = list(Path(script_dir).glob("test_*.py"))
+files = sorted(script_dir.glob("test_*.py"), key=lambda f: f.name.lower())
 
 # run tests
 failed = 0
