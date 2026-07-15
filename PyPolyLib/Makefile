@@ -20,4 +20,4 @@ clean:
 	rm pypolylib_core${PY_EXT}
 
 check:
-	python3 tests/run_tests.py
+	python3 tests/run_all_tests.py
