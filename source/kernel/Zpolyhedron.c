@@ -3167,17 +3167,24 @@ static void sLBLCanonical(LBL *A)
   sLBL_Lat_Normalize(A);
 
   // simplify non-integer constraints such that they intersect at least one
-  // integer point (to avoid infinite integer-empty polyhedra and obviously
-  // empty polyhedra)
+  // integer point (to avoid some infinite integer-empty polyhedra and
+  // obviously empty polyhedra)
   A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
 
-  // check emptyness (A->P = NULL or rational empty)
-  if(!A->P) {
-    return;
-  }
-  if(emptyQ(A->P)) {
+  // check emptyness
+  if(!A->P || emptyQ(A->P)) {
     Domain_Free(A->P);
     A->P = NULL;
+    // set the lattice to a single empty column
+    int dimension = A->Lat->NbRows - 1;
+    if(A->Lat->NbColumns > 1) {
+      Matrix_Free(A->Lat);
+      A->Lat = Matrix_Alloc(dimension + 1, 1);
+      for(int j = 0 ; j < dimension; j++) {
+        value_set_si(A->Lat->p[0][j], 0);
+      }
+      value_set_si(A->Lat->p[0][dimension], 1);
+    }
     return;
   }
 
