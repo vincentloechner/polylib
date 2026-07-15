@@ -9,9 +9,9 @@ Typical usage:
 ```
 from pypolylib import LBL, Transfo
 
-# Create an LBL
+# Create LBLs
 a = LBL("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
-b = LBL("{(2i, j) | 1 <= i <= 50, j = 10}")
+b = LBL("{(2i, j) | 1 <= i <= 50, 5 <= j, j < 10}")
 
 #  Set operations
 inter = a * b      # intersection
@@ -19,39 +19,40 @@ diff  = a - b      # difference
 union = a + b      # union
 
 #  Check for inclusion
-print(a.included(b))   # True or False
+print(a.included(inter + diff)) # True or False
 
 #  Check for equality (mutual inclusion)
-print(a == b)   # True or False
+print(a == b)                   # True or False
 
 # Image under a transformation
 f = Transfo("(i,j -> 2i+1, i+3j)")
-print(a.image(f))    # image of a under f
-print(a.preimage(f))   # preimage of a under f
+print(a.image(f))               # image of a under f
+print(a.preimage(f))            # preimage of a under f
 
 # Composing and inverting transformations
 g = Transfo("(i,j -> i+1, 2j)")
-h = f * g        # composition
-fi = f.inverse()     # inverse
+h = f * g                       # composition
+fi = f.inverse()                # integer inverse
 
 # Iterate over LBL points (bounded LBL)
 for pt in a:
-  print(pt)      # print each point (as a tuple of integers)
-# get (python) set of points (bounded LBL)
+  print(pt)                     # print each point (as a tuple of integers)
+
+# get the set of points (bounded LBL, as a python set)
 s = set(a)
 
-# Plot (2D and 3D only, bounded LBL only)
+# Plot (bounded LBL only)
 a.plot()
 ```
 """
 
 
-import pypolylib_core as pl
 import math
-# from lbl_io import _lbl_repr, _terms_to_str
+import gc
+
+import pypolylib_core as pl
 import lbl_io as io
 from lbl_plot import lbl_plot
-import gc
 
 
 # ──────────────────────────────────────────────────────────────

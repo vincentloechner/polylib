@@ -35,10 +35,10 @@ def LBLRead(s):
     lhs_str = lhs_str.strip()
     rhs_str = rhs_str.strip()
 
-    all_text = lhs_str + rhs_str
-
     # enable multicharacter variables
-    variables = set(re.findall(r'[a-zA-Z][a-zA-Z0-9_]*(?![a-zA-Z0-9_])', all_text))
+    variables = re.findall(r'[a-zA-Z_][a-zA-Z0-9_]*(?![a-zA-Z0-9_])', s)
+    # remove duplicates (but keep order)
+    variables = list(dict.fromkeys(variables))
     n = len(variables)
 
     # Lattice matrix
@@ -59,6 +59,10 @@ def LBLRead(s):
 
     lat_str = _matrix_to_polylib_string(nb_rows_lat, nb_cols_lat, lat_values)
     lat = pl.MatrixReadFromString(lat_str)
+
+    # right hand side
+    if rhs_str == "<empty>":
+        return pl.LBLAlloc(lat, None)
 
     # Constraints Matrix
     constraint_rows = _parse_constraints(rhs_str, variables)
@@ -152,7 +156,8 @@ def _single_lbl_repr(lat, poly):
 
     # ── Right side: constraints ──
     if poly is None:
-        return "{" + lhs + " | <empty>}"
+        # special string for empty LBLs: "{(_, _) | <empty>}" (2D example)
+        return "{(" + ", ".join("_" for _ in range(nb_out)) + ") | <empty>}"
 
     nb_constraints = poly.nbconstraints
     dim = poly.dimension

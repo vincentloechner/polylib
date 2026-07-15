@@ -9,15 +9,14 @@ import sys
 import pypolylib_core as pl
 
 # plotting libs:
-# import math
 import numpy as np
+from scipy.spatial import ConvexHull
 from colorsys import hsv_to_rgb
+import pyvista as pv
+
 # # 2D -> not used anymore
 # import matplotlib.pyplot as plt
 # from shapely.geometry import MultiPoint
-# 3D
-import pyvista as pv
-from scipy.spatial import ConvexHull
 
 # allow plotting polyhedra that have no integer points:
 pv.global_theme.allow_empty_mesh = True
@@ -32,7 +31,10 @@ class WindowColorGenerator:
         self.hue = (self.hue + 0.618033988749895) % 1.0
         return hsv_to_rgb(self.hue, .55, .9)
 
+
 # this is not very nice, but it's the best way to do it.
+# will be set to a WindowColorGenerator at first call, and reset to open a
+# new window
 _lbl_plot_window = None
 
 def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
@@ -101,16 +103,8 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
             pv.close_all()
         _lbl_plot_window = None # will open a new window in a next call
 
-# original version:
-    # if dim == 2:
-    #     _plot_2d(lbl, show_points, subplot)
-    # elif dim == 3:
-    #     _plot_3d(lbl, show_points, subplot)
-    # else:
-    #     print(f"Plot: dimension {dim} is not supported (only 2D and 3D).",
-    #           file=sys.stderr)
 
-
+# 2D version using matplotlib:
 # def _plot_2d(lbl_obj, show_points, subplot):
 #     """2D plot (polygon + integer points)."""
 #     ax = plt.subplots()[1]
@@ -296,6 +290,8 @@ def _lat3D(node_lat):
         return node_lat
     else:
         # extend node_lat to be a 3D projection!
+        # - if larger than 3D: project out extra dimensions
+        # - if smaller than 3D: set z=0 (and y=0 if 1D)
         lat = pl.MatrixAlloc(4, node_lat.nbcolumns)
         for i in range(min(3, node_lat.nbrows - 1)):
             for j in range(node_lat.nbcolumns):

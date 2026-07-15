@@ -9,7 +9,7 @@ def main():
   univ = LBL("{(x,y)|}")
   assert str(univ) == "{(i, j) | }"
   empty = LBL("{(x,y)|1 < 0}")
-  assert str(empty) == "{(i, j) | <empty>}"
+  assert str(empty) == "{(_, _) | <empty>}"
   print("OK")
 
   """--------------------- Basic LBL manipulation ---------------------"""
