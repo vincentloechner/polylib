@@ -245,6 +245,14 @@ static Bool LBL_simple_inclusion_check(LBL *A, LBL *B)
   for( ; A; A = A->next) {
     LBL *tmpB;
     Polyhedron *ddiff;
+
+    // For now this test is very rudimentary!
+    // 
+    // TODO: the lattice search could search for a lattice included in the
+    // other, not necessarily equal! But then we have to transform the
+    // coordinate polyhedra to be in the same space. Other parts of A could
+    // also be covered by other parts of B.
+
     for(tmpB = B; tmpB; tmpB = tmpB->next) {
       if(isEqualLattice(A->Lat, tmpB->Lat))
         break; // found
@@ -261,17 +269,11 @@ static Bool LBL_simple_inclusion_check(LBL *A, LBL *B)
     // parts of A->P is enough:
     if(tmpB->P->next == NULL) {
       for(Polyhedron *Apart = A->P; Apart; Apart = Apart->next) {
-        // no need to unlink and relink next (next is just ignored)
-        // Polyhedron *next = Apart->next;
-        // // unlink next: the inclusion test only handles single polyhedra
-        // Apart->next = NULL;
         if(! PolyhedronIncludes(tmpB->P, Apart))
         {
-          // Apart->next = next;
+          // tmpB->P does not include (cover) Apart
           return(False);
         }
-        // // relink next
-        // Apart->next = next;
       }
     }
     else {
@@ -285,7 +287,9 @@ static Bool LBL_simple_inclusion_check(LBL *A, LBL *B)
       }
       Domain_Free(ddiff);
     }
-  }
+    // success for this part of A.
+  } // next part of A
+
   // every part of A was found in B
   return(True);
 }
@@ -325,6 +329,61 @@ Bool LBLIncluded(LBL *A, LBL *B)
 
   return ret;
 } /* LBLIncluded */
+
+
+/*
+ * Return True if the point pt is included in LBL A,
+ * otherwise return False.
+ * 
+ * pt should be an integer array of Values of dimension (A->Lat->NbRows - 1)
+ */
+Bool LBLContainsPoint(LBL *A, Value *pt)
+{
+
+  // scan each simple LBL of A:
+  for( ; A ; A = A->next) {
+    // build the LBL { AL z |  AL z = pt, z \in AP } by adding the equalities
+    // {AL z = pt} to AP, normalize the LBL,
+    // and check if the resulting LBL has a solution
+
+    int dimLBL = A->Lat->NbRows - 1;
+    int hdimP = A->P->Dimension + 1;  // homogeneous dimension of A->P
+                                      // == A->Lat->NbColumns
+    LBL *inter;
+    Matrix *Eq;
+    Polyhedron *newP;
+    Bool empty;
+
+    // Eq = [ 0 |  Al  |  Ac-pt ]
+    // with A = [ Al | Ac ]  (linear part/constant part)
+    Eq = Matrix_Alloc(dimLBL, hdimP + 1);
+    for(int d = 0; d < dimLBL; d++) {
+      value_set_si(Eq->p[d][0], 0);
+      Vector_Copy(A->Lat->p[d], &Eq->p[d][1], hdimP);
+      value_substract(Eq->p[d][hdimP], Eq->p[d][hdimP], pt[d]);
+    }
+
+    // build new LBL inter
+    newP = DomainAddConstraints(A->P, Eq, MAXNOOFRAYS);
+    inter = LBLAlloc(A->Lat, newP);
+
+    // simplify and check emptiness
+    LBLSimplifyEmpty(inter);
+    empty = isEmptyLBL(inter);
+
+    // free memory
+    LBLFree(inter);
+    Domain_Free(newP);
+    Matrix_Free(Eq);
+
+    // early exit if found
+    if(!empty) {
+      return True;
+    }
+  }  // continue to next LBL of A
+
+  return False;
+} /* LBLContainsPoint */
 
 
 /*
@@ -775,70 +834,70 @@ static LBL *sLBLIntersection(LBL *A, LBL *B)
 // } /* LBL_sLBL_Difference */
 
 
-/*
- * Compute the complement of sLBL A: all points z such that z is not in A.
- *
- * Algorithm:
- * Let L = A->Lat, P = A->P.
- * complement(A) = Universe() - A = union of:
- *   1- LBL (Z^d, complement hull(A)), with hull(A) = image by L of P
- *   2- LBL ((Z^d - L), hull(A)) ---- or ((Z^d - L), universe())
- *   3- holes of A
- *      if L has no zero columns -> empty
- *      = L z' such that there exist no z in A->P such that L z' = L z
- *      -> need exact shadow
- */
-static LBL *sLBLComplement2(LBL *A)
-{
-  // testing a new version, just add dimensions and 0 columns in L, and
-  // compute the complement of the coordinate polyhedron
-  // and add the holes of A at the end.
-  Matrix *id = NULL;
-  Polyhedron *univ, *comp, *holes;
+// /*
+//  * Compute the complement of sLBL A: all points z such that z is not in A.
+//  *
+//  * Algorithm:
+//  * Let L = A->Lat, P = A->P.
+//  * complement(A) = Universe() - A = union of:
+//  *   1- LBL (Z^d, complement hull(A)), with hull(A) = image by L of P
+//  *   2- LBL ((Z^d - L), hull(A)) ---- or ((Z^d - L), universe())
+//  *   3- holes of A
+//  *      if L has no zero columns -> empty
+//  *      = L z' such that there exist no z in A->P such that L z' = L z
+//  *      -> need exact shadow
+//  */
+// static LBL *sLBLComplement2(LBL *A)
+// {
+//   // testing a new version, just add dimensions and 0 columns in L, and
+//   // compute the complement of the coordinate polyhedron
+//   // and add the holes of A at the end.
+//   Matrix *id = NULL;
+//   Polyhedron *univ, *comp, *holes;
 
-  // compute holes of A:
-  holes = sLBLCompute_holes(A, NULL);
+//   // compute holes of A:
+//   holes = sLBLCompute_holes(A, NULL);
 
-  Matrix_identity(A->Lat->NbRows, &id);
-  A = sLBLCopy(A);
-  sLBLMake_lattice_equal_to(A, id);
-  Matrix_Free(id);
-  fprintf(stderr, "A lattice equal to Id = ");
-  sLBLPrint(stderr, P_VALUE_FMT, A);
+//   Matrix_identity(A->Lat->NbRows, &id);
+//   A = sLBLCopy(A);
+//   sLBLMake_lattice_equal_to(A, id);
+//   Matrix_Free(id);
+//   fprintf(stderr, "A lattice equal to Id = ");
+//   sLBLPrint(stderr, P_VALUE_FMT, A);
 
-  // // remove the zero dimensions of A->P:
-  // nz = LatCountZeroCols(A->Lat);
-  // Polyhedron *newP = A->P;
-  // for(int dim = 0; dim < nz; dim++) {
+//   // // remove the zero dimensions of A->P:
+//   // nz = LatCountZeroCols(A->Lat);
+//   // Polyhedron *newP = A->P;
+//   // for(int dim = 0; dim < nz; dim++) {
 
-  // }
-  // fprintf(stderr, "A expanded with lines in 0-dims = ");
-  // sLBLPrint(stderr, P_VALUE_FMT, A);
+//   // }
+//   // fprintf(stderr, "A expanded with lines in 0-dims = ");
+//   // sLBLPrint(stderr, P_VALUE_FMT, A);
 
-  // Compute Universe - A->P
-  univ = Universe_Polyhedron(A->P->Dimension);
-  comp = DomainDifference(univ, A->P, MAXNOOFRAYS);
-  Domain_Free(univ);
+//   // Compute Universe - A->P
+//   univ = Universe_Polyhedron(A->P->Dimension);
+//   comp = DomainDifference(univ, A->P, MAXNOOFRAYS);
+//   Domain_Free(univ);
 
-  fprintf(stderr, "LINKING: holes(A) = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, holes);
-  fprintf(stderr, "         with comp = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, comp);
+//   fprintf(stderr, "LINKING: holes(A) = ");
+//   Polyhedron_Print(stderr, P_VALUE_FMT, holes);
+//   fprintf(stderr, "         with comp = ");
+//   Polyhedron_Print(stderr, P_VALUE_FMT, comp);
 
-  // just link holes at the end of comp (they are separated)
-  Polyhedron *compEnd = comp;
-  while(compEnd->next)
-    compEnd = compEnd->next;
-  compEnd->next = holes;
-  Domain_Free(A->P);
-  A->P = comp;
+//   // just link holes at the end of comp (they are separated)
+//   Polyhedron *compEnd = comp;
+//   while(compEnd->next)
+//     compEnd = compEnd->next;
+//   compEnd->next = holes;
+//   Domain_Free(A->P);
+//   A->P = comp;
 
-  CanonicalLBL(A);
-  fprintf(stderr, "comp(A) = ");
-  sLBLPrint(stderr, P_VALUE_FMT, A);
+//   CanonicalLBL(A);
+//   fprintf(stderr, "comp(A) = ");
+//   sLBLPrint(stderr, P_VALUE_FMT, A);
 
-  return(A);
-}
+//   return(A);
+// }
 static LBL *sLBLComplement(LBL *A)
 {
   LBL *Result = NULL;
@@ -2686,7 +2745,7 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
       continue;
     }
     #ifdef SIMPLIFY_DEBUG
-    fprintf(stderr, "Checking integer emptyness of: ");
+    fprintf(stderr, "Checking integer emptiness of: ");
     Polyhedron_Print(stderr, P_VALUE_FMT, D);
     #endif
 
@@ -3171,7 +3230,7 @@ static void sLBLCanonical(LBL *A)
   // obviously empty polyhedra)
   A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
 
-  // check emptyness
+  // check emptiness
   if(!A->P || emptyQ(A->P)) {
     Domain_Free(A->P);
     A->P = NULL;
@@ -3219,7 +3278,7 @@ static void sLBLCanonical(LBL *A)
   // Remove the columns of zeros from A->Lat if possible:
   // do the projection along the zero-dimensions,
   // eliminate only if dark shadow \in exact shadow
-  // (do not convert into ZDomains/check for integer-emptyness of polyhedra)
+  // (do not convert into ZDomains/check for integer-emptiness of polyhedra)
   sLBL_Simplify_Zero_Dimensions(A);
 
   return;

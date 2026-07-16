@@ -359,6 +359,22 @@ int main() {
     printf("  (inter union diff) is included in A: %d\n", LBLIncluded(ZB, ZA));
     break;
 
+  case 23:  /* LBLContainsPoint */
+    ZA = LBLAlloc(a, A);
+    ZB = LBL2ZDomain(ZA);
+    // b should be a matrix of vertices
+    for(int i = 0; i < b->NbRows; i++) {
+      printf("pt(");
+      value_print(stdout, P_VALUE_FMT, b->p[i][0]);
+      for(int d = 1 ; d < b->NbColumns; d++) {
+        printf(", ");
+        value_print(stdout, P_VALUE_FMT, b->p[i][d]);
+      }
+      printf(") in A: %d;", LBLContainsPoint(ZA, b->p[i]));
+      printf(" in ZDomain(A): %d\n", LBLContainsPoint(ZB, b->p[i]));
+    }
+    break;
+
   case 100: /* just alloc and normalize */
     ZA = LBLAlloc(a,A);
     LBLPrint(stdout, P_VALUE_FMT, ZA);

@@ -74,6 +74,8 @@ TEST_FILES_32 =  \
 	ZPre1.in \
 	ZPre2.in  \
 	ZPre3.in \
+	ZPtInZP1.in \
+	ZPtInZP3.in \
 	ZUnion1.in \
 	ZUnion2.in \
 	ZUnion3.in
