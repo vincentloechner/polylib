@@ -26,6 +26,7 @@
 #define SIMPLIFY_DEBUG 1
 #define SIMPLIFY2_DEBUG 1
 #define IMAGE_DEBUG 1
+#define CONTAIN_DEBUG 1
 #endif
 
 static LBL *LBLConcatenate(LBL *A, LBL *B);
@@ -82,9 +83,13 @@ LBL *LBLAlloc(Matrix *Lat, Polyhedron *Domain)
       "the Lattice and the Polyhedron are not compatible to form a LBL");
     return NULL;
   }
-  if(Domain && emptyQ(Domain)) {
-    Domain = NULL;
-  }
+
+  // If, for some reason, the user passes an empty polyhedron union a
+  // non-empty one as Domain (that should not happen, but who knows)
+  // this test would remove it. It is redundant anyway:
+  // if(Domain && emptyQ(Domain)) {
+  //   Domain = NULL;
+  // }
 
   A = malloc(sizeof(LBL));
   if (!A) {
@@ -340,6 +345,9 @@ Bool LBLIncluded(LBL *A, LBL *B)
 Bool LBLContainsPoint(LBL *A, Value *pt)
 {
 
+  #ifdef CONTAIN_DEBUG
+  fprintf(stderr, "========= Entering LBLContainsPoint =========\n");
+  #endif
   // scan each simple LBL of A:
   for( ; A ; A = A->next) {
     // build the LBL { AL z |  AL z = pt, z \in AP } by adding the equalities
@@ -364,8 +372,23 @@ Bool LBLContainsPoint(LBL *A, Value *pt)
     }
 
     // build new LBL inter
+    #ifdef CONTAIN_DEBUG
+    fprintf(stderr, "Adding equalities to P. P (before) = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+    #endif
     newP = DomainAddConstraints(A->P, Eq, MAXNOOFRAYS);
+    #ifdef CONTAIN_DEBUG
+    // bug correction in July 2026: newP could be a union of an empty
+    // polyhedron + a non-empty one as a result of DomainAddConstraints, for
+    // example in Test/Zpolytest/ZPtInZP10.in for pt = (102, 105)
+    fprintf(stderr, "newP (after) = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, newP);
+    #endif
     inter = LBLAlloc(A->Lat, newP);
+    #ifdef CONTAIN_DEBUG
+    fprintf(stderr, "inter = ");
+    LBLPrint(stderr, P_VALUE_FMT, inter);
+    #endif
 
     // simplify and check emptiness
     LBLSimplifyEmpty(inter);

@@ -4444,6 +4444,7 @@ Interval *DomainCost(Polyhedron *Pol, Value *Cost) {
  * Add constraints pointed by 'Mat' to each and every polyhedron in the
  * polyhedral domain 'Pol'. 'NbMaxRays' is maximum allowed rays in the ray
  * matrix of a polyhedron.
+ * Returns a new allocated domain.
  */
 Polyhedron *DomainAddConstraints(Polyhedron *Pol, Matrix *Mat,
                                  unsigned NbMaxRays) {
@@ -4454,7 +4455,7 @@ Polyhedron *DomainAddConstraints(Polyhedron *Pol, Matrix *Mat,
   if (!Pol)
     return (Polyhedron *)0;
   if (!Mat)
-    return Pol;
+    return Domain_Copy(Pol);
   if (Pol->Dimension != Mat->NbColumns - 2) {
     errormsg1("DomainAddConstraints", "diffdim",
               "operation on different dimensions");
@@ -4464,14 +4465,20 @@ Polyhedron *DomainAddConstraints(Polyhedron *Pol, Matrix *Mat,
   /* Copy 'Pol' to 'PolA' */
   PolA = PolEndA = (Polyhedron *)0;
   for (p1 = Pol; p1; p1 = p1->next) {
-    p3 = AddConstraints(Mat->p_Init, Mat->NbRows, p1, NbMaxRays);
+    p3 = AddConstraints(Mat->p[0], Mat->NbRows, p1, NbMaxRays);
 
-    /* Does any component of 'PolA' cover 'p3' */
-    Redundant = 0;
-    for (p2 = PolA; p2; p2 = p2->next) {
-      if (PolyhedronIncludes(p2, p3)) { /* 'p2' covers 'p3' */
-        Redundant = 1;
-        break;
+    // never add an empty polyhedron to a domain! (even if polA is empty)
+    if(!p3 || emptyQ(p3)) {
+      Redundant = 1;
+    }
+    else {
+      /* Does any component of 'PolA' cover 'p3' */
+      Redundant = 0;
+      for (p2 = PolA; p2; p2 = p2->next) {
+        if (PolyhedronIncludes(p2, p3)) { /* 'p2' covers 'p3' */
+          Redundant = 1;
+          break;
+        }
       }
     }
 
