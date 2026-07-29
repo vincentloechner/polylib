@@ -104,6 +104,7 @@ class LBL:
     a - b   # difference
     a * b   # intersection
   """
+  _lbl:pl.LBL = None
   def __init__(self, s=None):
     """
     Initializes an LBL, optionally from a symbolic string.
@@ -112,7 +113,6 @@ class LBL:
       s (str, optional): string in the format “{(expr) | constraints}”.
                  If None, creates an empty LBL.
     """
-    self._lbl = None
     if s is not None:
       self._lbl = io.LBLRead(s)
 
@@ -125,9 +125,9 @@ class LBL:
   ######################## operations ########################
   def _check_compat(self, other):
     if not isinstance(other, LBL):
-      raise TypeError(f"Expected an LBL, got {type(other).__name__}")
+      raise TypeError(f"expected an LBL, got <{type(other).__name__}>")
     if self._lbl.Lat.nbrows != other._lbl.Lat.nbrows:
-      raise ValueError(f"Incompatible dimensions: {self._lbl.Lat.nbrows - 1} "
+      raise ValueError(f"incompatible dimensions: {self._lbl.Lat.nbrows - 1} "
                        f"vs {other._lbl.Lat.nbrows - 1}")
 
   def intersection(self, other):
@@ -188,6 +188,27 @@ class LBL:
     self._check_compat(other)
     return self._lbl.included(other._lbl)
 
+  def contains_point(self, point):
+    """
+    Checks whether this LBL contains a point (iterable of correct dimension)
+
+    Args:
+      point (iterable)
+
+    Returns:
+      bool: True if the lbl contains point, False otherwise
+    """
+    # check if point is an iterable (not an str or bytes) or raise a type error
+    iter(point)
+    if isinstance(point, (str, bytes)):
+      raise TypeError(f"expected a vector of values, got <{type(point).__name__}>")
+
+    if self._lbl.Lat.nbrows - 1 != len(point):
+      raise ValueError(f"incompatible dimensions: {self._lbl.Lat.nbrows - 1} "
+                       f"(LBL) vs {len(point)} (vector)")
+
+    return self._lbl.containspoint(point)
+
   def zdomain(self):
     """
     Calculate the entire domain (Z-domain) of this LBL,
@@ -217,7 +238,7 @@ class LBL:
     """
     if not isinstance(transfo, Transfo):
       raise TypeError(
-        f"LBL.image() expected a Transfo, got {type(transfo).__name__}"
+        f"LBL.image() expected a Transfo, got <{type(transfo).__name__}>"
       )
     result = LBL()
     result._lbl = pl.LBLImage(self._lbl, transfo._mat)
@@ -235,7 +256,7 @@ class LBL:
     """
     if not isinstance(transfo, Transfo):
       raise TypeError(
-        f"LBL.preimage() expected a Transfo, got {type(transfo).__name__}"
+        f"LBL.preimage() expected a Transfo, got <{type(transfo).__name__}>"
       )
     result = LBL()
     result._lbl = pl.LBLPreimage(self._lbl, transfo._mat)
@@ -369,8 +390,15 @@ class LBL:
     return self.included(other) and other.included(self)
 
   def __contains__(self, other):
-    """Inclusion : other in self  ≡  other ⊆ self"""
-    return other.included(self)
+    """
+    Inclusion test, geometric OR pythonic:
+    - lbl1 in lbl2 : tests whether lbl1 ⊆ lbl2
+    - point in lbl : tests whether a point (iterable) is in lbl
+    """
+    if isinstance(other, LBL):
+      return other.included(self)
+
+    return self.contains_point(other)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -388,6 +416,7 @@ class Transfo:
     b = a.image(f)      # or f(a)         : image    of LBL a under f
     c = a.preimage(f)   # or f.preimage(a): preimage of LBL a under f
   """
+  _mat:pl.Matrix = None
   def __init__(self, s=None):
     """
     Initializes a Transfo from a symbolic string.
@@ -397,7 +426,6 @@ class Transfo:
                                expr1, expr2, ...)”.
                  If None, creates an empty Transfo.
     """
-    self._mat = None
     if s is not None:
       self._mat = io.TransfoRead(s)
 
@@ -429,7 +457,7 @@ class Transfo:
     """
     if not isinstance(a, LBL):
       raise TypeError(
-        f"Transfo.preimage() expected an LBL, got {type(a).__name__}"
+        f"Transfo.preimage() expected an LBL, got <{type(a).__name__}>"
       )
     result = LBL()
     result._lbl = pl.LBLPreimage(a._lbl, self._mat)
@@ -448,7 +476,7 @@ class Transfo:
     """
     if not isinstance(other, Transfo):
       raise TypeError(
-        f"Transfo.compose() expected a Transfo, got {type(other).__name__}"
+        f"Transfo.compose() expected a Transfo, got <{type(other).__name__}>"
       )
     result = Transfo()
     result._mat = pl.MatrixProduct(self._mat, other._mat)

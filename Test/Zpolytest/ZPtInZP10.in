@@ -10,7 +10,7 @@ M 2
 
 # got these point from PyPolylib's plot on the ZDomain:
 # >>> from pypolylib import LBL
-# >>> A = LBL("{(i, j) | i>=101,  3i-3j+k>=0, -4i+4j-k>=0, -i+10k>=0, i-9k>=0, i<202, j<202}")
+# >>> A = LBL("{(i, j) | i>=101,  3i-3j+k>=0, -4i+4j-k>=0, -i+10k>=0, i-9k>=0}") * LBL("{(i,j)|i<202, j<202}")
 # >>> B = A.zdomain()
 # >>> B.plot()
 
@@ -19,8 +19,6 @@ M 2
 102 104
 101 105
 102 105 # in
-# 1 2
-# 102 105
 
 D 1
 

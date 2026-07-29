@@ -226,6 +226,16 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def("union", [](LBL *a, LBL *b) {
             return LBLPtr(LBLUnion(a, b));  
         })
+        .def("containspoint", [](LBL *a, py::sequence point) {
+            Matrix *mat = Matrix_Alloc(1, py::len(point));
+            for (size_t i = 0; i < py::len(point); i++) {
+                std::string s = py::str(point[i]);
+                mpz_set_str(mat->p[0][i], s.c_str(), 10);
+            }
+            bool res = LBLContainsPoint(a, mat->p[0]);
+            Matrix_Free(mat);
+            return res;
+        })
         .def("included", [](LBL *a, LBL *b) {
             return (bool)LBLIncluded(a, b);
         })

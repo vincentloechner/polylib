@@ -50,24 +50,28 @@ def main():
   # Z-domain
   assert a.zdomain() == a
 
+  # single contains point test
+  assert (2, 3) in a
+
   print("OK")
   """--------------------- Iterate over LBLs ---------------------"""
   print(f"Enumerate LBL          ", end="", flush=True)
-  sA = set(a)
+  sA = set(a)             # build the (python-)set of points in a
   assert len(sA) == 15
   for z in a:
-    assert z in sA
+    assert z in sA        # python set inclusion test
+    assert z in a         # LBL contains point test
 
   print("OK")
   """--------------------- Transformations ---------------------"""
   print(f"LBL transformations    ", end="", flush=True)
-  t = Transfo("(i,j -> 3i+1, i+j)")
+  t = Transfo("(i, j -> 3i+1, i+j)")       # t is a bijection
   assert str(t) == "(i, j -> 3i+1, i+j)"
-  im_a = a.image(t)      # im_a = image of a under t
-  pre = im_a.preimage(t)   # preimage of im_a under f
+  im_a = a.image(t)                       # im_a = image of a under t
+  pre = im_a.preimage(t)                  # preimage of im_a under f
   assert pre == a
 
-  t2 = Transfo("(i,j -> j, i)")
+  t2 = Transfo("(i, j -> j, i)")
   assert str(t2 * t) == "(i, j -> i+j, 3i+1)"
 
   t_inv = t.inverse()
@@ -80,6 +84,9 @@ def main():
   # incompatible dimensions
   c = LBL("{(i, j, k) | 0 <= i <=5, 0 <= j <= i, 0 <= k <= i}")
   try: a+c; assert False
+  except ValueError: pass
+
+  try: (1,2) in c; assert False
   except ValueError: pass
 
   # enumerate unbounded LBL
@@ -109,6 +116,11 @@ def main():
   try:   a.included(t); assert False
   except TypeError: pass
 
+  # contains point test, not an iterable/string:
+  try:   1 in a; assert False
+  except TypeError: pass
+  try:   "1" in a; assert False
+  except TypeError: pass
 
   print("OK")
   """--------------------- All done ---------------------"""
