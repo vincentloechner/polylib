@@ -1,6 +1,5 @@
 /* zpolytest.c
-This is a testbench for the Zpolylib (part of polylib manipulating 
-Z-polyhedra. */
+This is a testbench for the Zpolylib (part of polylib manipulating LBLs). */
 
 #include <stdio.h>
 #include <polylib/polylib.h>

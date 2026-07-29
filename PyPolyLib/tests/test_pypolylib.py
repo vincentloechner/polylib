@@ -83,10 +83,10 @@ def main():
   print(f"Value errors over LBLs ", end="", flush=True)
   # incompatible dimensions
   c = LBL("{(i, j, k) | 0 <= i <=5, 0 <= j <= i, 0 <= k <= i}")
-  try: a+c; assert False
+  try: x = a + c; assert False
   except ValueError: pass
 
-  try: (1,2) in c; assert False
+  try: x = (1,2) in c; assert False
   except ValueError: pass
 
   # enumerate unbounded LBL
@@ -109,7 +109,7 @@ def main():
   except TypeError: pass
 
   # union of an LBL and a Transfo
-  try:   a+t; assert False
+  try:   x = a + t; assert False
   except TypeError: pass
 
   # inclusion test, LBL in Transfo:
@@ -117,9 +117,9 @@ def main():
   except TypeError: pass
 
   # contains point test, not an iterable/string:
-  try:   1 in a; assert False
+  try:   x = 1 in a; assert False
   except TypeError: pass
-  try:   "1" in a; assert False
+  try:   x = "1" in a; assert False
   except TypeError: pass
 
   print("OK")
