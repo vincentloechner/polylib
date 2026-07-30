@@ -288,6 +288,8 @@ class LBL:
     Yields:
       tuple: Coordinates of the point in the LBL
         (image by lat of an integer point of poly)
+    
+    Keeps the points that have been already seen once in the set 'seen'.
     """
 
     def get_bounds(scan_poly, k, point):
@@ -323,22 +325,24 @@ class LBL:
           seen.add(pt)
           yield pt
         return
-      # else, continue scanning inside dimensions
+      # else, continue scanning inner dimensions
       lo, hi = get_bounds(scan_list[k], k, point)
       if lo is None or hi is None:
         return
       for val in range(lo, hi + 1):
         yield from _enumerate(k + 1, point + [val])
 
+
+    # _iter_single_lbl(self, lat, poly, seen) starts here:
     dim = poly.dimension
 
     if not pl.isBoundedPolyhedron(poly):
       raise ValueError("unbounded; enumeration is impossible")
 
-    # Use Polyhedron_Scan for optimal per-dimension bounds
+    # Use Polyhedron_Scan to get a scanning loop
     ctx_mat = pl.MatrixReadFromString("0 2\n")
     ctx = pl.Constraints2Polyhedron(ctx_mat)
-    scan = pl.PolyhedronScan(poly, ctx, 1024)
+    scan = pl.PolyhedronScan(poly, ctx)
 
     # Collect scan polyhedra into a list (one per dimension)
     scan_list = []

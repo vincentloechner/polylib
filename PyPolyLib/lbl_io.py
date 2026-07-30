@@ -76,7 +76,7 @@ def LBLRead(s):
     cmat_str = _matrix_to_polylib_string(nb_rows_poly, nb_cols_poly, poly_values)
     cmat = pl.MatrixReadFromString(cmat_str)
 
-    poly = pl.Constraints2Polyhedron(cmat, 0)
+    poly = pl.Constraints2Polyhedron(cmat)
     return pl.LBLAlloc(lat, poly)
 
 

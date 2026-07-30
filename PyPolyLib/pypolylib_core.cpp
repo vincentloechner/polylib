@@ -2,6 +2,7 @@
 #include <gmpxx.h>   // MUST come before polylibgmp.h
 #include <pybind11/pybind11.h>
 
+#define MAX_RAYS 100
 
 extern "C" {
 #include "polylib/polylibgmp.h"
@@ -164,22 +165,34 @@ PYBIND11_MODULE(pypolylib_core, m) {
         }, py::return_value_policy::move);
 
     // -- Polyhedron methods --
-    m.def("PolyhedronScan", [](Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
+    m.def("PolyhedronScan", [](Polyhedron *D, Polyhedron *C) {
         // single polyhedron scan only, unset/restore next:
         Polyhedron *next = D->next;
         D->next = NULL;
-        Polyhedron *res = Polyhedron_Scan(D, C, NbMaxRays);
+        Polyhedron *res = Polyhedron_Scan(D, C, MAX_RAYS);
         D->next = next;
         return PolyhedronPtr(res);
     }, py::return_value_policy::reference);
 
-    m.def("Constraints2Polyhedron", [](Matrix *m, unsigned flags) {
-        return PolyhedronPtr(Constraints2Polyhedron(m, flags));
-    }, py::arg("matrix"), py::arg("flags") = 0);
+    m.def("Constraints2Polyhedron", [](Matrix *m) {
+        return PolyhedronPtr(Constraints2Polyhedron(m, MAX_RAYS));
+    }, py::arg("matrix"));
 
-    m.def("PolyhedronImage", [](Matrix *m, Polyhedron *P, unsigned flags) {
-        return PolyhedronPtr(Polyhedron_Image(P, m, flags));
-    }, py::arg("matrix"), py::arg("polyhedron"), py::arg("flags") = 0);
+    m.def("PolyhedronImage", [](Matrix *m, Polyhedron *P) {
+        return PolyhedronPtr(Polyhedron_Image(P, m, MAX_RAYS));
+    }, py::arg("matrix"), py::arg("polyhedron"));
+
+    m.def("PolyhedronPreImage", [](Matrix *m, Polyhedron *P) {
+        return PolyhedronPtr(Polyhedron_Preimage(P, m, MAX_RAYS));
+    }, py::arg("matrix"), py::arg("polyhedron"));
+    
+    m.def("PolyhedronAddConstraints", [](Matrix *m, Polyhedron *P) {
+        return PolyhedronPtr(AddConstraints(m->p[0], m->NbRows, P, MAX_RAYS));
+    }, py::arg("matrix"), py::arg("polyhedron"));
+    
+    m.def("PolyhedronIntersection", [](Polyhedron *P1, Polyhedron *P2) {
+        return PolyhedronPtr(AddConstraints(P1->Constraint[0], P1->NbConstraints, P2, MAX_RAYS));
+    }, py::arg("matrix"), py::arg("polyhedron"));
 
     m.def("PolyhedronPrint", [](Polyhedron *pol) {
         Polyhedron_Print(stdout, " %s", pol);
