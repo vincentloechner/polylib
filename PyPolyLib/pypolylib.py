@@ -336,13 +336,13 @@ class LBL:
     # _iter_single_lbl(self, lat, poly, seen) starts here:
     dim = poly.dimension
 
-    if not pl.isBoundedPolyhedron(poly):
+    if not poly.is_bounded():
       raise ValueError("unbounded; enumeration is impossible")
 
     # Use Polyhedron_Scan to get a scanning loop
     ctx_mat = pl.MatrixReadFromString("0 2\n")
     ctx = pl.Constraints2Polyhedron(ctx_mat)
-    scan = pl.PolyhedronScan(poly, ctx)
+    scan = poly.scan(ctx)
 
     # Collect scan polyhedra into a list (one per dimension)
     scan_list = []

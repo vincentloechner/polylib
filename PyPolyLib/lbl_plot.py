@@ -80,9 +80,9 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
         while p is not None:
             # add each single LBL to the list
             poly_coordinate = p
-            poly_convex_hull = pl.PolyhedronImage(lat, p)
+            poly_convex_hull = p.image(lat) # pl.PolyhedronImage(lat, p)
             # Thm. the coordinate polyhedron is bounded iff the hull is bounded
-            is_bounded = pl.isBoundedPolyhedron(poly_coordinate)
+            is_bounded = poly_coordinate.is_bounded()
             if not is_bounded:
                 all_bounded = False
             lbl_list.append((lat, poly_coordinate, poly_convex_hull,
@@ -153,7 +153,7 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
 #         p = node.P
 #         # loop on polyhedra inside node
 #         while p is not None:
-#             vertices = _get_vertices(pl.PolyhedronImage(node.Lat, p))
+#             vertices = _get_vertices(p.image(node.Lat))
 #             plot_convex_2D(vertices, ax, colors[node_num])
 #             p = p.next
 #         node = node.next
@@ -289,8 +289,8 @@ def _bounding_box_lbl(lbl_list):
     for i in range(len(lbl_list)):
         lat, coord, poly, is_bounded = lbl_list[i]
         if not is_bounded:
-            bounded_hull = pl.PolyhedronAddConstraints(bbox_constraints, poly)
-            bounded_coord = pl.PolyhedronPreImage(lat, bounded_hull)
+            bounded_hull = poly.add_constraints(bbox_constraints)
+            bounded_coord = bounded_hull.preimage(lat)
             bounded_coord = pl.PolyhedronIntersection(bounded_coord, coord)
             lbl_list[i] = (lat, bounded_coord,
                            bounded_hull,

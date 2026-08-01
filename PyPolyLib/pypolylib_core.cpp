@@ -1,9 +1,14 @@
+/*
+ * This file is the pypolylib core python interface to the C polylib.
+ *
+ * copyright 2026 Vincent Loechner
+ */
 
-#include <gmpxx.h>   // MUST come before polylibgmp.h
 #include <pybind11/pybind11.h>
 
 #define MAX_RAYS 100
 
+#include <gmpxx.h>   // MUST come before polylibgmp.h
 extern "C" {
 #include "polylib/polylibgmp.h"
 }
@@ -73,14 +78,12 @@ PYBIND11_MODULE(pypolylib_core, m) {
     
             std::string s = py::str(val);
             mpz_set_str(m.p[i][j], s.c_str(), 10);
+        })
+        .def("print", [](Matrix &m) {
+            Matrix_Print(stdout, " %s", &m);
         });
 
     // --- methods on Matrices ---
-    m.def("MatrixPrint", [](Matrix *mat) {
-        Matrix_Print(stdout, " %s", mat);
-    }), py::arg("mat");
-
-    
     m.def("MatrixAlloc", [](unsigned nbrows, unsigned nbcols) {
         return MatrixPtr(Matrix_Alloc(nbrows, nbcols));
     }, py::arg("nbrows"), py::arg("nbcols"));
@@ -121,6 +124,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
 
 
     // --------------------- Polyhedron ---------------------------
+    // Get read access to Constraint and to Ray matrices:
     py::class_<ConstraintsView>(m, "ConstraintsView")
         .def("__getitem__", [](ConstraintsView &p, py::tuple idx) {
             int i = idx[0].cast<int>();
@@ -147,6 +151,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
             // return v;
             return py::reinterpret_steal<py::int_>(obj);
         });
+    // Main Polyhedron class
     py::class_<Polyhedron, PolyhedronPtr>(m, "Polyhedron")
         // Polyhedron properties
         .def_readonly("dimension",      &Polyhedron::Dimension)
@@ -162,50 +167,45 @@ PYBIND11_MODULE(pypolylib_core, m) {
         }, py::return_value_policy::move)
         .def_property_readonly("ray", [](Polyhedron &p) {
             return RaysView{&p};   // return a rays view of the polyhedron
-        }, py::return_value_policy::move);
-
-    // -- Polyhedron methods --
-    m.def("PolyhedronScan", [](Polyhedron *D, Polyhedron *C) {
-        // single polyhedron scan only, unset/restore next:
-        Polyhedron *next = D->next;
-        D->next = NULL;
-        Polyhedron *res = Polyhedron_Scan(D, C, MAX_RAYS);
-        D->next = next;
-        return PolyhedronPtr(res);
-    }, py::return_value_policy::reference);
+        }, py::return_value_policy::move)
+        // polylib operators:
+        .def("scan", [](Polyhedron &P, Polyhedron &C) {
+            // single polyhedron scan only, unset/restore next:
+            Polyhedron *next = P.next;
+            P.next = NULL;
+            Polyhedron *res = Polyhedron_Scan(&P, &C, MAX_RAYS);
+            P.next = next;
+            return PolyhedronPtr(res);
+        }, py::arg("polyhedron"))
+        .def("image", [](Polyhedron &P, Matrix &m) {
+            return PolyhedronPtr(Polyhedron_Image(&P, &m, MAX_RAYS));
+        }, py::arg("matrix"))
+        .def("preimage", [](Polyhedron &P, Matrix &m) {
+            return PolyhedronPtr(Polyhedron_Preimage(&P, &m, MAX_RAYS));
+        }, py::arg("matrix"))
+        .def("print", [](Polyhedron &pol) {
+            Polyhedron_Print(stdout, " %s", &pol);
+        })
+        .def("add_constraints", [](Polyhedron &P, Matrix &m) {
+            return PolyhedronPtr(AddConstraints(m.p[0], m.NbRows, &P, MAX_RAYS));
+        }, py::arg("matrix"))
+        .def("is_bounded", [](Polyhedron &P) {
+            if(P.NbBid != 0)
+                return false;
+            for(unsigned r = 0; r < P.NbRays; r++)
+                if(value_zero_p(P.Ray[r][P.Dimension + 1]))
+                    return false;
+            return true;
+        })
+        ;
 
     m.def("Constraints2Polyhedron", [](Matrix *m) {
         return PolyhedronPtr(Constraints2Polyhedron(m, MAX_RAYS));
     }, py::arg("matrix"));
-
-    m.def("PolyhedronImage", [](Matrix *m, Polyhedron *P) {
-        return PolyhedronPtr(Polyhedron_Image(P, m, MAX_RAYS));
-    }, py::arg("matrix"), py::arg("polyhedron"));
-
-    m.def("PolyhedronPreImage", [](Matrix *m, Polyhedron *P) {
-        return PolyhedronPtr(Polyhedron_Preimage(P, m, MAX_RAYS));
-    }, py::arg("matrix"), py::arg("polyhedron"));
-    
-    m.def("PolyhedronAddConstraints", [](Matrix *m, Polyhedron *P) {
-        return PolyhedronPtr(AddConstraints(m->p[0], m->NbRows, P, MAX_RAYS));
-    }, py::arg("matrix"), py::arg("polyhedron"));
     
     m.def("PolyhedronIntersection", [](Polyhedron *P1, Polyhedron *P2) {
         return PolyhedronPtr(AddConstraints(P1->Constraint[0], P1->NbConstraints, P2, MAX_RAYS));
     }, py::arg("matrix"), py::arg("polyhedron"));
-
-    m.def("PolyhedronPrint", [](Polyhedron *pol) {
-        Polyhedron_Print(stdout, " %s", pol);
-    }), py::arg("pol");
-    
-    m.def("isBoundedPolyhedron", [](Polyhedron *pol) {
-        if(pol->NbBid != 0)
-            return false;
-        for(unsigned r = 0; r < pol->NbRays; r++)
-            if(value_zero_p(pol->Ray[r][pol->Dimension + 1]))
-                return false;
-        return true;
-    }), py::arg("pol");
 
 
 

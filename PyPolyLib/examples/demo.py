@@ -1,4 +1,5 @@
 from pypolylib import LBL
+
 a = LBL("{(2i, 2i+j) | 1 <= i <= 5, 1 <= j <= i}")
 b = LBL("{(i,j)|j<5}")
 
