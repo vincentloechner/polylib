@@ -27,12 +27,12 @@ ZOOM = 4
 # allow pyvista to plot polyhedra that have no integer points:
 pv.global_theme.allow_empty_mesh = True
 
-class MyWindow:
+# my class to plot things with pyvista's Plotter and set object colors
+class MyWindow(pv.Plotter):
     hue:float = 0.0
     _3D:bool = False
-    plot = None
     def __init__(self):
-        self.plot = pv.Plotter()
+        super().__init__()
 
     # round robbin hue, this is a pretty nice generator of various colors
     def color(self):
@@ -64,7 +64,7 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
 
     if _lbl_plot_window is None:
         _lbl_plot_window = MyWindow()
-    plotter = _lbl_plot_window.plot
+    plotter = _lbl_plot_window  # inherits from pv.plotter
 
 
     # build a python list of single LBLs as:
@@ -122,18 +122,19 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
             plotter.enable_2d_style()
             plotter.view_xy()
             plotter.reset_camera()
+        plotter.show_bounds(grid=False, ticks="outside", location="outer")
 
-        # set_grid_ticks_1(plotter)        
-        plotter.show_grid()
-        # show_my_grid(plotter)
+        # get into main loop (unless you set "interactive_update=True")
         plotter.show(**kwargs)
 
-        # you can not keep older windows open once you quit the main
-        # graphical loop, just reopen them if needed.
+        # you cannot keep older windows open once you leave the main loop
         if not kwargs:
-            # ensure everything is closed properly if not running interactive
+            # ensure everything is closed properly
             pv.close_all()
-        _lbl_plot_window = None # will open a new window in a next call
+
+        # reset window, will open a new one in a next call
+        # (disabled only if subplot==True)
+        _lbl_plot_window = None
 
 
 # 2D version using matplotlib:
@@ -267,7 +268,7 @@ def _bounding_box_lbl(lbl_list):
             maxi[d] = max(maxi[d], maxi[d] + ZOOM * r[d])
     # scan the lines to add/substract them to the mini/maxi values if needed
     for l in lines:
-        for d in dim:
+        for d in range(dim):
             mini[d] = min(mini[d], mini[d] + ZOOM * l[d])
             mini[d] = min(mini[d], mini[d] - ZOOM * l[d])
             maxi[d] = max(maxi[d], maxi[d] + ZOOM * l[d])
@@ -283,7 +284,7 @@ def _bounding_box_lbl(lbl_list):
         cons[dim + 1] = str(math.ceil(maxi[i]))
         cons[i + 1] = "-1"    # x <= maxi[d]
         constraints_str += " ".join(cons) + "\n"
-    bbox_constraints = pl.MatrixReadFromString(constraints_str)
+    bbox_constraints = pl.matrix_read_from_string(constraints_str)
 
     # Add the bbox bounds to the hull polyhedra
     for i in range(len(lbl_list)):
