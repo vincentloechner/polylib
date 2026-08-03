@@ -13,7 +13,7 @@ def main():
   print("OK")
 
   """--------------------- Basic LBL manipulation ---------------------"""
-  print(f"2D LBL i/o             ", end="", flush=True)
+  print(f"LBL i/o (2D)           ", end="", flush=True)
   a = LBL("{(2i, 2i+j) | 1 <= i <= 5, 1 <= j <= i}")
   b = LBL("{(i,j) | j < 5}")
   assert str(a) == "{(2i, j) | i <= 5, -2i+j - 1 >= 0, 3i-j >= 0}"
@@ -25,8 +25,8 @@ def main():
 
   print("OK")
 
-  # operations
-  print(f"Operations on 2D LBL   ", end="", flush=True)
+  # ----- Operations -----
+  print(f"Operations on LBLs (2D)", end="", flush=True)
   # union
   u = a + b
   assert str(u) == """{(2i, j) | i <= 5, -2i+j - 1 >= 0, 3i-j >= 0} UNION
@@ -55,7 +55,7 @@ def main():
 
   print("OK")
   """--------------------- Iterate over LBLs ---------------------"""
-  print(f"Enumerate LBL          ", end="", flush=True)
+  print(f"Enumerate LBL (2D)     ", end="", flush=True)
   sA = set(a)             # build the (python-)set of points in a
   assert len(sA) == 15
   for z in a:
@@ -65,15 +65,17 @@ def main():
   print("OK")
   """--------------------- Transformations ---------------------"""
   print(f"LBL transformations    ", end="", flush=True)
-  t = Transfo("(i, j -> 3i+1, i+j)")       # t is a bijection
+  t = Transfo("(i, j -> 3i+1, i+j)")      # t is a bijection
   assert str(t) == "(i, j -> 3i+1, i+j)"
   im_a = a.image(t)                       # im_a = image of a under t
   pre = im_a.preimage(t)                  # preimage of im_a under f
   assert pre == a
 
+  # composition
   t2 = Transfo("(i, j -> j, i)")
   assert str(t2 * t) == "(i, j -> i+j, 3i+1)"
 
+  # invert
   t_inv = t.inverse()
   assert str(t_inv) == "(i, j -> i-1, -i+3j+1)"
   assert t(a) == t_inv.preimage(a)

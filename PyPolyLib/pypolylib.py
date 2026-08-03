@@ -207,7 +207,7 @@ class LBL:
       raise ValueError(f"incompatible dimensions: {self._lbl.Lat.nbrows - 1} "
                        f"(LBL) vs {len(point)} (vector)")
 
-    return self._lbl.containspoint(point)
+    return self._lbl.contains_point(point)
 
   def zdomain(self):
     """
@@ -218,7 +218,7 @@ class LBL:
       LBL: The corresponding Z-domain
     """
     result = LBL()
-    result._lbl = self._lbl.zdomain()
+    result._lbl = self._lbl.z_domain()
     return result
 
   def image(self, transfo):
@@ -241,7 +241,7 @@ class LBL:
         f"LBL.image() expected a Transfo, got <{type(transfo).__name__}>"
       )
     result = LBL()
-    result._lbl = pl.LBLImage(self._lbl, transfo._mat)
+    result._lbl = self._lbl.image(transfo._mat)
     return result
 
   def preimage(self, transfo):
@@ -259,7 +259,7 @@ class LBL:
         f"LBL.preimage() expected a Transfo, got <{type(transfo).__name__}>"
       )
     result = LBL()
-    result._lbl = pl.LBLPreimage(self._lbl, transfo._mat)
+    result._lbl = self._lbl.preimage(transfo._mat)
     return result
 
   def plot(self, *args, **kwargs):
@@ -340,8 +340,8 @@ class LBL:
       raise ValueError("unbounded; enumeration is impossible")
 
     # Use Polyhedron_Scan to get a scanning loop
-    ctx_mat = pl.MatrixReadFromString("0 2\n")
-    ctx = pl.Constraints2Polyhedron(ctx_mat)
+    ctx_mat = pl.matrix_read_from_string("0 2\n")
+    ctx = pl.constraints2polyhedron(ctx_mat)
     scan = poly.scan(ctx)
 
     # Collect scan polyhedra into a list (one per dimension)
@@ -463,9 +463,7 @@ class Transfo:
       raise TypeError(
         f"Transfo.preimage() expected an LBL, got <{type(a).__name__}>"
       )
-    result = LBL()
-    result._lbl = pl.LBLPreimage(a._lbl, self._mat)
-    return result
+    return a.preimage(self)
 
 
   def compose(self, other):
@@ -483,7 +481,7 @@ class Transfo:
         f"Transfo.compose() expected a Transfo, got <{type(other).__name__}>"
       )
     result = Transfo()
-    result._mat = pl.MatrixProduct(self._mat, other._mat)
+    result._mat = self._mat.multiply(other._mat)
     return result
 
   def inverse(self):
@@ -508,7 +506,7 @@ class Transfo:
       RuntimeError: If the matrix is not invertible
     """
     result = Transfo()
-    result._mat = pl.MatrixInverse(self._mat)
+    result._mat = self._mat.inverse()
     return result
 
   def __mul__(self, other):

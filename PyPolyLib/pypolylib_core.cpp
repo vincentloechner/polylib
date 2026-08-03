@@ -58,37 +58,54 @@ PYBIND11_MODULE(pypolylib_core, m) {
         // Matrix properties
         .def_readonly("nbrows",    &Matrix::NbRows)
         .def_readonly("nbcolumns", &Matrix::NbColumns)
-        // .def_readonly("value",     &Matrix::p)
         // --- accessors to gmp values ---
-        .def("__getitem__", [](Matrix &m, py::tuple idx) -> py::object {
+        .def("__getitem__", [](Matrix &self, py::tuple idx) -> py::object {
             int i = idx[0].cast<int>();
             int j = idx[1].cast<int>();
     
-            char *s = mpz_get_str(nullptr, 10, m.p[i][j]);
+            char *s = mpz_get_str(nullptr, 10, self.p[i][j]);
             PyObject *obj = PyLong_FromString(s, nullptr, 10);
             free(s);
             return py::reinterpret_steal<py::int_>(obj);
-            // py::object val = py::module_::import("builtins").attr("int")(s);
-            // free(s);
-            // return val;
-        })
-        .def("__setitem__", [](Matrix &m, py::tuple idx, py::object val) {
+        }, py::arg("idx:tuple"))
+        .def("__setitem__", [](Matrix &self, py::tuple idx, py::object val) {
             int i = idx[0].cast<int>();
             int j = idx[1].cast<int>();
     
             std::string s = py::str(val);
-            mpz_set_str(m.p[i][j], s.c_str(), 10);
+            mpz_set_str(self.p[i][j], s.c_str(), 10);
+        }, py::arg("idx:tuple"), py::arg("value"))
+        .def("print", [](Matrix &self) {
+            Matrix_Print(stdout, " %s", &self);
         })
-        .def("print", [](Matrix &m) {
-            Matrix_Print(stdout, " %s", &m);
-        });
+        // --- methods on Matrices ---
+        // Inverse
+        .def("inverse", [](Matrix *self) {
+            // do a copy, Matrix_Inverse writes to its arg matrix
+            Matrix *mat = Matrix_Copy(self);
+            Matrix *result = Matrix_Alloc(mat->NbRows, mat->NbColumns);
+            int ok = Matrix_Inverse(mat, result);
+            Matrix_Free(mat);
+            if (!ok) {
+                Matrix_Free(result);
+                throw std::runtime_error("The matrix is not invertible");
+            }
+            return MatrixPtr(result);
+        })
+        // Product
+        .def("multiply", [](Matrix *self, Matrix *b) {
+            Matrix *result = Matrix_Alloc(self->NbRows, b->NbColumns);
+            Matrix_Product(self, b, result);
+            return MatrixPtr(result);
+        }, py::arg("b"))
+        ;
 
-    // --- methods on Matrices ---
-    m.def("MatrixAlloc", [](unsigned nbrows, unsigned nbcols) {
+    // --- Matrix creation ---
+    m.def("matrix_alloc", [](unsigned nbrows, unsigned nbcols) {
         return MatrixPtr(Matrix_Alloc(nbrows, nbcols));
     }, py::arg("nbrows"), py::arg("nbcols"));
 
-    m.def("MatrixReadFromString", [](const std::string &s) {
+    m.def("matrix_read_from_string", [](const std::string &s) {
         FILE *f = tmpfile();
         fputs(s.c_str(), f);
         rewind(f);
@@ -100,55 +117,27 @@ PYBIND11_MODULE(pypolylib_core, m) {
         Matrix_Read_InputFile(mat, f);
         fclose(f);
         return MatrixPtr(mat);
-    });
-    // Product
-    m.def("MatrixProduct", [](Matrix *a, Matrix *b) {
-        Matrix *result = Matrix_Alloc(a->NbRows, b->NbColumns);
-        Matrix_Product(a, b, result);
-        return MatrixPtr(result);
-    }, py::arg("a"), py::arg("b"));
-
-    // Inverse
-    m.def("MatrixInverse", [](Matrix *mat) {
-        // do a copy, Matrix_Inverse writes to its arg matrix
-        mat = Matrix_Copy(mat);
-        Matrix *result = Matrix_Alloc(mat->NbRows, mat->NbColumns);
-        int ok = Matrix_Inverse(mat, result);
-        Matrix_Free(mat);
-        if (!ok) {
-            Matrix_Free(result);
-            throw std::runtime_error("The matrix is not invertible");
-        }
-        return MatrixPtr(result);
-    }, py::arg("mat"));
+    }, py::arg("string"));
 
 
     // --------------------- Polyhedron ---------------------------
-    // Get read access to Constraint and to Ray matrices:
+    // Specific class to get read access to Constraint and to Ray matrices:
     py::class_<ConstraintsView>(m, "ConstraintsView")
         .def("__getitem__", [](ConstraintsView &p, py::tuple idx) {
             int i = idx[0].cast<int>();
             int j = idx[1].cast<int>();
-
             char *s = mpz_get_str(nullptr, 10, p.poly->Constraint[i][j]);
-            // py::object v = py::module_::import("builtins").attr("int")(s);
             PyObject *obj = PyLong_FromString(s, nullptr, 10);
             free(s);
-
-            // return v;
             return py::reinterpret_steal<py::int_>(obj);
         });
     py::class_<RaysView>(m, "RaysView")
         .def("__getitem__", [](RaysView &p, py::tuple idx) {
             int i = idx[0].cast<int>();
             int j = idx[1].cast<int>();
-
             char *s = mpz_get_str(nullptr, 10, p.poly->Ray[i][j]);
-            // py::object v = py::module_::import("builtins").attr("int")(s);
             PyObject *obj = PyLong_FromString(s, nullptr, 10);
             free(s);
-
-            // return v;
             return py::reinterpret_steal<py::int_>(obj);
         });
     // Main Polyhedron class
@@ -161,6 +150,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def_property_readonly("next",
             [](Polyhedron &p) -> Polyhedron* { return p.next; },
             py::return_value_policy::reference)
+
         // constraint and ray accessors
         .def_property_readonly("constraint", [](Polyhedron &p) {
             return ConstraintsView{&p};   // return a constraints view of the polyhedron
@@ -168,46 +158,46 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def_property_readonly("ray", [](Polyhedron &p) {
             return RaysView{&p};   // return a rays view of the polyhedron
         }, py::return_value_policy::move)
+
         // polylib operators:
-        .def("scan", [](Polyhedron &P, Polyhedron &C) {
-            // single polyhedron scan only, unset/restore next:
-            Polyhedron *next = P.next;
-            P.next = NULL;
-            Polyhedron *res = Polyhedron_Scan(&P, &C, MAX_RAYS);
-            P.next = next;
-            return PolyhedronPtr(res);
-        }, py::arg("polyhedron"))
-        .def("image", [](Polyhedron &P, Matrix &m) {
-            return PolyhedronPtr(Polyhedron_Image(&P, &m, MAX_RAYS));
-        }, py::arg("matrix"))
-        .def("preimage", [](Polyhedron &P, Matrix &m) {
-            return PolyhedronPtr(Polyhedron_Preimage(&P, &m, MAX_RAYS));
-        }, py::arg("matrix"))
-        .def("print", [](Polyhedron &pol) {
-            Polyhedron_Print(stdout, " %s", &pol);
+        .def("print", [](Polyhedron &self) {
+            Polyhedron_Print(stdout, " %s", &self);
         })
-        .def("add_constraints", [](Polyhedron &P, Matrix &m) {
-            return PolyhedronPtr(AddConstraints(m.p[0], m.NbRows, &P, MAX_RAYS));
+        .def("image", [](Polyhedron &self, Matrix &m) {
+            return PolyhedronPtr(Polyhedron_Image(&self, &m, MAX_RAYS));
         }, py::arg("matrix"))
-        .def("is_bounded", [](Polyhedron &P) {
-            if(P.NbBid != 0)
+        .def("preimage", [](Polyhedron &self, Matrix &m) {
+            return PolyhedronPtr(Polyhedron_Preimage(&self, &m, MAX_RAYS));
+        }, py::arg("matrix"))
+        .def("add_constraints", [](Polyhedron &self, Matrix &m) {
+            return PolyhedronPtr(AddConstraints(m.p[0], m.NbRows, &self, MAX_RAYS));
+        }, py::arg("matrix"))
+        .def("scan", [](Polyhedron &self, Polyhedron &C) {
+            // single polyhedron scan only, unset/restore next:
+            Polyhedron *next = self.next;
+            self.next = NULL;
+            Polyhedron *res = Polyhedron_Scan(&self, &C, MAX_RAYS);
+            self.next = next;
+            return PolyhedronPtr(res);
+        }, py::arg("context_polyhedron"))
+        .def("is_bounded", [](Polyhedron &self) {
+            if(self.NbBid != 0)
                 return false;
-            for(unsigned r = 0; r < P.NbRays; r++)
-                if(value_zero_p(P.Ray[r][P.Dimension + 1]))
+            for(unsigned r = 0; r < self.NbRays; r++)
+                if(value_zero_p(self.Ray[r][self.Dimension + 1]))
                     return false;
             return true;
         })
+        .def("intersect", [](Polyhedron *self, Polyhedron *P2) {
+            return PolyhedronPtr(AddConstraints(self->Constraint[0], self->NbConstraints, P2, MAX_RAYS));
+        }, py::arg("polyhedron"));
         ;
 
-    m.def("Constraints2Polyhedron", [](Matrix *m) {
+    // --- Polyhedron creation ---
+    m.def("constraints2polyhedron", [](Matrix *m) {
         return PolyhedronPtr(Constraints2Polyhedron(m, MAX_RAYS));
-    }, py::arg("matrix"));
+    }, py::arg("constraint matrix"));
     
-    m.def("PolyhedronIntersection", [](Polyhedron *P1, Polyhedron *P2) {
-        return PolyhedronPtr(AddConstraints(P1->Constraint[0], P1->NbConstraints, P2, MAX_RAYS));
-    }, py::arg("matrix"), py::arg("polyhedron"));
-
-
 
     // ---------------------------- LBL ------------------------------
     py::class_<LBL, LBLPtr>(m, "LBL")
@@ -230,49 +220,46 @@ PYBIND11_MODULE(pypolylib_core, m) {
             free(buf);
             return result;
         })
-        .def("intersection", [](LBL *a, LBL *b) {
-            return LBLPtr(LBLIntersection(a, b));
-        })
-        .def("difference", [](LBL *a, LBL *b) {
-            return LBLPtr(LBLDifference(a, b));
-        })
-        .def("union", [](LBL *a, LBL *b) {
-            return LBLPtr(LBLUnion(a, b));  
-        })
-        .def("containspoint", [](LBL *a, py::sequence point) {
+
+        // LBL operations
+        .def("intersection", [](LBL *self, LBL *b) {
+            return LBLPtr(LBLIntersection(self, b));
+        }, py::arg("LBL"))
+        .def("difference", [](LBL *self, LBL *b) {
+            return LBLPtr(LBLDifference(self, b));
+        }, py::arg("LBL"))
+        .def("union", [](LBL *self, LBL *b) {
+            return LBLPtr(LBLUnion(self, b));  
+        }, py::arg("LBL"))
+        .def("contains_point", [](LBL *self, py::sequence point) {
             Matrix *mat = Matrix_Alloc(1, py::len(point));
             for (size_t i = 0; i < py::len(point); i++) {
                 std::string s = py::str(point[i]);
                 mpz_set_str(mat->p[0][i], s.c_str(), 10);
             }
-            bool res = LBLContainsPoint(a, mat->p[0]);
+            bool res = LBLContainsPoint(self, mat->p[0]);
             Matrix_Free(mat);
             return res;
+        }, py::arg("sequence"))
+        .def("included", [](LBL *self, LBL *b) {
+            return (bool)LBLIncluded(self, b);
+        }, py::arg("LBL"))
+        .def("z_domain", [](LBL *self) {
+            return LBLPtr(LBL2ZDomain(self));
         })
-        .def("included", [](LBL *a, LBL *b) {
-            return (bool)LBLIncluded(a, b);
-        })
-        .def("zdomain", [](LBL *a) {
-            return LBLPtr(LBL2ZDomain(a));
-        });
+        .def("image", [](LBL *self, Matrix *func) {
+            return LBLPtr(LBLImage(self, func));
+        }, py::arg("matrix"))
+        .def("preimage", [](LBL *self, Matrix *func) {
+            return LBLPtr(LBLPreimage(self, func));
+        }, py::arg("matrix"))
+        ;
 
 
+    // --- LBL creation ---    
     m.def("LBLAlloc", [](Matrix *lat, Polyhedron *domain) {
         return LBLPtr(LBLAlloc(lat, domain));
     }, py::arg("lat"), py::arg("domain"));
-
-    m.def("LBLImage", [](LBL *a, Matrix *func) {
-        return LBLPtr(LBLImage(a, func));
-    }, py::arg("lbl"), py::arg("func"));
-
-    m.def("LBLPreimage", [](LBL *a, Matrix *func) {
-        return LBLPtr(LBLPreimage(a, func));
-    }, py::arg("lbl"), py::arg("func"));
-
-    // Displaying an LBL
-    m.def("LBLPrint", [](LBL *l) {
-        LBLPrint(stdout, " %s", l);
-    });
 
 }
 

@@ -291,8 +291,7 @@ def _bounding_box_lbl(lbl_list):
         if not is_bounded:
             bounded_hull = poly.add_constraints(bbox_constraints)
             bounded_coord = bounded_hull.preimage(lat)
-            bounded_coord = pl.PolyhedronIntersection(bounded_coord, coord)
-            lbl_list[i] = (lat, bounded_coord,
+            lbl_list[i] = (lat, bounded_coord.intersect(coord),
                            bounded_hull,
                            is_bounded)
 
@@ -402,7 +401,7 @@ def _lat3D(node_lat):
         # extend node_lat to be a 3D projection!
         # - if larger than 3D: project out extra dimensions
         # - if smaller than 3D: set z=0 (and y=0 if 1D)
-        lat = pl.MatrixAlloc(4, node_lat.nbcolumns)
+        lat = pl.matrix_alloc(4, node_lat.nbcolumns)
         for i in range(min(3, node_lat.nbrows - 1)):
             for j in range(node_lat.nbcolumns):
                 lat[i, j] = node_lat[i, j]

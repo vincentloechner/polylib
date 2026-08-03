@@ -58,7 +58,7 @@ def LBLRead(s):
     lat_values.append(1)
 
     lat_str = _matrix_to_polylib_string(nb_rows_lat, nb_cols_lat, lat_values)
-    lat = pl.MatrixReadFromString(lat_str)
+    lat = pl.matrix_read_from_string(lat_str)
 
     # right hand side
     if rhs_str == "<empty>":
@@ -74,9 +74,9 @@ def LBLRead(s):
         poly_values.extend(row)
 
     cmat_str = _matrix_to_polylib_string(nb_rows_poly, nb_cols_poly, poly_values)
-    cmat = pl.MatrixReadFromString(cmat_str)
+    cmat = pl.matrix_read_from_string(cmat_str)
 
-    poly = pl.Constraints2Polyhedron(cmat)
+    poly = pl.constraints2polyhedron(cmat)
     return pl.LBLAlloc(lat, poly)
 
 
@@ -459,7 +459,7 @@ def TransfoRead(s):
     values.append(1)
 
     mat_str = _matrix_to_polylib_string(nb_rows, nb_cols, values)
-    return pl.MatrixReadFromString(mat_str)
+    return pl.matrix_read_from_string(mat_str)
 
 def TransfoRepr(mat):
 
