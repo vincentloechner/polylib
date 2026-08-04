@@ -13,7 +13,7 @@ import numpy as np
 
 # plotting libs:
 from scipy.spatial import ConvexHull
-from colorsys import hsv_to_rgb
+import colorsys
 import pyvista as pv
 
 # # 2D -> not used anymore
@@ -37,7 +37,7 @@ class MyWindow(pv.Plotter):
     # round robbin hue, this is a pretty nice generator of various colors
     def color(self):
         self.hue = (self.hue + 0.618033988749895) % 1.0
-        return hsv_to_rgb(self.hue, .55, .9)
+        return colorsys.hsv_to_rgb(self.hue, .55, .9)
 
 
 # this is not very nice, but it's the best way to do it.
@@ -45,7 +45,12 @@ class MyWindow(pv.Plotter):
 # and reset to open a new window if asked to
 _lbl_plot_window = None
 
-def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
+# main plotting function
+def lbl_plot(
+        lbl, *args,
+        show_points=True, subplot=False, show_grid="custom",
+        **kwargs
+    ):
     """
     Plots an LBL using pyvista.
 
@@ -54,6 +59,7 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
     - show_points (boolean): draw points that are part of the LBL
     - subplot (boolean): set this to True if you want to plot another LBL
         in the same window (it will be rendered later in that case)
+    - show_grid (string): 'custom' or 'pyvista' or None
     - extra arguments will be passed to the call to plotter.show()
     """
     global _lbl_plot_window
@@ -117,12 +123,16 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
     # if subplot is True do not render anything yet: the next call will add
     # some LBLs over this one in the same window and do the rendering
     if not subplot:
-        if not _lbl_plot_window._3D:
-            # this is a 2D plot in a 3D scene, disable z-axis:
-            plotter.enable_2d_style()
-            plotter.view_xy()
+        if show_grid:
+            if not _lbl_plot_window._3D:
+                # this is a 2D plot in a 3D scene, disable z-axis:
+                plotter.enable_2d_style()
+                plotter.view_xy()
+            if show_grid == "custom":
+                _show_bounds(_lbl_plot_window)
+            elif show_grid == "pyvista":
+                plotter.show_bounds(grid=False, ticks="outside", location="outer")
             plotter.reset_camera()
-        plotter.show_bounds(grid=False, ticks="outside", location="outer")
 
         # get into main loop (unless you set "interactive_update=True")
         plotter.show(**kwargs)
@@ -137,87 +147,119 @@ def lbl_plot(lbl, *args, show_points=True, subplot=False, **kwargs):
         _lbl_plot_window = None
 
 
-# 2D version using matplotlib:
-# def _plot_2d(lbl_obj, show_points, subplot):
-#     """2D plot (polygon + integer points)."""
-#     ax = plt.subplots()[1]
+def _darker(color, factor=0.7):
+    """
+    Convert a color to darker (or lighter) version.
+    """
+    c = pv.Color(color)
+    h, l, s = colorsys.rgb_to_hls(*c.float_rgb)
+    l *= factor
+    return colorsys.hls_to_rgb(h, l, s)
 
-#     nb_nodes = 0
-#     node = lbl_obj._lbl
-#     while node is not None:
-#         nb_nodes += 1
-#         node = node.next
-#     colors = plt.cm.tab10(np.linspace(0, 1, nb_nodes))
+def _show_bounds(window, color="red"):
+    """
+    Draw the coordinates of the origin, axes along i, j(, k), and
+    grids in the basis planes.
+    """
+    plotter = window
+    _3D = window._3D
+    text_color = _darker(color, .4)
 
-#     node = lbl_obj._lbl
-#     for node_num in range(nb_nodes):
-#         p = node.P
-#         # loop on polyhedra inside node
-#         while p is not None:
-#             vertices = _get_vertices(p.image(node.Lat))
-#             plot_convex_2D(vertices, ax, colors[node_num])
-#             p = p.next
-#         node = node.next
+    # set bounds
+    xmin, xmax, ymin, ymax, zmin, zmax = plotter.bounds
+    xmin = np.floor(xmin); ymin = np.floor(ymin); zmin = np.floor(zmin)
+    xmax = np.ceil(xmax); ymax = np.ceil(ymax); zmax = np.ceil(zmax)
 
-#     # need to fix color here:
-#     if show_points:
-#         points = list(lbl_obj)
-#         xs, ys = zip(*points)
-#         ax.scatter(xs, ys, s=30) #, color=colors[k])
+    if xmin != 0: xmin -= 1.
+    if ymin != 0: ymin -= 1.
+    if zmin != 0: zmin -= 1.
+    if xmax != 0: xmax += 1.
+    if ymax != 0: ymax += 1.
+    if zmax != 0: zmax += 1.
 
-#     ax.set_aspect('equal')
-#     ax.grid(True, linestyle='--', alpha=0.4)
-#     if not subplot:
-#         plt.show()
+    # set origin of the base
+    origin = np.array([xmin, ymin, zmin])
+    if xmin < 0 and xmax > 0: origin[0] = 0.
+    if ymin < 0 and ymax > 0: origin[1] = 0.
+    if zmin < 0 and zmax > 0: origin[2] = 0.
 
+    # draw axes:
+    plotter.add_mesh(
+        pv.Line((xmin, origin[1], origin[2]), (xmax, origin[1], origin[2])),
+        line_width=3, show_scalar_bar=False, color=color,)
+    plotter.add_mesh(
+        pv.Line((origin[0], ymin, origin[2]), (origin[0], ymax, origin[2])),
+        line_width=3, show_scalar_bar=False, color=color,)
+    if _3D:
+        plotter.add_mesh(
+            pv.Line((origin[0], origin[1], zmin), (origin[0], origin[1], zmax)),
+            line_width=3, show_scalar_bar=False, color=color,)
 
-# def plot_convex_2D(vertices, ax, color):
-#     region = MultiPoint(vertices).convex_hull
+        # and origin coordinates
+        plotter.add_point_labels([origin],
+            [f"({origin[0]:g}, {origin[1]:g}, {origin[2]:g}) "],
+            always_visible=True,
+            text_color=text_color, shape_opacity=0.0,
+            justification_horizontal = "right", justification_vertical = "top",
+        )
+    else:
+        # 2D, only (i, j):
+        plotter.add_point_labels([origin],
+            [f"({origin[0]:g}, {origin[1]:g}) "],
+            always_visible=True,
+            text_color=text_color, shape_opacity=0.0,
+            justification_horizontal = "right", justification_vertical = "top",
+        )
 
-#     if region.is_empty:
-#         return
+    # i/j/k directions
+    plotter.add_point_labels(
+        [(xmax * 1.02, origin[1], origin[2]), (origin[0], ymax * 1.02, origin[2])],
+        ["i", "j"],
+        always_visible=True,
+        text_color=text_color, shape_opacity=0.0,
+    )
+    if _3D:
+        plotter.add_point_labels(
+            [(origin[0], origin[1], zmax * 1.02)],
+            ["k"],
+            always_visible=True,
+            text_color=text_color, shape_opacity=0.0,
+        )
 
-#     if region.geom_type == "Polygon":
-#         x, y = region.exterior.xy
-#         ax.plot(x, y, color=color, linewidth=2)
-#         ax.fill(x, y, color=color, alpha=0.15)
+    # grid at origin in x/y/z planes:
+    for x in range(int(xmin), int(xmax) + 1):
+        # in plane z = origin[2]
+        p1 = (x, ymin, origin[2])
+        p2 = (x, ymax, origin[2])
+        plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
+        if _3D:
+            # in plane y = origin[1]
+            p1 = (x, origin[1], zmin)
+            p2 = (x, origin[1], zmax)
+            plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
 
-#     elif region.geom_type == "LineString":
-#         x, y = region.xy
-#         ax.plot(x, y, color=color, linewidth=2)
+    for y in range(int(ymin), int(ymax) + 1):
+        # in plane z = origin[2]
+        p1 = (xmin, y, origin[2])
+        p2 = (xmax, y, origin[2])
+        plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
+        if _3D:
+            # in plane x = origin[0]
+            p1 = (origin[0], y, zmin)
+            p2 = (origin[0], y, zmax)
+            plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
 
-# test:
-# def set_grid_ticks_1(plotter):
-#     xmin, xmax, ymin, ymax, zmin, zmax = plotter.bounds
-#     xmin = math.floor(xmin)
-#     xmax = math.ceil(xmax)
-#     ymin = math.floor(ymin)
-#     ymax = math.ceil(ymax)
-#     zmin = math.floor(zmin)
-#     zmax = math.ceil(zmax)
-#     cube_axes_actor = pv.CubeAxesActor(plotter.camera)
-#     cube_axes_actor.n_xlabels = xmax - xmin
-#     cube_axes_actor.n_ylabels = ymax - ymin
-#     # cube_axes_actor.n_zlabels = zmax - zmin
-#     actor, property = plotter.add_actor(cube_axes_actor)
+    if _3D:
+        for z in range(int(zmin), int(zmax) + 1):
+            # in plane x = origin[0]
+            p1 = (origin[0], ymin, z)
+            p2 = (origin[0], ymax, z)
+            plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
+            # in plane y = origin[1]
+            p1 = (xmin, origin[1], z)
+            p2 = (xmax, origin[1], z)
+            plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
 
-# test:
-# def show_my_grid(plotter):
-#     xmin, xmax, ymin, ymax, zmin, zmax = plotter.bounds
-#     xmin = math.floor(xmin)
-#     xmax = math.ceil(xmax)
-#     ymin = math.floor(ymin)
-#     ymax = math.ceil(ymax)
-#     zmin = math.floor(zmin)
-#     zmax = math.ceil(zmax)
-#     for x in range(xmin, xmax + 1):
-#         plotter.add_lines(np.array([[x, ymin, 0], [x, ymax, 0]]), color="lightgray")
-
-#     for y in range(ymin, ymax + 1):
-#         plotter.add_lines(np.array([[xmin, y, 0], [xmax, y, 0]]), color="lightgray")
-
-#     for z in range(zmin, zmax + 1):
-#         plotter.add_lines(np.array([[xmin, ymin, z], [xmax, ymin, z]]), color="lightgray")
 
 def _bounding_box_lbl(lbl_list):
     """Compute a bounding box of an unbounded lbl (only necessary constraints).
