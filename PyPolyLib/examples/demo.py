@@ -1,7 +1,7 @@
 from pypolylib import LBL
 
 a = LBL("{(2i, 2i+j) | 1 <= i <= 5, 1 <= j <= i}")
-b = LBL("{(i,j)|j<5}")
+b = LBL("{(i,j) | 0 <= i <= 6, 0 <= j <= 8}")
 
 print(f"a = {a}")
 print(f"b = {b}")
@@ -18,9 +18,9 @@ print(f"set(a) = {set(a)}")
 
 a.plot()
 
-c = LBL("{(i,j) | 0 <= i <= 5, 0 <= j <= 5}")
-i = a * c
+i = a * b
 a1 = a - i
-c1 = c - i
+b1 = b - i
 (a1+i).plot(interactive_update=True) # let this window close in background
-c1.plot()
+# and open another one aside:
+b1.plot()

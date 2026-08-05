@@ -7,6 +7,7 @@ Typical usage:
 """
 import sys
 import pypolylib_core as pl
+import pypolylib
 
 import math
 import numpy as np
@@ -27,11 +28,33 @@ ZOOM = 4
 # allow pyvista to plot polyhedra that have no integer points:
 pv.global_theme.allow_empty_mesh = True
 
-# my class to plot things with pyvista's Plotter and set object colors
+
+# this class is used to store a list of LBLs to be plotted.
+# Contains everything that's needed to plot the right object
+# (bounded or not, bounding box, etc.)
+class LBL_view:
+    show_points:bool
+    lat:pl.Matrix
+    poly_coordinate:pl.Polyhedron
+    poly_convex_hull:pl.Polyhedron
+    is_bounded:bool
+    # build python lists of FP vertices/rays/lines of hull once:
+    vrl:tuple
+
+
+# my class to plot single LBLs with pyvista's Plotter and set object colors
+# inherits from pyvista's Plotter class:
 class MyWindow(pv.Plotter):
-    hue:float = 0.0
-    _3D:bool = False
+    hue:float
+    _3D:bool
+    LBLs:list           # list of LBL_view's
+    all_bounded:bool    # they are all bounded
+
     def __init__(self):
+        self.hue = 0.0
+        self._3D = False
+        self.LBLs = []
+        self.all_bounded = True
         super().__init__()
 
     # round robbin hue, this is a pretty nice generator of various colors
@@ -41,9 +64,10 @@ class MyWindow(pv.Plotter):
 
 
 # this is not very nice, but it's the best way to do it.
-# will be set to a MyWindow instance at first call,
-# and reset to open a new window if asked to
+# _lbl_plot_window will be set to a MyWindow instance at first call, and
+# reset for each subsequent call (unless subplot = True).
 _lbl_plot_window = None
+
 
 # main plotting function
 def lbl_plot(
@@ -73,78 +97,94 @@ def lbl_plot(
     plotter = _lbl_plot_window  # inherits from pv.plotter
 
 
-    # build a python list of single LBLs as:
-    # (lat, poly_coordinate, poly_convex_hull, is_bounded)
-    lbl_list = []
-    all_bounded = True
+    # build a python list of single LBL views and add it to plotter.LBLs:
     while node is not None:
         p = node.P
         if node.Lat.nbrows - 1 >= 3:
-            _lbl_plot_window._3D = True
+            plotter._3D = True
         lat = _lat3D(node.Lat) # always project to 3D, one way or another!
         # loop over polyhedra inside node
         while p is not None:
-            # add each single LBL to the list
-            poly_coordinate = p
-            poly_convex_hull = p.image(lat) # pl.PolyhedronImage(lat, p)
-            # Thm. the coordinate polyhedron is bounded iff the hull is bounded
-            is_bounded = poly_coordinate.is_bounded()
-            if not is_bounded:
-                all_bounded = False
-            lbl_list.append((lat, poly_coordinate, poly_convex_hull,
-                             is_bounded))
+            # add each single LBL view to the list
+            view = LBL_view()
+            view.lat = lat
+            view.poly_coordinate = p
+            view.poly_convex_hull = p.image(lat)
+            view.show_points = show_points
+            # keep a local list of vertices, rays, lines in the view for later use
+            view.vrl = _get_vertices(view.poly_convex_hull)
+            if view.vrl[1] or view.vrl[2]:
+                view.is_bounded = False
+                plotter.all_bounded = False
+            else:
+                view.is_bounded = True
+            plotter.LBLs.append(view)
 
             p = p.next
         node = node.next
 
 
-    # If the lbl is unbounded, bound it globally
-    # (in a bounding box, modify the lbl_list)
-    if not all_bounded:
-        _bounding_box_lbl(lbl_list)
+    # if subplot is True do not render anything yet: the next call will add
+    # some LBLs over this one in the same window and do the rendering
+    if not subplot:
 
+        # this is the main part that will render all single LBLs
+        _render_LBLs(plotter)
+
+        if not plotter._3D:
+            # this is a 2D plot in a 3D scene, disable z-axis:
+            plotter.enable_2d_style()
+            plotter.view_xy()
+        if show_grid == "custom":
+            _show_bounds(plotter)
+        elif show_grid == "pyvista":
+            plotter.show_bounds(grid=False, ticks="outside", location="outer")
+        plotter.reset_camera()
+
+        # get in main graphic loop (unless you set "interactive_update=True")
+        plotter.show(**kwargs)
+
+        # you cannot keep older windows open once you leave the main loop
+        if "interactive_update" not in kwargs:
+            # ensure everything is closed properly
+            pv.close_all()
+
+        # will open a new window in a subsequent call
+        # (disabled only if subplot==True)
+        _lbl_plot_window = None
+
+
+
+def _render_LBLs(plotter):
+    # If some lbls are unbounded, compute a bounding box globally
+    # (modify the plotter.LBLs)
+    bbox = None
+    if not plotter.all_bounded:
+        # get the matrix of constraints of a bounding box
+        bbox = _bounding_box_lbl(plotter.LBLs)
 
     # loop over lattices and polyhedral domains to plot them
-    for (lat, poly_coordinate, poly_convex_hull, is_bounded) in lbl_list:
-        color = _lbl_plot_window.color()
-        mesh = _poly2pyvista(poly_convex_hull)
+    for view in plotter.LBLs:
+        lat, poly_coordinate, poly_convex_hull = view.lat, view.poly_coordinate, view.poly_convex_hull
+        if bbox:
+            poly_convex_hull = poly_convex_hull.add_constraints(bbox)
+            bounded_coord = poly_convex_hull.preimage(lat)
+            poly_coordinate = poly_coordinate.intersect(bounded_coord)
+        color = plotter.color()
+        mesh = _poly2pyvista(poly_convex_hull, view.poly_convex_hull, view.vrl)
         if mesh:
             plotter.add_mesh(mesh,
                             show_edges=True,
                             opacity=.25, color=color)
-        if show_points:
-            points = list(lbl._iter_single_lbl(lat, poly_coordinate, set()))
+            # draw also lines and rays originating from vertices -> does not render nice, suppressed for now
+
+        if view.show_points:
+            points = list(pypolylib._iter_single_lbl(lat, poly_coordinate, set()))
             plotter.add_mesh(
                 pv.PolyData(np.asarray(points, dtype=float)),
                 opacity=.5, color=color,
                 point_size=16, render_points_as_spheres=True
             )
-
-    # if subplot is True do not render anything yet: the next call will add
-    # some LBLs over this one in the same window and do the rendering
-    if not subplot:
-        if show_grid:
-            if not _lbl_plot_window._3D:
-                # this is a 2D plot in a 3D scene, disable z-axis:
-                plotter.enable_2d_style()
-                plotter.view_xy()
-            if show_grid == "custom":
-                _show_bounds(_lbl_plot_window)
-            elif show_grid == "pyvista":
-                plotter.show_bounds(grid=False, ticks="outside", location="outer")
-            plotter.reset_camera()
-
-        # get into main loop (unless you set "interactive_update=True")
-        plotter.show(**kwargs)
-
-        # you cannot keep older windows open once you leave the main loop
-        if not kwargs:
-            # ensure everything is closed properly
-            pv.close_all()
-
-        # reset window, will open a new one in a next call
-        # (disabled only if subplot==True)
-        _lbl_plot_window = None
 
 
 def _darker(color, factor=0.7):
@@ -155,6 +195,7 @@ def _darker(color, factor=0.7):
     h, l, s = colorsys.rgb_to_hls(*c.float_rgb)
     l *= factor
     return colorsys.hls_to_rgb(h, l, s)
+
 
 def _show_bounds(window, color="red"):
     """
@@ -267,40 +308,30 @@ def _bounding_box_lbl(lbl_list):
     Get all vertices and rays/lines, then compute a box of
       vertices + ZOOM*rays +- ZOOM*lines.
 
-    lbl_list is a list of: (lat, poly_coordinate, poly_convex_hull)
+    lbl_list is a list of: (lat, poly_coordinate, poly_convex_hull, is_bounded)
     """
     if not lbl_list:
         # empty lbl?
         return None
     # all poly's (convex hulls) have the same dimension
-    dim = lbl_list[0][2].dimension
+    dim = lbl_list[0].poly_convex_hull.dimension
 
+    # all vertices/rays/lines of all hulls
     vertices = []
     rays = []
     lines = []
-    for (_, _, poly, _) in lbl_list:
-        ray = poly.ray
-        for v in range(poly.nbrays):
-            if ray[v, 0] == 0:
-                # line
-                lines.append(tuple(ray[v, x+1] for x in range(dim)))
-            else:
-                v_div = ray[v, dim + 1]
-                if v_div == 0:
-                    # ray
-                    rays.append(tuple(ray[v, x+1] for x in range(dim)))
-                else:
-                    # vertex
-                    vertices.append(tuple(ray[v, x+1]/v_div for x in range(dim)))
+    for view in lbl_list:
+        vertices.extend(view.vrl[0])
+        rays.extend(view.vrl[1])
+        lines.extend(view.vrl[2])
 
     # vertices is a non-empty list of tuples of floats
     # rays+lines is a non-empty list of tuples of integers
-    mini = list(vertices[0])
-    maxi = list(vertices[0])
-    for v in range(1, len(vertices)):
-        for d in range(dim):
-            mini[d] = min(mini[d], vertices[v][d])
-            maxi[d] = max(maxi[d], vertices[v][d])
+    mini = [0] * dim
+    maxi = [0] * dim
+    for d in range(dim):
+        mini[d] = min(vertices[v][d] for v in range(len(vertices)))
+        maxi[d] = max(vertices[v][d] for v in range(len(vertices)))
     # we now have a min and max value of vertices coordinates
 
     # scan the rays to add them to the mini/maxi values if needed
@@ -328,33 +359,31 @@ def _bounding_box_lbl(lbl_list):
         constraints_str += " ".join(cons) + "\n"
     bbox_constraints = pl.matrix_read_from_string(constraints_str)
 
-    # Add the bbox bounds to the hull polyhedra
-    for i in range(len(lbl_list)):
-        lat, coord, poly, is_bounded = lbl_list[i]
-        if not is_bounded:
-            bounded_hull = poly.add_constraints(bbox_constraints)
-            bounded_coord = bounded_hull.preimage(lat)
-            lbl_list[i] = (lat, bounded_coord.intersect(coord),
-                           bounded_hull,
-                           is_bounded)
+    return bbox_constraints
 
 
-def _poly2pyvista(poly):
+def _poly2pyvista(poly, poly_unbounded, vrl):
     """Transform a PolyLib 3D Polyhedron into a PyVista polyhedron."""
 
-    # vertices: as the list of tuples of FP coordinates
-    vertices = _get_vertices(poly)
+    # vertices (of the bounded poly): as the list of tuples of FP coordinates
+    vertices, _, _ = _get_vertices(poly)
     if not vertices:
-        return
+        return []
     vertices = np.asarray(vertices, dtype=float)
 
-    # faces: as the (flat) list of faces [num_vertices, vertex0, vertex1, ...]
+    # build faces: as the (flat) list of faces
+    # [num_vertices, vertex0, vertex1..., num_vertices2, vertex2, vertex3...]
     faces = []
     dim = poly.dimension
-    constraint = poly.constraint
+    # constraints from the unbounded polyhedron, rays from the bounded one.
+    constraint = poly_unbounded.constraint
+
     ray = poly.ray
     # scan constraints to build faces:
-    for c in range(poly.nbconstraints):
+    for c in range(poly_unbounded.nbconstraints):
+        # ignore the constraints from the bounding box to draw an open
+        # polyhedron if unbounded.
+
         normal = tuple(constraint[c, d+1] for d in range(dim))
         face = []
         for r in range(poly.nbrays):
@@ -366,7 +395,29 @@ def _poly2pyvista(poly):
             face = _order_face_indices(vertices, face, normal)
             faces.extend([len(face)] + face)
     if faces:
-        return pv.PolyData(vertices, faces)
+        # # thought that was a good idea, but it's not so nice (not visible):
+        # # add lines around vertices: in the directions of + ray and +- line.
+        # infinite_directions = []
+        # for v in vertices:
+        #     for r in vrl[1]:
+        #         # rays
+        #         infinite_directions.append(
+        #             pv.Line((v[0], v[1], v[2]),
+        #                     (v[0]+r[0], v[1]+r[1], v[2]+r[2]))
+        #         )
+        #     for l in vrl[2]:
+        #         # lines
+        #         infinite_directions.append(
+        #             pv.Line((v[0], v[1], v[2]),
+        #                     (v[0]+l[0], v[1]+l[1], v[2]+l[2]))
+        #         )
+        #         infinite_directions.append(
+        #             pv.Line((v[0], v[1], v[2]),
+        #                     (v[0]-l[0], v[1]-l[1], v[2]-l[2]))
+        #         )
+
+        return pv.PolyData(vertices, faces) # + infinite_directions
+    return []
 
 
 def _order_face_indices(vertices, face_indices, normal):
@@ -408,28 +459,31 @@ def _order_face(vertices, normal):
         order = order[::-1]
     return order
 
+
 def _get_vertices(poly):
-    """ Return the vertices of poly as a list of tuples of floats.
-
-    return [] if poly is not bounded (and print a message to stderr).
+    """Return the vertices/rays/lines of poly as lists of tuples of floats.
     """
-
-    if poly.nbbid != 0:
-        print("Warning: trying to plot an unbounded polyhedron", file=sys.stderr)
-        return []
-
     vertices = []
-    dim = poly.dimension
-    ray = poly.ray
-    for v in range(poly.nbrays):
-        # v_type = ray[v, 0] # alway 1 (no bid. ray)
-        v_div = ray[v, dim + 1]
-        if v_div == 0:
-            print("Warning: trying to plot an unbounded polyhedron", file=sys.stderr)
-            return []
-        vertices.append(tuple(ray[v, x+1]/v_div for x in range(dim)))
+    rays = []
+    lines = []
 
-    return vertices
+    dim = poly.dimension
+    poly_ray = poly.ray
+    for v in range(poly.nbrays):
+        if poly_ray[v, 0] == 0:
+            # line
+            lines.append(tuple(poly_ray[v, x+1] for x in range(dim)))
+        else:
+            v_div = poly_ray[v, dim + 1]
+            if v_div == 0:
+                # ray
+                rays.append(tuple(poly_ray[v, x+1] for x in range(dim)))
+            else:
+                # vertex
+                vertices.append(tuple(poly_ray[v, x+1]/v_div for x in range(dim)))
+
+    return vertices, rays, lines
+
 
 def _lat3D(node_lat):
     """Change a Lattice to be a 3D representation/projection.
