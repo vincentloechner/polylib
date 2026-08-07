@@ -5,6 +5,7 @@
  */
 
 #include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 
 #define MAX_RAYS 100
 
@@ -38,13 +39,44 @@ struct PolyhedronDeleter {
 };
 using PolyhedronPtr = std::unique_ptr<Polyhedron, PolyhedronDeleter>;
 
-// just another name for the polyhedra Constraints and Rays accessors:
-struct ConstraintsView {
-    Polyhedron *poly;
+
+// just a view for the polyhedra Constraints and Rays accessors:
+struct Poly_Matrix_View {
+    Polyhedron *p;
+    Value **value_ptr;
 };
-struct RaysView {
-    Polyhedron *poly;
-};
+py::object get_value_from_matrix(Value **mat_ptr, int i, int j) {
+    char *s = mpz_get_str(nullptr, 10, mat_ptr[i][j]);
+    PyObject *obj = PyLong_FromString(s, nullptr, 10);
+    free(s);
+    return py::reinterpret_steal<py::object>(obj);
+}
+// // build buffer matrix and access it
+// py::array_t<py::object> make_buffer_matrix(int rows, int cols)
+// {
+//     py::array_t<py::object> M({rows, cols});
+//     auto b = M.mutable_unchecked<2>();
+//     for (ssize_t i = 0; i < rows; ++i)
+//         for (ssize_t j = 0; j < cols; ++j)
+//             b(i, j) = py::none();
+
+//     return M;
+// }
+// py::object get_value_from_buffer(Value **poly_ptr, py::array_t<py::object>& buf,
+//                                  int i, int j) {
+//     auto b = buf.mutable_unchecked<2>();
+//     py::object value = b(i, j);
+//     if (value.is_none()) {
+//         char *s = mpz_get_str(nullptr, 10, poly_ptr[i][j]);
+//         PyObject *obj = PyLong_FromString(s, nullptr, 10);
+//         free(s);
+//         value = py::reinterpret_steal<py::object>(obj);
+//         b(i, j) = value;
+//     }
+
+//     return value;
+// }
+
 
 PYBIND11_MODULE(pypolylib_core, m) {
     // ----------------------- Memory management ----------------------
@@ -62,11 +94,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def("__getitem__", [](Matrix &self, py::tuple idx) -> py::object {
             int i = idx[0].cast<int>();
             int j = idx[1].cast<int>();
-    
-            char *s = mpz_get_str(nullptr, 10, self.p[i][j]);
-            PyObject *obj = PyLong_FromString(s, nullptr, 10);
-            free(s);
-            return py::reinterpret_steal<py::int_>(obj);
+            return get_value_from_matrix(self.p, i, j);
         }, py::arg("idx:tuple"))
         .def("__setitem__", [](Matrix &self, py::tuple idx, py::object val) {
             int i = idx[0].cast<int>();
@@ -122,23 +150,11 @@ PYBIND11_MODULE(pypolylib_core, m) {
 
     // --------------------- Polyhedron ---------------------------
     // Specific class to get read access to Constraint and to Ray matrices:
-    py::class_<ConstraintsView>(m, "ConstraintsView")
-        .def("__getitem__", [](ConstraintsView &p, py::tuple idx) {
+    py::class_<Poly_Matrix_View>(m, "Poly_Matrix_View")
+        .def("__getitem__", [](Poly_Matrix_View &p, py::tuple idx) {
             int i = idx[0].cast<int>();
             int j = idx[1].cast<int>();
-            char *s = mpz_get_str(nullptr, 10, p.poly->Constraint[i][j]);
-            PyObject *obj = PyLong_FromString(s, nullptr, 10);
-            free(s);
-            return py::reinterpret_steal<py::int_>(obj);
-        });
-    py::class_<RaysView>(m, "RaysView")
-        .def("__getitem__", [](RaysView &p, py::tuple idx) {
-            int i = idx[0].cast<int>();
-            int j = idx[1].cast<int>();
-            char *s = mpz_get_str(nullptr, 10, p.poly->Ray[i][j]);
-            PyObject *obj = PyLong_FromString(s, nullptr, 10);
-            free(s);
-            return py::reinterpret_steal<py::int_>(obj);
+            return get_value_from_matrix(p.value_ptr, i, j);
         });
     // Main Polyhedron class
     py::class_<Polyhedron, PolyhedronPtr>(m, "Polyhedron")
@@ -151,12 +167,18 @@ PYBIND11_MODULE(pypolylib_core, m) {
             [](Polyhedron &p) -> Polyhedron* { return p.next; },
             py::return_value_policy::reference)
 
-        // constraint and ray accessors
+        // constraint and ray accessors with a buffer
         .def_property_readonly("constraint", [](Polyhedron &p) {
-            return ConstraintsView{&p};   // return a constraints view of the polyhedron
+            return Poly_Matrix_View{
+                &p,
+                p.Constraint
+            };
         }, py::return_value_policy::move)
         .def_property_readonly("ray", [](Polyhedron &p) {
-            return RaysView{&p};   // return a rays view of the polyhedron
+            return Poly_Matrix_View{
+                &p,
+                p.Ray
+            };
         }, py::return_value_policy::move)
 
         // polylib operators:
