@@ -85,6 +85,8 @@ def PolylibClose():
   pl.PolylibClose()
 
 
+# TODO: inherit from the LBL class in the C library. !!!
+
 # ──────────────────────────────────────────────────────────────
 # LBL Class
 # ──────────────────────────────────────────────────────────────
@@ -96,8 +98,6 @@ class LBL:
 
   Creation :
     a = LBL("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
-    # or :
-    a = LBLRead("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
 
   Operations :
     a + b   # union
@@ -221,6 +221,18 @@ class LBL:
     result._lbl = self._lbl.z_domain()
     return result
 
+  def disjoint(self):
+    """
+    Calculate the disjoint union of this LBL, each single LBL of it is not
+    intersecting the other ones.
+
+    Returns:
+      LBL: disjoint LBL union
+    """
+    result = LBL()
+    result._lbl = self._lbl.disjoint()
+    return result
+
   def image(self, transfo):
     """
     Calculates the image of this LBL under an affine transformation.
@@ -281,6 +293,25 @@ class LBL:
     """
     lbl_plot(self, *args, **kwargs)
 
+  def sLBL_list(self):
+    """
+    Build a python list of single LBLs.
+
+    lbl[i] is the i-th element of the union of single LBLs.
+    """
+    result = []
+
+    node = self._lbl
+    while node is not None:
+      poly = node.P
+      while poly is not None:
+        result.append(LBL())
+        result[-1]._lbl = pl.LBLAlloc(node.Lat, poly.copy_single_pol())
+        poly = poly.next
+      node = node.next
+
+    return result
+
 
   ######################## LBL methods overriding ########################
   def __iter__(self):
@@ -333,6 +364,10 @@ class LBL:
       return other.included(self)
 
     return self.contains_point(other)
+
+  def __bool__(self):
+    # True if the LBL is not empty
+    return self._lbl is not None and self._lbl.P != None
 
 
 # ──────────────────────────────────────────────────────────────

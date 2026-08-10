@@ -3682,17 +3682,21 @@ void LBLSimplify(LBL *A)
 /*
  * Compute the disjoint union of LBL A, by performing succesive intersections
  * and differences.
+ * 
+ * Note: the result is disjoint regarding lattices/sets of points, and
+ * the coordinate domains associated to each lattice are disjoint polyhedra.
  */
 LBL *LBLDisjointUnion(LBL *A)
 {
   if(!A)
     return(NULL);
 
-  // TODO: infinite loop for ZDisj11b.in
+  // FIXED: infinite loop for ZDisj11b.in -> fixed.
 
   // TODO: split lattices first, then polyhedra in them
 
-  // need a ZDomain version?
+  // FIXED:
+  // need a ZDomain version? -> no
   // A = LBL2ZDomain(A);
 
   // get a copy of the first domain of A
@@ -3719,6 +3723,15 @@ LBL *LBLDisjointUnion(LBL *A)
     // relink next
     tmpA->next = next;
   }
+
+  // disjoint coordinate polyhedra
+  for(LBL *tmp=res; tmp; tmp = tmp->next) {
+    Polyhedron *disjP = Disjoint_Domain(tmp->P, 0, MAXNOOFRAYS);
+    Domain_Free(tmp->P);
+    tmp->P = disjP;
+  }
+  CanonicalLBL(res);
+
 
   return(res);
 }

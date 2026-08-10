@@ -4499,6 +4499,8 @@ Polyhedron *DomainAddConstraints(Polyhedron *Pol, Matrix *Mat,
 
 /*
  * Computes the disjoint union of a union of polyhedra.
+ * Returns a new polyhedral domain.
+ * 
  * If flag = 0 the result is such that there are no intersections
  *                   between the resulting polyhedra,
  * if flag = 1 it computes a joint union, the resulting polyhedra are

@@ -156,7 +156,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
             int j = idx[1].cast<int>();
             return get_value_from_matrix(p.value_ptr, i, j);
         });
-    // Main Polyhedron class
+    // Main Polyhedron class: polyhedral domain
     py::class_<Polyhedron, PolyhedronPtr>(m, "Polyhedron")
         // Polyhedron properties
         .def_readonly("dimension",      &Polyhedron::Dimension)
@@ -184,6 +184,12 @@ PYBIND11_MODULE(pypolylib_core, m) {
         // polylib operators:
         .def("print", [](Polyhedron &self) {
             Polyhedron_Print(stdout, " %s", &self);
+        })
+        .def("copy_single_pol", [](Polyhedron &self) {
+            return PolyhedronPtr(Polyhedron_Copy(&self));
+        })
+        .def("copy", [](Polyhedron &self) {
+            return PolyhedronPtr(Domain_Copy(&self));
         })
         .def("image", [](Polyhedron &self, Matrix &m) {
             return PolyhedronPtr(Polyhedron_Image(&self, &m, MAX_RAYS));
@@ -268,6 +274,9 @@ PYBIND11_MODULE(pypolylib_core, m) {
         }, py::arg("LBL"))
         .def("z_domain", [](LBL *self) {
             return LBLPtr(LBL2ZDomain(self));
+        })
+        .def("disjoint", [](LBL *self) {
+            return LBLPtr(LBLDisjointUnion(self));
         })
         .def("image", [](LBL *self, Matrix *func) {
             return LBLPtr(LBLImage(self, func));
