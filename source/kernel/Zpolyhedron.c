@@ -27,6 +27,7 @@
 #define SIMPLIFY2_DEBUG 1
 #define IMAGE_DEBUG 1
 #define CONTAIN_DEBUG 1
+#define DISJOINT_DEBUG 1
 #endif
 
 static LBL *LBLConcatenate(LBL *A, LBL *B);
@@ -3704,7 +3705,7 @@ LBL *LBLDisjointUnion(LBL *A)
 
   // then compute the inter/diff of each sLBL stored in A
   for(LBL *tmpA = A->next; tmpA; tmpA = tmpA->next) {
-    LBL *next, *inter, *diffA, *diffB, *newres;
+    LBL *next, *inter, *diffA, *diffB, *diffAdis, *diffBdis, *newres;
 
     // unlink next
     next = tmpA->next;
@@ -3712,13 +3713,37 @@ LBL *LBLDisjointUnion(LBL *A)
 
     // compute intersections and differences
     inter = LBLIntersection(res, tmpA);
-    diffA = LBLDifference(tmpA, res);
-    diffB = LBLDifference(res, tmpA);
 
-    newres = LBLConcatenate(LBLConcatenate(inter, diffA), diffB);
+    // the difference can result in a non-disjoint union.
+    // Need to recurse on the diff:
+    diffA = LBLDifference(tmpA, res);
+    diffAdis = LBLDisjointUnion(diffA);
+    diffB = LBLDifference(res, tmpA);
+    diffBdis = LBLDisjointUnion(diffB);
+    LBLFree(diffA);
+    LBLFree(diffB);
+
+    newres = LBLConcatenate(LBLConcatenate(inter, diffAdis), diffBdis);
+
     CanonicalLBL(newres);
     LBLFree(res);
     res = newres;
+
+    #ifdef DISJOINT_DEBUG
+    // check that there is no intersection between different LBLs in the union
+    for(LBL *tmp = res; tmp; tmp = tmp->next) {
+      for(LBL *tmp2 = tmp->next; tmp2; tmp2 = tmp2->next) {
+        LBL *ii;
+        ii = sLBLIntersection(tmp, tmp2);
+        if(ii) {
+          fprintf(stderr, "bug4!\n");
+          LBLPrint(stderr, P_VALUE_FMT, ii);
+        }
+        LBLFree(ii);
+      }
+    }
+    #endif
+
 
     // relink next
     tmpA->next = next;

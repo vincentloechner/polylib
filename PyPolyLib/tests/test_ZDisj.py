@@ -7,12 +7,14 @@ Usage:
 """
 from pypolylib import LBL
 
+DEBUG = False
 
 # Check if (a-b) + (a∩b) == a
 def test_func(a, b):
   diff  = a - b
   u     = diff.disjoint()
   ul    = u.sLBL_list()
+  if DEBUG: print(f"diff = {diff}\nu = {u}\n ul = {ul}")
   ll = len(ul)
   for i in range(ll):
     for j in range(i):
