@@ -493,6 +493,8 @@ LBL *LBLIntersection(LBL *A, LBL *B)
   if (!Result)
     return (EmptyLBL(A->Lat->NbRows - 1));
 
+  // TODO: need to check if a part of the result is included in another...
+
   CanonicalLBL(Result);
 
   return (Result);
@@ -678,16 +680,51 @@ static LBL *sLBLIntersection(LBL *A, LBL *B)
     ImageA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
     ImageB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
     PInter = DomainIntersection(ImageA, ImageB, MAXNOOFRAYS);
+
+    // // simplify obvious non integer cases -> this does not help!
+    // PInter = DomainConstraintSimplify(PInter, MAXNOOFRAYS);
+
+    // TODO: BUG HERE
+    // PreImage(PInter) = POLYHEDRON Dimension:2
+    //            Constraints:4  Equations:0  Rays:4  Lines:0
+    // Constraints 4 4
+    // Inequality: [  -1    0    5  ]
+    // Inequality: [  -2    1   -1  ]
+    // Inequality: [   3   -1    0  ]
+    // Inequality: [   2    0   -7  ]
+    // Rays 4 4
+    // Vertex: [   5   11  ]/1
+    // Vertex: [   5   15  ]/1
+    // Vertex: [   7   21  ]/2
+    // Vertex: [   7   16  ]/2
+    // UNION POLYHEDRON Dimension:2
+    //            Constraints:4  Equations:0  Rays:4  Lines:0
+    // Constraints 4 4
+    // Inequality: [  -1    0    5  ]
+    // Inequality: [  -2    1   -1  ]
+    // Inequality: [   3   -1    0  ]
+    // Inequality: [   0    1   -9  ]
+    // Rays 4 4
+    // Vertex: [   5   11  ]/1
+    // Vertex: [   5   15  ]/1
+    // Vertex: [   3    9  ]/1
+    // Vertex: [   4    9  ]/1
+    // THE SECOND ONE COVERS THE FIRST ONE! (should simplify inequality 2i>=7 -> i>=4)
+
     Domain_Free(ImageB);
     Domain_Free(ImageA);
     #ifdef INTERSECTION_DEBUG
-    // fprintf(stderr, "imageA inter imageB = PInter = ");
-    // Polyhedron_Print(stderr, P_VALUE_FMT, PInter);
+    fprintf(stderr, "imageA inter imageB = PInter = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, PInter);
     #endif
     if (emptyQ(PInter))
       Result = NULL;
     else {
       PreImage = DomainPreimage(PInter, LInter, MAXNOOFRAYS);
+      #ifdef INTERSECTION_DEBUG
+      fprintf(stderr, "PreImage(PInter) = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, PreImage);
+      #endif
       Result = LBLAlloc(LInter, PreImage);
       Domain_Free(PreImage);
     }
@@ -937,6 +974,8 @@ static LBL *sLBLComplement(LBL *A)
   hullA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   Univ = Universe_Polyhedron(A->Lat->NbRows - 1);
   comp_hullA = DomainDifference(Univ, hullA, MAXNOOFRAYS);
+  // is this useful?
+  // comp_hullA = DomainConstraintSimplify(comp_hullA, MAXNOOFRAYS);
   #ifdef COMP_DEBUG
   fprintf(stderr, "STEP 1: Adding hull complement polyhedron: ");
   Polyhedron_Print(stderr, P_VALUE_FMT, comp_hullA);
@@ -3270,6 +3309,38 @@ static void sLBLCanonical(LBL *A)
     }
     return;
   }
+
+  // TODO: check that no polyhedron of the domain covers another one!
+  // the above constraints simplification may allow to eliminate a polyhedron
+  // from the list; this is not checked by function DomainConstraintSimplify()
+  for(Polyhedron *tmp = A->P, *tmpante=NULL; tmp; tmp = tmp->next) {
+    for(Polyhedron *tmp2 = tmp->next, *tmp2ante=tmp; tmp2; tmp2 = tmp2->next) {
+      if(PolyhedronIncludes(tmp, tmp2)) {
+        // tmp covers tmp2: remove tmp2.
+        Polyhedron *next = tmp2->next;
+        Polyhedron_Free(tmp2);
+        tmp2ante->next = next;
+        tmp2 = tmp2ante;
+      }
+      else if(PolyhedronIncludes(tmp2, tmp)) {
+        // tmp2 covers tmp: remove tmp. Need to check that tmpante is defined
+        Polyhedron *next = tmp->next;
+        Polyhedron_Free(tmp);
+        if(tmpante) {
+          tmpante->next = next;
+          tmp = tmpante;
+        }
+        else {
+          // need to change A->P (the first one of the list)
+          A->P = next;
+          tmp = A->P;
+        }
+      }
+      tmp2ante = tmp2;
+    }
+    tmpante = tmp;
+  }
+
 
   // ***********************************
   // STEP 2: remove equalities from A->P
