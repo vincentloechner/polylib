@@ -98,7 +98,7 @@ def LBLRepr(lbl):
             parts.append(_single_lbl_repr(node.Lat, P))
             P = P.next
         node = node.next
-    return " UNION\n  " .join(parts)
+    return " + \\\n" .join(parts)
 
 
 def _single_lbl_repr(lat, poly):
@@ -112,9 +112,6 @@ def _single_lbl_repr(lat, poly):
     Returns:
         str: Symbolic representation, e.g., “{(3i) | i >= 0, i <= 5}”
     """
-    # lat = node.Lat
-    # poly = node.P
-
     nb_out = lat.nbrows - 1      # number of outputs (excluding the homogeneous line)
     nb_vars = lat.nbcolumns - 1  # number of input variables
 
@@ -157,7 +154,7 @@ def _single_lbl_repr(lat, poly):
     # ── Right side: constraints ──
     if poly is None:
         # special string for empty LBLs: "{(_, _) | <empty>}" (2D example)
-        return "{(" + ", ".join("_" for _ in range(nb_out)) + ") | <empty>}"
+        return 'LBL("{(' + ', '.join("_" for _ in range(nb_out)) + ') | <empty>}")'
 
     nb_constraints = poly.nbconstraints
     dim = poly.dimension
@@ -221,7 +218,7 @@ def _single_lbl_repr(lat, poly):
                     constraints.append(f"{expr} >= 0")
 
     rhs = ", ".join(constraints)
-    return "{" + lhs + " | " + rhs + "}"
+    return 'LBL("{' + lhs + ' | ' + rhs + '}")'
 
 
 def _terms_to_str(terms):
@@ -486,4 +483,4 @@ def TransfoRepr(mat):
         out_exprs.append(_terms_to_str(terms) if terms else "0")
 
     rhs = ", ".join(out_exprs)
-    return f"({lhs} -> {rhs})"
+    return 'Transfo("' + lhs + ' -> ' + rhs + '")'

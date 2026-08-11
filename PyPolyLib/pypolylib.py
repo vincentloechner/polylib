@@ -85,8 +85,6 @@ def PolylibClose():
   pl.PolylibClose()
 
 
-# TODO: inherit from the LBL class in the C library. !!!
-
 # ──────────────────────────────────────────────────────────────
 # LBL Class
 # ──────────────────────────────────────────────────────────────
@@ -94,7 +92,8 @@ class LBL:
   """
   An LBL is a union of affine image of Z-domains — set of integer points.
 
-  An LBL is stored as a polylib _lbl: a list of (lattice, polyhedral domain)
+  It is stored as a pybind11 polylib _lbl:
+  pl.LBL: {Matrix* Lat, Polyhedron* P, pl.LBL* next}
 
   Creation :
     a = LBL("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
@@ -103,21 +102,31 @@ class LBL:
     a + b   # union
     a - b   # difference
     a * b   # intersection
+    etc.
   """
   _lbl:pl.LBL = None
-  def __init__(self, s=None):
+  def __init__(self, obj=None):
     """
     Initializes an LBL, optionally from a symbolic string.
 
     Arguments:
-      s (str, optional): string in the format “{(expr) | constraints}”.
-                 If None, creates an empty LBL.
+      obj (str, optional): string in the format “{(expr) | constraints}”.
+      obj (pl.LBL, optional): pl.LBL object.
+      If None, creates an empty LBL.
     """
-    if s is not None:
-      self._lbl = io.LBLRead(s)
+    if obj is not None:
+      if isinstance(obj, str):
+        self._lbl = io.LBLRead(obj)
+      elif isinstance(obj, pl.LBL):
+        self._lbl = obj
+      else:
+        raise TypeError(f"expected a string or a pypolylib_core.LBL object, "
+                        f" got <{type(obj).__name__}>")
 
   def __repr__(self):
-    """Returns a symbolic representation of the LBL, e.g., {(3i) | i >= 0, i <= 5}"""
+    """
+    Returns a string representation of the LBL, e.g., {(3i) | i >= 0, i <= 5}
+    """
     if self._lbl is None:
       return "None"
     return io.LBLRepr(self._lbl)
@@ -141,9 +150,7 @@ class LBL:
       LBL: The intersection of the two LBLs
     """
     self._check_compat(other)
-    result = LBL()
-    result._lbl = self._lbl.intersection(other._lbl)
-    return result
+    return LBL(self._lbl.intersection(other._lbl))
 
   def difference(self, other):
     """
@@ -156,9 +163,7 @@ class LBL:
       LBL: The difference between the two LBLs
     """
     self._check_compat(other)
-    result = LBL()
-    result._lbl = self._lbl.difference(other._lbl)
-    return result
+    return LBL(self._lbl.difference(other._lbl))
 
   def union(self, other):
     """
@@ -171,9 +176,7 @@ class LBL:
       LBL: The union of the two LBLs
     """
     self._check_compat(other)
-    result = LBL()
-    result._lbl = self._lbl.union(other._lbl)
-    return result
+    return LBL(self._lbl.union(other._lbl))
 
   def included(self, other):
     """
@@ -201,7 +204,8 @@ class LBL:
     # check if point is an iterable (not an str or bytes) or raise a type error
     iter(point)
     if isinstance(point, (str, bytes)):
-      raise TypeError(f"expected a vector of values, got <{type(point).__name__}>")
+      raise TypeError(f"expected a vector of values, "
+                      f"got <{type(point).__name__}>")
 
     if self._lbl.Lat.nbrows - 1 != len(point):
       raise ValueError(f"incompatible dimensions: {self._lbl.Lat.nbrows - 1} "
@@ -229,9 +233,7 @@ class LBL:
     Returns:
       LBL: disjoint LBL union
     """
-    result = LBL()
-    result._lbl = self._lbl.disjoint()
-    return result
+    return LBL(self._lbl.disjoint())
 
   def image(self, transfo):
     """
@@ -252,9 +254,7 @@ class LBL:
       raise TypeError(
         f"LBL.image() expected a Transfo, got <{type(transfo).__name__}>"
       )
-    result = LBL()
-    result._lbl = self._lbl.image(transfo._mat)
-    return result
+    return LBL(self._lbl.image(transfo._mat))
 
   def preimage(self, transfo):
     """
@@ -270,9 +270,7 @@ class LBL:
       raise TypeError(
         f"LBL.preimage() expected a Transfo, got <{type(transfo).__name__}>"
       )
-    result = LBL()
-    result._lbl = self._lbl.preimage(transfo._mat)
-    return result
+    return LBL(self._lbl.preimage(transfo._mat))
 
   def plot(self, *args, **kwargs):
     """
@@ -305,8 +303,7 @@ class LBL:
     while node is not None:
       poly = node.P
       while poly is not None:
-        result.append(LBL())
-        result[-1]._lbl = pl.LBLAlloc(node.Lat, poly.copy_single_pol())
+        result.append(LBL(pl.LBLAlloc(node.Lat, poly.copy_single_pol())))
         poly = poly.next
       node = node.next
 
@@ -362,8 +359,8 @@ class LBL:
     """
     if isinstance(other, LBL):
       return other.included(self)
-
-    return self.contains_point(other)
+    else:
+      return self.contains_point(other)
 
   def __bool__(self):
     # True if the LBL is not empty
