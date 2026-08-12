@@ -3310,38 +3310,6 @@ static void sLBLCanonical(LBL *A)
     return;
   }
 
-  // TODO: check that no polyhedron of the domain covers another one!
-  // the above constraints simplification may allow to eliminate a polyhedron
-  // from the list; this is not checked by function DomainConstraintSimplify()
-  for(Polyhedron *tmp = A->P, *tmpante=NULL; tmp; tmp = tmp->next) {
-    for(Polyhedron *tmp2 = tmp->next, *tmp2ante=tmp; tmp2; tmp2 = tmp2->next) {
-      if(PolyhedronIncludes(tmp, tmp2)) {
-        // tmp covers tmp2: remove tmp2.
-        Polyhedron *next = tmp2->next;
-        Polyhedron_Free(tmp2);
-        tmp2ante->next = next;
-        tmp2 = tmp2ante;
-      }
-      else if(PolyhedronIncludes(tmp2, tmp)) {
-        // tmp2 covers tmp: remove tmp. Need to check that tmpante is defined
-        Polyhedron *next = tmp->next;
-        Polyhedron_Free(tmp);
-        if(tmpante) {
-          tmpante->next = next;
-          tmp = tmpante;
-        }
-        else {
-          // need to change A->P (the first one of the list)
-          A->P = next;
-          tmp = A->P;
-        }
-      }
-      tmp2ante = tmp2;
-    }
-    tmpante = tmp;
-  }
-
-
   // ***********************************
   // STEP 2: remove equalities from A->P
   // ***********************************

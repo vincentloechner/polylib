@@ -4801,6 +4801,7 @@ Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
 
   for (; P; P = Next) {
     Polyhedron *T;
+    int redundant = 0;
     Next = P->next;
 
     // try to simplify P
@@ -4812,21 +4813,30 @@ Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
     }
 
     if ((!T || emptyQ(T))) {
-      // got an empty polyhedron, just free and ignore this one.
+      redundant = 1;
+    }
+    else {
+      // T has been updated (it is now smaller than the original P)
+      // need to check if it is not included in another polyhedron of the
+      // whole domain (being updated) in which case it should not be added
+      for(Polyhedron *tmp = Result; tmp; tmp = tmp->next) {
+        if(tmp != P && PolyhedronIncludes(tmp, T)) {
+          redundant = 1;
+          break;
+        }
+      }
+    }
+
+    if(redundant) {
+      // got an empty or redundant polyhedron, just free and do not link
       if(T)      Polyhedron_Free(T);
       if(T != P) Polyhedron_Free(P);
       // prev does not change,
-      // but if this is the first one then Result is Next.
+      // but if this is the first one then Result is Next
       if(prev) prev->next = Next;
       else     Result = Next;
       continue;
     }
-
-    // TODO:
-    // T has been updated (it is now smaller than the original P)
-    // need to check if it is not included in another polyhedron of the whole domain (being updated)
-    // in which case it should be removed (like in the empty case).
-
 
     // if(T != P) {
     // we have a new polyhedron T, replace the current P with this one
