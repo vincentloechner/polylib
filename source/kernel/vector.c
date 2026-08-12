@@ -754,6 +754,7 @@ int ConstraintSimplify(Value *old, Value *newp, int len, Value *v)
 
   Vector_AntiScale(old + 1, newp + 1, *v, len - 2);
   value_pdivision(newp[len - 1], old[len - 1], *v);
+  value_assign(newp[0], old[0]);
   return 1;
 }
 

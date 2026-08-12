@@ -38,7 +38,7 @@ static void scan_m_face(int, int, Polyhedron *, unsigned int *);
  * polyhedron) than the operands, it is discarded from the resulting polyhedra
  * list.
  */
-Polyhedron *PDomainIntersection(Polyhedron *Pol1, Polyhedron *Pol2,
+static Polyhedron *PDomainIntersection(Polyhedron *Pol1, Polyhedron *Pol2,
                                 unsigned NbMaxRays) {
 
   Polyhedron *p1, *p2, *p3, *d;
@@ -67,7 +67,7 @@ Polyhedron *PDomainIntersection(Polyhedron *Pol1, Polyhedron *Pol2,
       if (p3->NbEq != Pol1->NbEq)
         Polyhedron_Free(p3);
 
-      /* Otherwise add it to the new polyhderal domain 'd'. */
+      /* Otherwise add it to the new polyhedral domain 'd'. */
       else
         d = AddPolyToDomain(p3, d);
     }
@@ -81,7 +81,7 @@ Polyhedron *PDomainIntersection(Polyhedron *Pol1, Polyhedron *Pol2,
  * domain don't have a 1 unit space around cut and the degenerate results
  * (of smaller dimension) are discarded.
  */
-Polyhedron *PDomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
+static Polyhedron *PDomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
                               unsigned NbMaxRays) {
 
   Polyhedron *p1, *p2, *p3, *d;

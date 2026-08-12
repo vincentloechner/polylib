@@ -221,9 +221,7 @@ class LBL:
     Returns:
       LBL: The corresponding Z-domain
     """
-    result = LBL()
-    result._lbl = self._lbl.z_domain()
-    return result
+    return LBL(self._lbl.z_domain())
 
   def disjoint(self):
     """
