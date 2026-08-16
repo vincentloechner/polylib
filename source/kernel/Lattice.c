@@ -436,8 +436,7 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
     A = Matrix_Alloc(B->NbRows, B->NbColumns);
     Vector_Set(A->p[0], 0, A->NbRows * A->NbColumns);
 
-    // new method: is it right in cases where the lattice
-    // is not orthogonal?
+    // new method:
     // set 1's in the positions of the pivots of B
     for(int c = 0; c < A->NbColumns - 1; c++) {
       for(int l = 0; l < A->NbRows; l++) {
@@ -973,3 +972,39 @@ static LatticeUnion *generate_lattice_union_row(int line_nb,
 
   return (Result);
 } /* generate_lattice_union_row */
+
+
+/*
+ * Get all the pivots positions in a lattice matrix.
+ * Fill the position array and return the number of pivots.
+ * (position[column] = row where the pivot lies)
+ *
+ * @param L: the lattice matrix
+ * @param positions: must be allocated large enough to hold the number of
+ *  pivots by caller (L->NbColumns is a good idea)
+ *
+ * Example:
+ *     2    0    0    0
+ *     0    0    0    0
+ *     1    3    0    1
+ *     0    0    0    1
+ * -> return 2 and sets positions = {0, 2}
+ */
+int get_pivots(Matrix *L, int *positions)
+{
+  int c, r = 0;
+  // r only increases
+  for(c = 0; c < L->NbColumns - 1; c++) {
+    for(; r < L->NbRows; r++) {
+      if(value_notzero_p(L->p[r][c])) {
+        positions[c] = r;
+        break;
+      }
+    }
+    if(r == L->NbRows) {
+      // no more pivot
+      break;
+    }
+  }
+  return c;
+}

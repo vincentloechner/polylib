@@ -400,3 +400,44 @@ Matrix *RemoveColumn(Matrix *M, int Columnnumber) {
 //   Matrix_Free(U);
 //   return (rank);
 // } /* findHermiteBasis */
+
+/*
+ * Increase number of COLUMNS of matrix 'Mat', in place. Put 0's on the right.
+ */
+void Matrix_Extend_Cols(Matrix *Mat, unsigned NbColumns) {
+  int new_length = Mat->NbRows * NbColumns;
+  // Mat->p itself does not change
+
+  if(NbColumns <= Mat->NbColumns) {
+    // just leave the allocation as is
+    Mat->NbColumns = NbColumns;
+    return;
+  }
+
+  if (Mat->p_Init_size < new_length) {
+    Value *p;
+    p = (Value *)realloc(Mat->p_Init, new_length * sizeof(Value));
+    if (!p) {
+      errormsg1("Matrix_Extend_Cols", "outofmem", "out of memory space");
+      return;
+    }
+    for(int i = Mat->p_Init_size; i < new_length; i++) {
+      value_init(p[i]);
+    }
+    Mat->p_Init = p;
+    Mat->p_Init_size = new_length;
+  }
+  // initialize/move values to their new position, starting from the end:
+  for(int r = Mat->NbRows - 1; r >= 0; r--) {
+    for(int c = NbColumns - 1; c >= Mat->NbColumns; c--) {
+      value_set_si(Mat->p_Init[r * NbColumns + c], 0);
+    }
+    for(int c = Mat->NbColumns - 1; c >= 0; c--) {
+      value_assign(Mat->p_Init[r * NbColumns + c], Mat->p_Init[r * Mat->NbColumns + c]);
+    }
+    // set new index position:
+    Mat->p[r] = Mat->p_Init + (r * NbColumns);
+  }
+
+  Mat->NbColumns = NbColumns;
+}

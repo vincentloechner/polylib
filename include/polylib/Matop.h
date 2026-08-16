@@ -24,6 +24,7 @@ extern Matrix *RemoveNColumns(Matrix *M, int FirstColumnnumber, int NumColumns);
 extern Matrix *RemoveColumn(Matrix *M, int Columnnumber);
 extern Matrix *RemoveRow(Matrix *M, int Rownumber);
 extern Matrix *Transpose(Matrix *A);
+extern void Matrix_Extend_Cols(Matrix *Mat, unsigned NbColumns);
 
 #if defined(__cplusplus)
 }
