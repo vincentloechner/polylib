@@ -272,14 +272,18 @@ class LBL:
 
   def plot(self, *args, **kwargs):
     """
-    Displays the LBL using the plotting library in lbl_plot.py (pyvista).
-    
+    Plots the LBL using the plotting library in lbl_plot.py (pyvista)
+
     Optional arguments:
     - show_points (boolean): draw points that are part of the LBL
       (default: True)
-    - subplot (boolean): set this to True if you want to plot another LBL in
-      the same window; the window will be rendered later, by the subsequent
-      call (default: False)
+    - subplot (boolean): set this to True if you want to plot another LBL
+        in the same window -it will be rendered later in that case
+        (default: False)
+    - show_grid (string): 'custom', 'full box', 'pyvista' or None
+        can be extended in future versions (default: 'custom')
+    - color (string): color used to plot this object (default: random for each
+        sub-LBL of the union)
     - supplementary arguments are transmitted to the plotter function
       (pyvista's plotter.show(**kwargs))
       Example usage: you can set option "interactive_update=True" to

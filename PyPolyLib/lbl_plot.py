@@ -33,6 +33,7 @@ pv.global_theme.allow_empty_mesh = True
 # Contains everything that's needed to plot the right object
 # (bounded or not, bounding box, etc.)
 class LBL_view:
+    lbl: LBL           # the LBL it comes from
     show_points:bool
     lat:pl.Matrix
     poly_coordinate:pl.Polyhedron
@@ -72,19 +73,28 @@ _lbl_plot_window = None
 # main plotting function
 def lbl_plot(
         lbl, *args,
-        show_points=True, subplot=False, show_grid="custom",
+        show_points=True, subplot=False, show_grid="custom", color=None,
         **kwargs
     ):
     """
-    Plots an LBL using pyvista.
+    Plots the LBL using the pyvista plotting library
 
-    Args:
-    - lbl (LBL): Python LBL object (from pypolylib.py)
+    Optional arguments:
     - show_points (boolean): draw points that are part of the LBL
+      (default: True)
     - subplot (boolean): set this to True if you want to plot another LBL
-        in the same window (it will be rendered later in that case)
-    - show_grid (string): 'custom' or 'pyvista' or None
-    - extra arguments will be passed to the call to plotter.show()
+        in the same window -it will be rendered later in that case
+        (default: False)
+    - show_grid (string): 'custom', 'full box', 'pyvista' or None
+        can be extended in future versions (default: 'custom')
+    - color (string): color used to plot this object (default: random for each
+        sub-LBL of the union)
+    - supplementary arguments are transmitted to the plotter function
+      (pyvista's plotter.show(**kwargs))
+      Example usage: you can set option "interactive_update=True" to
+      continue running python and get another plot window. Rendering will be
+      ensured by the latest call to LBL.plot(). All currently opened plot
+      windows will be closed when one of them is closed.
     """
     global _lbl_plot_window
 
@@ -107,6 +117,7 @@ def lbl_plot(
         while p is not None:
             # add each single LBL view to the list
             view = LBL_view()
+            view.lbl = lbl
             view.lat = lat
             view.poly_coordinate = p
             view.poly_convex_hull = p.image(lat)
@@ -129,16 +140,21 @@ def lbl_plot(
     if not subplot:
 
         # this is the main part that will render all single LBLs
-        _render_LBLs(plotter)
+        _render_LBLs(plotter, color)
 
         if not plotter._3D:
             # this is a 2D plot in a 3D scene, disable z-axis:
             plotter.enable_2d_style()
             plotter.view_xy()
+
         if show_grid == "custom":
-            _show_bounds(plotter)
+            _show_grid(plotter)
+        elif show_grid == "full box":
+            _show_grid(plotter, full_bbox=True)
         elif show_grid == "pyvista":
-            plotter.show_bounds(grid=False, ticks="outside", location="outer")
+            plotter.show_grid()
+        else:
+            print(f"unknown option: show_grid = '{show_grid}'")
         plotter.reset_camera()
 
         # get in main graphic loop (unless you set "interactive_update=True")
@@ -155,7 +171,7 @@ def lbl_plot(
 
 
 
-def _render_LBLs(plotter):
+def _render_LBLs(plotter, default_color = None):
     # If some lbls are unbounded, compute a bounding box globally
     # (modify the plotter.LBLs)
     bbox = None
@@ -170,7 +186,10 @@ def _render_LBLs(plotter):
             poly_convex_hull = poly_convex_hull.add_constraints(bbox)
             bounded_coord = poly_convex_hull.preimage(lat)
             poly_coordinate = poly_coordinate.intersect(bounded_coord)
-        color = plotter.color()
+        if default_color:
+            color = default_color
+        else:
+            color = plotter.color()
         mesh = _poly2pyvista(poly_convex_hull, view.poly_convex_hull, view.vrl)
         if mesh:
             plotter.add_mesh(mesh,
@@ -197,11 +216,15 @@ def _darker(color, factor=0.7):
     return colorsys.hls_to_rgb(h, l, s)
 
 
-def _show_bounds(window, color="red"):
+def _show_grid(window, color="red", full_bbox=False):
     """
     Draw the coordinates of the origin, axes along i, j(, k), and
     grids in the basis planes.
     """
+    def _line(p1, p2):
+        plotter.add_mesh(pv.Line(p1, p2), line_width=1,
+                        show_scalar_bar=False, color=color)
+
     plotter = window
     _3D = window._3D
     text_color = _darker(color, .4)
@@ -253,54 +276,92 @@ def _show_bounds(window, color="red"):
         )
 
     # i/j/k directions
-    plotter.add_point_labels(
-        [(xmax * 1.02, origin[1], origin[2]), (origin[0], ymax * 1.02, origin[2])],
-        ["i", "j"],
-        always_visible=True,
-        text_color=text_color, shape_opacity=0.0,
-    )
-    if _3D:
+    if xmax != origin[0]:
         plotter.add_point_labels(
-            [(origin[0], origin[1], zmax * 1.02)],
-            ["k"],
+            [(xmax, origin[1], origin[2])],
+            [f"i={int(xmax)}"],
             always_visible=True,
             text_color=text_color, shape_opacity=0.0,
+            justification_horizontal = "right", justification_vertical = "top",
         )
-
-    # grid at origin in x/y/z planes:
-    for x in range(int(xmin), int(xmax) + 1):
-        # in plane z = origin[2]
-        p1 = (x, ymin, origin[2])
-        p2 = (x, ymax, origin[2])
-        plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
-        if _3D:
-            # in plane y = origin[1]
-            p1 = (x, origin[1], zmin)
-            p2 = (x, origin[1], zmax)
-            plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
-
-    for y in range(int(ymin), int(ymax) + 1):
-        # in plane z = origin[2]
-        p1 = (xmin, y, origin[2])
-        p2 = (xmax, y, origin[2])
-        plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
-        if _3D:
-            # in plane x = origin[0]
-            p1 = (origin[0], y, zmin)
-            p2 = (origin[0], y, zmax)
-            plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
-
+    if ymax != origin[1]:
+        plotter.add_point_labels(
+            [(origin[0], ymax, origin[2])],
+            [f"j={int(ymax)}"],
+            always_visible=True,
+            text_color=text_color, shape_opacity=0.0,
+            justification_horizontal = "right", justification_vertical = "top",
+        )
     if _3D:
-        for z in range(int(zmin), int(zmax) + 1):
-            # in plane x = origin[0]
-            p1 = (origin[0], ymin, z)
-            p2 = (origin[0], ymax, z)
-            plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
-            # in plane y = origin[1]
-            p1 = (xmin, origin[1], z)
-            p2 = (xmax, origin[1], z)
-            plotter.add_mesh(pv.Line(p1, p2), line_width=1, show_scalar_bar=False, color=color,)
+        if zmax != origin[2]:
+            plotter.add_point_labels(
+                [(origin[0], origin[1], zmax)],
+                [f"k={int(zmax)}"],
+                always_visible=True,
+                text_color=text_color, shape_opacity=0.0,
+                justification_horizontal = "right",
+                justification_vertical = "top",
+            )
 
+    # scale *10 if too many points
+    LARGE = 15
+    xscale = yscale = zscale = 1
+    while (xmax-xmin)/xscale > LARGE: xscale *= 10
+    while (ymax-ymin)/yscale > LARGE: yscale *= 10
+    if _3D:
+        while (zmax-zmin)/zscale > LARGE: zscale *= 10
+
+    if not full_bbox:
+        # grid at origin in x/y/z planes:
+        for x in range(int(xmin), int(xmax) + 1, xscale):
+            # in plane z = origin[2]
+            _line((x, ymin, origin[2]), (x, ymax, origin[2]))
+            if _3D:
+                # in plane y = origin[1]
+                _line((x, origin[1], zmin), (x, origin[1], zmax))
+
+        for y in range(int(ymin), int(ymax) + 1, yscale):
+            # in plane z = origin[2]
+            _line((xmin, y, origin[2]), (xmax, y, origin[2]))
+            if _3D:
+                # in plane x = origin[0]
+                _line((origin[0], y, zmin),(origin[0], y, zmax))
+
+        if _3D:
+            for z in range(int(zmin), int(zmax) + 1, zscale):
+                # in plane x = origin[0]
+                _line((origin[0], ymin, z), (origin[0], ymax, z))
+                # in plane y = origin[1]
+                _line((xmin, origin[1], z), (xmax, origin[1], z))
+
+    else: # if full_bbox:
+        # grid at min/max in x/y/z planes:
+        for x in range(int(xmin), int(xmax) + 1, xscale):
+            # in plane z = origin[2]->zmin and zmax
+            _line((x, ymin, zmin), (x, ymax, zmin))
+            _line((x, ymin, zmax), (x, ymax, zmax))
+            if _3D:
+                # in plane y = origin[1]->ymin and ymax
+                _line((x, ymin, zmin), (x, ymin, zmax))
+                _line((x, ymax, zmin), (x, ymax, zmax))
+
+        for y in range(int(ymin), int(ymax) + 1, yscale):
+            # in plane z = origin[2]->zmin and zmax
+            _line((xmin, y, zmin), (xmax, y, zmin))
+            _line((xmin, y, zmax), (xmax, y, zmax))
+            if _3D:
+                # in plane x = origin[0]->xmin and xmax
+                _line((xmin, y, zmin),(xmin, y, zmax))
+                _line((xmax, y, zmin),(xmax, y, zmax))
+
+        if _3D:
+            for z in range(int(zmin), int(zmax) + 1, zscale):
+                # in plane x = origin[0]->
+                _line((xmin, ymin, z), (xmin, ymax, z))
+                _line((xmax, ymin, z), (xmax, ymax, z))
+                # in plane y = origin[1]->
+                _line((xmin, ymin, z), (xmax, ymin, z))
+                _line((xmin, ymax, z), (xmax, ymax, z))
 
 def _bounding_box_lbl(lbl_list):
     """Compute a bounding box of an unbounded lbl (only necessary constraints).
