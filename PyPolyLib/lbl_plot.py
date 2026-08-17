@@ -33,7 +33,8 @@ pv.global_theme.allow_empty_mesh = True
 # Contains everything that's needed to plot the right object
 # (bounded or not, bounding box, etc.)
 class LBL_view:
-    lbl: LBL           # the LBL it comes from
+    lbl = None          # the LBL it comes from
+    color = None
     show_points:bool
     lat:pl.Matrix
     poly_coordinate:pl.Polyhedron
@@ -118,6 +119,7 @@ def lbl_plot(
             # add each single LBL view to the list
             view = LBL_view()
             view.lbl = lbl
+            view.color = color
             view.lat = lat
             view.poly_coordinate = p
             view.poly_convex_hull = p.image(lat)
@@ -140,7 +142,7 @@ def lbl_plot(
     if not subplot:
 
         # this is the main part that will render all single LBLs
-        _render_LBLs(plotter, color)
+        _render_LBLs(plotter)
 
         if not plotter._3D:
             # this is a 2D plot in a 3D scene, disable z-axis:
@@ -171,7 +173,7 @@ def lbl_plot(
 
 
 
-def _render_LBLs(plotter, default_color = None):
+def _render_LBLs(plotter):
     # If some lbls are unbounded, compute a bounding box globally
     # (modify the plotter.LBLs)
     bbox = None
@@ -186,22 +188,20 @@ def _render_LBLs(plotter, default_color = None):
             poly_convex_hull = poly_convex_hull.add_constraints(bbox)
             bounded_coord = poly_convex_hull.preimage(lat)
             poly_coordinate = poly_coordinate.intersect(bounded_coord)
-        if default_color:
-            color = default_color
-        else:
-            color = plotter.color()
+        if view.color is None:
+            view.color = plotter.color()
         mesh = _poly2pyvista(poly_convex_hull, view.poly_convex_hull, view.vrl)
         if mesh:
             plotter.add_mesh(mesh,
                             show_edges=True,
-                            opacity=.25, color=color)
+                            opacity=.25, color=view.color)
             # draw also lines and rays originating from vertices -> does not render nice, suppressed for now
 
         if view.show_points:
             points = list(pypolylib._iter_single_lbl(lat, poly_coordinate, set()))
             plotter.add_mesh(
                 pv.PolyData(np.asarray(points, dtype=float)),
-                opacity=.5, color=color,
+                opacity=.5, color=view.color,
                 point_size=16, render_points_as_spheres=True
             )
 
@@ -548,7 +548,7 @@ def _get_vertices(poly):
 
 def _lat3D(node_lat):
     """Change a Lattice to be a 3D representation/projection.
-    
+
     - if lower than 3D -> set the plane z=0 (and y=0 if 1D)
     - if greater than 3D -> project out extra dimensions (TODO: could be improved)
     """
