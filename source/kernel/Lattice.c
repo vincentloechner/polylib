@@ -145,7 +145,7 @@ Bool isNormalLattice(Matrix *A)
   // check if A' verifies:
   // - first element of column (= pivot) greater than zero
   // - all elements left of pivot lower than pivot.
-  // 
+  //
   // Example:
   //    1 0 0 0
   //    * 0 0 0
@@ -330,7 +330,7 @@ int LatCountZeroCols(Matrix* M)
 /*
  * Given two canonical lattices 'A' and 'B', check if lattice 'A' is included
  * in 'B'.
- * 
+ *
  * If 'A' is included in 'B' their intersection is 'A'.
  */
 Bool LatticeIncluded(Matrix *A, Matrix *B)
@@ -383,7 +383,7 @@ Bool isSameLatticeSpace(Matrix *A, Matrix *B)
       return(False);
     }
   }
-  
+
   return(True);
 }
 
@@ -414,7 +414,7 @@ Bool isEqualLattice(Matrix *A, Matrix *B)
  * The dimensions of A and B should be equal: same rows and columns (!=0)).
  * If A = NULL consider the whole space spread by B (the same dimension
  * maximal space).
- * 
+ *
  * Allocates a LatticeUnion.
  * If the difference is empty return NULL.
  *
@@ -595,21 +595,21 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
  * Let:
  *  A =   A' | a      B =   B'  | b
  *      0..0 | 1           0..0 | 1
- * 
+ *
  * Build matrix Tmp as:
  *   1   0...0 |   1    0...0
  *   a    A'   |   b     B'
  * ------------+--------------
  *   1   0...0 |    0 .. 0
  *   a    A'   |    0 .. 0
- * 
+ *
  * Then computes H = left Hermite of Tmp
  * H is of the form:
  * H =   D  |   0 ... 0          D is a square matrix if A and B are square
  *     -----+-----------
  *       X  |  1 0 ... 0
  *          |  r    R
- * 
+ *
  * with   R   | r
  *      0...0 | 1   being our result
  *
@@ -629,7 +629,7 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
     errormsg1("LatticeIntersection", "dimincomp", "incompatible dimensions!");
     return NULL;
   }
-  
+
   Tmp = Matrix_Alloc(A->NbRows*2, A->NbColumns + B->NbColumns);
 
   // copying A in Tmp (twice):
@@ -753,7 +753,7 @@ static int value_prime_factors(Value n, Vector **result)
         *result = Vector_Realloc((*result), (*result)->Size * 2);
       }
       // add div to result
-      value_assign((*result)->p[tabsize], div); 
+      value_assign((*result)->p[tabsize], div);
       tabsize++;
 
       value_division(rest, rest, div); // rest /= div;
@@ -828,17 +828,19 @@ static LatticeUnion *generate_lattice_union_row(int line_nb,
     value_assign(rest->p[line_nb][i], Intersection->p[line_nb][i]);
   }
   // no need to update the constant of lines below the pivot here
+  #ifdef LATDIF_DEBUG
+  fprintf(stderr, "Considering line %d. Rest pivot = ", line_nb);
+  value_print(stderr, P_VALUE_FMT, rest->p[line_nb][pivot_col]);
+  #endif
 
   // get the ratio between A and rest, to be used as multiplier for every
   // generated new line
   value_division(ratio, rest->p[line_nb][pivot_col], A->p[line_nb][pivot_col]);
 
   #ifdef LATDIF_DEBUG
-    fprintf(stderr, "Considering line %d. Rest pivot = ", line_nb);
-    value_print(stderr, P_VALUE_FMT, rest->p[line_nb][pivot_col]);
-    fprintf(stderr, " Ratio = ");
-    value_print(stderr, P_VALUE_FMT, ratio);
-    fprintf(stderr, "\n");
+  fprintf(stderr, " Ratio = ");
+  value_print(stderr, P_VALUE_FMT, ratio);
+  fprintf(stderr, "\n");
   #endif
 
   // consider the decomposition in prime factors of the "pivot" = ratio
