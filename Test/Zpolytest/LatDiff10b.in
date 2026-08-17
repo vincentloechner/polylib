@@ -1,0 +1,40 @@
+M 2
+
+# this is the right thing to do to check for the difference in the same
+# lineality space
+4 3
+   2    0    0       # 2 -> 2 because gcd(2, 5) = 1 -> divide by gcd(column)
+   5    0    5
+   0    1    0       # 33 -> 1 (gcd(0,0,33) = 33 -> divide by 33. but 13 and 27 go where???) -> they are eliminated by a HNF (see LatHNF5.in)
+   0    0    1
+4 3
+   2    0    0
+   5    0    5
+  13   33   27
+   0    0    1
+
+
+D 0
+
+# Lattice difference
+F 5
+
+###
+# intersection =
+3 3
+   2    0    0
+   0   24    3
+   0    0    1
+
+#
+First row alternatives:
+   2    0    0 (-)
+   2    0    1
+Second row alternatives- divisors: (2, 2, 3) times pivot of L1 (2) to get pivots -> (4, 8, 6)
+   0    4    1
+   0    4    3 (-)
+   0    8    3 (-)
+   0    8    7
+   0    6    1
+   0    6    3 (-)
+   0    6    5

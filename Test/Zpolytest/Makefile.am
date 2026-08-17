@@ -14,6 +14,8 @@ TEST_FILES_32 =  \
 	LatDiff7b.in \
 	LatDiff8.in \
 	LatDiff8b.in \
+	LatDiff10.in \
+	LatDiff10b.in \
 	LatHNF1.in \
 	LatHNF2.in \
 	LatHNF3.in \

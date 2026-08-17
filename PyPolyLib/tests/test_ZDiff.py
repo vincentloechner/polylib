@@ -11,6 +11,7 @@ from pypolylib import LBL
 def test_func(a, b):
   inter = a * b
   diff  = a - b
+  assert list(diff * inter) == [] # empty intersection
   u     = diff + inter
   assert u.included(a)
   assert a.included(u)
@@ -82,6 +83,17 @@ tests = [
   # last = LBL("{(2i, 10j) | i >= -50, i <= 50, j >= -25, j <= 25}")
   # first in last
   # -> True
+
+  # this one is from LatDiff7, to check if the lattice difference is ok:
+  ("ZDiff_LatDiff7",
+    LBL("{(i, 7j, k) | -50 <= i <= 50, -50 <= j <= 50, -50 <= k <= 50}"),
+    LBL("{(3i+1, i+7j+3, i+2j+4k+1) | -50 <= i <= 50, -50 <= j <= 50, -50 <= k <= 50}")),
+
+  # this one is from LatDiff10:
+  ("ZDiff_LatDiff10",
+    LBL("{(i, 5, k) | 0 <= i <= 20,  0 <= k <= 100}"),
+    LBL("{(2i, 5i+5, 13i+33k+27) | 0 <= i <= 10, -1 <= k <= 5}")),
+
 ]
 
 
