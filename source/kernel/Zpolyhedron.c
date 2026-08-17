@@ -682,33 +682,6 @@ static LBL *sLBLIntersection(LBL *A, LBL *B)
     // // simplify obvious non integer cases -> this does not help!
     // PInter = DomainConstraintSimplify(PInter, MAXNOOFRAYS);
 
-    // TODO: BUG HERE
-    // PreImage(PInter) = POLYHEDRON Dimension:2
-    //            Constraints:4  Equations:0  Rays:4  Lines:0
-    // Constraints 4 4
-    // Inequality: [  -1    0    5  ]
-    // Inequality: [  -2    1   -1  ]
-    // Inequality: [   3   -1    0  ]
-    // Inequality: [   2    0   -7  ]
-    // Rays 4 4
-    // Vertex: [   5   11  ]/1
-    // Vertex: [   5   15  ]/1
-    // Vertex: [   7   21  ]/2
-    // Vertex: [   7   16  ]/2
-    // UNION POLYHEDRON Dimension:2
-    //            Constraints:4  Equations:0  Rays:4  Lines:0
-    // Constraints 4 4
-    // Inequality: [  -1    0    5  ]
-    // Inequality: [  -2    1   -1  ]
-    // Inequality: [   3   -1    0  ]
-    // Inequality: [   0    1   -9  ]
-    // Rays 4 4
-    // Vertex: [   5   11  ]/1
-    // Vertex: [   5   15  ]/1
-    // Vertex: [   3    9  ]/1
-    // Vertex: [   4    9  ]/1
-    // THE SECOND ONE COVERS THE FIRST ONE! (should simplify inequality 2i>=7 -> i>=4)
-
     Domain_Free(ImageB);
     Domain_Free(ImageA);
     #ifdef INTERSECTION_DEBUG

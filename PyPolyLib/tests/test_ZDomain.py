@@ -53,7 +53,7 @@ do_tests(tests, test_func, fail_func)
 
 
 # # pretty long ones below, not tested by default:
-# longtests = [
+# long_tests = [
 #     # this one is from Rui-Juan Jing, Marc Moreno Maza, et al.,
 #     # Quantifier Elimination Over the Integers
 #     # https://dl.acm.org/doi/pdf/10.1145/3747199.3747580
@@ -63,7 +63,7 @@ do_tests(tests, test_func, fail_func)
 #     ("ZDomain11",
 #      LBL("{(2i, 0, 52i+66j) | 198k <= -150i+j, 264k >= -200i+j, 9j <= 2i, 5j >= i, i <= 1000}")),
 # ]
-# 
+#
 # Can run those longer ones (comment out the previous call to do_test())
 # but the default 1 minute timeout in run_all_tests.py is likely to expire
-# do_tests(tests + longtests, test_func, fail_func)
+# do_tests(tests + long_tests, test_func, fail_func)
