@@ -2454,7 +2454,7 @@ int PolyhedronIncludes(Polyhedron *Pol1, Polyhedron *Pol2) {
  * from the domain and freed.
  * On the other hand if some polyhedron in the domain covers polyhedron
  * 'Pol' then 'Pol' is not included and freed.
- * 
+ *
  * Consumes Pol and PolDomain to build the result (do not free).
  */
 Polyhedron *AddPolyToDomain(Polyhedron *Pol, Polyhedron *PolDomain) {
@@ -3039,7 +3039,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
         if (!tmpC) {
           errormsg1("FindSimple", "outofmem", "out of memory space");
           UNCATCH(any_exception_error);
-    
+
           /* Clear all the 'Value' variables */
           value_clear(p3);
           return;
@@ -3050,7 +3050,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       for(i = 0; i < NbConstraints + NbRays; i++) {
         tmpC[i] = 0;
       }
-  
+
       /* Build the Sat matrix */
       nc = (NbConstraints - 1) / (sizeof(int) * 8) + 1;
       // Sat = SMAlloc(NbRays, nc); // -> reuse memory
@@ -3063,7 +3063,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
         if (Filter[jx] & bx)
           tmpC[k] = -1;
         else
-          for (i = 0; i < NbRays; i++) { 
+          for (i = 0; i < NbRays; i++) {
             Inner_Product(Pol->Ray[i] + 1, P1->Constraint[k] + 1, Dimension,
               &p3);
             if (value_zero_p(p3) ||
@@ -3128,7 +3128,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       }
     } /* end forever */
   } /* end of TRY */
-  
+
   /* Clear all the 'Value' variables */
   value_clear(p3);
   if(tmpC) free(tmpC);
@@ -3698,7 +3698,7 @@ Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
  * Given a polyhedral domain 'Pol', convert it to a new polyhedral domain
  * with dimension expanded to 'align_dimension'. The first dimensions are
  * free variables.
- * 
+ *
  * 'NbMaxRays' is the maximum allowed rays in the new polyhedra.
  */
 Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
@@ -3785,7 +3785,7 @@ Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
  *  C : Context domain
  *  NbMaxRays : Workspace size
  *  The context corresponds to the last dimensions of D.
- * 
+ *
  * Returns a linked list of scan domains, outer loop first
  */
 Polyhedron *Polyhedron_Scan(Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
@@ -4500,7 +4500,7 @@ Polyhedron *DomainAddConstraints(Polyhedron *Pol, Matrix *Mat,
 /*
  * Computes the disjoint union of a union of polyhedra.
  * Returns a new polyhedral domain.
- * 
+ *
  * If flag = 0 the result is such that there are no intersections
  *                   between the resulting polyhedra,
  * if flag = 1 it computes a joint union, the resulting polyhedra are
@@ -4827,23 +4827,24 @@ Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
       }
     }
 
+    Polyhedron_Free(P); // no longer need this one.
+
     if(redundant) {
       // got an empty or redundant polyhedron, just free and do not link
-      if(T)      Polyhedron_Free(T);
-      if(T != P) Polyhedron_Free(P);
-      // prev does not change,
-      // but if this is the first one then Result is Next
+      Polyhedron_Free(T);
+      // update link from prev, or Result (if this is the first one)
       if(prev) prev->next = Next;
       else     Result = Next;
-      continue;
     }
-
-    // if(T != P) {
-    // we have a new polyhedron T, replace the current P with this one
-    T->next = Next;
-    if(prev) prev->next = T;
-    else     Result = T;
-    prev = T;
+    else // (T != P && !redundant)
+    {
+      // we have a new polyhedron T, replace the current P with this one
+      T->next = Next;
+      if(prev) prev->next = T;
+      else     Result = T;
+      // and update prev
+      prev = T;
+    }
   }
 
   // DEBUG
