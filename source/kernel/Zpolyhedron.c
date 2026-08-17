@@ -30,6 +30,7 @@
 #define DISJOINT_DEBUG 1
 #endif
 // #define SIMPLIFY2_DEBUG 1
+// #define SIMPLIFY2_TEST_DEBUG 1
 
 static LBL *LBLConcatenate(LBL *A, LBL *B);
 static LBL *sLBLIntersection(LBL *, LBL *);
@@ -40,6 +41,7 @@ static Bool LBL_simple_inclusion_check(LBL *A, LBL *B);
 // static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBLImage(LBL *, Matrix *);
 static LBL *sLBLPreimage(LBL *, Matrix *);
+static void sLBL_Lat_Normalize(LBL *A);
 static void sLBLCanonical(LBL *A);
 // static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
 static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact);
@@ -1783,6 +1785,10 @@ static void sLBLSimplify_equalities(LBL *A, Matrix *Equalities)
     Matrix_Free(A->Lat);
     A->P = NewP;
     A->Lat = NewL;
+
+    // some equalities were eliminated.
+    // Check that A->Lat is still normal or re-normalize
+    sLBL_Lat_Normalize(A);
   }
 
   Matrix_Free(H);
@@ -3067,7 +3073,7 @@ from pypolylib import LBL
 a = LBL("{(3, j) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}"); b = LBL("{(3i, j) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}"); (a+b).zdomain()
 
   */
-#define ALIGN_DEBUG 1
+// #define ALIGN_DEBUG 1
 int Lattice_Align_Pivots(LBL *A, Matrix *ref, int *ref_pivot_pos)
 {
   #ifdef ALIGN_DEBUG
@@ -3105,18 +3111,19 @@ int Lattice_Align_Pivots(LBL *A, Matrix *ref, int *ref_pivot_pos)
 
   // move the columns of L to the right to fit the pivots in ref:
   int col_displacement = ref_num_pivots - L_num_pivots; // initial displacement
-  for(int col = ref_num_pivots - 1; L_num_pivots > 0 && col_displacement > 0 ;
-      col--) {
-    // copy column to the right place
-    ExchangeColumns(L, col - col_displacement, col);
+  for(int col = ref_num_pivots - 1; L_num_pivots > 0 && col_displacement > 0;
+    col--) {
+
     // then shift:
-    if(L_num_pivots > 0 && ref_pivot_pos[col] == L_pivot_pos[L_num_pivots-1]) {
-      // this was a pivot present in both matrices, at the end of L.
-      // Keep displacement, go to next pivot of L:
+    if(ref_pivot_pos[col] == L_pivot_pos[L_num_pivots-1]) {
+      // this is a pivot present in both matrices, at the end of L.
+      // Exchange columns, then go to next pivot (keep displacement)
+      ExchangeColumns(L, col - col_displacement, col);
       L_num_pivots--;
     }
     else {
       // we moved one column without finding the right pivot in L,
+      // do not copy the column,
       // decrease the displacement and keep same pivot of L at next step:
       col_displacement--;
     }
@@ -3180,11 +3187,10 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
   LATTICE:
   3 3
     6    0    4  -> 6i+0j+4,  transf. into:
-                    2i'+0j+0 and new variable i' to replace i with: \exists i' such that (2i' = 6i+4)
+                    2i'+0j+0: new variable i', \exists i' such that (2i' = 6i+4)
     0    1    0
     0    0    1
   [included in] tmp = LBL: Dimension 2
-
   LATTICE:
   3 3
     2    0    0
@@ -3197,10 +3203,10 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
   LATTICE:
   4 4
     2    0    0    0  -> 2i + 0j + 0, transf. into:
-                         i' + 0j + 0 and \exists i' with (i'=2i)
+                         i' + 0j + 0: \exists i' with (i'=2i)
     0    0    0    0
     1    3    0    1  -> i + 3j + 1, transf. into:
-                             1j'+ 0 -> \exists j' with (j'=i+3j+1)
+                             1j'+ 0: \exists j' with (j'=i+3j+1)
     0    0    0    1
 
   [included in] tmp = LBL: Dimension 3
@@ -3208,7 +3214,6 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
   LATTICE:
   4 4
     1    0    0    0
-
     0    0    0    0
     0    1    0    0
     0    0    0    1
@@ -3220,8 +3225,7 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
   4 4
     2    0    0    0  -> same i = i'
     5   15    0   10  -> 5i+15j+10 transf. into:
-                             5j'    \exists j', 5j'=5i+15j+10
-                                    and a domain transfo
+                             5j'  :  \exists j', 5j'=5i+15j+10
     13   15   66   54 -> 13i + 15j + 66k + 54 transf. into:
                            52i + 27j' + 66k' + 0 -> same k = k'
 
@@ -3250,7 +3254,7 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
                                     and a domain transfo
     13   15   66   54 -> 13i + 15j + 66k + 54 transf. into:
                          19i' + 27j' + 33k'
-                        \exist k' such that -(13i+15j+66k+54) + (19_i_ + 27j' + 33k') = 0
+                        \exist k' such that -(13i+15j+66k+54) + (19i_ + 27j' + 33k') = 0
                         => 27j' + 33k' + 6(=19-13)i - 15j - 66k - 54 = 0
     0    0    0    1
 
@@ -3262,24 +3266,22 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
    19   27   33    0
     0    0    0    1
 
-  GENERAL ALGORITHM:
   iter on pivots, with domain evolving like:
   0/ keep (i = i')
-  1/ add_dim0 j': 5j' - (5i+15j+0k+10) = 0
-  2/ add_dim1 k': 27j' + 33k' + 19i - (13i+15j+66k+54) = 0
-                                ---    ---
-  -> need to keep trace of kept variables keep[z]
+  1/ add_dim0 j' + Eq: 5j' - (5i+15j+0k+10) = 0
+  2/ add_dim1 k' + Eq: 19i_ + 27j' + 33k' - (13i_+15j+66k+54) = 0
   -> can keep iff same pivot coef
-  -> if kept, add value on the right, else, on the left in new vars
-  -> could store an array of position indices ! (shift +1 when a column is added)
 
-  3/
-  if a column is not present in L:
-  -> add a dimension to the polyhedron, keep the variable free.
-  -> keep (i = i') is True if non-zero pivot (else: don't care, no more pivots).
+  GENERAL ALGORITHM:
+  1) align pivots to same diagonal
+  2) iterate on pivots; if a pivot is not the same in L and ref:
+  -> if non-zero pivot move the variable in a new dimension at the end of L
+     and the polyhedron
+  -> add equality to the polyhedron (ref z' - L z = 0)
+  -> finally replace the row of L by the one of ref        ------> NO???
 
-  Can test 3/ by removing a dimension from a.
-  Python test for the first case:
+
+  Python test for the previous example:
 from pypolylib import LBL
 a = LBL("{(2i, 5i+15j+10, 13i+15j+66k+54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}")
 b = LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}")
@@ -3291,7 +3293,7 @@ a+b
 >>> LBL("{(2i, 80i+165j+160, 55i+33j+66k+6) | 3i+7j-k + 18 >= 0, -3i-7j+k - 8 >= 0, i >= 0, i <= 10, 5i+11j + 10 >= 0, -5i-11j >= 0}")
 (WRONG!)
 
-  Python test second case:
+  Python test more difficult case:
 a = LBL("{(2i, 5i+15j+10, 54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}")
 
 TODO: resolve this BUG discovered here:
@@ -3352,12 +3354,16 @@ zsh: floating point exception  python3
   Matrix *new_equality = NULL;
   int nb_pivots, ref_pivot_pos[ref->NbColumns];
   #ifdef SIMPLIFY2_DEBUG
-  fprintf(stderr, "Entering sLBLMake_lattice_equal_to(). A = ");
-  sLBLPrint(stderr, P_VALUE_FMT, A);
+  fprintf(stderr, "Entering sLBLMake_lattice_equal_to()\n");
   #endif
 
   // Change A->L to be aligned with ref
   nb_pivots = Lattice_Align_Pivots(A, ref, ref_pivot_pos);
+
+  #ifdef SIMPLIFY2_DEBUG
+  fprintf(stderr, "Aligned A = ");
+  sLBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
 
   // Main loop on pivots
   for(int col = 0; col < nb_pivots; col++) {
@@ -3518,12 +3524,6 @@ static void sLBLCanonical(LBL *A)
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
     // Remove the equalities from A->P
     sLBLSimplify_equalities(A, Equalities);
-
-    // some equalities were eliminated. Do we need to start again from scratch?
-    // Lat and P changed, but Lat is kept in HNF, so no.
-    // Matrix_Free(Equalities);
-    // sLBLCanonical(A);
-    // return;
   }
   Matrix_Free(Equalities);
   if(!A->P) {
@@ -3678,7 +3678,7 @@ LBL *LBL2ZDomain(LBL *A)
 void LBLSimplifyEmpty(LBL *A)
 {
   // just for testing, call simplify instead of simplifyEmpty:
-  #ifdef SIMPLIFY2_DEBUG
+  #if defined(SIMPLIFY2_DEBUG) || defined(SIMPLIFY2_TEST_DEBUG)
   LBLSimplify(A);
   #else
 
@@ -3696,30 +3696,27 @@ void LBLSimplifyEmpty(LBL *A)
  *
  * Algorithm:
  * Merge all the lattices that can be merged. Ideas... :
- *    a- merge same lattices, ignore zero columns (extend dimension of P) -> easy.
- *    b- check lattice inclusion and merge?
- *       (involves a-) but how to merge?
- *         only if poly included too?
- *         or separate the part that is not included?
- *         -> or at least their hulls should intersect?
+ *    a- check lattice inclusion and merge
  *       if merge, transform the lattices to be equal:
  *       add equalities to P in order to generate the original points
  *         of L x | x \in P
- *    c- sort lattices by linear part...
+ *       -> done.
+ *    b- sort lattices by linear part...
  *            and try to merge same ones..., when domains overlap?
  *             or split domains such that a part of it does overlap?
- *       example: can (2i+0) be merged with (2i+1)? -> yes if P is same (but this is unlikely)
- * let A = im((2i+0),P), and B = im((2i+1),P') -> if A = B then (i+0), preim((i+0), A) -> Z-pol only
+ *       example: can (2i+0) be merged with (2i+1)? -> yes if P is same
+ *       (is this unlikely?)
+ * let A = im((2i+0),P), and B = im((2i+1),P') -> if A = B then (i+0),
+ * preim((i+0), A) -> Z-pol only
 
-  another idea: make all lattices = (Id 0), adding existential variables in the domains to generate the right lbls
-  then merge everything together
+  another idea to fuse a+b: make all lattices = (Id 0), adding existential
+  variables in the domains to generate the right lbls then merge everything
+  together
   -> can be pretty complex..., but obviously covers all cases!
 
-  lattice inclusion test covers this case too, if the lattice Id is in the LBL list
-  and the hulls intersect.
-
  * Then:
- * - fuse/simplify all adjacent polyhedral domains (complement of simplify of complement)
+ * - fuse/simplify all adjacent polyhedral domains (complement of simplify of
+ *   complement?)
  * - CanonicalLBL to remove equalities
  */
 void LBLSimplify(LBL *A)
@@ -3767,14 +3764,14 @@ void LBLSimplify(LBL *A)
       }
       if(flag) {
         Polyhedron *newP;
-        Matrix *newL;
         #ifdef SIMPLIFY2_DEBUG
         fprintf(stderr, "merging current = ");
         sLBLPrint(stderr, P_VALUE_FMT, current);
         fprintf(stderr, "[included in] tmp = ");
         sLBLPrint(stderr, P_VALUE_FMT, tmp);
         #endif
-        if(flag == 1) {
+        // if(flag == 1)
+        {
           // make the lattice of current equal to the one of tmp
           // apart from zero columns
           // (current is included in tmp)
@@ -3782,9 +3779,23 @@ void LBLSimplify(LBL *A)
           sLBLMake_lattice_equal_to(current, tmp->Lat);
         }
 
-        // after this, add zero columns to tmp->Lat such that the two lattices
-        // are perfectly equal
-        Lattice_Align_Pivots(tmp, current->Lat, NULL);
+        // after this, add dimensions to tmp such that the two lattices are
+        // perfectly equal.
+        if(tmp->Lat->NbColumns != current->Lat->NbColumns) {
+          int tmp_dim = tmp->Lat->NbColumns;
+          // add dimensions to tmp->P:
+          for(int i = tmp_dim ; i < current->Lat->NbColumns; i++) {
+            Polyhedron *newP;
+            newP = domain_insert_dim(tmp->P, i, 0);
+            Domain_Free(tmp->P);
+            tmp->P = newP;
+          }
+          // zero columns to tmp->Lat:
+          Matrix_Extend_Cols(tmp->Lat, current->Lat->NbColumns);
+          // and move the constant:
+          ExchangeColumns(tmp->Lat, tmp_dim - 1, tmp->Lat->NbColumns - 1);
+        }
+
 
         // merge current in tmp:
         // - update tmp->P
@@ -3815,36 +3826,55 @@ void LBLSimplify(LBL *A)
   // what to do with them??
 
 
-  // THIS IS EASY BUT DOES NOT HELP :(
+  // This is easy, but does not help much.
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
   }
+  LBL_Remove_Empty(A);
 
 
-  // // THIS IS TOO COMPLEX! -> ZDiff11 takes ages...
-  // Polyhedron *universe;
-  // universe = Universe_Polyhedron(A->P->Dimension);
+  // This is too complex!? -> ZDiff11 takes ages...
 
-  // for(LBL *tmp = A; tmp; tmp = tmp->next) {
-  //   Polyhedron *newP;
+  // Trying: complement/simplify/complement
+  Polyhedron *universe;
+  universe = Universe_Polyhedron(A->P->Dimension);
+  for(LBL *tmp = A; tmp; tmp = tmp->next) {
+    Polyhedron *newP;
 
-  //   // compute complement -> complement
-  //   // first complement
-  //   newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
-  //   Domain_Free(tmp->P);
-  //   tmp->P = newP;
+    if(!tmp->P || tmp->P->Dimension == 0) {
+      continue;
+    }
+    #ifdef SIMPLIFY2_DEBUG
+    fprintf(stderr, "\n LBLSimplify: complement/complement. P = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, tmp->P);
+    #endif
+      // compute first complement
+    newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
+    Domain_Free(tmp->P);
+    tmp->P = newP;
 
-  //   // disjoint of complement + simplify
-  //   // TOO COMPLEX:
-  //   // tmp->P = Disjoint_Domain(tmp->P, 0, MAXNOOFRAYS);
-  //   // tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
+    // disjoint of complement
+    // TOO COMPLEX:
+    // tmp->P = Disjoint_Domain(tmp->P, 0, MAXNOOFRAYS);
 
-  //   // and complement + simplify:
-  //   newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
-  //   Domain_Free(tmp->P);
-  //   tmp->P = newP;
-  //   tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
-  // }
+    tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
+    #ifdef SIMPLIFY2_DEBUG
+    fprintf(stderr, "\n LBLSimplify: complement/complement. comp(P) = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, tmp->P);
+    #endif
+
+    // and complement + simplify:
+    newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
+    Domain_Free(tmp->P);
+    tmp->P = newP;
+    tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
+    tmp->P = Domain_Remove_Integer_Empty(tmp->P);
+    #ifdef SIMPLIFY2_DEBUG
+    fprintf(stderr, "\n LBLSimplify: complement/complement. comp(comp(P)) = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, tmp->P);
+    #endif
+  }
+  Domain_Free(universe);
 
 
   // // THIS IS NOT WHAT WE WANT!
@@ -3863,17 +3893,20 @@ void LBLSimplify(LBL *A)
 
 
   #ifdef SIMPLIFY2_DEBUG
-  fprintf(stderr, "\n Exit LBLSimplify. A = ");
+  fprintf(stderr, "\n Exit LBLSimplify. A (before canonical) = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
 
-  // keep the merged result (for testing)
-  // CanonicalLBL(A);
+  CanonicalLBL(A);
 
-  // avoid recursive loop (for testing):
-  #ifndef SIMPLIFY2_DEBUG
-  LBLSimplifyEmpty(A);
+  #ifdef SIMPLIFY2_DEBUG
+  fprintf(stderr, "\n Exit LBLSimplify. A (final) = ");
+  LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
+
+  // this should be done already:
+  // LBLSimplifyEmpty(A);
+
 } /* LBLSimplify */
 
 
