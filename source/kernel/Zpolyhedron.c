@@ -2339,7 +2339,7 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
     // rest_AP = bounded_rest dimension expanded to A->P
     rest_AP = bounded_rest;
     for(int d = R->Dimension + 1; d <= A->P->Dimension; d++) {
-      tmp = domain_insert_dim(rest_AP, d, 0);
+      tmp = domain_insert_dim(rest_AP, d, 0); // multiple/0
       if(rest_AP != bounded_rest)
         Domain_Free(rest_AP);
       rest_AP = tmp;
@@ -2913,20 +2913,21 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 }
 
 /*
- * Return a newly allocated domain that is D expanded such that the dimension
- * 'move' is moved to a new dimension and its position is left empty
- * (add a line along this dimension)
+ * Return a newly allocated domain that is D expanded by one dimension, such
+ * that the dimension 'move' is moved to a new dimension and its position is
+ * left empty (add a line along this dimension)
  * 1 <= move <= D->Dimension + 1.
  *
  * If flag = 1: all dimensions above move are shifted by one to the right
  * If flag = 0: the existing dimension is moved last (right before constant)
  *
  * In D we have constraints/rays:
- *    flag d_1 d_2 ... move-1 move move+1 ... d_dim constant
+ *      0   1   2      move-1  |move|  move+1       dim  constant
+ *    flag
  * the function called with flag=0 will build:
- *    flag d_1 d_2 ... move-1  0   move+1 ... d_dim move constant
+ *    flag d_1 d_2 ... move-1  |0|   move+1 ... d_dim |move| constant
  * the function called with flag=1 will build:
- *    flag d_1 d_2 ... move-1  0   move move+1 ... d_dim constant
+ *    flag d_1 d_2 ... move-1  |0|  |move  move+1 ... d_dim| constant
  *
  * if move == D->Dimension + 1, this function will just just add a dimension.
  */
@@ -2959,7 +2960,8 @@ static Polyhedron *domain_insert_dim(Polyhedron *D, int move, int flag)
       }
       else {
         // just move the value last
-        value_assign(new->Constraint[c][new->Dimension], p->Constraint[c][move]);
+        value_assign(new->Constraint[c][new->Dimension],
+          p->Constraint[c][move]);
       }
       value_set_si(new->Constraint[c][move], 0);
     }
@@ -3114,7 +3116,7 @@ int Lattice_Align_Pivots(LBL *A, Matrix *ref, int *ref_pivot_pos)
     if(value_zero_p(L->p[ref_pivot_pos[col]][col])) {
       // this column was not in L
       Polyhedron *newP;
-      newP = domain_insert_dim(A->P, col + 1, 1);
+      newP = domain_insert_dim(A->P, col + 1, 1); // one/1
       Domain_Free(A->P);
       A->P = newP;
     }
@@ -3123,7 +3125,7 @@ int Lattice_Align_Pivots(LBL *A, Matrix *ref, int *ref_pivot_pos)
   //  TODO: could be done in one step, need to rewrite/adapt _insert_dim
   for(int col = ref_num_pivots; col < ref->NbColumns - 1 ; col++) {
     Polyhedron *newP;
-    newP = domain_insert_dim(A->P, col + 1, 1);
+    newP = domain_insert_dim(A->P, col + 1, 1); // multiple/1
     Domain_Free(A->P);
     A->P = newP;
   }
@@ -3255,30 +3257,20 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
 
 
   Python test for the previous example:
-from pypolylib import LBL
-a = LBL("{(2i, 5i+15j+10, 13i+15j+66k+54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}")
-b = LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}")
-a+b
->>> LBL("{(2i, 5i+15j+10, 13i+15j+66k+54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}") + \
->>> LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}")
-(a+b).zdomain()
->>> LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}") + \
->>> LBL("{(2i, 80i+165j+160, 55i+33j+66k+6) | 3i+7j-k + 18 >= 0, -3i-7j+k - 8 >= 0, i >= 0, i <= 10, 5i+11j + 10 >= 0, -5i-11j >= 0}")
-(WRONG!)
+  from pypolylib import LBL
+  a = LBL("{(2i, 5i+15j+10, 13i+15j+66k+54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}")
+  b = LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}")
+  a+b
+  >>> LBL("{(2i, 5i+15j+10, 13i+15j+66k+54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}") + \
+  >>> LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}")
+  (a+b).zdomain()
+  >>> LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}") + \
+  >>> LBL("{(2i, 80i+165j+160, 55i+33j+66k+6) | 3i+7j-k + 18 >= 0, -3i-7j+k - 8 >= 0, i >= 0, i <= 10, 5i+11j + 10 >= 0, -5i-11j >= 0}")
+  (WRONG!)
 
-  Python test more difficult case:
-a = LBL("{(2i, 5i+15j+10, 54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}")
-
-TODO: resolve this BUG discovered here:
->>> from pypolylib import LBL
-... a = LBL("{(2i, 5i+15j+10, 13i+15j+66k+54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}")
-... b = LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}")
-...
->>> u=(a+b)
->>> u.disjoint()
-zsh: floating point exception  python3
-(division by zero)
-*/
+    Python test more difficult case:
+  a = LBL("{(2i, 5i+15j+10, 54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}")
+  */
 
   // dimension reduction:
   /*
@@ -3322,7 +3314,7 @@ zsh: floating point exception  python3
        --  ----  A->Lat is sparse (need to extend and copy the right columns)
   -> plus the extra columns to add equalities (after)
   */
- // A included in ref
+  // A included in ref
 
   Matrix *new_equality = NULL;
   int nb_pivots, ref_pivot_pos[ref->NbColumns];
@@ -3369,7 +3361,7 @@ zsh: floating point exception  python3
                                               // move col at the end
       }
       // and add a dimension to P
-      newP = domain_insert_dim(A->P, col + 1, 0);
+      newP = domain_insert_dim(A->P, col + 1, 0); // one/0
     }
 
     // And now add equality: ref[row] z' = L[row] z
@@ -3759,7 +3751,7 @@ void LBLSimplify(LBL *A)
           // add dimensions to tmp->P:
           for(int i = tmp_dim ; i < current->Lat->NbColumns; i++) {
             Polyhedron *newP;
-            newP = domain_insert_dim(tmp->P, i, 0);
+            newP = domain_insert_dim(tmp->P, i, 0); // multiple/0
             Domain_Free(tmp->P);
             tmp->P = newP;
           }

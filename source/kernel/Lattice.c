@@ -467,106 +467,107 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
     }
     return CB;
 
-    // if (A->NbRows != B->NbRows) {
-    //   errormsg1("LatticeDifference", "dimincomp",
-    //     "input lattices A and B have incompatible dimensions (rows)");
-    //   return NULL;
-    // }
-    // // NbColumn can be different if there is a column of zero in one of them
-
-    // if(! isNormalLattice(A)) {
-    //   AffineHermite(A, &H, NULL);
-    //   X = H;
-    // }
-    // else {
-    //   X = Matrix_Copy(A);
-    // }
   }
-//   if(isEmptyLattice(X)) {
-//     Matrix_Free(X);
-//     return(NULL);
-//   }
-//   #ifdef LATDIF_DEBUG
-//     fprintf(stderr, "--- Entering LatDiff ---\n"
-//         "A (normalized) = X = ");
-//     Matrix_Print(stderr, P_VALUE_FMT, X);
-//     fprintf(stderr, "B = ");
-//     Matrix_Print(stderr, P_VALUE_FMT, B);
-//   #endif
 
-//   // calculate the intersection between X and B
-//   Inter = LatticeIntersection(X, B);
-//   if(!Inter) {
-//     #ifdef LATDIF_DEBUG
-//       fprintf(stderr, "Empty intersection, returning A\n");
-//     #endif
-//     // if empty intersection return a copy of A (normalized)
-//     Result = LatticeUnion_Alloc();
-//     Result->M = X;
-//     return (Result);
-//   }
-//   #ifdef LATDIF_DEBUG
-//     fprintf(stderr, "Inter = ");
-//     Matrix_Print(stderr, P_VALUE_FMT, Inter);
-//   #endif
+  // if(A) {
+  //   if (A->NbRows != B->NbRows) {
+  //     errormsg1("LatticeDifference", "dimincomp",
+  //       "input lattices A and B have incompatible dimensions (rows)");
+  //     return NULL;
+  //   }
+  //   // NbColumn can be different if there is a column of zero in one of them
 
-//   // if Inter has only one column there is no pivot, the result is empty.
-//   if(Inter->NbColumns == 1) {
-//     Matrix_Free(Inter);
-//     Matrix_Free(X);
-//     return(NULL);
-//   }
+  //   if(! isNormalLattice(A)) {
+  //     AffineHermite(A, &H, NULL);
+  //     X = H;
+  //   }
+  //   else {
+  //     X = Matrix_Copy(A);
+  // }
+  // if(isEmptyLattice(X)) {
+  //   Matrix_Free(X);
+  //   return(NULL);
+  // }
+  // #ifdef LATDIF_DEBUG
+  //   fprintf(stderr, "--- Entering LatDiff ---\n"
+  //       "A (normalized) = X = ");
+  //   Matrix_Print(stderr, P_VALUE_FMT, X);
+  //   fprintf(stderr, "B = ");
+  //   Matrix_Print(stderr, P_VALUE_FMT, B);
+  // #endif
 
-//   // TODO: BUG
-//   // Inter has not necessarily of same width as rest and X!
-//   // unless X has been correctly computed from B (if A == NULL)
+  // // calculate the intersection between X and B
+  // Inter = LatticeIntersection(X, B);
+  // if(!Inter) {
+  //   #ifdef LATDIF_DEBUG
+  //     fprintf(stderr, "Empty intersection, returning A\n");
+  //   #endif
+  //   // if empty intersection return a copy of A (normalized)
+  //   Result = LatticeUnion_Alloc();
+  //   Result->M = X;
+  //   return (Result);
+  // }
+  // #ifdef LATDIF_DEBUG
+  //   fprintf(stderr, "Inter = ");
+  //   Matrix_Print(stderr, P_VALUE_FMT, Inter);
+  // #endif
 
-//   // Prepare for main loop:
-//   // rest will be the rest of the lattice X to be treated
-//   // (Intersection on first row(s)/column(s), X on bottom-right)
-//   rest = Matrix_Copy(X);
+  // // if Inter has only one column there is no pivot, the result is empty.
+  // if(Inter->NbColumns == 1) {
+  //   Matrix_Free(Inter);
+  //   Matrix_Free(X);
+  //   return(NULL);
+  // }
 
-//   // -------------- MAIN LOOP: column scan --------------------
+  // // BUG:
+  // // Inter has not necessarily of same width as rest and X!
+  // // unless X has been correctly computed from B (if A == NULL)
 
-//   // add each matrix with the row variant to the Result
-//   for(int column = 0; column < Inter->NbColumns - 1; column++) {
-//     int row;
-//     for (row = 0; row < Inter->NbRows - 1; row++) {
-//       if(value_notzero_p(Inter->p[row][column]))
-//         break;
-//     }
-//     if(row == Inter->NbRows - 1) {
-//       // no more pivot
-//       break;
-//     }
-//     #ifdef LATDIF_DEBUG
-//       fprintf(stderr, "+++ Enter main loop (%d, %d)\n", row, column);
-//       fprintf(stderr, "+++ rest =\n");
-//       Matrix_Print(stderr, P_VALUE_FMT, rest);
-//     #endif
+  // // Prepare for main loop:
+  // // rest will be the rest of the lattice X to be treated
+  // // (Intersection on first row(s)/column(s), X on bottom-right)
+  // rest = Matrix_Copy(X);
 
-//     // this function does all the hard work:
-//     Result = generate_lattice_union_row(row, column, X, Inter, rest, Result);
-//     #ifdef LATDIF_DEBUG
-//       fprintf(stderr, "+++ Intermediate result =\n");
-//       PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
-//     #endif
-//   }
-//   // ------------ END MAIN LOOP --------------------
+  // // -------------- MAIN LOOP: column scan --------------------
 
-//   #ifdef LATDIF_DEBUG
-//     if(!Result)
-//       fprintf(stderr, "Empty Result\n");
-//     fprintf(stderr, "--- Exit LatDiff ---\n\n");
-//   #endif
+  // // add each matrix with the row variant to the Result
+  // for(int column = 0; column < Inter->NbColumns - 1; column++) {
+  //   int row;
+  //   for (row = 0; row < Inter->NbRows - 1; row++) {
+  //     if(value_notzero_p(Inter->p[row][column]))
+  //       break;
+  //   }
+  //   if(row == Inter->NbRows - 1) {
+  //     // no more pivot
+  //     break;
+  //   }
+  //   #ifdef LATDIF_DEBUG
+  //     fprintf(stderr, "+++ Enter main loop (%d, %d)\n", row, column);
+  //     fprintf(stderr, "+++ rest =\n");
+  //     Matrix_Print(stderr, P_VALUE_FMT, rest);
+  //   #endif
 
-// // LD_cleanup:
-//   // cleanup
-//   Matrix_Free(Inter);
-//   Matrix_Free(rest);
-//   Matrix_Free(X);
+  //   // this function does all the hard work:
+  //   Result = generate_lattice_union_row(row, column, X, Inter, rest, Result);
+  //   #ifdef LATDIF_DEBUG
+  //     fprintf(stderr, "+++ Intermediate result =\n");
+  //     PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
+  //   #endif
+  // }
+  // // ------------ END MAIN LOOP --------------------
 
-//   return Result;
+  // #ifdef LATDIF_DEBUG
+  //   if(!Result)
+  //     fprintf(stderr, "Empty Result\n");
+  //   fprintf(stderr, "--- Exit LatDiff ---\n\n");
+  // #endif
+
+  // // cleanup
+  // Matrix_Free(Inter);
+  // Matrix_Free(rest);
+  // Matrix_Free(X);
+
+  // return Result;
 } /* LatticeDifference */
 
 
