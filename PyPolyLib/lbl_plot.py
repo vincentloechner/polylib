@@ -51,12 +51,14 @@ class MyWindow(pv.Plotter):
     _3D:bool
     LBLs:list           # list of LBL_view's
     all_bounded:bool    # they are all bounded
+    my_origin: list
 
     def __init__(self):
         self.hue = 0.0
         self._3D = False
         self.LBLs = []
         self.all_bounded = True
+        self.my_origin = []
         super().__init__()
 
     # round robbin hue, this is a pretty nice generator of various colors
@@ -66,9 +68,9 @@ class MyWindow(pv.Plotter):
 
 
 # this is not very nice, but it's the best way to do it.
-# _lbl_plot_window will be set to a MyWindow instance at first call, and
-# reset for each subsequent call (unless subplot = True).
-_lbl_plot_window = None
+# _lbl_plot_window[-1] is set to a MyWindow instance, and a new window will
+# be added to the list, unless subplot = True.
+_lbl_plot_window = [MyWindow()]
 
 
 # main plotting function
@@ -103,9 +105,8 @@ def lbl_plot(
     if node is None:
         return
 
-    if _lbl_plot_window is None:
-        _lbl_plot_window = MyWindow()
-    plotter = _lbl_plot_window  # inherits from pv.plotter
+    # get the last opened window
+    plotter = _lbl_plot_window[-1]  # inherits from pv.plotter
 
 
     # build a python list of single LBL views and add it to plotter.LBLs:
@@ -138,9 +139,8 @@ def lbl_plot(
 
 
     # if subplot is True do not render anything yet: the next call will add
-    # some LBLs over this one in the same window and do the rendering
+    # some LBLs in the same window and do the rendering
     if not subplot:
-
         # this is the main part that will render all single LBLs
         _render_LBLs(plotter)
 
@@ -158,18 +158,25 @@ def lbl_plot(
         else:
             print(f"unknown option: show_grid = '{show_grid}'")
         plotter.reset_camera()
+        plotter.enable_parallel_projection()
 
-        # get in main graphic loop (unless you set "interactive_update=True")
+        # set the same scale in all opened windows (if there are more than one)
+        if len(_lbl_plot_window) > 1:
+            _set_global_scale()
+
+        # get in main graphic loop
+        # (blocking unless you set "interactive_update=True")
         plotter.show(**kwargs)
 
         # you cannot keep older windows open once you leave the main loop
         if "interactive_update" not in kwargs:
             # ensure everything is closed properly
             pv.close_all()
+            _lbl_plot_window = []
 
         # will open a new window in a subsequent call
-        # (disabled only if subplot==True)
-        _lbl_plot_window = None
+        # (not done if subplot==True)
+        _lbl_plot_window.append(MyWindow())
 
 
 
@@ -206,6 +213,16 @@ def _render_LBLs(plotter):
             )
 
 
+def _set_global_scale():
+
+    maxscale = max(p.camera.parallel_scale for p in _lbl_plot_window)
+
+    for p in _lbl_plot_window:
+        p.camera.parallel_scale = maxscale
+    for p in _lbl_plot_window[:-1]:
+        p.update()
+
+
 def _darker(color, factor=0.7):
     """
     Convert a color to darker (or lighter) version.
@@ -234,18 +251,16 @@ def _show_grid(window, color="red", full_bbox=False):
     xmin = np.floor(xmin); ymin = np.floor(ymin); zmin = np.floor(zmin)
     xmax = np.ceil(xmax); ymax = np.ceil(ymax); zmax = np.ceil(zmax)
 
-    if xmin != 0: xmin -= 1.
-    if ymin != 0: ymin -= 1.
-    if zmin != 0: zmin -= 1.
-    if xmax != 0: xmax += 1.
-    if ymax != 0: ymax += 1.
-    if zmax != 0: zmax += 1.
-
-    # set origin of the base
-    origin = np.array([xmin, ymin, zmin])
-    if xmin < 0 and xmax > 0: origin[0] = 0.
-    if ymin < 0 and ymax > 0: origin[1] = 0.
-    if zmin < 0 and zmax > 0: origin[2] = 0.
+    if len(_lbl_plot_window) <= 1:
+        origin = np.array([xmin, ymin, zmin])
+        if xmin < 0 and xmax > 0: origin[0] = 0.
+        if ymin < 0 and ymax > 0: origin[1] = 0.
+        if zmin < 0 and zmax > 0: origin[2] = 0.
+        # save the origin of this plot, will be reused
+        # by all plots if there are multiple ones
+        plotter.my_origin = origin
+    else:
+        origin = _lbl_plot_window[0].my_origin
 
     # draw axes:
     plotter.add_mesh(

@@ -19,8 +19,13 @@ print(f"set(a) = {set(a)}")
 a.plot()
 
 i = a * b
-a1 = a - i
-b1 = b - i
-(a1+i).plot(interactive_update=True) # let this window close in background
-# and open another one aside:
-b1.plot()
+
+# plot (the border of a) and (a as the two subsets: (a-i) + i)
+a.plot(subplot=True, show_points=False, color="black")
+(a-i).plot(subplot=True, color="blue")
+i.plot(interactive_update=True, color="cyan")
+                                    # let this window close in background
+
+# and open another window with (the border of b) and (b-i):
+b.plot(subplot=True, show_points=False, color="black")
+(b-i).plot(color="green")
