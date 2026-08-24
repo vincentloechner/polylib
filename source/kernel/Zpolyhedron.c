@@ -491,8 +491,6 @@ LBL *LBLIntersection(LBL *A, LBL *B)
   if (!Result)
     return (EmptyLBL(A->Lat->NbRows - 1));
 
-  // TODO: need to check if a part of the result is included in another...
-
   CanonicalLBL(Result);
 
   return (Result);
@@ -3852,10 +3850,6 @@ void LBLSimplify(LBL *A)
   //   Domain_Free(tmp->P);
   //   tmp->P = DomainConstraintSimplify(newP, MAXNOOFRAYS);
   // }
-
-  // TODO: simplify the polyhedral domains stored in A to get a minimal
-  // (and disjoint(?)) form
-
 
   #ifdef SIMPLIFY2_DEBUG
   fprintf(stderr, "\n Exit LBLSimplify. A (before canonical) = ");
