@@ -14,6 +14,8 @@ TEST_FILES_32 =  \
 	LatDiff7b.in \
 	LatDiff8.in \
 	LatDiff8b.in \
+	LatDiff10.in \
+	LatDiff10b.in \
 	LatHNF1.in \
 	LatHNF2.in \
 	LatHNF3.in \
@@ -53,12 +55,13 @@ TEST_FILES_32 =  \
 	ZDiff10.in \
 	ZDiff12.in \
 	ZDiff13.in \
+	ZDiffInter6a.in \
 	ZDomain2b.in \
 	ZDomain3.in \
 	ZDomain4.in \
-	ZDomain6.in \
 	ZDomain10.in \
 	ZDomain12.in \
+	ZDomain14.in \
 	ZEmpty2.in \
 	ZImage1.in \
 	ZImPre1.in \
@@ -73,6 +76,8 @@ TEST_FILES_32 =  \
 	ZPre1.in \
 	ZPre2.in  \
 	ZPre3.in \
+	ZPtInZP1.in \
+	ZPtInZP3.in \
 	ZUnion1.in \
 	ZUnion2.in \
 	ZUnion3.in
@@ -86,13 +91,14 @@ TEST_FILES = $(TEST_FILES_32) \
 	ZCompComp11b.in \
 	ZDiff11.in \
 	ZDiff11b.in \
+	ZDomain6.in \
 	ZDomain11.in
 
 # not checked:
 # - long execution time:
-# phideo1.in
-# phideo3.in
-# ZDisj11b.in
+#	phideo1.in \
+#	phideo3.in \
+# ZDisj11b.in \
 # ZDomain13.in  # need gmp (overflow even in 64 bits)
 
 # - not yet included:

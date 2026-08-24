@@ -1,5 +1,7 @@
 EXTRA_DIST = cases old others
 SUBDIRS = Zpolytest general pp ehrhart ehrhart_union ranking
+# TODO: ehrhart_union and ranking leak memory. All others pass with the -fsanitize=address option.
+# SUBDIRS = Zpolytest general pp ehrhart
 
 check:
 	@for BITS in $(ALL_BITS); do \

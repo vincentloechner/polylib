@@ -383,7 +383,7 @@ static void SatMatrix_Extend(SatMatrix *Sat, unsigned rows, unsigned cols)
  * contains the constraints (equalities and inequalities) in rows and 'Ray'
  * contains the ray space (lines and rays) in its rows. 'Sat' is a boolean
  * saturation matrix defined as Sat(i,j)=0 if ray(i) saturates constraint(j),
- *  otherwise 1. The constraints in the 'Mat' matrix are processed starting at
+ * otherwise 1. The constraints in the 'Mat' matrix are processed starting at
  * 'FirstConstraint', 'Ray' and 'Sat' matrices are changed accordingly.'NbBid'
  * is the number of lines in the ray matrix and 'NbMaxRays' is the maximum
  * number of rows (rays) permissible in the 'Ray' and 'Sat' matrix. Return 0
@@ -823,7 +823,7 @@ static int Gauss4(Value **p, int NbEq, int NbRows, int Dimension) {
 
   value_clear(gcd);
   return Rank;
-} /* Chernikova */
+} /* Gauss4 */
 
 /*
  * Compute a minimal system of equations using Gausian elimination method.
@@ -858,7 +858,7 @@ int Gauss(Matrix *Mat, int NbEq, int Dimension) {
  * up to 'Chernikova' to remove redundant constraints or rays.
  * Note: (1) 'Chernikova' ensures that there are no redundant lines and rays.
  *       (2) The same function can be used with constraint and ray matrix used
-  interchangbly.
+ * interchangeably.
  */
 static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
                                      unsigned *Filter) {
@@ -1145,7 +1145,7 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
 #endif
 
     /*
-     * STEP(3): Perform Gaussian elimiation on the list of equalities. Obtain
+     * STEP(3): Perform Gaussian elimination on the list of equalities. Obtain
      * a minimal basis by solving for as many variables as possible. Use this
      * solution to reduce the inequalities by eliminating as many variables as
      * possible. Set NbEq2 to the rank of the system of equalities.
@@ -1198,7 +1198,7 @@ static Polyhedron *Remove_Redundants(Matrix *Mat, Matrix *Ray, SatMatrix *Sat,
     /*
      * STEP(5): Perform Gaussian elimination on the lineality space to obtain
      * a minimal basis of lines. Use this basis to reduce the representation
-     * of the uniderectional rays. Set 'NbBid2' to the rank of the system of
+     * of the unidirectional rays. Set 'NbBid2' to the rank of the system of
      * lines.
      */
 
@@ -2377,9 +2377,9 @@ Polyhedron *AddConstraints(Value *Con, unsigned NbConstraints, Polyhedron *Pol,
       UNCATCH(any_exception_error);
       return 0;
     }
-    Ray->NbRows = NbRay;
 
     /* Copy rays of polyhedron 'Pol' to matrix 'Ray' */
+    Ray->NbRows = NbRay;
     if (NbRay)
       Vector_Copy(Pol->Ray[0], Ray->p[0], NbRay * Dimension);
 
@@ -2454,7 +2454,7 @@ int PolyhedronIncludes(Polyhedron *Pol1, Polyhedron *Pol2) {
  * from the domain and freed.
  * On the other hand if some polyhedron in the domain covers polyhedron
  * 'Pol' then 'Pol' is not included and freed.
- * 
+ *
  * Consumes Pol and PolDomain to build the result (do not free).
  */
 Polyhedron *AddPolyToDomain(Polyhedron *Pol, Polyhedron *PolDomain) {
@@ -3039,7 +3039,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
         if (!tmpC) {
           errormsg1("FindSimple", "outofmem", "out of memory space");
           UNCATCH(any_exception_error);
-    
+
           /* Clear all the 'Value' variables */
           value_clear(p3);
           return;
@@ -3050,7 +3050,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       for(i = 0; i < NbConstraints + NbRays; i++) {
         tmpC[i] = 0;
       }
-  
+
       /* Build the Sat matrix */
       nc = (NbConstraints - 1) / (sizeof(int) * 8) + 1;
       // Sat = SMAlloc(NbRays, nc); // -> reuse memory
@@ -3063,7 +3063,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
         if (Filter[jx] & bx)
           tmpC[k] = -1;
         else
-          for (i = 0; i < NbRays; i++) { 
+          for (i = 0; i < NbRays; i++) {
             Inner_Product(Pol->Ray[i] + 1, P1->Constraint[k] + 1, Dimension,
               &p3);
             if (value_zero_p(p3) ||
@@ -3128,7 +3128,7 @@ static void FindSimple(Polyhedron *P1, Polyhedron *P2, unsigned *Filter,
       }
     } /* end forever */
   } /* end of TRY */
-  
+
   /* Clear all the 'Value' variables */
   value_clear(p3);
   if(tmpC) free(tmpC);
@@ -3698,7 +3698,7 @@ Polyhedron *DomainDifference(Polyhedron *Pol1, Polyhedron *Pol2,
  * Given a polyhedral domain 'Pol', convert it to a new polyhedral domain
  * with dimension expanded to 'align_dimension'. The first dimensions are
  * free variables.
- * 
+ *
  * 'NbMaxRays' is the maximum allowed rays in the new polyhedra.
  */
 Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
@@ -3785,7 +3785,7 @@ Polyhedron *align_context(Polyhedron *Pol, int align_dimension, int NbMaxRays) {
  *  C : Context domain
  *  NbMaxRays : Workspace size
  *  The context corresponds to the last dimensions of D.
- * 
+ *
  * Returns a linked list of scan domains, outer loop first
  */
 Polyhedron *Polyhedron_Scan(Polyhedron *D, Polyhedron *C, unsigned NbMaxRays) {
@@ -4444,6 +4444,7 @@ Interval *DomainCost(Polyhedron *Pol, Value *Cost) {
  * Add constraints pointed by 'Mat' to each and every polyhedron in the
  * polyhedral domain 'Pol'. 'NbMaxRays' is maximum allowed rays in the ray
  * matrix of a polyhedron.
+ * Returns a new allocated domain.
  */
 Polyhedron *DomainAddConstraints(Polyhedron *Pol, Matrix *Mat,
                                  unsigned NbMaxRays) {
@@ -4454,7 +4455,7 @@ Polyhedron *DomainAddConstraints(Polyhedron *Pol, Matrix *Mat,
   if (!Pol)
     return (Polyhedron *)0;
   if (!Mat)
-    return Pol;
+    return Domain_Copy(Pol);
   if (Pol->Dimension != Mat->NbColumns - 2) {
     errormsg1("DomainAddConstraints", "diffdim",
               "operation on different dimensions");
@@ -4464,14 +4465,20 @@ Polyhedron *DomainAddConstraints(Polyhedron *Pol, Matrix *Mat,
   /* Copy 'Pol' to 'PolA' */
   PolA = PolEndA = (Polyhedron *)0;
   for (p1 = Pol; p1; p1 = p1->next) {
-    p3 = AddConstraints(Mat->p_Init, Mat->NbRows, p1, NbMaxRays);
+    p3 = AddConstraints(Mat->p[0], Mat->NbRows, p1, NbMaxRays);
 
-    /* Does any component of 'PolA' cover 'p3' */
-    Redundant = 0;
-    for (p2 = PolA; p2; p2 = p2->next) {
-      if (PolyhedronIncludes(p2, p3)) { /* 'p2' covers 'p3' */
-        Redundant = 1;
-        break;
+    // never add an empty polyhedron to a domain! (even if polA is empty)
+    if(!p3 || emptyQ(p3)) {
+      Redundant = 1;
+    }
+    else {
+      /* Does any component of 'PolA' cover 'p3' */
+      Redundant = 0;
+      for (p2 = PolA; p2; p2 = p2->next) {
+        if (PolyhedronIncludes(p2, p3)) { /* 'p2' covers 'p3' */
+          Redundant = 1;
+          break;
+        }
       }
     }
 
@@ -4492,6 +4499,8 @@ Polyhedron *DomainAddConstraints(Polyhedron *Pol, Matrix *Mat,
 
 /*
  * Computes the disjoint union of a union of polyhedra.
+ * Returns a new polyhedral domain.
+ *
  * If flag = 0 the result is such that there are no intersections
  *                   between the resulting polyhedra,
  * if flag = 1 it computes a joint union, the resulting polyhedra are
@@ -4718,81 +4727,132 @@ void Domain_PrintConstraints(FILE *Dst, const char *Format, Polyhedron *Pol) {
     Polyhedron_PrintConstraints(Dst, Format, Q);
 }
 
-static Polyhedron *p_simplify_constraints(Polyhedron *P, Vector *row, Value *g,
-                                          unsigned MaxRays) {
-  Polyhedron *T, *R = P;
+/*
+ * Try to (integer-) simplify constraints of a single polyhedron:
+ * Replaces constraints a x >= c by x >= ceil(c/a)
+ * where "a" is a common factor in the coefficients.
+ *
+ * Return a newly allocated polyhedron iff a simplification was done,
+ * can be NULL if empty, else return P.
+ *
+ * The function can increase MaxRays if needed
+ */
+static Polyhedron *p_simplify_constraints(Polyhedron *P,
+  Matrix *new_constraints, unsigned *MaxRays_ptr)
+{
+  unsigned MaxRays = *MaxRays_ptr;
+  Polyhedron *R = P;
   int len = P->Dimension + 2;
-  int r;
+  Value g; value_init(g);
+  new_constraints->NbRows = 0;
 
   /* Also look at equalities.
    * If an equality can be "simplified" then there
    * are no integer solutions and we return an empty polyhedron
    */
-  for (r = 0; r < R->NbConstraints; ++r) {
-    if (ConstraintSimplify(R->Constraint[r], row->p, len, g)) {
-      T = R;
+  for (int r = 0; r < R->NbConstraints; ++r) {
+    if (ConstraintSimplify(R->Constraint[r],
+          new_constraints->p[new_constraints->NbRows], len, &g))
+    {
       if (value_zero_p(R->Constraint[r][0])) {
-        R = Empty_Polyhedron(R->Dimension);
-        r = R->NbConstraints;
-      } else if (POL_ISSET(MaxRays, POL_NO_DUAL)) {
-        R = Polyhedron_Copy(R);
-        F_CLR(R, POL_FACETS | POL_VERTICES | POL_POINTS);
-        Vector_Copy(row->p + 1, R->Constraint[r] + 1, R->Dimension + 1);
-      } else {
-        R = AddConstraints(row->p, 1, R, MaxRays);
-        r = -1;
+        R = NULL;
+        break; // and exit
       }
-      if (T != P)
-        Polyhedron_Free(T);
+      else {
+        // keep the new constraint in the matrix of constraints
+        new_constraints->NbRows++;
+
+        if(new_constraints->NbRows == MaxRays) {
+          // we have reached the maximum size of the matrix, increase.
+            MaxRays *= 2;
+            *MaxRays_ptr = MaxRays;
+            Matrix_Extend(new_constraints, MaxRays);
+        }
+      }
     }
+  } // end scan constraints
+
+  if(new_constraints->NbRows) {
+    // there are new contraints, add them to P
+    R = AddConstraints(new_constraints->p[0], new_constraints->NbRows, P,
+      MaxRays);
   }
-  if (R != P)
-    Polyhedron_Free(P);
+  value_clear(g);
   return R;
 }
 
 /*
- * Replaces constraint a x >= c by x >= ceil(c/a)
- * where "a" is a common factor in the coefficients
- * Destroys P and returns a newly allocated Polyhedron
+ * Replaces the constraints g x >= c by x >= ceil(c/g)
+ * where g is a common factor in the coefficients.
+ *
+ * Reuse memory: destroy P and return a newly allocated Polyhedron
  * or just returns P in case no changes were made
  */
 Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
-  if(!P) return(NULL);
-  Polyhedron **prev;
-  int len = P->Dimension + 2;
-  Vector *row = Vector_Alloc(len);
-  Value g;
-  Polyhedron *R = P, *N;
-  value_set_si(row->p[0], 1);
-  value_init(g);
+  if(!P) return NULL;
+  Polyhedron *Result = P;
+  Polyhedron *prev = NULL, *Next;
+  Matrix *tmp_matrix;
+  if(MaxRays <= P->NbConstraints) MaxRays = 1 + P->NbConstraints;
+  tmp_matrix = Matrix_Alloc(MaxRays, P->Dimension + 2);
+  // //DEBUG
+  // fprintf(stderr, "simplifying D = ");
+  // Polyhedron_Print(stderr, P_VALUE_FMT, P);
 
-  for (prev = &R; P; P = N) {
+  for (; P; P = Next) {
     Polyhedron *T;
-    N = P->next;
-    T = p_simplify_constraints(P, row, &g, MaxRays);
+    int redundant = 0;
+    Next = P->next;
 
-    if (emptyQ(T) && prev != &R) {
-      Polyhedron_Free(T);
-      *prev = NULL;
+    // try to simplify P
+    T = p_simplify_constraints(P, tmp_matrix, &MaxRays);
+    if (T == P) {
+      // no change, just continue
+      prev = P;
       continue;
     }
 
-    if (T != P)
-      T->next = N;
-    *prev = T;
-    prev = &T->next;
+    if ((!T || emptyQ(T))) {
+      redundant = 1;
+    }
+    else {
+      // T has been updated (it is now smaller than the original P)
+      // need to check if it is not included in another polyhedron of the
+      // whole domain (being updated) in which case it should not be added
+      for(Polyhedron *tmp = Result; tmp; tmp = tmp->next) {
+        if(tmp != P && PolyhedronIncludes(tmp, T)) {
+          redundant = 1;
+          break;
+        }
+      }
+    }
+
+    Polyhedron_Free(P); // no longer need this one.
+
+    if(redundant) {
+      // got an empty or redundant polyhedron, just free and do not link
+      Polyhedron_Free(T);
+      // update link from prev, or Result (if this is the first one)
+      if(prev) prev->next = Next;
+      else     Result = Next;
+    }
+    else // (T != P && !redundant)
+    {
+      // we have a new polyhedron T, replace the current P with this one
+      T->next = Next;
+      if(prev) prev->next = T;
+      else     Result = T;
+      // and update prev
+      prev = T;
+    }
   }
 
-  if (R->next && emptyQ(R)) {
-    N = R->next;
-    Polyhedron_Free(R);
-    R = N;
-  }
+  // DEBUG
+  // fprintf(stderr, "simplified Result = ");
+  // Polyhedron_Print(stderr, P_VALUE_FMT, Result);
 
-  value_clear(g);
-  Vector_Free(row);
-  return R;
+  Matrix_Free(tmp_matrix);
+  return Result;
 }
 
 /**

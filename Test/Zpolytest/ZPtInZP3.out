@@ -1,0 +1,5 @@
+pt(  -1 ) in A: 0; in ZDomain(A): 0
+pt(   0 ) in A: 1; in ZDomain(A): 1
+pt(   1 ) in A: 0; in ZDomain(A): 0
+pt(   5 ) in A: 1; in ZDomain(A): 1
+pt(  11 ) in A: 0; in ZDomain(A): 0

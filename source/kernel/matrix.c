@@ -79,7 +79,7 @@ void Matrix_Free(Matrix *Mat) {
 } /* Matrix_Free */
 
 /*
- * Increase number of lines of matrix 'Mat', in place.
+ * Increase number of rows of matrix 'Mat', in place.
  */
 void Matrix_Extend(Matrix *Mat, unsigned NbRows) {
   Value *p, **q;
@@ -98,10 +98,10 @@ void Matrix_Extend(Matrix *Mat, unsigned NbRows) {
       return;
     }
     Mat->p_Init = p;
-    Vector_Set(Mat->p_Init + Mat->NbRows * Mat->NbColumns, 0,
-               Mat->p_Init_size - Mat->NbRows * Mat->NbColumns);
     for (i = Mat->p_Init_size; i < Mat->NbColumns * NbRows; ++i)
       value_init(Mat->p_Init[i]);
+    Vector_Set(Mat->p_Init + Mat->NbRows * Mat->NbColumns, 0,
+               Mat->p_Init_size - Mat->NbRows * Mat->NbColumns);
     Mat->p_Init_size = Mat->NbColumns * NbRows;
   } else
     Vector_Set(Mat->p_Init + Mat->NbRows * Mat->NbColumns, 0,

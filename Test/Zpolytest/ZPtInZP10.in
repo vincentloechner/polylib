@@ -1,0 +1,34 @@
+# from ZDomain10.
+# this one is ugly:
+# when eliminating the z dimension you get an unbounded exact-dark shadow
+M 2
+
+3 4
+   1    0    0    0
+   0    1    0    0
+   0    0    0    1
+
+# got these point from PyPolylib's plot on the ZDomain:
+# >>> from pypolylib import LBL
+# >>> A = LBL("{(i, j) | i>=101,  3i-3j+k>=0, -4i+4j-k>=0, -i+10k>=0, i-9k>=0}") * LBL("{(i,j)|i<202, j<202}")
+# >>> B = A.zdomain()
+# >>> B.plot()
+
+4 2
+101 104 # in
+102 104
+101 105
+102 105 # in
+
+D 1
+
+6 5
+1   1    0    0 -101
+1   3   -3    1    0
+1  -4    4   -1    0
+1  -1    0   10    0
+1   1    0   -9    0
+1   0    0    0    1
+
+# Check if Pt in A
+F 23

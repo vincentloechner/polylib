@@ -5,6 +5,7 @@
 // #define LATDIF_DEBUG 1
 
 static int value_prime_factors(Value n, Vector **result);
+static LatticeUnion *LatticeComplement(Matrix *B);
 static LatticeUnion *generate_lattice_union_row(
   int row, int column, Matrix *A, Matrix *Intersection, Matrix *L,
   LatticeUnion *Result);
@@ -145,7 +146,7 @@ Bool isNormalLattice(Matrix *A)
   // check if A' verifies:
   // - first element of column (= pivot) greater than zero
   // - all elements left of pivot lower than pivot.
-  // 
+  //
   // Example:
   //    1 0 0 0
   //    * 0 0 0
@@ -330,7 +331,7 @@ int LatCountZeroCols(Matrix* M)
 /*
  * Given two canonical lattices 'A' and 'B', check if lattice 'A' is included
  * in 'B'.
- * 
+ *
  * If 'A' is included in 'B' their intersection is 'A'.
  */
 Bool LatticeIncluded(Matrix *A, Matrix *B)
@@ -383,7 +384,7 @@ Bool isSameLatticeSpace(Matrix *A, Matrix *B)
       return(False);
     }
   }
-  
+
   return(True);
 }
 
@@ -414,7 +415,7 @@ Bool isEqualLattice(Matrix *A, Matrix *B)
  * The dimensions of A and B should be equal: same rows and columns (!=0)).
  * If A = NULL consider the whole space spread by B (the same dimension
  * maximal space).
- * 
+ *
  * Allocates a LatticeUnion.
  * If the difference is empty return NULL.
  *
@@ -422,118 +423,228 @@ Bool isEqualLattice(Matrix *A, Matrix *B)
  */
 LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
 {
-  Matrix *H, *X;
-  Matrix *Inter, *rest;
-  LatticeUnion *Result = NULL;
+  // Matrix *X;
+  // Matrix *Inter, *rest;
+  // LatticeUnion *Result = NULL;
 
   if(B->NbRows == 1) {
     return(NULL);
   }
   // Checking inputs:
   if(!A) {
-    // Value gcd;
-    // value_init(gcd);
-    A = Matrix_Alloc(B->NbRows, B->NbColumns);
-    Vector_Set(A->p[0], 0, A->NbRows * A->NbColumns);
+    return LatticeComplement(B);
+  }
+  else {
+    // A - B = A inter complement(B)
 
-    // new method: is it right in cases where the lattice
-    // is not orthogonal?
-    // set 1's in the positions of the pivots of B
-    for(int c = 0; c < A->NbColumns - 1; c++) {
-      for(int l = 0; l < A->NbRows; l++) {
-        if(value_notzero_p(B->p[l][c])) {
-          // pivot of B
-          value_set_si(A->p[l][c], 1);
-          break;
+    LatticeUnion *CB = LatticeComplement(B);
+    LatticeUnion *prev = NULL;  // keep the previous in the list to re-link if
+                                // newL == NULL.
+    LatticeUnion *next;
+
+    // use CB to build the result:
+    for(LatticeUnion *tmp = CB; tmp; tmp = next) {
+      Matrix *newL;
+      next = tmp->next;
+      newL = LatticeIntersection(tmp->M, A);
+      Matrix_Free(tmp->M);
+      if(newL) {
+        tmp->M = newL;
+        prev = tmp;
+      }
+      else {
+        // prev does not change.
+        // relink prev->next or CB if first.
+        if(prev) {
+          free(tmp);
+          prev->next = next;
+        }
+        else {
+          free(CB);
+          CB = next;
         }
       }
     }
-    // keep the constant so that the intersection is guaranteed non empty:
-    for(int l = 0; l < A->NbRows; l++)
-      value_assign(A->p[l][A->NbColumns - 1], B->p[l][B->NbColumns - 1]);
+    return CB;
 
-    // // previous method was (not working):
-    // // Divide each column of A by its gcd to get the same dimension lattice
-    // // spreading the whole space of the dimension of B
-    // for(int j = 0; j < A->NbColumns - 1; j++) {
-    //   int i;
-    //   // value_set_si(gcd, 0);
-    //   // initial gcd value (not necessary, 0 is good)
-    //   for(i = 0; i < A->NbRows; i++) {
-    //     if(value_notzero_p(A->p[i][j])) {
-    //       value_assign(gcd, A->p[i][j]);
-    //       break;
-    //     }
-    //   }
-    //   // complete gcd computation
-    //   for(i = i + 1; i < A->NbRows; i++) {
-    //     value_gcd(gcd, gcd, A->p[i][j]);
-    //   }
-
-    //   if(value_notzero_p(gcd) && value_notone_p(gcd)) {
-    //     // divide the column by its gcd:
-    //     for(i = 0; i < A->NbRows; i++) {
-    //       value_division(A->p[i][j], A->p[i][j], gcd);
-    //     }
-    //   }
-    // }
-    // value_clear(gcd);
-    X = NULL;
-    AffineHermite(A, &X, NULL);
-    Matrix_Free(A);
   }
-  else {
-    if (A->NbRows != B->NbRows) {
-      errormsg1("LatticeDifference", "dimincomp",
-        "input lattices A and B have incompatible dimensions (rows)");
-      return NULL;
-    }
-    // NbColumn can be different if there is a column of zero in one of them
 
-    if(! isNormalLattice(A)) {
-      AffineHermite(A, &H, NULL);
-      X = H;
-    }
-    else {
-      X = Matrix_Copy(A);
-    }
-  }
-  if(isEmptyLattice(X)) {
-    Matrix_Free(X);
+  // if(A) {
+  //   if (A->NbRows != B->NbRows) {
+  //     errormsg1("LatticeDifference", "dimincomp",
+  //       "input lattices A and B have incompatible dimensions (rows)");
+  //     return NULL;
+  //   }
+  //   // NbColumn can be different if there is a column of zero in one of them
+
+  //   if(! isNormalLattice(A)) {
+  //     AffineHermite(A, &H, NULL);
+  //     X = H;
+  //   }
+  //   else {
+  //     X = Matrix_Copy(A);
+  // }
+  // if(isEmptyLattice(X)) {
+  //   Matrix_Free(X);
+  //   return(NULL);
+  // }
+  // #ifdef LATDIF_DEBUG
+  //   fprintf(stderr, "--- Entering LatDiff ---\n"
+  //       "A (normalized) = X = ");
+  //   Matrix_Print(stderr, P_VALUE_FMT, X);
+  //   fprintf(stderr, "B = ");
+  //   Matrix_Print(stderr, P_VALUE_FMT, B);
+  // #endif
+
+  // // calculate the intersection between X and B
+  // Inter = LatticeIntersection(X, B);
+  // if(!Inter) {
+  //   #ifdef LATDIF_DEBUG
+  //     fprintf(stderr, "Empty intersection, returning A\n");
+  //   #endif
+  //   // if empty intersection return a copy of A (normalized)
+  //   Result = LatticeUnion_Alloc();
+  //   Result->M = X;
+  //   return (Result);
+  // }
+  // #ifdef LATDIF_DEBUG
+  //   fprintf(stderr, "Inter = ");
+  //   Matrix_Print(stderr, P_VALUE_FMT, Inter);
+  // #endif
+
+  // // if Inter has only one column there is no pivot, the result is empty.
+  // if(Inter->NbColumns == 1) {
+  //   Matrix_Free(Inter);
+  //   Matrix_Free(X);
+  //   return(NULL);
+  // }
+
+  // // BUG:
+  // // Inter has not necessarily of same width as rest and X!
+  // // unless X has been correctly computed from B (if A == NULL)
+
+  // // Prepare for main loop:
+  // // rest will be the rest of the lattice X to be treated
+  // // (Intersection on first row(s)/column(s), X on bottom-right)
+  // rest = Matrix_Copy(X);
+
+  // // -------------- MAIN LOOP: column scan --------------------
+
+  // // add each matrix with the row variant to the Result
+  // for(int column = 0; column < Inter->NbColumns - 1; column++) {
+  //   int row;
+  //   for (row = 0; row < Inter->NbRows - 1; row++) {
+  //     if(value_notzero_p(Inter->p[row][column]))
+  //       break;
+  //   }
+  //   if(row == Inter->NbRows - 1) {
+  //     // no more pivot
+  //     break;
+  //   }
+  //   #ifdef LATDIF_DEBUG
+  //     fprintf(stderr, "+++ Enter main loop (%d, %d)\n", row, column);
+  //     fprintf(stderr, "+++ rest =\n");
+  //     Matrix_Print(stderr, P_VALUE_FMT, rest);
+  //   #endif
+
+  //   // this function does all the hard work:
+  //   Result = generate_lattice_union_row(row, column, X, Inter, rest, Result);
+  //   #ifdef LATDIF_DEBUG
+  //     fprintf(stderr, "+++ Intermediate result =\n");
+  //     PrintLatticeUnion(stderr, P_VALUE_FMT, Result);
+  //   #endif
+  // }
+  // // ------------ END MAIN LOOP --------------------
+
+  // #ifdef LATDIF_DEBUG
+  //   if(!Result)
+  //     fprintf(stderr, "Empty Result\n");
+  //   fprintf(stderr, "--- Exit LatDiff ---\n\n");
+  // #endif
+
+  // // cleanup
+  // Matrix_Free(Inter);
+  // Matrix_Free(rest);
+  // Matrix_Free(X);
+
+  // return Result;
+} /* LatticeDifference */
+
+
+/*
+ * Return the Union of lattices that constitute the complement of 'B' that lies
+ * in the same lineality space as B.
+ *
+ * Allocates a LatticeUnion.
+ * If the complement is empty return NULL.
+ *
+ * Algorithm: compute the lineality space spread by B, and take B out of it.
+ */
+LatticeUnion *LatticeComplement(Matrix *B)
+{
+  Matrix *X;
+  Matrix *Inter, *rest;
+  LatticeUnion *Result = NULL;
+
+  if(B->NbRows == 1) {
     return(NULL);
   }
-  #ifdef LATDIF_DEBUG
-    fprintf(stderr, "--- Entering LatDiff ---\n"
-        "A (normalized) = X = ");
-    Matrix_Print(stderr, P_VALUE_FMT, X);
-    fprintf(stderr, "B = ");
-    Matrix_Print(stderr, P_VALUE_FMT, B);
-  #endif
 
-  // calculate the intersection between X and B
-  Inter = LatticeIntersection(X, B);
-  if(!Inter) {
-    #ifdef LATDIF_DEBUG
-      fprintf(stderr, "Empty intersection, returning A\n");
-    #endif
-    // if empty intersection return a copy of A (normalized)
-    Result = LatticeUnion_Alloc();
-    Result->M = X;
-    return (Result);
+  X = NULL;
+  AffineHermite(B, &X, NULL); // X initialized to HNF(B)
+  Inter = Matrix_Copy(X);     // Inter = HNF(B)
+
+  // compute X that spreads the lineality space of B:
+  // Build the lattice X from the end
+  //  - replace a pivot by dividing the column by the gcd of the column.
+  //  - then reduce the coefs from the pivot row (do a modulo pivot)
+  //  - then go to previous column.
+  int num_pivots, pivot_pos[X->NbColumns];
+  num_pivots = get_pivots(X, pivot_pos);
+  Value gcd;
+  value_init(gcd);
+  int change = 0;
+  for(int col = num_pivots - 1; col >= 0; col--) {
+    int row = pivot_pos[col];
+
+    // initial gcd value 0
+    value_assign(gcd, X->p[row][col]);
+    // gcd computation
+    for(int i = row + 1; i < X->NbRows; i++) {
+      value_gcd(gcd, gcd, X->p[i][col]);
+    }
+
+    // divide the column by its gcd:
+    if(value_notzero_p(gcd) && value_notone_p(gcd)) {
+      change = 1;
+      for(int i = 0; i < X->NbRows; i++) {
+        value_division(X->p[i][col], X->p[i][col], gcd);
+      }
+      // make the row modulo pivot:
+      for(int i = 0; i < X->NbColumns; i++) {
+        if(i != col) value_modulus(X->p[row][i], X->p[row][i], X->p[row][col]);
+      }
+    }
   }
-  #ifdef LATDIF_DEBUG
-    fprintf(stderr, "Inter = ");
-    Matrix_Print(stderr, P_VALUE_FMT, Inter);
-  #endif
+  value_clear(gcd);
 
-  // if Inter has only one column there is no pivot, the result is empty.
-  if(Inter->NbColumns == 1) {
+  #ifdef LATDIF_DEBUG
+    fprintf(stderr, "--- Entering LatticeComplement ---\nHNF(B) = Inter = ");
+    Matrix_Print(stderr, P_VALUE_FMT, Inter);
+    fprintf(stderr, "X = ");
+    Matrix_Print(stderr, P_VALUE_FMT, X);
+  #endif
+  if(!change) {
+    #ifdef LATDIF_DEBUG
+    fprintf(stderr, "X == B, empty result\n");
+    fprintf(stderr, "--- Exiting LatticeComplement ---\n");
+    #endif
     Matrix_Free(Inter);
     Matrix_Free(X);
     return(NULL);
   }
 
-  // Prepare for main loop:
+
   // rest will be the rest of the lattice X to be treated
   // (Intersection on first row(s)/column(s), X on bottom-right)
   rest = Matrix_Copy(X);
@@ -541,22 +652,8 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
   // -------------- MAIN LOOP: column scan --------------------
 
   // add each matrix with the row variant to the Result
-  for(int column = 0; column < Inter->NbColumns - 1; column++) {
-    int row;
-    for (row = 0; row < Inter->NbRows - 1; row++) {
-      if(value_notzero_p(Inter->p[row][column]))
-        break;
-    }
-    if(row == Inter->NbRows - 1) {
-      // no more pivot
-      break;
-      //   // there is a problem, trying to compute an infinite lattice union
-      //   errormsg1("LatticeDifference", "dimincomp",
-      //     "Difference is infinite (incompatible dimensions: columns)");
-      //   LatticeUnion_Free(Result);
-      //   Result = NULL;
-      //   goto LD_cleanup;
-    }
+  for(int column = 0; column < num_pivots; column++) {
+    int row = pivot_pos[column];
     #ifdef LATDIF_DEBUG
       fprintf(stderr, "+++ Enter main loop (%d, %d)\n", row, column);
       fprintf(stderr, "+++ rest =\n");
@@ -575,17 +672,16 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
   #ifdef LATDIF_DEBUG
     if(!Result)
       fprintf(stderr, "Empty Result\n");
-    fprintf(stderr, "--- Exit LatDiff ---\n\n");
+    fprintf(stderr, "--- Exit LatticeComplement ---\n\n");
   #endif
 
-// LD_cleanup:
   // cleanup
   Matrix_Free(Inter);
   Matrix_Free(rest);
   Matrix_Free(X);
 
   return Result;
-} /* LatticeDifference */
+} /* LatticeComplement */
 
 
 /*
@@ -596,21 +692,21 @@ LatticeUnion *LatticeDifference(Matrix *A, Matrix *B)
  * Let:
  *  A =   A' | a      B =   B'  | b
  *      0..0 | 1           0..0 | 1
- * 
+ *
  * Build matrix Tmp as:
  *   1   0...0 |   1    0...0
  *   a    A'   |   b     B'
  * ------------+--------------
  *   1   0...0 |    0 .. 0
  *   a    A'   |    0 .. 0
- * 
+ *
  * Then computes H = left Hermite of Tmp
  * H is of the form:
  * H =   D  |   0 ... 0          D is a square matrix if A and B are square
  *     -----+-----------
  *       X  |  1 0 ... 0
  *          |  r    R
- * 
+ *
  * with   R   | r
  *      0...0 | 1   being our result
  *
@@ -630,7 +726,7 @@ Matrix* LatticeIntersection(Matrix* A, Matrix* B)
     errormsg1("LatticeIntersection", "dimincomp", "incompatible dimensions!");
     return NULL;
   }
-  
+
   Tmp = Matrix_Alloc(A->NbRows*2, A->NbColumns + B->NbColumns);
 
   // copying A in Tmp (twice):
@@ -754,7 +850,7 @@ static int value_prime_factors(Value n, Vector **result)
         *result = Vector_Realloc((*result), (*result)->Size * 2);
       }
       // add div to result
-      value_assign((*result)->p[tabsize], div); 
+      value_assign((*result)->p[tabsize], div);
       tabsize++;
 
       value_division(rest, rest, div); // rest /= div;
@@ -790,7 +886,7 @@ static int value_prime_factors(Value n, Vector **result)
  * - add all variants not intersecting Intersection to Result
  * - replace the corresponding line of the rest by the intersection
  * - replace the corresponding column of the rest by the intersection
-*
+ *
  * The intersection line is used as a basis reference lattice, and all
  * variants of the corresponding line in A are generated:
  *    if Intersection contains line "*..* p 0..0 c"
@@ -829,17 +925,19 @@ static LatticeUnion *generate_lattice_union_row(int line_nb,
     value_assign(rest->p[line_nb][i], Intersection->p[line_nb][i]);
   }
   // no need to update the constant of lines below the pivot here
+  #ifdef LATDIF_DEBUG
+  fprintf(stderr, "Considering line %d. Rest pivot = ", line_nb);
+  value_print(stderr, P_VALUE_FMT, rest->p[line_nb][pivot_col]);
+  #endif
 
   // get the ratio between A and rest, to be used as multiplier for every
   // generated new line
   value_division(ratio, rest->p[line_nb][pivot_col], A->p[line_nb][pivot_col]);
 
   #ifdef LATDIF_DEBUG
-    fprintf(stderr, "Considering line %d. Rest pivot = ", line_nb);
-    value_print(stderr, P_VALUE_FMT, rest->p[line_nb][pivot_col]);
-    fprintf(stderr, " Ratio = ");
-    value_print(stderr, P_VALUE_FMT, ratio);
-    fprintf(stderr, "\n");
+  fprintf(stderr, " Ratio = ");
+  value_print(stderr, P_VALUE_FMT, ratio);
+  fprintf(stderr, "\n");
   #endif
 
   // consider the decomposition in prime factors of the "pivot" = ratio
@@ -973,3 +1071,39 @@ static LatticeUnion *generate_lattice_union_row(int line_nb,
 
   return (Result);
 } /* generate_lattice_union_row */
+
+
+/*
+ * Get all the pivots positions in a lattice matrix.
+ * Fill the position array and return the number of pivots.
+ * (position[column] = row where the pivot lies)
+ *
+ * @param L: the lattice matrix
+ * @param positions: must be allocated large enough to hold the number of
+ *  pivots by caller (L->NbColumns is a good idea)
+ *
+ * Example:
+ *     2    0    0    0
+ *     0    0    0    0
+ *     1    3    0    1
+ *     0    0    0    1
+ * -> return 2 and sets positions = {0, 2}
+ */
+int get_pivots(Matrix *L, int *positions)
+{
+  int c, r = 0;
+  // r only increases
+  for(c = 0; c < L->NbColumns - 1; c++) {
+    for(; r < L->NbRows; r++) {
+      if(value_notzero_p(L->p[r][c])) {
+        positions[c] = r;
+        break;
+      }
+    }
+    if(r == L->NbRows) {
+      // no more pivot
+      break;
+    }
+  }
+  return c;
+}

@@ -12,7 +12,7 @@ M 2
     0 0 1
 
 #readDom["{i,j| 1<= i,j<=10}"]
-#readDom["{i,j| 20<= i,j<=30}"]
+#readDom["{i,j| 1<= i,j<=20}"]
 D 2
 4 4
     1 1 0 -1

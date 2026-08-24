@@ -210,6 +210,8 @@ int main(int argc, char **argv)
     Polyhedron_Free( P );
     Polyhedron_Free( C );
 
+    polylib_close();
+
     return 0;
 }
 

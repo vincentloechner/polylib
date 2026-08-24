@@ -56,6 +56,9 @@ extern LBL *LBLUnion(LBL *A, LBL *B);
 // True if A \in B
 extern Bool LBLIncluded(LBL *A, LBL *B);
 
+// True if pt \in A (pt an integer vector of same dimension as A)
+extern Bool LBLContainsPoint(LBL *A, Value *pt);
+
 // intersection A \cap B
 extern LBL *LBLIntersection(LBL *A, LBL *B);
 

@@ -175,7 +175,7 @@ Vector *Vector_Realloc(Vector *V, unsigned newlength)
     }
     V->p_Init_size = newlength;
   }
-  // else: nevermind, everything will be freed correctly using p_Init_size
+  // else: never mind, everything will be freed correctly using p_Init_size
 
   // does not change V, but return for code readability
   return V;
@@ -754,6 +754,7 @@ int ConstraintSimplify(Value *old, Value *newp, int len, Value *v)
 
   Vector_AntiScale(old + 1, newp + 1, *v, len - 2);
   value_pdivision(newp[len - 1], old[len - 1], *v);
+  value_assign(newp[0], old[0]);
   return 1;
 }
 

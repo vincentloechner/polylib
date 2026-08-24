@@ -101,3 +101,4 @@ testehrhartgmp
 verif_ehrhart32
 verif_ehrhartgmp
 
+*.so

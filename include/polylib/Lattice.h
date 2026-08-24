@@ -19,6 +19,7 @@ extern Bool isSameLatticeSpace(Matrix *A, Matrix *B); // spread the same points
 extern void Matrix_Move_Homogeneous_Dim_First(Matrix *A);
 extern void Matrix_Move_Homogeneous_Dim_Last(Matrix *A);
 extern Bool isNormalLattice(Matrix *A);
+extern int get_pivots(Matrix *L, int *positions);
 
 // removed:
 // extern void AffineSmith(Matrix *A, Matrix **U, Matrix **V, Matrix **Diag);

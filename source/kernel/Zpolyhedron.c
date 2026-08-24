@@ -25,7 +25,12 @@
 #define HOLES_DEBUG 1
 #define SIMPLIFY_DEBUG 1
 #define SIMPLIFY2_DEBUG 1
+#define IMAGE_DEBUG 1
+#define CONTAIN_DEBUG 1
+#define DISJOINT_DEBUG 1
 #endif
+// #define SIMPLIFY2_DEBUG 1
+// #define SIMPLIFY2_TEST_DEBUG 1
 
 static LBL *LBLConcatenate(LBL *A, LBL *B);
 static LBL *sLBLIntersection(LBL *, LBL *);
@@ -36,13 +41,14 @@ static Bool LBL_simple_inclusion_check(LBL *A, LBL *B);
 // static LBL *sLBL_Difference(LBL *, LBL *);
 static LBL *sLBLImage(LBL *, Matrix *);
 static LBL *sLBLPreimage(LBL *, Matrix *);
+static void sLBL_Lat_Normalize(LBL *A);
 static void sLBLCanonical(LBL *A);
 // static LBL *LBL_sLBL_Difference(LBL *A, LBL *B);
 static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact);
 static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position);
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D);
 static Polyhedron *domain_project(Polyhedron *P, int eliminate);
-static Polyhedron *domain_insert_dim(Polyhedron *D, int move);
+static Polyhedron *domain_insert_dim(Polyhedron *D, int move, int flag);
 static void LBL_Remove_Empty(LBL *A);
 static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref);
 
@@ -78,12 +84,16 @@ LBL *LBLAlloc(Matrix *Lat, Polyhedron *Domain)
 
   if(Domain && (Lat->NbColumns != Domain->Dimension + 1)) {
     errormsg1("LBLAlloc", "dimincomp",
-      "the Lattice and the Polyhedron are not compatible to form a LBL");
+      "the Lattice and the Polyhedron are not compatible to form an LBL");
     return NULL;
   }
-  if(Domain && emptyQ(Domain)) {
-    Domain = NULL;
-  }
+
+  // If, for some reason, the user passes an empty polyhedron union a
+  // non-empty one as Domain (that should not happen, but who knows)
+  // this test would remove it. It is redundant anyway:
+  // if(Domain && emptyQ(Domain)) {
+  //   Domain = NULL;
+  // }
 
   A = malloc(sizeof(LBL));
   if (!A) {
@@ -176,7 +186,7 @@ static LBL *LBLConcatenate(LBL *A, LBL *B)
   for(tmp = A; tmp->next; tmp = tmp->next)
     ;
   tmp->next = B;
-  
+
   return (A);
 } /* LBLConcatenate */
 
@@ -244,22 +254,51 @@ static Bool LBL_simple_inclusion_check(LBL *A, LBL *B)
   for( ; A; A = A->next) {
     LBL *tmpB;
     Polyhedron *ddiff;
+
+    // For now this test is very rudimentary!
+    //
+    // TODO: the lattice search could search for a lattice included in the
+    // other, not necessarily equal! But then we have to transform the
+    // coordinate polyhedra to be in the same space. Other parts of A could
+    // also be covered by other parts of B.
+
     for(tmpB = B; tmpB; tmpB = tmpB->next) {
       if(isEqualLattice(A->Lat, tmpB->Lat))
         break; // found
     }
     if(! tmpB)
       return(False);  // did not find A->Lat in B
-  
+
+
     // check if A->P is included in tmpB->P
-    // (A->P - tmpB->P) should be empty.
-    ddiff = DomainDifference(A->P, tmpB->P, MAXNOOFRAYS);
-    if(! emptyQ(ddiff)) {
-      Domain_Free(ddiff);
-      return(False);  // not included
+    if(! tmpB->P)
+      return(False);  // B is empty
+
+    // if tmpB->P is a single polyhedron, a simple inclusion check of all
+    // parts of A->P is enough:
+    if(tmpB->P->next == NULL) {
+      for(Polyhedron *Apart = A->P; Apart; Apart = Apart->next) {
+        if(! PolyhedronIncludes(tmpB->P, Apart))
+        {
+          // tmpB->P does not include (cover) Apart
+          return(False);
+        }
+      }
     }
-    Domain_Free(ddiff);
-  }
+    else {
+      // if tmpB->P is a domain, need to explicitly compute the difference and
+      // check its emptiness:
+      // (A->P - tmpB->P) should be empty.
+      ddiff = DomainDifference(A->P, tmpB->P, MAXNOOFRAYS);
+      if(! emptyQ(ddiff)) {
+        Domain_Free(ddiff);
+        return(False);  // not included
+      }
+      Domain_Free(ddiff);
+    }
+    // success for this part of A.
+  } // next part of A
+
   // every part of A was found in B
   return(True);
 }
@@ -279,8 +318,8 @@ Bool LBLIncluded(LBL *A, LBL *B)
   }
 
   // Could we do better on ZDomains?
-  // the answer is no: the complicated part of the difference is not executed
-  // anyway when the input LBLs are ZDomains.
+  // the answer is no: the complicated part of the difference computation is
+  // not executed anyway when the input LBLs are ZDomains.
 
   diff = LBLDifference(A, B);
 
@@ -299,6 +338,74 @@ Bool LBLIncluded(LBL *A, LBL *B)
 
   return ret;
 } /* LBLIncluded */
+
+
+/*
+ * Return True if the point pt is included in LBL A,
+ * otherwise return False.
+ *
+ * pt should be an integer array of Values of dimension (A->Lat->NbRows - 1)
+ */
+Bool LBLContainsPoint(LBL *A, Value *pt)
+{
+
+  #ifdef CONTAIN_DEBUG
+  fprintf(stderr, "========= Entering LBLContainsPoint =========\n");
+  #endif
+  // scan each simple LBL of A:
+  for( ; A ; A = A->next) {
+    // check if pt is in the LBL { AL z |  AL z = pt, z \in AP }
+    // by adding the equality {AL z = pt} to AP,
+    // and check if the resulting domain has an integer solution
+
+    int dimLBL = A->Lat->NbRows - 1;
+    int hdimP = A->P->Dimension + 1;  // homogeneous dimension of A->P
+                                      // == A->Lat->NbColumns
+    Matrix *Eq;
+    Polyhedron *newP;
+    Bool empty;
+
+    // Eq = [ 0 |  Al  |  Ac-pt ]
+    // with A = [ Al | Ac ]  (linear part/constant part)
+    Eq = Matrix_Alloc(dimLBL, hdimP + 1);
+    for(int d = 0; d < dimLBL; d++) {
+      value_set_si(Eq->p[d][0], 0);
+      Vector_Copy(A->Lat->p[d], &Eq->p[d][1], hdimP);
+      value_substract(Eq->p[d][hdimP], Eq->p[d][hdimP], pt[d]);
+    }
+
+    // build new domain
+    #ifdef CONTAIN_DEBUG
+    fprintf(stderr, "Adding equalities to P. P (before) = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+    #endif
+    newP = DomainAddConstraints(A->P, Eq, MAXNOOFRAYS);
+    Matrix_Free(Eq);
+
+    // just need to check if domain newP is integer-empty here, no need
+    // to build the resulting LBL!
+
+    #ifdef CONTAIN_DEBUG
+    // bug correction in July 2026: newP could be a union of an empty
+    // polyhedron + a non-empty one as a result of DomainAddConstraints, for
+    // example in Test/Zpolytest/ZPtInZP10.in for pt = (102, 105)
+    fprintf(stderr, "newP (after) = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, newP);
+    #endif
+
+    newP = DomainConstraintSimplify(newP, MAXNOOFRAYS);
+    newP = Domain_Remove_Integer_Empty(newP);
+    empty = (!newP || emptyQ(newP));
+    Domain_Free(newP);
+
+    // early exit if found
+    if(!empty) {
+      return True;
+    }
+  }  // continue to next LBL of A
+
+  return False;
+} /* LBLContainsPoint */
 
 
 /*
@@ -357,7 +464,7 @@ LBL *LBLUnion(LBL *A, LBL *B)
 /*
  * Return the intersection of the LBLs 'A' and 'B'.
  * The dimensions of 'A' and 'B' must be equal.
- * 
+ *
  * Algorithm:
  * intersect each piece of A with each piece of B and union all results
  */
@@ -394,19 +501,19 @@ LBL *LBLIntersection(LBL *A, LBL *B)
  * Return the difference of the LBLs 'A' - 'B' in canonical form.
  * The dimensions of 'A' and 'B' must be equal. Note that the
  * difference of two single LBLs can be a union of LBLs.
- * 
+ *
  * Algorithm:
  * Let I = A inter B
  * - check if I is empty -> result = A
  * - check if A included in I -> result = empty
  * - general case:
  *   successively remove each single LBL of I from A, return the rest.
- * 
+ *
  */
 LBL *LBLDifference(LBL *A, LBL *B)
-{ 
+{
   LBL *inter, *res = NULL;
-  
+
   #ifdef LBLDIFF_DEBUG
   fprintf(stderr, "-----Entering LBLDiff-----\n");
   fprintf(stderr, "---- A = ");
@@ -490,7 +597,7 @@ LBL *LBLImage(LBL *A, Matrix *Func)
 } /* LBLImage */
 
 /*
- * Return the preimage of the LBL 'A' under the affine transformation 'Func'. 
+ * Return the preimage of the LBL 'A' under the affine transformation 'Func'.
  * The number of rows of the matrix representing the function 'Func' must be
  *  equal to the number of rows of the matrix representing the lattice of 'A'.
  */
@@ -516,10 +623,10 @@ LBL *LBLPreimage(LBL *A, Matrix *Func) {
 /*
  * Return the LBL intersection of the single-LBLs 'A' and 'B'.
  * The result is always a single LBL, NULL if empty.
- * 
+ *
  * USAGE: A and B's first Lattice considered only (no chained list),
  *        but can contain a polyhedral domain in ->P.
- * 
+ *
  * Algorithm:
  * - IF the input LBLs are Z-Polyhedra, we can simply compute:
  *    LInter is the intersection of the two lattices AL and BL.
@@ -569,16 +676,24 @@ static LBL *sLBLIntersection(LBL *A, LBL *B)
     ImageA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
     ImageB = DomainImage(B->P, B->Lat, MAXNOOFRAYS);
     PInter = DomainIntersection(ImageA, ImageB, MAXNOOFRAYS);
+
+    // // simplify obvious non integer cases -> this does not help!
+    // PInter = DomainConstraintSimplify(PInter, MAXNOOFRAYS);
+
     Domain_Free(ImageB);
     Domain_Free(ImageA);
     #ifdef INTERSECTION_DEBUG
-    // fprintf(stderr, "imageA inter imageB = PInter = ");
-    // Polyhedron_Print(stderr, P_VALUE_FMT, PInter);
+    fprintf(stderr, "imageA inter imageB = PInter = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, PInter);
     #endif
     if (emptyQ(PInter))
       Result = NULL;
     else {
       PreImage = DomainPreimage(PInter, LInter, MAXNOOFRAYS);
+      #ifdef INTERSECTION_DEBUG
+      fprintf(stderr, "PreImage(PInter) = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, PreImage);
+      #endif
       Result = LBLAlloc(LInter, PreImage);
       Domain_Free(PreImage);
     }
@@ -712,7 +827,7 @@ static LBL *sLBLIntersection(LBL *A, LBL *B)
 // /*
 //  * Return the difference A - B
 //  * between a union of LBLs 'A' and a single LBL 'B'.
-//  * 
+//  *
 //  * Algo: remove B from each part of A, and build a list of the resulting LBLs
 //  *
 //  * USAGE: only the first lattice of B is considered
@@ -749,70 +864,70 @@ static LBL *sLBLIntersection(LBL *A, LBL *B)
 // } /* LBL_sLBL_Difference */
 
 
-/*
- * Compute the complement of sLBL A: all points z such that z is not in A.
- *
- * Algorithm:
- * Let L = A->Lat, P = A->P.
- * complement(A) = Universe() - A = union of:
- *   1- LBL (Z^d, complement hull(A)), with hull(A) = image by L of P
- *   2- LBL ((Z^d - L), hull(A)) ---- or ((Z^d - L), universe())
- *   3- holes of A
- *      if L has no zero columns -> empty
- *      = L z' such that there exist no z in A->P such that L z' = L z
- *      -> need exact shadow
- */
-static LBL *sLBLComplement2(LBL *A)
-{
-  // testing a new version, just add dimensions and 0 columns in L, and
-  // compute the complement of the coordinate polyhedron
-  // and add the holes of A at the end.
-  Matrix *id = NULL;
-  Polyhedron *univ, *comp, *holes;
+// /*
+//  * Compute the complement of sLBL A: all points z such that z is not in A.
+//  *
+//  * Algorithm:
+//  * Let L = A->Lat, P = A->P.
+//  * complement(A) = Universe() - A = union of:
+//  *   1- LBL (Z^d, complement hull(A)), with hull(A) = image by L of P
+//  *   2- LBL ((Z^d - L), hull(A)) ---- or ((Z^d - L), universe())
+//  *   3- holes of A
+//  *      if L has no zero columns -> empty
+//  *      = L z' such that there exist no z in A->P such that L z' = L z
+//  *      -> need exact shadow
+//  */
+// static LBL *sLBLComplement2(LBL *A)
+// {
+//   // testing a new version, just add dimensions and 0 columns in L, and
+//   // compute the complement of the coordinate polyhedron
+//   // and add the holes of A at the end.
+//   Matrix *id = NULL;
+//   Polyhedron *univ, *comp, *holes;
 
-  // compute holes of A:
-  holes = sLBLCompute_holes(A, NULL);
+//   // compute holes of A:
+//   holes = sLBLCompute_holes(A, NULL);
 
-  Matrix_identity(A->Lat->NbRows, &id);
-  A = sLBLCopy(A);
-  sLBLMake_lattice_equal_to(A, id);
-  Matrix_Free(id);
-  fprintf(stderr, "A lattice equal to Id = ");
-  sLBLPrint(stderr, P_VALUE_FMT, A);
+//   Matrix_identity(A->Lat->NbRows, &id);
+//   A = sLBLCopy(A);
+//   sLBLMake_lattice_equal_to(A, id);
+//   Matrix_Free(id);
+//   fprintf(stderr, "A lattice equal to Id = ");
+//   sLBLPrint(stderr, P_VALUE_FMT, A);
 
-  // // remove the zero dimensions of A->P:
-  // nz = LatCountZeroCols(A->Lat);
-  // Polyhedron *newP = A->P;
-  // for(int dim = 0; dim < nz; dim++) {
+//   // // remove the zero dimensions of A->P:
+//   // nz = LatCountZeroCols(A->Lat);
+//   // Polyhedron *newP = A->P;
+//   // for(int dim = 0; dim < nz; dim++) {
 
-  // }
-  // fprintf(stderr, "A expanded with lines in 0-dims = ");
-  // sLBLPrint(stderr, P_VALUE_FMT, A);
+//   // }
+//   // fprintf(stderr, "A expanded with lines in 0-dims = ");
+//   // sLBLPrint(stderr, P_VALUE_FMT, A);
 
-  // Compute Universe - A->P
-  univ = Universe_Polyhedron(A->P->Dimension);
-  comp = DomainDifference(univ, A->P, MAXNOOFRAYS);
-  Domain_Free(univ);
+//   // Compute Universe - A->P
+//   univ = Universe_Polyhedron(A->P->Dimension);
+//   comp = DomainDifference(univ, A->P, MAXNOOFRAYS);
+//   Domain_Free(univ);
 
-  fprintf(stderr, "LINKING: holes(A) = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, holes);
-  fprintf(stderr, "         with comp = ");
-  Polyhedron_Print(stderr, P_VALUE_FMT, comp);
+//   fprintf(stderr, "LINKING: holes(A) = ");
+//   Polyhedron_Print(stderr, P_VALUE_FMT, holes);
+//   fprintf(stderr, "         with comp = ");
+//   Polyhedron_Print(stderr, P_VALUE_FMT, comp);
 
-  // just link holes at the end of comp (they are separated)
-  Polyhedron *compEnd = comp;
-  while(compEnd->next)
-    compEnd = compEnd->next;
-  compEnd->next = holes;
-  Domain_Free(A->P);
-  A->P = comp;
+//   // just link holes at the end of comp (they are separated)
+//   Polyhedron *compEnd = comp;
+//   while(compEnd->next)
+//     compEnd = compEnd->next;
+//   compEnd->next = holes;
+//   Domain_Free(A->P);
+//   A->P = comp;
 
-  CanonicalLBL(A);
-  fprintf(stderr, "comp(A) = ");
-  sLBLPrint(stderr, P_VALUE_FMT, A);
+//   CanonicalLBL(A);
+//   fprintf(stderr, "comp(A) = ");
+//   sLBLPrint(stderr, P_VALUE_FMT, A);
 
-  return(A);
-}
+//   return(A);
+// }
 static LBL *sLBLComplement(LBL *A)
 {
   LBL *Result = NULL;
@@ -823,11 +938,13 @@ static LBL *sLBLComplement(LBL *A)
   fprintf(stderr, "\n-- Entering sLBLComplement. A = ");
   sLBLPrint(stderr, P_VALUE_FMT, A);
   #endif
-  
+
   // STEP 1: complement of hull(A)
   hullA = DomainImage(A->P, A->Lat, MAXNOOFRAYS);
   Univ = Universe_Polyhedron(A->Lat->NbRows - 1);
   comp_hullA = DomainDifference(Univ, hullA, MAXNOOFRAYS);
+  // is this useful?
+  // comp_hullA = DomainConstraintSimplify(comp_hullA, MAXNOOFRAYS);
   #ifdef COMP_DEBUG
   fprintf(stderr, "STEP 1: Adding hull complement polyhedron: ");
   Polyhedron_Print(stderr, P_VALUE_FMT, comp_hullA);
@@ -894,7 +1011,7 @@ static LBL *sLBLComplement(LBL *A)
     if(holes && !emptyQ(holes))
     {
       newL = RemoveNColumns(A->Lat, A->Lat->NbColumns-1-nbzeros, nbzeros);
-    
+
       Result = LBLConcatenate(LBLAlloc(newL, holes), Result);
       Matrix_Free(newL);
     }
@@ -945,7 +1062,7 @@ LBL *LBLComplement(LBL *A)
 //  *
 //  * USAGE: only the first lattice of A and B is considered (no union),
 //  *        but A and B can contain several coordinate polyhedra (in ->P).
-//  * 
+//  *
 //  * Algorithm:
 //  * -> New version: compute A inter complement(B).
 //  * -> Former version inspired from the method Gautam describes in his thesis,
@@ -1023,8 +1140,8 @@ LBL *LBLComplement(LBL *A)
 //   //   fprintf(stderr, "ImInter (hull of A inter B) = ");
 //   //   Polyhedron_Print(stderr, P_VALUE_FMT, ImInter);
 //   // #endif
-  
-//   // // (TODO) can be simplified, Ainter not really needed!
+
+//   // // can be simplified, Ainter not really needed!
 
 //   // // compute the part of A that intersects the hull of B in the image space
 //   // preimA = DomainPreimage(ImInter, A->Lat, MAXNOOFRAYS);
@@ -1048,7 +1165,7 @@ LBL *LBLComplement(LBL *A)
 
 //   // // LatDiff (union of lattices) is the difference : (A->Lat) - (B->Lat) of
 //   // // same dimensions
-//   // LatDiff = LatticeDifference(Ainter->Lat, Binter->Lat); 
+//   // LatDiff = LatticeDifference(Ainter->Lat, Binter->Lat);
 //   // #ifdef DIFFERENCE_DEBUG
 //   //   if(!LatDiff)
 //   //     fprintf(stderr, "Empty Lattice difference\n");
@@ -1078,7 +1195,7 @@ LBL *LBLComplement(LBL *A)
 //   //   LatDiff = next;
 //   // }
 
-//   // // (TODO) also consider the intersection of lattices, where some points of
+//   // // could also consider the intersection of lattices, where some points of
 //   // // lattice B->Lat could have no integer antecedent in B->P and should
 //   // // be kept in the result A - B:
 //   // // Add the holes of B (that can be included in A but not in B).
@@ -1131,7 +1248,7 @@ LBL *LBLComplement(LBL *A)
 
 /*
  * Return the image of the single LBL 'A' under the affine function 'Func'
- * 
+ *
  * Algorithm:
  * - Multiply Lat by Func,
  * - Canonicalize the result (done by LBLAlloc)
@@ -1161,11 +1278,10 @@ static LBL *sLBLImage(LBL *A, Matrix *Func)
 /*
  * Return the preimage of the single LBL 'Z' under an affine
  * transformation function 'G'. The number of rows of matrix 'G' must
- * be equal to the number of rows of the matrix representing the
- * lattice of Z.
+ * be equal to the number of rows of the lattice of Z.
  * Algorithm:
  * - if G is invertible, compute the LBL {G^{-1} L, D},
- * - else, build the LBL { z' | L z = G z', z \in A->P, z' free},
+ * - else, build the LBL { z' | G z' = L z, z \in A->P, z' free},
  *         and remove z by normalizing the result
  */
 static LBL *sLBLPreimage(LBL *Z, Matrix *G)
@@ -1173,6 +1289,19 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
   LBL *Result;
   Polyhedron *P, *newP;
   Matrix *Con;
+
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "===== entering sLBLPreimage =====\n Z = ");
+  sLBLPrint(stderr, P_VALUE_FMT, Z);
+  fprintf(stderr, "G = ");
+  Matrix_Print(stderr, P_VALUE_FMT, G);
+  #endif
+
+  if(G->NbRows != Z->Lat->NbRows) {
+    // G z' = L z
+    errormsg1("sLBLPreimage", "dimincomp", "incompatible dimensions");
+    return(NULL);
+  }
 
   // first try if G is invertible
   if(G->NbColumns == G->NbRows) {
@@ -1182,6 +1311,10 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
     inv = Matrix_Alloc(dim, dim);
     if(Matrix_Inverse(tmp, inv) && value_one_p(inv->p[dim-1][dim-1])) {
       // reuse tmp to compute the product Inv Lat
+      #ifdef IMAGE_DEBUG
+      fprintf(stderr, "G is invertible\nInverse =");
+      Matrix_Print(stderr, P_VALUE_FMT, inv);
+      #endif
       Matrix_Product(inv, Z->Lat, tmp);
       Result = LBLAlloc(tmp, Z->P);
       Matrix_Free(tmp);
@@ -1192,13 +1325,12 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
     Matrix_Free(inv);
   }
 
-  if(G->NbRows != Z->Lat->NbRows) {
-    // G z' = L z
-    errormsg1("sLBLPreimage", "dimincomp", "incompatible dimensions");
-    return(NULL);
-  }
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "G is not invertible\n");
+  #endif
+  // need to build the LBL { z' | G z' = L z, z \in A->P, z' free},
 
-  // d is the dimension of Z.
+  // d is the dimension of A->P (nb columns of Lat)
   // d' is the number of columns of G = the dimension of the result
   // build the Z-polyhedron = { z' | with P in dimension d + d'
   // such that L z = G z' }
@@ -1206,7 +1338,7 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
 
   // the lattice is spreading z'
   // homogeneous d and d', homogeneous sum is d+d'-1
-  int d = Z->Lat->NbRows;
+  int d = Z->Lat->NbColumns;
   int dp = G->NbColumns;
 
   //          z'    z    cst
@@ -1224,15 +1356,24 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
     }
   }
   value_set_si(newL->p[newL->NbRows-1][newL->NbColumns-1], 1);
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "newL = ");
+  Matrix_Print(stderr, P_VALUE_FMT, newL);
+  #endif
 
   // add the extra dimension on P (first dimensions!)
   newP = align_context(Z->P, d+dp-2, MAXNOOFRAYS);
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "newP = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, newP);
+  #endif
+
 
   // build the extra constraint to be added to newP: G z' = L z
   // con =    0 |     |     |
   //          . |  G  | -L  | (g-l)
   //          0 |     |     |
-  Con = Matrix_Alloc(d-1, d+dp-1+1);
+  Con = Matrix_Alloc(G->NbRows - 1, d+dp-1+1);
   // copy G
   for(int i = 0; i < Con->NbRows; i++) {
     value_set_si(Con->p[i][0], 0); // equality
@@ -1251,6 +1392,10 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
     value_substract(Con->p[i][Con->NbColumns-1],
               Con->p[i][Con->NbColumns-1], Z->Lat->p[i][Z->Lat->NbColumns-1]);
   }
+  #ifdef IMAGE_DEBUG
+  fprintf(stderr, "Con = ");
+  Matrix_Print(stderr, P_VALUE_FMT, Con);
+  #endif
 
   P = DomainAddConstraints(newP, Con, MAXNOOFRAYS);
   Matrix_Free(Con);
@@ -1359,7 +1504,7 @@ static LBL *sLBLPreimage(LBL *Z, Matrix *G)
 // } /* ZDomainSimplify */
 
 // /*
-//  * 
+//  *
 //  *
 // */
 
@@ -1543,7 +1688,7 @@ static Matrix *sLBLHomogenize_equalities(LBL *A)
 /*
  * Simplify the equalities from A->P, in the single LBL A.
  * In place. A->P is a domain (all polyhedra have the same set of equalities).
- * 
+ *
  * Modifies A->Lat and A->P.
  */
 static void sLBLSimplify_equalities(LBL *A, Matrix *Equalities)
@@ -1611,6 +1756,10 @@ static void sLBLSimplify_equalities(LBL *A, Matrix *Equalities)
     Matrix_Free(A->Lat);
     A->P = NewP;
     A->Lat = NewL;
+
+    // some equalities were eliminated.
+    // Check that A->Lat is still normal or re-normalize
+    sLBL_Lat_Normalize(A);
   }
 
   Matrix_Free(H);
@@ -1626,9 +1775,13 @@ static void sLBLSimplify_equalities(LBL *A, Matrix *Equalities)
 /*
  * compute the inside of polyhedron P that can be projected (along dim) to
  * get the dark shadow.
- * 
+ *
  * consider P a single polyhedron, even if P->next is set.
  * return NULL if dark == input P
+ *
+ * Args:
+ * - P: polyhedron (ignore ->next)
+ * - dim: 0 <= dim < P->Dimension
  */
 static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
 {
@@ -1748,7 +1901,7 @@ static Polyhedron *polyhedron_dark_source(Polyhedron *P, int dim)
 
 /*
  * compute the projection of domain P along dimension eliminate.
- * 
+ *
  * P is a polyhedral domain
  */
 static Polyhedron *domain_project(Polyhedron *P, int eliminate)
@@ -1757,7 +1910,7 @@ static Polyhedron *domain_project(Polyhedron *P, int eliminate)
   Matrix *ray;
   // # 1 ..........  elim+1 elim+2... dim cst
   // --- elim+1 ---   xx    ---  dim-elim ---
-  // 
+  //
   // new homogeneous dimension of cons and ray matrices: dim + 1.
   const int rest = P->Dimension - eliminate;
 
@@ -1797,7 +1950,7 @@ static Polyhedron *domain_project(Polyhedron *P, int eliminate)
       tmp->Ray[r] -= r;
     }
     tmp->Dimension--;
-  
+
     // remove the null ray that is somewhere...
     for(int r = 0; r < tmp->NbRays; r++) {
       int i;
@@ -1855,7 +2008,7 @@ static Polyhedron *domain_project(Polyhedron *P, int eliminate)
 
 /*
  * compute the dark shadow of domain P projected along dimension dim.
- * 
+ *
  * P is a polyhedral domain
  */
 static Polyhedron *domain_dark_shadow(Polyhedron *P, int dim)
@@ -1914,17 +2067,17 @@ Polyhedron *GenPoly(int dim, Value *val)
  * - the shadow (rest) to be scanned whole,
  * - AP, the whole domain to check for an integer solution
  * Returns the union of polyhedra in the rest that are not holes.
- * 
+ *
  * Uses the allocated array of values val of dimension R->dimension+2
  * position = index position of current loop index
  * (from 1 to R->Dimension)
- * 
+ *
  * Recursive,
  * - if scanning the shadow (position <= dimrest), scan all possible values
  *   and recursive call to scan, accumulating all results together
  * - if the shadow is scanned already (position > dimrest),
  *   recursive scan R, but stop as soon as an integer solution is found
- * 
+ *
  * val must be set to 0's where not used, val[Dimension+1] must be set to 1.
  */
 Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dimrest)
@@ -1937,7 +2090,7 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dimrest)
   // val = 0   *    ...         *  *      ...     *  1
   // idx:  0   1    ...   dimrest       ...   R->Dimension
   //           |-> position...
-  
+
   if(!R) {
     // end here, it is a hit!
     // generate polyhedron of the point = value val
@@ -2016,42 +2169,66 @@ Polyhedron *Scan_RestAP(Polyhedron *R, Value *val, int position, int dimrest)
 } /* Scan_RestAP */
 
 
-static Polyhedron *bound_polyhedron(Polyhedron *D)
+/*
+ * Bound the single polyhedron P by a box containing an integer point
+ *
+ * returns a newly allocated polyhedron, or P if there are no lines/rays
+ */
+static Polyhedron *bound_polyhedron(Polyhedron *P)
 {
   int num_lr; // number of lines+rays
-  const int dim = D->Dimension;
+  const int dim = P->Dimension;
   Value ONE;
   Matrix *new_rays;
   Polyhedron *res;
 
+  // count number of lines and rays
+  num_lr = 0;
+  for(int r = 0; r < P->NbRays; r++) {
+    if(value_zero_p(P->Ray[r][0]) || value_zero_p(P->Ray[r][dim + 1])) {
+      num_lr++;
+    }
+  }
+  if(num_lr == 0) {
+    return(P);
+  }
+
   value_init(ONE);
   value_set_si(ONE, 1);
 
-  // count number of lines/rays
-  for(num_lr = 0; num_lr < D->NbRays; num_lr++) {
-    if(value_notzero_p(D->Ray[num_lr][0])
-      && value_notzero_p(D->Ray[num_lr][dim + 1])) {
-      break;
-    }
-  }
-  
-  // build the matrix of vertices of the bounded D:
+
+  // build the matrix of vertices of the bounded P:
   // original vertices + each line/ray added to each of them.
-  new_rays = Matrix_Alloc((D->NbRays - num_lr) * (num_lr + 1), dim + 2);
+  new_rays = Matrix_Alloc((P->NbRays - num_lr) * (num_lr + 1), dim + 2);
   new_rays->NbRows = 0;
 
-  for(int v = num_lr; v < D->NbRays; v++) {
+  // scan the vertices (check each of them if it is a vertex or line/ray):
+  for(int v = 0; v < P->NbRays; v++) {
+    if(value_zero_p(P->Ray[v][0]) || value_zero_p(P->Ray[v][dim + 1])) {
+      // it's a line/ray
+      continue;
+    }
+    // P->Ray[v] is a vertex.
     // copy the original vertex v:
-    Vector_Copy(D->Ray[v], new_rays->p[new_rays->NbRows], dim + 2);
+    Vector_Copy(P->Ray[v], new_rays->p[new_rays->NbRows], dim + 2);
     new_rays->NbRows++;
     // add each line/ray to v (taking v's divisor into account)
-    for(int l = 0; l < num_lr; l++) {
-      Vector_Combine(D->Ray[v], D->Ray[l], new_rays->p[new_rays->NbRows], ONE,
-        D->Ray[v][dim + 1], dim + 1);
-      value_assign(new_rays->p[new_rays->NbRows][dim + 1], D->Ray[v][dim + 1]);
-      new_rays->NbRows++;
+    for(int l = 0; l < P->NbRays; l++) {
+      if(value_zero_p(P->Ray[l][0]) || value_zero_p(P->Ray[l][dim + 1])) {
+        // it's a line/ray
+        Vector_Combine(P->Ray[v], P->Ray[l], new_rays->p[new_rays->NbRows], ONE,
+          P->Ray[v][dim + 1], dim + 2);
+          // value_assign(new_rays->p[new_rays->NbRows][dim + 1], P->Ray[v][dim + 1]);
+        value_set_si(new_rays->p[new_rays->NbRows][0], 1);
+        new_rays->NbRows++;
+      }
     }
   }
+  #ifdef SIMPLIFY_DEBUG
+  fprintf(stderr, "new_rays = ");
+  Matrix_Print(stderr, P_VALUE_FMT, new_rays);
+  #endif
+
   res = Rays2Polyhedron(new_rays, MAXNOOFRAYS);
   Matrix_Free(new_rays);
   value_clear(ONE);
@@ -2070,11 +2247,6 @@ static Polyhedron *bound_polyhedron(Polyhedron *D)
  *      if there is an integer point in the intersection with the coordinate
  *      polyhedron, add it to the polyhedral domain not_a_hole
  * - return (rest - not_a_hole)
- * 
- * TODO: the output is not necessarily a bounded polyhedron!
- * we can add the rays from the rest polyhedra to the result...
- * but the rays have to be removed from rest before the scan (bound rest with
- * those rays -> vertices), else the scan is not bounded!
  */
 static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
 {
@@ -2157,19 +2329,15 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
     R->next = NULL;  // unlink next
 
     // Check if R is bounded. If it is not, just make it a bounded box
-    // (add the lines/rays to the vertices to get vertices)
+    // (add the lines/rays to the vertices to get new vertices)
     // the holes are necessarily regular in a not bounded piece of R.
     // keep memory of the lines/rays in R to add them back to the solution
-    if(value_zero_p(R->Ray[0][0])
-    || value_zero_p(R->Ray[0][R->Dimension + 1]))
-      bounded_rest = bound_polyhedron(R);
-    else
-      bounded_rest = R;
-  
+    bounded_rest = bound_polyhedron(R);
+
     // rest_AP = bounded_rest dimension expanded to A->P
     rest_AP = bounded_rest;
     for(int d = R->Dimension + 1; d <= A->P->Dimension; d++) {
-      tmp = domain_insert_dim(rest_AP, d);
+      tmp = domain_insert_dim(rest_AP, d, 0); // multiple/0
       if(rest_AP != bounded_rest)
         Domain_Free(rest_AP);
       rest_AP = tmp;
@@ -2188,11 +2356,11 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
 
       // prepare to scan the points of rest
       scanR = Polyhedron_Scan(inter, U0, MAXNOOFRAYS);
-  
+
       // init vector to (0...0 1)
       Vector_Set(v->p, v->Size-1, 0);
       value_set_si(v->p[v->Size-1], 1);
-  
+
       // scan
       #ifdef HOLES_DEBUG
       fprintf(stderr, "------- Calling Scan_Rest -------\n");
@@ -2209,7 +2377,7 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
         new_not_a_hole = AddPolyToDomain(tmp, new_not_a_hole);
         tmp = next;
       }
-  
+
       Domain_Free(scanR);
       Polyhedron_Free(inter);
       inter = nextI;
@@ -2223,20 +2391,20 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
 
     // if R was unbounded
     if(bounded_rest != R) {
-      int num_lr;
       Matrix *lines_rays;
       Domain_Free(bounded_rest);
 
       if(new_not_a_hole) {
         // add lines/rays of rest to new_not_a_hole
-        for(num_lr = 0; num_lr < R->NbRays; num_lr++) {
-          if(value_notzero_p(R->Ray[num_lr][0])
-            && value_notzero_p(R->Ray[num_lr][R->Dimension + 1])) {
-            break;
-          }
+        lines_rays = Matrix_Alloc(R->NbRays, R->Dimension + 2);
+        lines_rays->NbRows = 0;
+        for(int r = 0; r < R->NbRays; r++) {
+          if(value_zero_p(R->Ray[r][0])
+            || value_zero_p(R->Ray[r][R->Dimension + 1])) {
+              Vector_Copy(R->Ray[0], lines_rays->p[lines_rays->NbRows], (R->Dimension + 2));
+              lines_rays->NbRows++;
+            }
         }
-        lines_rays = Matrix_Alloc(num_lr, R->Dimension + 2);
-        Vector_Copy(R->Ray[0], lines_rays->p[0], num_lr * (R->Dimension + 2));
         tmp = DomainAddRays(new_not_a_hole, lines_rays, MAXNOOFRAYS);
         Domain_Free(new_not_a_hole);
         new_not_a_hole = tmp;
@@ -2293,7 +2461,7 @@ static Polyhedron *sLBLCompute_holes(LBL *A, Polyhedron **pExact)
 /*
  * Try to eliminate the zero columns of lattice A->Lat through
  * projection.
- * 
+ *
  * Successive (along each zero-dimension)
  *   elimination if exact shadow == dark shadow
  * Restart again from last column after a successful column elimination.
@@ -2433,7 +2601,7 @@ static void sLBL_Lat_Normalize(LBL *A)
     #ifdef CANONICAL_DEBUG
       fprintf(stderr, "A is HNF.\n");
     #endif
-  }  
+  }
 } /* sLBL_Lat_Normalize */
 
 
@@ -2513,9 +2681,10 @@ static void LBL_Remove_Empty(LBL *A)
 
 /*
  * check for an integer solution of a polyhedron scan, return True if found
- * else, return False
- * 
- * scan P, and return True as soon as an integer point is found.
+ * else, return False.
+ * scan should be a bounded polyhedron scan.
+ *
+ * early exit: return True as soon as an integer point is found.
  * The found integer solution is in the array val.
  */
 static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
@@ -2576,10 +2745,12 @@ static Bool polyhedron_int_solution(Polyhedron *scan, Value *val, int position)
 /*
  * Remove polyhedra that have no integer solutions from a domain.
  * Return a polyhedral domain, reusing the memory of D (do not free)
- * 
- * Note: DomainConstraintSimplify() has been called already by
- *       canonicalLBL, before entering this function. So if there is a line
- *       or ray in one of these polyhedra then it has an integer solution.
+ *
+ * Note: DomainConstraintSimplify() should have been called already before
+ * entering this function.
+ *
+ * Careful with unbounded polyhedra in this domain, we compute a bounding box
+ * for them
  */
 static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 {
@@ -2590,12 +2761,16 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
   fprintf(stderr, "--- Entering Domain_Remove_Integer_Empty\n");
   #endif
 
+  // this should always be done already:
+  // D = DomainConstraintSimplify(D, MAXNOOFRAYS);
+
   // scan each polyhedron, if no integer solution eliminate it
   // (do not copy to result, free memory)
   while(D) {
     Polyhedron *scan = NULL, *next;
     int ray;
     Bool int_solution_found = False;
+    int unbounded = 0;
 
     next = D->next;
     D->next = NULL;
@@ -2606,48 +2781,85 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
       continue;
     }
     #ifdef SIMPLIFY_DEBUG
-    fprintf(stderr, "Checking integer emptyness of: ");
+    fprintf(stderr, "Checking integer emptiness of: ");
     Polyhedron_Print(stderr, P_VALUE_FMT, D);
     #endif
 
-    // If one of the vertices is integer or if there is a ray/line,
-    // it's not empty
     for(ray = 0; ray < D->NbRays; ray++) {
-      if(value_zero_p(D->Ray[ray][0])                || // line, or
-         value_zero_p(D->Ray[ray][D->Dimension + 1]) || // ray, or
-         value_one_p(D->Ray[ray][D->Dimension + 1]))    // integer vertex
-      {
-        int_solution_found = True;
+      // check if there's an integer vertex
+      if(value_notzero_p(D->Ray[ray][0]) &&
+         value_one_p(D->Ray[ray][D->Dimension + 1])) {
+          // One of the vertices is integer then it's not empty, algo done
+          int_solution_found = True;
         break;
+      }
+      // check if there's a line or ray:
+      if(value_zero_p(D->Ray[ray][0]) ||
+         value_zero_p(D->Ray[ray][D->Dimension + 1])) {
+        unbounded = 1;
       }
     }
 
-    // Here: could check if dark shadow to 0-dim space is non empty.
+    // Here, check if dark shadow to 0-dim space is non empty.
+    Polyhedron *dark = D;
+    // compute dark shadow (source, no need to project) along every dimensions:
+    for(int d = 0; d < D->Dimension; d++) {
+      Polyhedron *temp = polyhedron_dark_source(dark, d);
+      if(temp) {
+        if(dark != D)
+          Polyhedron_Free(dark);
+        dark = temp;
+      }
+    }
+    // is the dark shadow empty ?
+    if(! emptyQ(dark)) {
+      #ifdef SIMPLIFY_DEBUG
+      fprintf(stderr, "The dark shadow to 0-dim is not empty! dark = ");
+      Polyhedron_Print(stderr, P_VALUE_FMT, dark);
+      fprintf(stderr, "Integer solution found = True");
+      #endif
+      int_solution_found = True;
+    }
+    if(dark != D) {
+      Polyhedron_Free(dark);
+    }
+
 
     if(!int_solution_found) {
       // if there is no obvious integer solution, try a scan.
 
+      // but first, bound the polyhedron if it was not.
+      Polyhedron *Dbounded = (unbounded)?bound_polyhedron(D):D;
+      #ifdef SIMPLIFY_DEBUG
+      if(unbounded) {
+        fprintf(stderr, "bounded D= ");
+        Polyhedron_Print(stderr, P_VALUE_FMT, Dbounded);
+      }
+      #endif
+
       // allocate memory if not done yet
       if(!vec)
       {
-        vec = Vector_Alloc(D->Dimension + 2);
-        Vector_Set(vec->p, 0, D->Dimension + 1);
-        value_set_si(vec->p[D->Dimension + 1], 1);
+        vec = Vector_Alloc(Dbounded->Dimension + 2);
+        Vector_Set(vec->p, 0, Dbounded->Dimension + 1);
+        value_set_si(vec->p[Dbounded->Dimension + 1], 1);
         universe = Universe_Polyhedron(0);
       }
 
-      scan = Polyhedron_Scan(D, universe, MAXNOOFRAYS);
+      scan = Polyhedron_Scan(Dbounded, universe, MAXNOOFRAYS);
       #ifdef SIMPLIFY_DEBUG
       fprintf(stderr, " scan = ");
       Polyhedron_Print(stderr, P_VALUE_FMT, scan);
       #endif
       int_solution_found = polyhedron_int_solution(scan, vec->p, 1);
 
+      if(unbounded)
+        Polyhedron_Free(Dbounded);
       Domain_Free(scan);
 
       // If found, then vec->p contains an integer solution of D,
       // use it to simplify D
-      // -> at least set integer bound on first dimension
+      // -> at least we can set an integer bound on its first dimension
       // -> or can we force the vertex to be in D?
       //    splitting the polyhedron in parts? -> can be very complex in
       //    higher dimensions, don't!
@@ -2683,9 +2895,10 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
     }
 
     D = next;
-  }
+  } // while(D)
+
   if(vec) {
-    // free memory used for scan, if allocated
+    // free memory used for scan, if allocated (vec and universe together)
     Polyhedron_Free(universe);
     Vector_Free(vec);
   }
@@ -2698,19 +2911,25 @@ static Polyhedron *Domain_Remove_Integer_Empty(Polyhedron *D)
 }
 
 /*
- * Return a new domain that is D expanded such that the dimension 'move' is
- * moved to a new dimension (right) and the existing one is left empty
- * (add a line along this dimension)
+ * Return a newly allocated domain that is D expanded by one dimension, such
+ * that the dimension 'move' is moved to a new dimension and its position is
+ * left empty (add a line along this dimension)
  * 1 <= move <= D->Dimension + 1.
- * 
+ *
+ * If flag = 1: all dimensions above move are shifted by one to the right
+ * If flag = 0: the existing dimension is moved last (right before constant)
+ *
  * In D we have constraints/rays:
- * flag d_1 d_2 ... move-1 move move+1 ... d_dim constant
- * the function will build:
- * flag d_1 d_2 ... move-1  0   move+1 ... d_dim move constant
- * 
+ *      0   1   2      move-1  |move|  move+1       dim  constant
+ *    flag
+ * the function called with flag=0 will build:
+ *    flag d_1 d_2 ... move-1  |0|   move+1 ... d_dim |move| constant
+ * the function called with flag=1 will build:
+ *    flag d_1 d_2 ... move-1  |0|  |move  move+1 ... d_dim| constant
+ *
  * if move == D->Dimension + 1, this function will just just add a dimension.
-*/
-static Polyhedron *domain_insert_dim(Polyhedron *D, int move)
+ */
+static Polyhedron *domain_insert_dim(Polyhedron *D, int move, int flag)
 {
   Polyhedron *R = NULL; // result
   #ifdef SIMPLIFY2_DEBUG
@@ -2731,9 +2950,19 @@ static Polyhedron *domain_insert_dim(Polyhedron *D, int move)
       value_assign(new->Constraint[c][new->Dimension + 1],
         p->Constraint[c][p->Dimension + 1]);
       // new dim and move
-      value_assign(new->Constraint[c][new->Dimension], p->Constraint[c][move]);
-      value_set_si(new->Constraint[c][move], 0);
+      if(flag) {
+        // shift all
+        for(int i = new->Dimension; i > move; i--) {
+          value_assign(new->Constraint[c][i], p->Constraint[c][i - 1]);
+        }
       }
+      else {
+        // just move the value last
+        value_assign(new->Constraint[c][new->Dimension],
+          p->Constraint[c][move]);
+      }
+      value_set_si(new->Constraint[c][move], 0);
+    }
     // add new line (0 0 ... 0 1 0 ... 0) in new->Ray[0]
     Vector_Set(new->Ray[0], 0, new->Dimension + 2);
     value_set_si(new->Ray[0][move], 1);
@@ -2744,21 +2973,166 @@ static Polyhedron *domain_insert_dim(Polyhedron *D, int move)
       // constant
       value_assign(new->Ray[r+1][new->Dimension + 1],
         p->Ray[r][p->Dimension + 1]);
+
       // new dim and move
-      value_assign(new->Ray[r+1][new->Dimension], p->Ray[r][move]);
+      if(flag) {
+        // shift all right
+        for(int i = new->Dimension; i > move; i--) {
+          value_assign(new->Ray[r+1][i], p->Ray[r][i - 1]);
+        }
+      }
+      else {
+        // just move it last
+        value_assign(new->Ray[r+1][new->Dimension], p->Ray[r][move]);
+      }
       value_set_si(new->Ray[r+1][move], 0);
     }
     // link new to result
     new->next = R;
     R = new;
   }
-  #ifdef SIMPLIFY2_DEBUG
+  // #ifdef SIMPLIFY2_DEBUG
   // fprintf(stderr, "Exiting domain_insert_dim. Result = ");
   // Polyhedron_Print(stderr, P_VALUE_FMT, R);
-  #endif
+  // #endif
 
   return(R);
 } /* domain_insert_dim */
+
+
+/*
+Align A->Lat to ref (the pivots and the zero columns).
+Add dimensions to A->P to be consistent with the new A->Lat.
+
+Return the number of pivots, and set the array of pivot positions.
+
+Example:
+A->Lat:
+3 2
+  0   0   0   3
+  1   0   0   0
+  0   0   0   1
+nb_pivots = 1, pivot_pos = {1}
+ref:
+3 3
+  3   0   0   0
+  0   1   0   0
+  0   0   0   1
+nb_pivots = 2, pivot_pos = {0, 1}
+
+-> need lattice:
+  0   0   0   0   0   3
+  0   1   0   0   0   0
+  0   0   0   0   0   1
+              ^ from Lat
+          ^from ref
+  ^ from missing pivot
+  -------        ref starts at first column.
+    --   ----  A->Lat is sparse (need to extend and copy the right columns)
+
+Start building the matrix of the right size with zeros on the right:
+  0   0   0   3   0   0
+  1   0   0   0   0   0
+  0   0   0   1   0   0
+then exchange the constant column:
+  0   0   0   0   0   3
+  1   0   0   0   0   0
+  0   0   0   0   0   1
+then check if pivot in right position, for all pivots of ref:
+- first one is in column 1 (row 2 = ref_pivot[1])
+  last pivot of L is in column 0, same row. -> exchange col 0 and col 1.
+
+from pypolylib import LBL
+a = LBL("{(3, j) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}"); b = LBL("{(3i, j) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}"); (a+b).zdomain()
+
+  */
+// #define ALIGN_DEBUG 1
+int Lattice_Align_Pivots(LBL *A, Matrix *ref, int *ref_pivot_pos)
+{
+  #ifdef ALIGN_DEBUG
+  fprintf(stderr, "Entering Lattice_Align_Pivots. A->Lat = ");
+  Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
+  fprintf(stderr, "ref = ");
+  Matrix_Print(stderr, P_VALUE_FMT, ref);
+  #endif
+
+  Matrix *L = A->Lat;
+  int refpp_alloc[ref->NbColumns];
+  if(!ref_pivot_pos) {
+    ref_pivot_pos = refpp_alloc;
+  }
+
+  // get the number of pivots in L and in ref:
+  int L_pivot_pos[L->NbColumns];
+  int ref_num_pivots = get_pivots(ref, ref_pivot_pos);
+  int L_num_pivots = get_pivots(L, L_pivot_pos);
+  // zero columns = (NbColumns-1) - num_pivots.
+  int L_zeros = L->NbColumns - 1 - L_num_pivots;
+  int L_init_NbColumns = L->NbColumns; // initial Nb Columns of L
+
+  #ifdef ALIGN_DEBUG
+  fprintf(stderr, "L_num_pivots = %d, L_zeros = %d, ref_num_pivots = %d\n",
+          L_num_pivots, L_zeros, ref_num_pivots);
+  #endif
+
+  // First set the right size of L:
+  Matrix_Extend_Cols(L, ref->NbColumns + L_zeros);
+
+  // Then move the columns to their correct position:
+  // last one (constant):
+  ExchangeColumns(L, L_init_NbColumns - 1, L->NbColumns - 1);
+
+  // move the columns of L to the right to fit the pivots in ref:
+  int col_displacement = ref_num_pivots - L_num_pivots; // initial displacement
+  for(int col = ref_num_pivots - 1; L_num_pivots > 0 && col_displacement > 0;
+    col--) {
+
+    // then shift:
+    if(ref_pivot_pos[col] == L_pivot_pos[L_num_pivots-1]) {
+      // this is a pivot present in both matrices, at the end of L.
+      // Exchange columns, then go to next pivot (keep displacement)
+      ExchangeColumns(L, col - col_displacement, col);
+      L_num_pivots--;
+    }
+    else {
+      // we moved one column without finding the right pivot in L,
+      // do not copy the column,
+      // decrease the displacement and keep same pivot of L at next step:
+      col_displacement--;
+    }
+  }
+  #ifdef ALIGN_DEBUG
+  fprintf(stderr, "Lattice_Align_Pivots. Done computing A->Lat = L = ");
+  Matrix_Print(stderr, P_VALUE_FMT, L);
+  fprintf(stderr, "Lattice_Align_Pivots. A->P was = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+  #endif
+
+  // Then insert dimensions in A->P:
+  // 1) insert dimensions for the missing pivots
+  for(int col = 0; col < ref_num_pivots; col++) {
+    if(value_zero_p(L->p[ref_pivot_pos[col]][col])) {
+      // this column was not in L
+      Polyhedron *newP;
+      newP = domain_insert_dim(A->P, col + 1, 1); // one/1
+      Domain_Free(A->P);
+      A->P = newP;
+    }
+  }
+  // 2) insert dimensions for the zero columns of ref
+  //  TODO: could be done in one step, need to rewrite/adapt _insert_dim
+  for(int col = ref_num_pivots; col < ref->NbColumns - 1 ; col++) {
+    Polyhedron *newP;
+    newP = domain_insert_dim(A->P, col + 1, 1); // multiple/1
+    Domain_Free(A->P);
+    A->P = newP;
+  }
+  #ifdef ALIGN_DEBUG
+  fprintf(stderr, "Exiting Lattice_Align_Pivots. New A->P = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
+  #endif
+  return ref_num_pivots;
+}
 
 
 /*
@@ -2768,25 +3142,28 @@ static Polyhedron *domain_insert_dim(Polyhedron *D, int move)
  * This function will expand the domain D to the required dimension and add
  * equalities, such that the same LBL points are spread (does the opposite
  * of remove_equalities)
- * In place: modifies A.
+ * In place: modifies A->Lat and A->P.
+ *
+ * NEW VERSION: just add the dimensions to the domain and the equalities
+ * such that ref z' = A->Lat z, new LBL is (ref_expanded, newdom)
+ * if ref and A->Lat have the exact same row ignore it.
  */
 static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
 {
   // A->Lat is included in ref, so we know that
-  // the pivots of A are multiple of the pivots of ref.
+  // the pivots of A are multiples of the pivots of ref (or 0).
 
-  // some examples:
+  // some examples [ref = tmp]:
   /*
   merging A = LBL: Dimension 2
 
   LATTICE:
   3 3
     6    0    4  -> 6i+0j+4,  transf. into:
-                    2i'+0j+0 and \exists i' such that 2i' = 6i+4
+                    2i'+0j+0: new variable i', \exists i' such that (2i' = 6i+4)
     0    1    0
     0    0    1
   [included in] tmp = LBL: Dimension 2
-
   LATTICE:
   3 3
     2    0    0
@@ -2799,10 +3176,10 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
   LATTICE:
   4 4
     2    0    0    0  -> 2i + 0j + 0, transf. into:
-                         i' + 0j + 0 and \exists i' with i'=2i
+                         i' + 0j + 0: \exists i' with (i'=2i)
     0    0    0    0
     1    3    0    1  -> i + 3j + 1, transf. into:
-                             1j'+ 0 -> \exists j' with j'=i+3j+1
+                             1j'+ 0: \exists j' with (j'=i+3j+1)
     0    0    0    1
 
   [included in] tmp = LBL: Dimension 3
@@ -2810,7 +3187,6 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
   LATTICE:
   4 4
     1    0    0    0
-
     0    0    0    0
     0    1    0    0
     0    0    0    1
@@ -2822,12 +3198,11 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
   4 4
     2    0    0    0  -> same i = i'
     5   15    0   10  -> 5i+15j+10 transf. into:
-                             5j'    \exists j', 5j'=5i+15j+10
-                                    and a domain transfo
+                             5j'  :  \exists j', 5j'=5i+15j+10
     13   15   66   54 -> 13i + 15j + 66k + 54 transf. into:
                            52i + 27j' + 66k' + 0 -> same k = k'
 
-                           (27j' = 27i + 3*27j + 54 so the line becomes
+                           (27j' = 27i + 3*27j + 54 so the row becomes
                             79i + 81j + 66k + 54, do modulo 66 =
                             13i + 15j + 66k + 54 that is correct.
                             )
@@ -2840,15 +3215,67 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
     0    5    0    0
     52   27   66    0
     0    0    0    1
+  */
 
+  // and a more difficult one:
+  /*
+  LATTICE:
+  4 4
+    2    0    0    0  -> same i = i'
+    5   15    0   10  -> 5i+15j+10 transf. into:
+                             5j'    \exists j', 5j'=5i+15j+10
+                                    and a domain transfo
+    13   15   66   54 -> 13i + 15j + 66k + 54 transf. into:
+                         19i' + 27j' + 33k'
+                        \exist k' such that -(13i+15j+66k+54) + (19i_ + 27j' + 33k') = 0
+                        => 27j' + 33k' + 6(=19-13)i - 15j - 66k - 54 = 0
+    0    0    0    1
+
+  [included in] tmp = LBL: Dimension 3
+  LATTICE:
+  4 4
+    2    0    0    0
+    0    5    0    0
+   19   27   33    0
+    0    0    0    1
+
+  iter on pivots, with domain evolving like:
+  0/ keep (i = i')
+  1/ add_dim0 j' + Eq: 5j' - (5i+15j+0k+10) = 0
+  2/ add_dim1 k' + Eq: 19i_ + 27j' + 33k' - (13i_+15j+66k+54) = 0
+  -> can keep iff same pivot coef
+
+  GENERAL ALGORITHM:
+  1) align pivots to same diagonal
+  2) iterate on pivots; if a pivot is not the same in L and ref:
+  -> if non-zero pivot move the variable in a new dimension at the end of L
+     and the polyhedron
+  -> add equality to the polyhedron (ref z' - L z = 0)
+  -> finally replace the row of L by the one of ref        ------> NO???
+
+
+  Python test for the previous example:
+  from pypolylib import LBL
+  a = LBL("{(2i, 5i+15j+10, 13i+15j+66k+54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}")
+  b = LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}")
+  a+b
+  >>> LBL("{(2i, 5i+15j+10, 13i+15j+66k+54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}") + \
+  >>> LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}")
+  (a+b).zdomain()
+  >>> LBL("{(2i, 5j, 19i+27j+33k) | i >= 0, i <= 10, j >= 0, j <= 10, -i+k >= 0, i-k + 4 >= 0}") + \
+  >>> LBL("{(2i, 80i+165j+160, 55i+33j+66k+6) | 3i+7j-k + 18 >= 0, -3i-7j+k - 8 >= 0, i >= 0, i <= 10, 5i+11j + 10 >= 0, -5i-11j >= 0}")
+  (WRONG!)
+
+    Python test more difficult case:
+  a = LBL("{(2i, 5i+15j+10, 54) | i >= 0, i <= 10, j >= 0, j <= 10, k >= 0, k <= 10}")
   */
 
   // dimension reduction:
   /*
   LATTICE:
   3 2
-    0    3  -> add column (0 0 0)^T and add new dimension with equality {3i=3}
-    1    0                              (same procedure as above!)
+    0    3  -> add column (0 0 0)^T first and add new dimension with
+    1    0                       equality {3i'=3} (same procedure as above!)
     0    1
   [included in] tmp = LBL: Dimension 2
   LATTICE:
@@ -2857,153 +3284,132 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
     0    1    0
     0    0    1
   */
+
+  // what if there are zero columns on the right... uf:
+  /*
+  L LATTICE:
+  3 2
+    0  0  0  3  -> add column (0 0 0)^T first
+    1  0  0  0
+    0  0  0  1
+  nb_pivots = 1, pivot_pos = {1}
+  [included in] tmp = LBL: Dimension 2
+  ref LATTICE:
+  3 3
+    3    0    0   0
+    0    1    0   0
+    0    0    0   1
+  nb_pivots = 2, pivot_pos = {0, 1}
+
+  -> need lattice:
+    0  0  0  0  0  3
+    0  1  0  0  0  0
+    0  0  0  0  0  1
+             ^ from Lat
+          ^from ref
+    ^ from missing pivot
+    -------        ref is always full from first column.
+       --  ----  A->Lat is sparse (need to extend and copy the right columns)
+  -> plus the extra columns to add equalities (after)
+  */
   // A included in ref
-  // the pivot of A->Lat is a multiple of the pivot of ref (if exists)
 
-  // search the pivot in ref, it's not necessarily the same columns than
-  // A->Lat since nbcolumns(A->Lat) can be different than nbcolumns(ref)
-
-  int nb_added_dims = 0;
-  Matrix *L = A->Lat;
+  Matrix *new_equality = NULL;
+  int nb_pivots, ref_pivot_pos[ref->NbColumns];
   #ifdef SIMPLIFY2_DEBUG
-  fprintf(stderr, "Entering sLBLMake_lattice_equal_to\n");
+  fprintf(stderr, "Entering sLBLMake_lattice_equal_to()\n");
   #endif
 
-  for(int col = 0; col < ref->NbColumns - 1; col++) {
-    int row;
-    Polyhedron *expand, *new;
-
-    // search pivot of column col
-    for(row = 0; row < ref->NbRows ; row++) {
-      if(value_notzero_p(ref->p[row][col])) {
-        break;
-      }
-    }
-    if(row == ref->NbRows) {
-      // no more pivots (zero column), exit the loop.
-      break;
-    }
-
-    // no corresponding pivot in L!
-    if(col == L->NbColumns - 1 || value_zero_p(L->p[row][col])) {
-      // need to add a column in L
-      nb_added_dims--;
-
-      Matrix *newL;
-      newL = Matrix_Alloc(L->NbRows, L->NbColumns + 1);
-      for(int r = 0; r < L->NbRows; r++) {
-        // column number col is just a zero column
-        Vector_Copy(L->p[r], newL->p[r], col); // 0 to col-1
-        value_set_si(newL->p[r][col], 0);      // col
-        Vector_Copy(L->p[r] + col, newL->p[r] + col + 1, L->NbColumns - col);
-      }
-      Matrix_Free(A->Lat);
-      A->Lat = newL;
-      L = newL;
-    }
-    // now pivot is in position [row][col] of both matrices.
-    // if same row, just ignore, goto next
-    else {
-      int c;
-      for(c = 0; c <= col ; c++) {
-        if(value_ne(L->p[row][c], ref->p[row][c])) {
-          break;
-        }
-      }
-      if(c == col + 1) {
-        // all values are equal
-        // if constant is equal too, continue to next pivot
-        if(value_eq(L->p[row][L->NbColumns-1], ref->p[row][ref->NbColumns-1]))
-        {
-          continue;
-        }
-      }
-    }
-
-    nb_added_dims++;
-    // update A->P (if not NULL)
-    // expand one dimension of the domain (the pivot one)
-    // and add equality L[row] = ref[row]
-    // the original dimension should be moved to the right (eliminated) column,
-    // such that the new lattice is just ref
-    if(A->P)
-    {
-      Matrix *new_equality = Matrix_Alloc(1, A->P->Dimension + 2 + 1);
-
-      expand = domain_insert_dim(A->P, col + 1);
-  
-      // build equality L[row] = ref[row],
-      // (the dimension col+1 of L moved to the new dimension)
-      Vector_Set(new_equality->p[0], 0, new_equality->NbColumns);
-      // (1) copy linear part of L:
-      Vector_Copy(L->p[row], new_equality->p[0] + 1, L->NbColumns - 1);
-      // constant
-      value_assign(new_equality->p[0][new_equality->NbColumns-1],
-        L->p[row][L->NbColumns-1]);
-      // move the pivot to the new dimension
-      value_assign(new_equality->p[0][new_equality->NbColumns-2],
-        new_equality->p[0][col+1]);
-      // and replace it with 0.
-      value_set_si(new_equality->p[0][col+1], 0);
-      // (2) substract linear part of ref[row] from the equality:
-      for(int c = 0; c < ref->NbColumns-1 && c < new_equality->NbColumns-1; c++) {
-        value_substract(new_equality->p[0][c+1], new_equality->p[0][c+1],
-          ref->p[row][c]);
-      }
-      // substract constant:
-      value_substract(new_equality->p[0][new_equality->NbColumns-1],
-        new_equality->p[0][new_equality->NbColumns-1],
-        ref->p[row][ref->NbColumns-1]);
-      #ifdef SIMPLIFY2_DEBUG
-      fprintf(stderr, "Adding equality: ");
-      Matrix_Print(stderr, P_VALUE_FMT, new_equality);
-      #endif
-  
-      // build the final domain and update A->P
-      new = DomainAddConstraints(expand, new_equality, MAXNOOFRAYS);
-      // Domain_Free(expand);
-      Domain_Free(A->P);
-      A->P = new;
-      Matrix_Free(new_equality);
-    }
-  }
-
-  // update A->Lat:
-  // replace Lat with ref
-  // and add zero columns for the extra dimensions
-  Matrix *Lat;
-  // Lat = Matrix_Alloc(A->Lat->NbRows, A->P->Dimension + 1);
-  // new nbcolumns = nbcolumns of A->Lat + number of added dimensions
-  Lat = Matrix_Alloc(A->Lat->NbRows, A->Lat->NbColumns + nb_added_dims);
-  for(int r = 0; r < Lat->NbRows; r++) {
-    if(Lat->NbColumns > ref->NbColumns) {
-      // linear part:
-      Vector_Copy(ref->p[r], Lat->p[r], ref->NbColumns - 1);
-      // add zero columns:
-      Vector_Set(Lat->p[r] + ref->NbColumns - 1, 0,
-        Lat->NbColumns - ref->NbColumns);
-    }
-    else {
-      // in case ref has more zero columns than the new Lat:
-      Vector_Copy(ref->p[r], Lat->p[r], Lat->NbColumns - 1);
-    }
-    // constant:
-    value_assign(Lat->p[r][Lat->NbColumns - 1], ref->p[r][ref->NbColumns - 1]);
-  }
-  Matrix_Free(A->Lat);
-  A->Lat = Lat;
-  #ifdef SIMPLIFY2_DEBUG
-  fprintf(stderr, "New Lat: ");
-  Matrix_Print(stderr, P_VALUE_FMT, A->Lat);
-  #endif
-
-  // just normalize lattice (+update domain) without removing equalities
-  sLBL_Lat_Normalize(A);
+  // Change A->L to be aligned with ref
+  nb_pivots = Lattice_Align_Pivots(A, ref, ref_pivot_pos);
 
   #ifdef SIMPLIFY2_DEBUG
-  fprintf(stderr, "Exit sLBLMake_lattice_equal_to. A = ");
+  fprintf(stderr, "Aligned A = ");
   sLBLPrint(stderr, P_VALUE_FMT, A);
   #endif
+
+  // Main loop on pivots
+  for(int col = 0; col < nb_pivots; col++) {
+    Matrix *L = A->Lat;
+    Polyhedron *newP = A->P;
+
+    // get the pivot row (!= 0 in ref)
+    int row = ref_pivot_pos[col];
+
+    // check pivot:
+    if(value_eq(ref->p[row][col], L->p[row][col])) {
+        // same pivot, or missing a column in L:
+        // just ignore and continue
+      continue;
+    }
+
+    // Arriving here if there are different pivots in L and in ref.
+    #ifdef SIMPLIFY2_DEBUG
+    fprintf(stderr, "setting same pivots in A and ref. row = %d\n", row);
+    #endif
+    // if the pivot of L is 0 we already added a dimension
+    if(!value_zero_p(L->p[row][col])) {
+      // need to add a dimension: update A->L and A->P accordingly.
+      Matrix_Extend_Cols(L, L->NbColumns + 1);
+      // Then move this column rightmost (before the constant),
+      for(int i = 0; i < ref->NbRows; i++) {
+        value_swap(L->p[i][L->NbColumns - 1], L->p[i][L->NbColumns - 2]);
+                                              // shift constant to the right
+        value_swap(L->p[i][L->NbColumns - 2], L->p[i][col]);
+                                              // move col at the end
+      }
+      // and add a dimension to P
+      newP = domain_insert_dim(A->P, col + 1, 0); // one/0
+    }
+
+    // And now add equality: ref[row] z' = L[row] z
+    // -> ref[row] z' - L[row] z = 0
+    if(!new_equality) {
+      new_equality = Matrix_Alloc(1, L->NbColumns * 2 + 1); // max size
+    }
+    new_equality->NbColumns = newP->Dimension + 2;
+    Vector_Set(new_equality->p[0], 0, newP->Dimension + 2);  // zero row
+    // add ref (careful, ref can be tighter than L)
+    for(int i = 0; i < ref->NbColumns - 1; i++)
+      value_assign(new_equality->p[0][i+1], ref->p[row][i]);
+    // constant
+    value_assign(new_equality->p[0][new_equality->NbColumns-1],
+                 ref->p[row][ref->NbColumns-1]);
+    // substract L (same size as new_eq)
+    for(int i = 0; i < L->NbColumns; i++)
+      value_substract(new_equality->p[0][i+1],
+                      new_equality->p[0][i+1], L->p[row][i]);
+    #ifdef SIMPLIFY2_DEBUG
+    fprintf(stderr, "Adding equality: ");
+    Matrix_Print(stderr, P_VALUE_FMT, new_equality);
+    #endif
+
+    // add equality to newP, replace A->P.
+    if(newP != A->P) {
+      Domain_Free(A->P);
+    }
+    A->P = DomainAddConstraints(newP, new_equality, MAXNOOFRAYS);
+    Domain_Free(newP);
+
+    // Finally, update the row of L (copy ref, careful to size)
+    for(int i = 0; i < ref->NbColumns - 1; i++)
+      value_assign(A->Lat->p[row][i], ref->p[row][i]);
+    for(int i = ref->NbColumns - 1; i < A->Lat->NbColumns - 1; i++)
+      value_set_si(A->Lat->p[row][i], 0);
+    value_assign(A->Lat->p[row][A->Lat->NbColumns - 1],
+                 ref->p[row][ref->NbColumns - 1]);
+  }
+
+  // cleanup
+  if(new_equality) {
+    Matrix_Free(new_equality);
+  }
+
+  #ifdef SIMPLIFY2_DEBUG
+  fprintf(stderr, "Exiting sLBLMake_lattice_equal_to(). A = ");
+  sLBLPrint(stderr, P_VALUE_FMT, A);
+  #endif
+  return;
 } /* sLBLMake_lattice_equal_to */
 
 
@@ -3019,7 +3425,7 @@ static void sLBLMake_lattice_equal_to(LBL *A, Matrix *ref)
  * dark shadow = exact shadow
  *
  * USAGE: in place, modifies A itself.
- * 
+ *
  * This function can leave an arbitrary number of empty LBLs in the list
  * (will be removed later on).
  * Can modify A->next to insert new sub-LBLs.
@@ -3033,13 +3439,12 @@ static void sLBLCanonical(LBL *A)
     fprintf(stderr, "--------- Input P: ");
     Polyhedron_Print(stderr, P_VALUE_FMT, A->P);
   #endif
-  
-  if(!A->P) {
-    return;
-  }
-  if (A->P->Dimension+1 != A->Lat->NbColumns) {
-    errormsg1("sLBLCanonical", "dimincomp", "incompatible dimensions");
-    return;
+
+  if (A->P) {
+    if( A->P->Dimension+1 != A->Lat->NbColumns) {
+      errormsg1("sLBLCanonical", "dimincomp", "incompatible dimensions");
+      return;
+    }
   }
 
   // ************************
@@ -3050,17 +3455,24 @@ static void sLBLCanonical(LBL *A)
   sLBL_Lat_Normalize(A);
 
   // simplify non-integer constraints such that they intersect at least one
-  // integer point (to avoid infinite integer-empty polyhedra and obviously
-  // empty polyhedra)
+  // integer point (to avoid some infinite integer-empty polyhedra and
+  // obviously empty polyhedra)
   A->P = DomainConstraintSimplify(A->P, MAXNOOFRAYS);
 
-  // check emptyness (A->P = NULL or rational empty)
-  if(!A->P) {
-    return;
-  }
-  if(emptyQ(A->P)) {
+  // check emptiness
+  if(!A->P || emptyQ(A->P)) {
     Domain_Free(A->P);
     A->P = NULL;
+    // set the lattice to a single empty column
+    int dimension = A->Lat->NbRows - 1;
+    if(A->Lat->NbColumns > 1) {
+      Matrix_Free(A->Lat);
+      A->Lat = Matrix_Alloc(dimension + 1, 1);
+      for(int j = 0 ; j < dimension; j++) {
+        value_set_si(A->Lat->p[0][j], 0);
+      }
+      value_set_si(A->Lat->p[0][dimension], 1);
+    }
     return;
   }
 
@@ -3075,12 +3487,6 @@ static void sLBLCanonical(LBL *A)
   if (A->P->Dimension > 0 && A->P->NbEq != 0) {
     // Remove the equalities from A->P
     sLBLSimplify_equalities(A, Equalities);
-
-    // some equalities were eliminated. Do we need to start again from scratch?
-    // Lat and P changed, but Lat is kept in HNF, so no.
-    // Matrix_Free(Equalities);
-    // sLBLCanonical(A);
-    // return;
   }
   Matrix_Free(Equalities);
   if(!A->P) {
@@ -3095,7 +3501,7 @@ static void sLBLCanonical(LBL *A)
   // Remove the columns of zeros from A->Lat if possible:
   // do the projection along the zero-dimensions,
   // eliminate only if dark shadow \in exact shadow
-  // (do not convert into ZDomains/check for integer-emptyness of polyhedra)
+  // (do not convert into ZDomains/check for integer-emptiness of polyhedra)
   sLBL_Simplify_Zero_Dimensions(A);
 
   return;
@@ -3107,7 +3513,7 @@ static void sLBLCanonical(LBL *A)
  *  - all lattices in HNF, and
  *  - no equalities in all polyhedral domains.
  * Performs the operation IN PLACE (modifies A)
- * 
+ *
  * USAGE NOTICE:
  * If A is a real LBL and not a Z-polyhedron, there will remain zero-columns
  * on the right of the lattice matrice(s).
@@ -3133,7 +3539,7 @@ void CanonicalLBL(LBL *A)
   fprintf(stderr, "sLBLCanonical and RemoveEmpty done.\nA =");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
-  
+
   // check if a lattice is present twice in A, and if it is, union the second
   // polyhedral domain with the first one and remove the second sLBL
   for(; A; A = A->next)
@@ -3168,7 +3574,7 @@ void CanonicalLBL(LBL *A)
  * Transform a single LBL into a list of Z-domains
  *
  * Remove zero columns from the lattice, build a union of Z-polyhedra
- * 
+ *
  */
 static LBL *sLBL2ZDomain(LBL *A)
 {
@@ -3203,17 +3609,17 @@ static LBL *sLBL2ZDomain(LBL *A)
 
 /*
  * Build a union of Z-domains from a union of LBLs.
- * 
+ *
  * The resulting Z-domain union lattices do not contain any zero columns.
- * 
+ *
  * The result is proved to be finite, but can pretty easily explode in
  * complexity, for example with a very pointy initial LBL
  * -- take something based on (2^16 x - (2^16-1) y) for example.
  */
 LBL *LBL2ZDomain(LBL *A)
 {
-  LBL *Result = NULL;
-  for(LBL *Z = A; Z; Z = Z->next)
+  LBL *Result = sLBL2ZDomain(A);
+  for(LBL *Z = A->next; Z; Z = Z->next)
   {
     LBL *tmp;
     tmp = sLBL2ZDomain(Z);
@@ -3234,10 +3640,10 @@ LBL *LBL2ZDomain(LBL *A)
  */
 void LBLSimplifyEmpty(LBL *A)
 {
-  // just for testing, call simplify from simplifyEmpty:
-  #ifdef SIMPLIFY2_DEBUG
+  // just for testing, call simplify instead of simplifyEmpty:
+  #if defined(SIMPLIFY2_DEBUG) || defined(SIMPLIFY2_TEST_DEBUG)
   LBLSimplify(A);
-  #endif
+  #else
 
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     tmp->P = Domain_Remove_Integer_Empty(tmp->P);
@@ -3245,6 +3651,7 @@ void LBLSimplifyEmpty(LBL *A)
   LBL_Remove_Empty(A); // remove emptied LBLs from the list
 
   CanonicalLBL(A);
+  #endif
 } /* LBLSimplifyEmpty */
 
 /*
@@ -3252,30 +3659,27 @@ void LBLSimplifyEmpty(LBL *A)
  *
  * Algorithm:
  * Merge all the lattices that can be merged. Ideas... :
- *    a- merge same lattices, ignore zero columns (extend dimension of P) -> easy.
- *    b- check lattice inclusion and merge?
- *       (involves a-) but how to merge?
- *         only if poly included too?
- *         or separate the part that is not included?
- *         -> or at least their hulls should intersect?
+ *    a- check lattice inclusion and merge
  *       if merge, transform the lattices to be equal:
  *       add equalities to P in order to generate the original points
  *         of L x | x \in P
- *    c- sort lattices by linear part...
+ *       -> done.
+ *    b- sort lattices by linear part...
  *            and try to merge same ones..., when domains overlap?
  *             or split domains such that a part of it does overlap?
- *       example: can (2i+0) be merged with (2i+1)? -> yes if P is same (but this is unlikely)
- * let A = im((2i+0),P), and B = im((2i+1),P') -> if A = B then (i+0), preim((i+0), A) -> Z-pol only
+ *       example: can (2i+0) be merged with (2i+1)? -> yes if P is same
+ *       (is this unlikely?)
+ * let A = im((2i+0),P), and B = im((2i+1),P') -> if A = B then (i+0),
+ * preim((i+0), A) -> Z-pol only
 
-  another idea: make all lattices = (Id 0), adding existential variables in the domains to generate the right lbls
-  then merge everything together
+  another idea to fuse a+b: make all lattices = (Id 0), adding existential
+  variables in the domains to generate the right lbls then merge everything
+  together
   -> can be pretty complex..., but obviously covers all cases!
 
-  lattice inclusion test covers this case too, if the lattice Id is in the LBL list
-  and the hulls intersect.
-
  * Then:
- * - fuse/simplify all adjacent polyhedral domains (complement of simplify of complement)
+ * - fuse/simplify all adjacent polyhedral domains (complement of simplify of
+ *   complement?)
  * - CanonicalLBL to remove equalities
  */
 void LBLSimplify(LBL *A)
@@ -3284,9 +3688,8 @@ void LBLSimplify(LBL *A)
   if(isEmptyLBL(A))
     return;
 
-  // TESTING, add lattice Id as first lattice in LBL A (with an empty domain).
-  // this ensures that all lattices are merged together!
-
+  // // TESTING, add lattice Id as first lattice in LBL A (with an empty domain).
+  // // this ensures that all lattices are merged together!
   // LBL *first;
   // first = malloc(sizeof(LBL));
   // // copy A in first
@@ -3323,13 +3726,15 @@ void LBLSimplify(LBL *A)
         current->Lat = L;        current->P = P;
       }
       if(flag) {
+        Polyhedron *newP;
         #ifdef SIMPLIFY2_DEBUG
         fprintf(stderr, "merging current = ");
         sLBLPrint(stderr, P_VALUE_FMT, current);
         fprintf(stderr, "[included in] tmp = ");
         sLBLPrint(stderr, P_VALUE_FMT, tmp);
         #endif
-        if(flag == 1) {
+        // if(flag == 1)
+        {
           // make the lattice of current equal to the one of tmp
           // apart from zero columns
           // (current is included in tmp)
@@ -3337,34 +3742,23 @@ void LBLSimplify(LBL *A)
           sLBLMake_lattice_equal_to(current, tmp->Lat);
         }
 
-        // after this, merge the zero columns such that the two lattices are
-        // perfectly equal
-        // can require to swap dimensions to align same existential variables,
-        // or to increase dimension to take in all of them (lazy) <- do that
-
-        int current_nbzero, tmp_nbzero;
-        Polyhedron *newP;
-        Matrix *newL;
-        // expand domains current and tmp:
-        current_nbzero = LatCountZeroCols(current->Lat);
-        tmp_nbzero = LatCountZeroCols(tmp->Lat);
-        if(current->P) {
-          for(int i = 0; i < tmp_nbzero; i++) {
-            // add tmp_nbzero dimensions to current->P
-            newP = domain_insert_dim(current->P, current->P->Dimension + 1);
-            Domain_Free(current->P);
-            current->P = newP;
-          }
-        }
-        if(tmp->P) {
-          for(int i = 0; i < current_nbzero; i++) {
-            // add current_nbzero dimensions to tmp->P
-            assert(tmp->P);
-            newP = domain_insert_dim(tmp->P, tmp->P->Dimension + 1);
+        // after this, add dimensions to tmp such that the two lattices are
+        // perfectly equal.
+        if(tmp->Lat->NbColumns != current->Lat->NbColumns) {
+          int tmp_dim = tmp->Lat->NbColumns;
+          // add dimensions to tmp->P:
+          for(int i = tmp_dim ; i < current->Lat->NbColumns; i++) {
+            Polyhedron *newP;
+            newP = domain_insert_dim(tmp->P, i, 0); // multiple/0
             Domain_Free(tmp->P);
             tmp->P = newP;
-          }  
+          }
+          // zero columns to tmp->Lat:
+          Matrix_Extend_Cols(tmp->Lat, current->Lat->NbColumns);
+          // and move the constant:
+          ExchangeColumns(tmp->Lat, tmp_dim - 1, tmp->Lat->NbColumns - 1);
         }
+
 
         // merge current in tmp:
         // - update tmp->P
@@ -3372,30 +3766,16 @@ void LBLSimplify(LBL *A)
         Domain_Free(tmp->P);
         tmp->P = newP;
 
-        // - update tmp->Lat
-        newL = Matrix_Alloc(tmp->Lat->NbRows,
-          tmp->Lat->NbColumns + current_nbzero);
-        for(int r = 0; r < newL->NbRows; r++) {
-          // linear part
-          Vector_Copy(tmp->Lat->p[r], newL->p[r], tmp->Lat->NbColumns - 1);
-          // zeros
-          Vector_Set(newL->p[r] + tmp->Lat->NbColumns - 1, 0, current_nbzero);
-          // constant
-          value_assign(newL->p[r][newL->NbColumns - 1],
-            tmp->Lat->p[r][tmp->Lat->NbColumns - 1]);
-        }
-        Matrix_Free(tmp->Lat);
-        tmp->Lat = newL;
         #ifdef SIMPLIFY2_DEBUG
         fprintf(stderr, "[new merged] tmp = ");
         sLBLPrint(stderr, P_VALUE_FMT, tmp);
         #endif
 
         // remove current, update prec->next and current
-        Domain_Free(current->P);
-        Matrix_Free(current->Lat);
         prec->next = current->next;
-        free(current);
+        sLBLFree(current);
+
+        // go to next
         current = prec->next;
       }
       else {
@@ -3409,36 +3789,55 @@ void LBLSimplify(LBL *A)
   // what to do with them??
 
 
-  // THIS IS EASY BUT DOES NOT HELP :(
+  // This is easy, but does not help much.
   for(LBL *tmp = A; tmp; tmp = tmp->next) {
     tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
   }
+  LBL_Remove_Empty(A);
 
 
-  // // THIS IS TOO COMPLEX! -> ZDiff11 takes ages...
-  // Polyhedron *universe;
-  // universe = Universe_Polyhedron(A->P->Dimension);
+  // This is too complex!? -> ZDiff11 takes ages...
 
-  // for(LBL *tmp = A; tmp; tmp = tmp->next) {
-  //   Polyhedron *newP;
+  // Trying: complement/simplify/complement
+  Polyhedron *universe;
+  universe = Universe_Polyhedron(A->P->Dimension);
+  for(LBL *tmp = A; tmp; tmp = tmp->next) {
+    Polyhedron *newP;
 
-  //   // compute complement -> complement
-  //   // first complement
-  //   newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
-  //   Domain_Free(tmp->P);
-  //   tmp->P = newP;
-  
-  //   // disjoint of complement + simplify
-  //   // TOO COMPLEX:
-  //   // tmp->P = Disjoint_Domain(tmp->P, 0, MAXNOOFRAYS);
-  //   // tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
-  
-  //   // and complement + simplify:
-  //   newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
-  //   Domain_Free(tmp->P);
-  //   tmp->P = newP;
-  //   tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
-  // }
+    if(!tmp->P || tmp->P->Dimension == 0) {
+      continue;
+    }
+    #ifdef SIMPLIFY2_DEBUG
+    fprintf(stderr, "\n LBLSimplify: complement/complement. P = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, tmp->P);
+    #endif
+      // compute first complement
+    newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
+    Domain_Free(tmp->P);
+    tmp->P = newP;
+
+    // disjoint of complement
+    // TOO COMPLEX:
+    // tmp->P = Disjoint_Domain(tmp->P, 0, MAXNOOFRAYS);
+
+    tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
+    #ifdef SIMPLIFY2_DEBUG
+    fprintf(stderr, "\n LBLSimplify: complement/complement. comp(P) = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, tmp->P);
+    #endif
+
+    // and complement + simplify:
+    newP = DomainDifference(universe, tmp->P, MAXNOOFRAYS);
+    Domain_Free(tmp->P);
+    tmp->P = newP;
+    tmp->P = DomainConstraintSimplify(tmp->P, MAXNOOFRAYS);
+    tmp->P = Domain_Remove_Integer_Empty(tmp->P);
+    #ifdef SIMPLIFY2_DEBUG
+    fprintf(stderr, "\n LBLSimplify: complement/complement. comp(comp(P)) = ");
+    Polyhedron_Print(stderr, P_VALUE_FMT, tmp->P);
+    #endif
+  }
+  Domain_Free(universe);
 
 
   // // THIS IS NOT WHAT WE WANT!
@@ -3452,20 +3851,21 @@ void LBLSimplify(LBL *A)
   //   tmp->P = DomainConstraintSimplify(newP, MAXNOOFRAYS);
   // }
 
-  // TODO: simplify the polyhedral domains stored in A to get a minimal
-  // and disjoint(?) form
-
-
   #ifdef SIMPLIFY2_DEBUG
-  fprintf(stderr, "\n Exit LBLSimplify. A (before simplify) = ");
+  fprintf(stderr, "\n Exit LBLSimplify. A (before canonical) = ");
   LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
+
   CanonicalLBL(A);
 
-  // avoid recursive loop, just for testing:
-  #ifndef SIMPLIFY2_DEBUG
-  LBLSimplifyEmpty(A);
+  #ifdef SIMPLIFY2_DEBUG
+  fprintf(stderr, "\n Exit LBLSimplify. A (final) = ");
+  LBLPrint(stderr, P_VALUE_FMT, A);
   #endif
+
+  // this should be done already:
+  // LBLSimplifyEmpty(A);
+
 } /* LBLSimplify */
 
 
@@ -3476,17 +3876,21 @@ void LBLSimplify(LBL *A)
 /*
  * Compute the disjoint union of LBL A, by performing succesive intersections
  * and differences.
+ *
+ * Note: the result is disjoint regarding lattices/sets of points, and
+ * the coordinate domains associated to each lattice are disjoint polyhedra.
  */
 LBL *LBLDisjointUnion(LBL *A)
 {
   if(!A)
     return(NULL);
 
-  // TODO: infinite loop for ZDisj11b.in
+  // FIXED: infinite loop for ZDisj11b.in -> fixed.
 
   // TODO: split lattices first, then polyhedra in them
 
-  // need a ZDomain version?
+  // FIXED:
+  // need a ZDomain version? -> no
   // A = LBL2ZDomain(A);
 
   // get a copy of the first domain of A
@@ -3494,7 +3898,7 @@ LBL *LBLDisjointUnion(LBL *A)
 
   // then compute the inter/diff of each sLBL stored in A
   for(LBL *tmpA = A->next; tmpA; tmpA = tmpA->next) {
-    LBL *next, *inter, *diffA, *diffB, *newres;
+    LBL *next, *inter, *diffA, *diffB, *diffAdis, *diffBdis, *newres;
 
     // unlink next
     next = tmpA->next;
@@ -3502,17 +3906,50 @@ LBL *LBLDisjointUnion(LBL *A)
 
     // compute intersections and differences
     inter = LBLIntersection(res, tmpA);
-    diffA = LBLDifference(tmpA, res);
-    diffB = LBLDifference(res, tmpA);
 
-    newres = LBLConcatenate(LBLConcatenate(inter, diffA), diffB);
+    // the difference can result in a non-disjoint union.
+    // Need to recurse on the diff:
+    diffA = LBLDifference(tmpA, res);
+    diffAdis = LBLDisjointUnion(diffA);
+    diffB = LBLDifference(res, tmpA);
+    diffBdis = LBLDisjointUnion(diffB);
+    LBLFree(diffA);
+    LBLFree(diffB);
+
+    newres = LBLConcatenate(LBLConcatenate(inter, diffAdis), diffBdis);
+
     CanonicalLBL(newres);
     LBLFree(res);
     res = newres;
 
+    #ifdef DISJOINT_DEBUG
+    // check that there is no intersection between different LBLs in the union
+    for(LBL *tmp = res; tmp; tmp = tmp->next) {
+      for(LBL *tmp2 = tmp->next; tmp2; tmp2 = tmp2->next) {
+        LBL *ii;
+        ii = sLBLIntersection(tmp, tmp2);
+        if(ii) {
+          fprintf(stderr, "bug4!\n");
+          LBLPrint(stderr, P_VALUE_FMT, ii);
+        }
+        LBLFree(ii);
+      }
+    }
+    #endif
+
+
     // relink next
     tmpA->next = next;
   }
+
+  // disjoint coordinate polyhedra
+  for(LBL *tmp=res; tmp; tmp = tmp->next) {
+    Polyhedron *disjP = Disjoint_Domain(tmp->P, 0, MAXNOOFRAYS);
+    Domain_Free(tmp->P);
+    tmp->P = disjP;
+  }
+  CanonicalLBL(res);
+
 
   return(res);
 }
