@@ -234,6 +234,9 @@ typedef struct _enumeration {
 
 
 /* *********************** LBLs **************************** */
+// historical, not used internally anymore. A lattice is a matrix.
+typedef Matrix Lattice;
+
 // union of lattices (or affine functions):
 typedef struct lattice_union {
   Matrix *M;
