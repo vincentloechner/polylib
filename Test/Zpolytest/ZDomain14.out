@@ -56,9 +56,5 @@ Rays 3 4
 Line:   [   0    1  ]
 Vertex: [ 100    0  ]/1
 Vertex: [   7    0  ]/1
-A - ZD(A) = LBL: Dimension 2
-
-<empty>
-ZD(A) - A = LBL: Dimension 2
-
-<empty>
+A is included in ZDomain(A): 1
+ZDomain(A) is included in A: 1

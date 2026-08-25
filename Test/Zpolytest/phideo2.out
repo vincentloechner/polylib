@@ -2124,9 +2124,5 @@ Vertex: [ -24   -6   -3   -6   -3   -3   -3   -3   -3   13  ]/3
 Vertex: [  -1   -1   -2   -2   -1   -1   -1   -1   -1    4  ]/1
 Vertex: [  -3   -6   -6   -6   -3   -3   -3   -3   -3   14  ]/3
 Vertex: [ -24   -6   -6   -6   -3   -3   -3   -3   -3   14  ]/3
-A - ZD(A) = LBL: Dimension 10
-
-<empty>
-ZD(A) - A = LBL: Dimension 10
-
-<empty>
+A is included in ZDomain(A): 1
+ZDomain(A) is included in A: 1

@@ -38,6 +38,10 @@ tests = [
     ("ZDomain10",
      LBL("{(i, j) | i>=101,  3i-3j+k>=0, -4i+4j-k>=0, -i+10k>=0, i-9k>=0}")),
 
+    # TODO: bug here
+    # ("ZDomain11",
+    #  LBL("{(2i, 0, 52i+66j) | 198k <= -150i+j, 264k >= -200i+j, 9j <= 2i, 5j >= i, i <= 1000}")),
+
     # from Pugh91 (the Omega test nightmare)
     ("ZDomain12",
      LBL("{(i, j) | 11i+13j>=27, 11i+13j<=45, 7i-9j+10>=0, -7i+9j+4>=0}")),

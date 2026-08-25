@@ -93,9 +93,5 @@ Constraints 1 2
 Inequality: [   1  ]
 Rays 1 2
 Vertex: [ ]/1
-A - ZD(A) = LBL: Dimension 1
-
-<empty>
-ZD(A) - A = LBL: Dimension 1
-
-<empty>
+A is included in ZDomain(A): 1
+ZDomain(A) is included in A: 1
