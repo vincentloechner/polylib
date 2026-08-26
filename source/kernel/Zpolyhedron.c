@@ -2497,14 +2497,14 @@ static void sLBL_Simplify_Zero_Dimensions(LBL *A)
       Polyhedron *diff;
       diff = DomainDifference(exact, dark, MAXNOOFRAYS); // diff = exact - dark
 
-      if(! emptyQ(diff)) {
+      if(diff && !emptyQ(diff)) {
         // try to remove obvious integer-empty solutions.
         diff = DomainConstraintSimplify(diff, MAXNOOFRAYS);
       }
       // could check if diff has no integer solution... but this is complex.
       // Reserved for LBLSimplify()
 
-      if(emptyQ(diff)) {
+      if(!diff || emptyQ(diff)) {
         // if exact - dark = 0, project out the column :)
         Matrix *newL;
         #ifdef CANONICAL_DEBUG
