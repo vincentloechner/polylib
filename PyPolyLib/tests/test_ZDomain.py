@@ -4,12 +4,12 @@ test_ZDomain.py — Check if zdomain(a) == a for several example LBLs.
 from pypolylib import LBL
 
 
-# check if: a.included(zdomain(a)) and zdomain(a).included(a)
+# check if a == zdomain(a)
 def test_func(a):
     b = a.zdomain()
+    # equivalent to a == b, with more precise output:
     assert a.included(b), "a not included in zdomain(a)"
     assert b.included(a), "zdomain(a) not included in a"
-    # equivalent to a == b, with more precise output
 
 
 # call this function if a test fails:
@@ -37,10 +37,6 @@ tests = [
 
     ("ZDomain10",
      LBL("{(i, j) | i>=101,  3i-3j+k>=0, -4i+4j-k>=0, -i+10k>=0, i-9k>=0}")),
-
-    # TODO: bug here
-    # ("ZDomain11",
-    #  LBL("{(2i, 0, 52i+66j) | 198k <= -150i+j, 264k >= -200i+j, 9j <= 2i, 5j >= i, i <= 1000}")),
 
     # from Pugh91 (the Omega test nightmare)
     ("ZDomain12",
