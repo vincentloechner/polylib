@@ -8,9 +8,11 @@
 # 729x1 − 117x2 + 350x3 ≤ 4561
 # 677x1 + 465x2 − 540x3 ≤ 3489
 
+# Need GMP, even the 64 bits version overflows
+
 M 1
 
-# let's try to project this along x3:
+# project this along x3:
 3 4
    1    0    0    0
    0    1    0    0
@@ -26,15 +28,18 @@ D 1
 1   -729      117   -350    4561
 1   -677     -465    540    3489
 
-# complement
+# complement -> ok
 # F 16
+# A+complement(A) = Universe -> ok
+# F 19
 
-# LBL2ZDomain
-# TODO: this one has a bug (segfault):
-# F 17
+# LBL2ZDomain + check equality
+# this one had a bug in the inclusion test -> in the difference computation a
+# diff was NULL
+F 17
 
-# LBL2ZDomain + simplifyEmpty
-F 18
+# LBL2ZDomain + simplifyEmpty is working fine:
+# F 18
 
 
 # iscc input:
