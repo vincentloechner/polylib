@@ -5,7 +5,8 @@
 extern "C" {
 #endif
 
-// extern int SolveDiophantine(Matrix *M, Matrix **U, Vector **X);
+// used by Barvinok
+extern int SolveDiophantine(Matrix *M, Matrix **U, Vector **X);
 
 #if defined(__cplusplus)
 }

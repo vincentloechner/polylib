@@ -20,9 +20,5 @@ Vertex: [ 457  271  ]/190
 LBL2ZDomain(A) = LBL: Dimension 2
 
 <empty>
-A - ZD(A) = LBL: Dimension 2
-
-<empty>
-ZD(A) - A = LBL: Dimension 2
-
-<empty>
+A is included in ZDomain(A): 1
+ZDomain(A) is included in A: 1

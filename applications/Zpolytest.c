@@ -263,14 +263,17 @@ int main() {
     LBLPrint(stdout, P_VALUE_FMT, ZB);
 
     // check equality between ZA and ZB
-    ZC = LBLDifference(ZA, ZB);
-    LBLSimplifyEmpty(ZC);
-    printf("A - ZD(A) = ");
-    LBLPrint(stdout, P_VALUE_FMT, ZC);
-    ZD = LBLDifference(ZB, ZA);
-    LBLSimplifyEmpty(ZD);
-    printf("ZD(A) - A = ");
-    LBLPrint(stdout, P_VALUE_FMT, ZD);
+    printf("A is included in ZDomain(A): %d\n", LBLIncluded(ZA, ZB));
+    printf("ZDomain(A) is included in A: %d\n", LBLIncluded(ZB, ZA));
+
+    // ZC = LBLDifference(ZA, ZB);
+    // LBLSimplifyEmpty(ZC);
+    // printf("A - ZD(A) = ");
+    // LBLPrint(stdout, P_VALUE_FMT, ZC);
+    // ZD = LBLDifference(ZB, ZA);
+    // LBLSimplifyEmpty(ZD);
+    // printf("ZD(A) - A = ");
+    // LBLPrint(stdout, P_VALUE_FMT, ZD);
     break;
 
   case 18:  /* simple LBL2Zdomain + LBLSimplifyEmpty */

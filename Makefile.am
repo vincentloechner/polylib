@@ -28,9 +28,8 @@ CFILES= \
 	source/kernel/Lattice.c \
 	source/kernel/Matop.c \
 	source/kernel/NormalForms.c \
+	source/kernel/SolveDio.c \
 	source/kernel/Zpolyhedron.c
-
-#	source/kernel/SolveDio.c
 
 # sources = $(CFILES)
 

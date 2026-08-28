@@ -38,9 +38,5 @@ Rays 3 4
 Vertex: [891000 -674000  ]/891
 Vertex: [11000 -8325  ]/11
 Vertex: [   0    0  ]/1
-A - ZD(A) = LBL: Dimension 3
-
-<empty>
-ZD(A) - A = LBL: Dimension 3
-
-<empty>
+A is included in ZDomain(A): 1
+ZDomain(A) is included in A: 1

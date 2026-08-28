@@ -4,12 +4,12 @@ test_ZDomain.py — Check if zdomain(a) == a for several example LBLs.
 from pypolylib import LBL
 
 
-# check if: a.included(zdomain(a)) and zdomain(a).included(a)
+# check if a == zdomain(a)
 def test_func(a):
     b = a.zdomain()
+    # equivalent to a == b, with more precise output:
     assert a.included(b), "a not included in zdomain(a)"
     assert b.included(a), "zdomain(a) not included in a"
-    # equivalent to a == b, with more precise output
 
 
 # call this function if a test fails:

@@ -70,7 +70,7 @@ class MyWindow(pv.Plotter):
 # this is not very nice, but it's the best way to do it.
 # _lbl_plot_window[-1] is set to a MyWindow instance, and a new window will
 # be added to the list, unless subplot = True.
-_lbl_plot_window = [MyWindow()]
+_lbl_plot_window = []
 
 
 # main plotting function
@@ -100,6 +100,10 @@ def lbl_plot(
       windows will be closed when one of them is closed.
     """
     global _lbl_plot_window
+
+    # initialize the global variable if it's empty
+    if _lbl_plot_window == []:
+        _lbl_plot_window.append(MyWindow())
 
     node = lbl._lbl
     if node is None:

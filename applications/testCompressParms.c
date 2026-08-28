@@ -1,9 +1,9 @@
-/** 
+/**
  * $Id: testCompressParms.c,v 1.4 2006/09/18 03:09:03 meister Exp $
- * 
+ *
  * Test routines for kernel/compress_parms.c functions
  * @author B. Meister, 3/2006
- * 
+ *
  */
 
 #include <polylib/polylib.h>
@@ -21,16 +21,16 @@
                 } \
                 else { \
                   printf(#a" NOT OK\n"); \
-                } 
+                }
 
 #define maxRays 200
 
 int test_Constraints_Remove_parm_eqs(Matrix * A, Matrix * B);
 int test_Polyhedron_Remove_parm_eqs(Matrix * A, Matrix * B);
-int test_Constraints_fullDimensionize(Matrix * A, Matrix * B, 
+int test_Constraints_fullDimensionize(Matrix * A, Matrix * B,
 				      unsigned int nbSamples);
 
-char *origNames[] =
+const char *origNames[] =
 	{"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
 
 int main(int argc, char ** argv) {
@@ -83,12 +83,12 @@ int test_Constraints_Remove_parm_eqs(Matrix * A, Matrix * B) {
   Eqs = Constraints_Remove_parm_eqs(&M1, &C1, 1, &elimParms);
 
   printf("Removed equalities: \n");
-  show_matrix(Eqs); 
+  show_matrix(Eqs);
   printf("Polyhedron without equalities involving only parameters: \n");
-  show_matrix(M1);  
+  show_matrix(M1);
   printf("Context without equalities: \n");
-  show_matrix(C1);  
-  
+  show_matrix(C1);
+
   /* compute the supposedly-same polyhedron, using the extracted equalities */
   Pm = Constraints2Polyhedron(M1, maxRays);
   Pcp = Constraints2Polyhedron(C1, maxRays);
@@ -153,14 +153,14 @@ int test_Polyhedron_Remove_parm_eqs(Matrix * A, Matrix * B) {
   Matrix_Free(M);
   Matrix_Free(C);
   Peqs = Polyhedron_Remove_parm_eqs(&Pm, &Pc, 1, &elimParms, 200);
-  
+
   /* compute the supposedly-same polyhedron, using the extracted equalities */
   Pcp = align_context(Pc, Pm->Dimension, maxRays);
   Polyhedron_Free(Pc);
   Pc = DomainIntersection(Pm, Pcp, maxRays);
   Polyhedron_Free(Pm);
   Polyhedron_Free(Pcp);
- 
+
   Pint = DomainIntersection(Pc, Peqs, maxRays);
   Polyhedron_Free(Pc);
   Polyhedron_Free(Peqs);
@@ -180,13 +180,13 @@ int test_Polyhedron_Remove_parm_eqs(Matrix * A, Matrix * B) {
 } /* test_Polyhedron_remove_parm_eqs() */
 
 
-/** 
+/**
  * Eliminates certain parameters from a vector of values for parameters
  * @param origParms the initial vector of values of parameters
  * @param elimParms the list of parameters to be eliminated in the vector
  * @param newParms the vector of values without the eliminated ones.
  */
-void valuesWithoutElim(Matrix * origParms, unsigned int * elimParms, 
+void valuesWithoutElim(Matrix * origParms, unsigned int * elimParms,
 		       Matrix ** newParms) {
   unsigned int i, j=0;
   if (*newParms==NULL) {
@@ -219,9 +219,9 @@ void valuesWithoutElim(Matrix * origParms, unsigned int * elimParms,
  * reused if not.
  * @return the number of names in the returned list.
  */
-unsigned int namesWithoutElim(char **parms, unsigned nbParms,
+unsigned int namesWithoutElim(const char **parms, unsigned nbParms,
 			      unsigned int * elimParms,
-			      char ***newParms)
+			      const char ***newParms)
 {
   unsigned int i, j=0;
   unsigned int newSize = nbParms -elimParms[0];
@@ -250,7 +250,7 @@ unsigned int namesWithoutElim(char **parms, unsigned nbParms,
 
 
 /**
- * Tests Constraints_fullDimensionize by comparing the Ehrhart polynomials 
+ * Tests Constraints_fullDimensionize by comparing the Ehrhart polynomials
  * @param A the input set of constraints
  * @param B the corresponding context
  * @param the number of samples to generate for the test
@@ -258,7 +258,7 @@ unsigned int namesWithoutElim(char **parms, unsigned nbParms,
  * full-dimensional and non-full-dimensional sets of constraints, for their
  * corresponding sample parameters values.
  */
-int test_Constraints_fullDimensionize(Matrix * A, Matrix * B, 
+int test_Constraints_fullDimensionize(Matrix * A, Matrix * B,
 				      unsigned int nbSamples) {
   Matrix * Eqs= NULL, *ParmEqs=NULL, *VL=NULL;
   unsigned int * elimVars=NULL, * elimParms=NULL;
@@ -271,7 +271,7 @@ int test_Constraints_fullDimensionize(Matrix * A, Matrix * B,
   Polyhedron * P, *PC;
   Matrix * M, *C;
   Enumeration * origEP, * fullEP=NULL;
-  char **fullNames = NULL;
+  const char **fullNames = NULL;
   int isOk = 1; /* holds the result */
 
   /* compute the origial Ehrhart polynomial */
@@ -290,7 +290,7 @@ int test_Constraints_fullDimensionize(Matrix * A, Matrix * B,
   M = Matrix_Copy(A);
   C = Matrix_Copy(B);
   nbOrigParms = B->NbColumns-2;
-  Constraints_fullDimensionize(&M, &C, &VL, &Eqs, &ParmEqs, 
+  Constraints_fullDimensionize(&M, &C, &VL, &Eqs, &ParmEqs,
 			       &elimVars, &elimParms, maxRays);
   if ((Eqs->NbRows==0) && (ParmEqs->NbRows==0)) {
     Matrix_Free(M);
@@ -310,7 +310,7 @@ int test_Constraints_fullDimensionize(Matrix * A, Matrix * B,
   Matrix_Free(C);
   Polyhedron_Free(P);
   Polyhedron_Free(PC);
-  
+
   /* make a set of sample parameter values and compare the corresponding
      Ehrhart polnomials */
   sample = Matrix_Alloc(1,nbOrigParms);
@@ -332,15 +332,15 @@ int test_Constraints_fullDimensionize(Matrix * A, Matrix * B,
     }
     /* compute the corresponding value for the full-dimensional
        constraints */
-    valuesWithoutElim(sample, elimParms, &smallerSample); 
+    valuesWithoutElim(sample, elimParms, &smallerSample);
     /* (N' i' 1)^T = VLinv.(N i 1)^T*/
     for (r = 0; r < nbParms; r++) {
       Inner_Product(&(VLInv->p[r][0]), smallerSample->p[0], nbParms,
 		    &(transfSample->p[0][r]));
       /* add the constant part */
-      value_addto(transfSample->p[0][r], transfSample->p[0][r], 
+      value_addto(transfSample->p[0][r], transfSample->p[0][r],
 					 VLInv->p[r][VLInv->NbColumns-2]);
-      value_pdivision(div, transfSample->p[0][r], 
+      value_pdivision(div, transfSample->p[0][r],
 			 VLInv->p[r][VLInv->NbColumns-1]);
       value_subtract(mod, transfSample->p[0][r], div);
       /* if the parameters value does not belong to the validity lattice, the
