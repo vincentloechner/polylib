@@ -84,11 +84,11 @@ void Union_Read(Polyhedron **P, Polyhedron **C, char ***param_name)
 		if( i != (*C)->Dimension )
 		{
 			free( *param_name );
-			*param_name = Read_ParamNames(NULL,(*C)->Dimension);
+			*param_name = (char **)Read_ParamNames(NULL,(*C)->Dimension);
 		}
 	}
 	else
-		*param_name = Read_ParamNames(NULL,(*C)->Dimension);
+		*param_name = (char **)Read_ParamNames(NULL,(*C)->Dimension);
 
 }
 
@@ -104,12 +104,12 @@ void recurse(Polyhedron *C, char **param_name, Enumeration *e,
 		for(k=1;k<C->Dimension;++k) {
 		  fprintf(stdout,",");
 		  value_print(stdout,VALUE_FMT,p[k]);
-		}  
+		}
 		fprintf(stdout," ) = ");
 		value_print(stdout,VALUE_FMT,*(tmp=compute_poly(e,p)));
 		value_clear( *tmp );
 		free(tmp);
-		fprintf(stdout,"\n");  
+		fprintf(stdout,"\n");
 	}
 	else
 	{
@@ -143,8 +143,8 @@ int main( int argc, char **argv)
 
 	for( en=e ; en ; en=en->next )
 	{
-	  Print_Domain(stdout,en->ValidityDomain, param_name);
-	  print_evalue(stdout,&en->EP, param_name);
+	  Print_Domain(stdout,en->ValidityDomain, (const char **)param_name);
+	  print_evalue(stdout,&en->EP, (const char **)param_name);
 	  printf( "\n-----------------------------------\n" );
 	}
 
@@ -155,7 +155,7 @@ int main( int argc, char **argv)
             pmin = (Value *)malloc(sizeof(Value) * (C->Dimension));
             pmax = (Value *)malloc(sizeof(Value) * (C->Dimension));
             p = (Value *)malloc(sizeof(Value) * (C->Dimension));
-            for(i=0;i<C->Dimension;i++) 
+            for(i=0;i<C->Dimension;i++)
             {
                value_init(pmin[i]);
                value_init(pmax[i]);
@@ -185,7 +185,7 @@ int main( int argc, char **argv)
 
 
     Enumeration_Free(e);
-    Free_ParamNames(param_name, C->Dimension);
+    Free_ParamNames((const char **)param_name, C->Dimension);
     Domain_Free( P );
     Polyhedron_Free( C );
     polylib_close();

@@ -7,13 +7,13 @@
 
 int main( int argc, char **argv)
 {
-  char **param_name;
+  const char **param_name;
   Matrix *C1, *P1;
   Enumeration *e, *en;
 
   Matrix * Validity_Lattice;
   int nb_parms;
-  
+
 #ifdef EP_EVALUATION
   Value *p, *tmp;
   int k;
@@ -36,24 +36,24 @@ int main( int argc, char **argv)
 
   /* compute a polynomial approximation of the Ehrhart polynomial */
   e = Ehrhart_Quick_Apx(P1, C1, &Validity_Lattice, 1024);
-  
+
   Matrix_Free(C1);
   Matrix_Free(P1);
 
   printf("============ Ehrhart polynomial quick polynomial upper bound ============\n");
   show_matrix(Validity_Lattice);
-  for( en=e ; en ; en=en->next ) {    
+  for( en=e ; en ; en=en->next ) {
     Print_Domain(stdout,en->ValidityDomain, param_name);
     print_evalue(stdout,&en->EP, param_name);
     printf( "\n-----------------------------------\n" );
   }
- 
+
 #ifdef EP_EVALUATION
   if( isatty(0) && nb_parms != 0)
   {  /* no tty input or no polyhedron -> no evaluation. */
     printf("Evaluation of the Ehrhart polynomial :\n");
     p = (Value *)malloc(sizeof(Value) * (nb_parms));
-    for(i=0;i<nb_parms;i++) 
+    for(i=0;i<nb_parms;i++)
       value_init(p[i]);
     FOREVER {
       fflush(stdin);
@@ -71,11 +71,11 @@ int main( int argc, char **argv)
       fprintf(stdout," ) = ");
       value_print(stdout,VALUE_FMT,*(tmp=compute_poly(en,p)));
       free(tmp);
-      fprintf(stdout,"\n");  
+      fprintf(stdout,"\n");
     }
   }
 #endif /* EP_EVALUATION */
-  
+
   while( e )
     {
       free_evalue_refs( &(e->EP) );

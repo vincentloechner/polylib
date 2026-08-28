@@ -29,8 +29,8 @@ struct option options[] = {
 
 #define WS 0
 
-/** 
-    
+/**
+
 define this to print all constraints on the validity domains if not
 defined, only new constraints (not in validity domain given by the
 user) are printed
@@ -38,24 +38,24 @@ user) are printed
 */
 #define EPRINT_ALL_VALIDITY_CONSTRAINTS
 
-/** 
+/**
 
 The following are mainly for debug purposes. You shouldn't need to
 change anything for daily usage...
 
 */
 
-/** you may define each macro independently 
+/** you may define each macro independently
 <ol>
-<li> #define EDEBUG minimal debug 
+<li> #define EDEBUG minimal debug
 <li> #define EDEBUG1 prints enumeration points
 <li> #define EDEBUG11 prints number of points
 <li> #define EDEBUG2 prints domains
 <li> #define EDEBUG21 prints more domains
 <li> #define EDEBUG3 prints systems of equations that are solved
 <li> #define EDEBUG4 prints message for degree reduction
-<li> #define EDEBUG5 prints result before simplification 
-<li> #define EDEBUG6 prints domains in Preprocess 
+<li> #define EDEBUG5 prints result before simplification
+<li> #define EDEBUG6 prints domains in Preprocess
 <li> #define EDEBUG61 prints even more in Preprocess
 <li> #define EDEBUG62 prints domains in Preprocess2
 </ol>
@@ -81,7 +81,7 @@ change anything for daily usage...
 */
 #define REDUCE_DEGREE
 
-/** 
+/**
 
 define this to print one warning message per domain overflow these
 overflows should no longer happen since version 4.20
@@ -94,7 +94,7 @@ overflows should no longer happen since version 4.20
 EPRINT : print results while computing the ehrhart polynomial.  this
 is done by default if you build the executable ehrhart.  (If EMAIN is
 defined).  Don't define EMAIN here, it is defined when necessary in
-the makefile.  
+the makefile.
 
 <p>
 
@@ -114,10 +114,9 @@ int main(int argc, char **argv)
     Matrix *C1, *P1;
     Polyhedron *C, *P;
     Enumeration *en;
-    char **param_name;
     int c, ind = 0;
     int hom = 0;
-  
+
 #ifdef EP_EVALUATION
     Value *p, *tmp;
     int k;
@@ -150,12 +149,11 @@ int main(int argc, char **argv)
     C = Constraints2Polyhedron(C1,WS);
     Matrix_Free(P1);
     Matrix_Free(C1);
-  
+
     /* Read the name of the parameters */
-    param_name = Read_ParamNames(stdin,C->Dimension - hom);
+    const char **param_name = Read_ParamNames(stdin,C->Dimension - hom);
     if (hom) {
-        char **param_name2;
-        param_name2 = (char**)malloc(sizeof(char*) * (C->Dimension));
+        const char **param_name2 = malloc(sizeof(char*) * (C->Dimension));
         for (i = 0; i < C->Dimension - 1; i++)
             param_name2[i] = param_name[i];
         param_name2[C->Dimension-1] = "_H";
@@ -169,7 +167,7 @@ int main(int argc, char **argv)
 	Enumeration *en2;
 
 	printf("inhomogeneous form:\n");
-      
+
 	dehomogenize_enumeration(en, C->Dimension, WS);
 	for (en2 = en; en2; en2 = en2->next) {
 	    Print_Domain(stdout, en2->ValidityDomain, param_name);
@@ -182,7 +180,7 @@ int main(int argc, char **argv)
         {  /* no tty input or no polyhedron -> no evaluation. */
             printf("Evaluation of the Ehrhart polynomial :\n");
             p = (Value *)malloc(sizeof(Value) * (C->Dimension));
-            for(i=0;i<C->Dimension;i++) 
+            for(i=0;i<C->Dimension;i++)
                 value_init(p[i]);
             FOREVER {
                 fflush(stdin);
@@ -196,15 +194,15 @@ int main(int argc, char **argv)
                 for(k=1;k<C->Dimension;++k) {
                     fprintf(stdout,",");
                     value_print(stdout,VALUE_FMT,p[k]);
-                }  
+                }
                 fprintf(stdout," ) = ");
                 value_print(stdout,VALUE_FMT,*(tmp=compute_poly(en,p)));
                 free(tmp);
-                fprintf(stdout,"\n");  
+                fprintf(stdout,"\n");
             }
         }
 #endif /* EP_EVALUATION */
-  
+
     Enumeration_Free(en);
     Free_ParamNames(param_name, C->Dimension-hom);
     Polyhedron_Free( P );
