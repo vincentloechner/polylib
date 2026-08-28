@@ -9,7 +9,7 @@ fi
 # libtoolize -c --force
 # aclocal -I m4
 # autoheader
-# automake -a -c --foreign
+automake -a -c --foreign --add-missing
 # autoconf
 
 autoreconf -i
