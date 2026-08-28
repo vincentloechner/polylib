@@ -90,7 +90,7 @@ jobs:
       # https://github.com/passagemath/passagemath/tree/main/build/pkgs
       extra_sage_packages: "patch gmp"
       # Sage distribution packages to build
-      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="polylib" polylib barvinok
+      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="polylib,barvinok" polylib barvinok
       # Standard setting: Test the current HEAD of passagemath:
       sage_repo: passagemath/passagemath
       sage_ref: main
@@ -109,7 +109,7 @@ jobs:
       # https://github.com/passagemath/passagemath/tree/main/build/pkgs
       extra_sage_packages: "patch gmp"
       # Sage distribution packages to build
-      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="polylib" polylib barvinok
+      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="polylib,barvinok" polylib barvinok
       # Standard setting: Test the current beta release of Sage:
       sage_repo: passagemath/passagemath
       sage_ref: main
