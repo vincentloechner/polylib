@@ -45,10 +45,10 @@ mkdir build && cd build
   --with-libgmp=$(pkg-config gmp --variable=prefix) \
   --libdir=$(pwd)/.libs
 make -j 20
-make -j 20 check
+make -j 20 check # optional
+
 # For testing you can directly use the polylib build, you do not need to
-# install it system-wide.
-# Run `make install` if you want to install it.
+# install it system-wide. Run `make install` if you want to install it.
 
 # return to the PolyLib main directory
 cd ..
