@@ -10,12 +10,43 @@ from . import _core as pl
 from . import lbl
 
 import math
-import numpy as np
+import warnings
+
+# Do not depend on those optional python modules, only warn the user that no
+# plotting is possible if they are not installed.
+class _MissingModule:
+    name: str
+    def __init__(self, module_name):
+        self.name = module_name
+        warnings.warn(f"Missing python module {module_name}."
+                      f"Will raise an error if you try to plot an LBL!")
+    def __getattr__(self):
+        raise ImportError(
+            f"{self.name} is required for this functionality. "
+            f"Install it with 'pip install {self.name}'."
+        )
+
+# Those are usually non-standard installed modules, check if they are there
+# and warn the user if they are not. A call to any of those modules will
+# then raise an ImportError.
+try:
+    import numpy as np
+except ImportError:
+    np = _MissingModule("numpy")
 
 # plotting libs:
-from scipy.spatial import ConvexHull
+try:
+    from scipy.spatial import ConvexHull
+except ImportError:
+    ConvexHull = _MissingModule("scipy")
+
+# this one is standard:
 import colorsys
-import pyvista as pv
+
+try:
+    import pyvista as pv
+except ImportError:
+    pv = _MissingModule("pyvista")
 
 # # 2D -> not used anymore
 # import matplotlib.pyplot as plt

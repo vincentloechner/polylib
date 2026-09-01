@@ -466,7 +466,7 @@ class Transfo:
       Transfo: The inverse transformation
 
     Raises:
-      RuntimeError: If the matrix is not invertible
+      ValueError: If the matrix is not invertible
     """
     result = Transfo()
     result._mat = self._mat.inverse()

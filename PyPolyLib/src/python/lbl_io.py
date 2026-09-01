@@ -1,6 +1,6 @@
 """ Various input/output functions for PyPolyLib.
 
-The four functions (_LBL | _Transfo)(Read | Repr) are defined
+The four functions [LBL | Transfo] + [Read | Repr] are defined
 """
 
 import re

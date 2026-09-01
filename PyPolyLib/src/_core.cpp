@@ -116,7 +116,7 @@ PYBIND11_MODULE(_core, m) {
             Matrix_Free(mat);
             if (!ok) {
                 Matrix_Free(result);
-                throw std::runtime_error("The matrix is not invertible");
+                throw std::domain_error("The matrix is not invertible");
             }
             return MatrixPtr(result);
         })
