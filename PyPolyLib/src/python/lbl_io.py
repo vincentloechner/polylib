@@ -3,9 +3,8 @@
 The four functions (_LBL | _Transfo)(Read | Repr) are defined
 """
 
-
 import re
-import pypolylib_core as pl
+from . import _core as pl
 
 def LBLRead(s):
     """

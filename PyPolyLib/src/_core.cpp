@@ -78,7 +78,7 @@ py::object get_value_from_matrix(Value **mat_ptr, int i, int j) {
 // }
 
 
-PYBIND11_MODULE(pypolylib_core, m) {
+PYBIND11_MODULE(_core, m) {
     // ----------------------- Memory management ----------------------
     m.def("PolylibClose", []() {
         polylib_close();
@@ -99,7 +99,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
         .def("__setitem__", [](Matrix &self, py::tuple idx, py::object val) {
             int i = idx[0].cast<int>();
             int j = idx[1].cast<int>();
-    
+
             std::string s = py::str(val);
             mpz_set_str(self.p[i][j], s.c_str(), 10);
         }, py::arg("idx:tuple"), py::arg("value"))
@@ -225,7 +225,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
     m.def("constraints2polyhedron", [](Matrix *m) {
         return PolyhedronPtr(Constraints2Polyhedron(m, MAX_RAYS));
     }, py::arg("constraint matrix"));
-    
+
 
     // ---------------------------- LBL ------------------------------
     py::class_<LBL, LBLPtr>(m, "LBL")
@@ -257,7 +257,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
             return LBLPtr(LBLDifference(self, b));
         }, py::arg("LBL"))
         .def("union", [](LBL *self, LBL *b) {
-            return LBLPtr(LBLUnion(self, b));  
+            return LBLPtr(LBLUnion(self, b));
         }, py::arg("LBL"))
         .def("contains_point", [](LBL *self, py::sequence point) {
             Matrix *mat = Matrix_Alloc(1, py::len(point));
@@ -287,7 +287,7 @@ PYBIND11_MODULE(pypolylib_core, m) {
         ;
 
 
-    // --- LBL creation ---    
+    // --- LBL creation ---
     m.def("LBLAlloc", [](Matrix *lat, Polyhedron *domain) {
         return LBLPtr(LBLAlloc(lat, domain));
     }, py::arg("lat"), py::arg("domain"));

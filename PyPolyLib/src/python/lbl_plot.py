@@ -6,8 +6,8 @@ Typical usage:
     a.plot()
 """
 import sys
-import pypolylib_core as pl
-import pypolylib
+from . import _core as pl
+from . import lbl
 
 import math
 import numpy as np
@@ -209,7 +209,7 @@ def _render_LBLs(plotter):
             # draw also lines and rays originating from vertices -> does not render nice, suppressed for now
 
         if view.show_points:
-            points = list(pypolylib._iter_single_lbl(lat, poly_coordinate, set()))
+            points = list(lbl._iter_single_lbl(lat, poly_coordinate, set()))
             plotter.add_mesh(
                 pv.PolyData(np.asarray(points, dtype=float)),
                 opacity=.5, color=view.color,
