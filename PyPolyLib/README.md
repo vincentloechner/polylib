@@ -8,27 +8,46 @@ Written by:
   Sabrina BOUGARECH <sabrina.bougarech@etu.unistra.fr>
   (during their 2026 internship under the supervision of Vincent LOECHNER)
 
-PyPolyLib requires the `pybind11` module to build the C++ python bindings
+## Requirements
+
+- Python 3
+- CMake
+- pybind11
+- PolyLib with GMP support
+- NumPy, SciPy and PyVista (optional, for plotting)
+
+PyPolyLib requires the `pybind11` module to build the C++ Python bindings
 to the library.
 
-The `numpy`, `pyvista` and `scipy` modules are used by the plotting
+The `numpy`, `scipy` and `pyvista` modules are used by the plotting
 functionality, but they are optional (an `ImportError` will be raised if you
 try to plot an LBL when they are not installed).
 
 ## Installation
+0. Get PolyLib from the git:
+```sh
+git clone https://github.com/vincentloechner/polylib
+cd polylib
+./autogen.sh
+```
 
-1. First build the GMP version of PolyLib from the main PolyLib directory in
-a `build/` subdirectory (optional):
+1. Build PolyLib
+
+Build the GMP version of PolyLib from the main PolyLib directory in
+a `build/` subdirectory with:
 ```sh
 # From the PolyLib main directory:
 mkdir build && cd build
 
 # on recent MacOS you need to configure like this.
 # on Linux with gmp installed system-wide no configure options are needed.
-../configure --with-libgmp=$(pkg-config gmp --variable=prefix) --libdir=$(pwd)/.libs
+../configure \
+  --with-libgmp=$(pkg-config gmp --variable=prefix) \
+  --libdir=$(pwd)/.libs
 make -j 20
 make -j 20 check
-# You can directly use the polylib build, you do not need to install it system-wide.
+# For testing you can directly use the polylib build, you do not need to
+# install it system-wide.
 # Run `make install` if you want to install it.
 
 # return to the PolyLib main directory
@@ -37,7 +56,7 @@ cd ..
 
 
 2. Enter PyPolyLib and prepare the Python environment: set a Python venv
-(optional) and install all required Python packages (see below):
+(optional) and install all required Python packages:
 ```sh
 cd PyPolyLib
 python3 -m venv venv && source ./venv/bin/activate
@@ -45,7 +64,7 @@ python3 -m pip install pybind11 numpy pyvista scipy
 ```
 
 
-3. Build pypolylib from the current directory:
+1. Build pypolylib from the current directory:
 
 - using the local build polylib located in `../build` with:
 ```sh
@@ -98,15 +117,19 @@ The braces and the parenthesis are optional.
 a + b == a.union(b)
 a - b == a.difference(b)
 a * b == a.intersection(b)
-a in b == a.included(b)
+a in b == a.included(b)     # geometric LBL inclusion a ⊆ b
+(1,2,3) in a == a.contains_point((1,2,3)) # "pythonic" inclusion
+for z in a:
+  ...  # scan all points z in a
+set(a) # builds the python set of points in a
 (a == b) == ((a in b) and (b in a))
-(1,2,3) in a == a.contains_point((1,2,3))
-a.zdomain()  # computes the corresponding Z-domain by eliminating all
+a.zdomain()  # computes the corresponding Z-domain, eliminating all
              # existential variables (can be complex!)
-a.disjoint() # computes the disjoint union of the union of LBLs a
-             # (can be complex!)
+a.disjoint() # computes a disjoint union representation of
+             # the union of LBLs in a (can be complex!)
 a.plot() # plots the LBL in a window (see help for available options)
-a.sLBL_list() # get a python list of single LBLs from the union of LBLs a
+a.sLBL_list() # get a Python list of single LBLs from the union of LBLs
+              # represented by a
 ```
 
 - Transformation operations:
@@ -116,7 +139,9 @@ g = Transfo("(i,j -> j,i)")
 f * g == f.compose(g)
 f.inverse() # *integer* inverse of this function (see help)
 f(a) == a.image(f) # image of LBL a by f
-a.preimage(f) # preimage of LBL a by f (if not an LBL, only the LBL is returned).
+a.preimage(f) # computes the preimage of LBL a by function f
+               # (if the preimage by f is not consistent to form an LBL,
+               # only its LBL part is returned)
 ```
 
 
