@@ -12,23 +12,20 @@ from . import lbl
 import math
 import warnings
 
-# Do not depend on those optional python modules, only warn the user that no
-# plotting is possible if they are not installed.
+# Do not depend on the optional python modules, only warn the user that
+# plotting is impossible if they are not installed.
 class _MissingModule:
-    name: str
+    module_name: str
     def __init__(self, module_name):
-        self.name = module_name
-        warnings.warn(f"Missing python module {module_name}."
+        self.module_name = module_name
+        warnings.warn(f"Missing python module {module_name}. "
                       f"Will raise an error if you try to plot an LBL!")
-    def __getattr__(self):
+    def __getattr__(self, name):
         raise ImportError(
-            f"{self.name} is required for this functionality. "
-            f"Install it with 'pip install {self.name}'."
+            f"{self.module_name} is required for this functionality. "
+            f"Install it with 'pip install {self.module_name}'."
         )
 
-# Those are usually non-standard installed modules, check if they are there
-# and warn the user if they are not. A call to any of those modules will
-# then raise an ImportError.
 try:
     import numpy as np
 except ImportError:
@@ -36,9 +33,9 @@ except ImportError:
 
 # plotting libs:
 try:
-    from scipy.spatial import ConvexHull
+    from scipy import spatial
 except ImportError:
-    ConvexHull = _MissingModule("scipy")
+    spatial = _MissingModule("scipy")
 
 # this one is standard:
 import colorsys
@@ -56,9 +53,6 @@ except ImportError:
 # it is the ray/line multiplier to get an upper/lower bound
 ZOOM = 4
 
-# allow pyvista to plot polyhedra that have no integer points:
-pv.global_theme.allow_empty_mesh = True
-
 
 # this class is used to store a list of LBLs to be plotted.
 # Contains everything that's needed to plot the right object
@@ -74,33 +68,36 @@ class LBL_view:
     # build python lists of FP vertices/rays/lines of hull once:
     vrl:tuple
 
+if not isinstance(pv, _MissingModule):
+    # allow pyvista to plot polyhedra that have no integer points:
+    pv.global_theme.allow_empty_mesh = True
 
-# my class to plot single LBLs with pyvista's Plotter and set object colors
-# inherits from pyvista's Plotter class:
-class MyWindow(pv.Plotter):
-    hue:float
-    _3D:bool
-    LBLs:list           # list of LBL_view's
-    all_bounded:bool    # they are all bounded
-    my_origin: list
+    # my class to plot single LBLs with pyvista's Plotter and set object colors
+    # inherits from pyvista's Plotter class:
+    class MyWindow(pv.Plotter):
+        hue:float
+        _3D:bool
+        LBLs:list           # list of LBL_view's
+        all_bounded:bool    # they are all bounded
+        my_origin: list
 
-    def __init__(self):
-        self.hue = 0.0
-        self._3D = False
-        self.LBLs = []
-        self.all_bounded = True
-        self.my_origin = []
-        super().__init__()
+        def __init__(self):
+            self.hue = 0.0
+            self._3D = False
+            self.LBLs = []
+            self.all_bounded = True
+            self.my_origin = []
+            super().__init__()
 
-    # round robbin hue, this is a pretty nice generator of various colors
-    def color(self):
-        self.hue = (self.hue + 0.618033988749895) % 1.0
-        return colorsys.hsv_to_rgb(self.hue, .55, .9)
+        # round robbin hue, this is a pretty nice generator of various colors
+        def color(self):
+            self.hue = (self.hue + 0.618033988749895) % 1.0
+            return colorsys.hsv_to_rgb(self.hue, .55, .9)
 
 
-# this is not very nice, but it's the best way to do it.
-# _lbl_plot_window[-1] is set to a MyWindow instance, and a new window will
-# be added to the list, unless subplot = True.
+# This is not very nice, but it's the best way to do it.
+# A new window will be added to the list at each call to the plot function
+# (unless subplot == True)
 _lbl_plot_window = []
 
 
@@ -132,17 +129,18 @@ def lbl_plot(
     """
     global _lbl_plot_window
 
-    # initialize the global variable if it's empty
+    if isinstance(pv, _MissingModule):
+        pv.fail()
+
+    # initialize the global list of windows if it's empty
     if _lbl_plot_window == []:
         _lbl_plot_window.append(MyWindow())
+    # get the last opened window
+    plotter = _lbl_plot_window[-1]  # inherits from pv.plotter
 
     node = lbl._lbl
     if node is None:
         return
-
-    # get the last opened window
-    plotter = _lbl_plot_window[-1]  # inherits from pv.plotter
-
 
     # build a python list of single LBL views and add it to plotter.LBLs:
     while node is not None:
@@ -560,7 +558,7 @@ def _order_face(vertices, normal):
         pts2d = np.column_stack((centered @ u, centered @ v))
 
         # Convex hull in 2D
-        hull = ConvexHull(pts2d)
+        hull = spatial.ConvexHull(pts2d)
         order = hull.vertices
 
     # Fix orientation
