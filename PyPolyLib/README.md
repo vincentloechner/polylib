@@ -10,10 +10,10 @@ Written by:
 
 ## Requirements
 
-- Python 3
+- PolyLib (included) with GMP support
 - CMake
+- Python3
 - pybind11
-- PolyLib with GMP support
 - NumPy, SciPy and PyVista (optional, for plotting)
 
 PyPolyLib requires the `pybind11` module to build the C++ Python bindings
@@ -39,32 +39,37 @@ a `build/` subdirectory with:
 # From the PolyLib main directory:
 mkdir build && cd build
 
-# on recent MacOS you need to configure like this.
+# on recent MacOS you need to configure like this
+# (to find gmp and configure the generated uninstalled libs rpath correctly)
 # on Linux with gmp installed system-wide no configure options are needed.
+# add the --prefix option to choose your installation directory (optional,
+# default installation on /usr/local).
 ../configure \
   --with-libgmp=$(pkg-config gmp --variable=prefix) \
   --libdir=$(pwd)/.libs
-make -j 20
-make -j 20 check # optional
 
-# For testing you can directly use the polylib build, you do not need to
-# install it system-wide. Run `make install` if you want to install it.
+make -j 20              # build PolyLib
+
+make -j 20 check        # optional
+
+# For testing you can directly use the PolyLib build, you do not need to
+# install it system-wide.
+# If you want to install it on a longer-term basis run:
+make -j 20 install      # optional, use sudo if necessary
 
 # return to the PolyLib main directory
 cd ..
 ```
 
-
 2. Enter PyPolyLib and prepare the Python environment: set a Python venv
 (optional) and install all required Python packages:
 ```sh
 cd PyPolyLib
-python3 -m venv venv && source ./venv/bin/activate
+python3 -m venv ./polylib_venv && source ./polylib_venv/bin/activate
 python3 -m pip install pybind11 numpy pyvista scipy
 ```
 
-
-1. Build pypolylib from the current directory:
+3. Build pypolylib:
 
 - using the local build polylib located in `../build` with:
 ```sh
@@ -82,8 +87,8 @@ cmake --build build/polylib-system
 If it is not found in a standard path, you can specify where to find the
 pkg-config `polylibgmp.pc` file using the PKG_CONFIG_PATH shell variable.
 
-
-To test your build, you just need to set your `PYTHONPATH` shell variable:
+To test the PyPolyLib python build, you just need to set your
+`PYTHONPATH` shell variable:
 ```sh
 export PYTHONPATH=$(pwd)/build/polylib-local
 # or:
@@ -94,9 +99,10 @@ export PYTHONPATH=$(pwd)/build/polylib-system
 ## Usage
 
 Do not forget to set your environment variable `PYTHONPATH` and activate
-your python venv, especially if you run another shell.
+your python venv (located in the PyPolyLib/ directory if you followed the
+above instructions), especially if you run another shell.
 
-### Syntax
+### Basic syntax
 - Import the library using:
 ```py
 from pypolylib import LBL, Transfo
@@ -137,11 +143,13 @@ a.sLBL_list() # get a Python list of single LBLs from the union of LBLs
 f = Transfo("(i,j -> 3i+2j+1)") # define a transformation function
 g = Transfo("(i,j -> j,i)")
 f * g == f.compose(g)
-f.inverse() # *integer* inverse of this function (see help)
-f(a) == a.image(f) # image of LBL a by f
-a.preimage(f) # computes the preimage of LBL a by function f
-               # (if the preimage by f is not consistent to form an LBL,
-               # only its LBL part is returned)
+f.inverse()   # *integer* inverse of this function (see help)
+f(a) == a.image(f) # image of the LBL a by f
+a.preimage(f) # computes the preimage of LBL a by function f.
+              # Notice that if the preimage by f is not consistent to form
+              # an LBL only its LBL part is returned, which means that:
+              # f(a.preimage(f)) is not necessarily equal to a (but it is
+              # included in a).
 ```
 
 
