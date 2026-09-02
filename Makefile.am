@@ -1,11 +1,10 @@
 SUBDIRS = include Test source
 
-EXTRA_CPPFLAGS = -I$(srcdir)/include -Iinclude @CPPFLAGS@
+AM_CFLAGS = -I$(srcdir)/include -Iinclude @CFLAGS@
 
 ACLOCAL_AMFLAGS = -I m4
 
 poly_src = $(srcdir)/applications
-poly_arith = $(srcdir)/source/arith
 
 # source files for building the lib:
 CFILES= \
@@ -43,23 +42,23 @@ EXTRA_DIST = doc source/oldpolytest.c INSTALL COPYING m4/ax_pthread.m4 m4/ax_cre
 lib_LTLIBRARIES = @polylibs@
 libpolylib32_la_LDFLAGS = -rpath $(libdir) -version-info @versioninfo@
 libpolylib32_la_SOURCES = $(CFILES)
-libpolylib32_la_CPPFLAGS = -DPOLYLIB_BITS=32 $(EXTRA_CPPFLAGS)
+libpolylib32_la_CPPFLAGS = -DPOLYLIB_BITS=32
 libpolylib32_la_LIBADD = @LTLIBOBJS@
 libpolylib64_la_LDFLAGS = -rpath $(libdir) -version-info @versioninfo@
 libpolylib64_la_SOURCES = $(CFILES)
-libpolylib64_la_CPPFLAGS = -DPOLYLIB_BITS=64 $(EXTRA_CPPFLAGS)
+libpolylib64_la_CPPFLAGS = -DPOLYLIB_BITS=64
 libpolylib64_la_LIBADD = @LTLIBOBJS@
 libpolylib128_la_LDFLAGS = -rpath $(libdir) -version-info @versioninfo@
 libpolylib128_la_SOURCES = $(CFILES)
-libpolylib128_la_CPPFLAGS = -DPOLYLIB_BITS=128  $(EXTRA_CPPFLAGS)
+libpolylib128_la_CPPFLAGS = -DPOLYLIB_BITS=128
 libpolylib128_la_LIBADD = @LTLIBOBJS@
+
 libpolylibgmp_la_LDFLAGS = -rpath $(libdir) -version-info @versioninfo@
 libpolylibgmp_la_SOURCES = $(CFILES)
-libpolylibgmp_la_CPPFLAGS = -DGNUMP  $(EXTRA_CPPFLAGS)
+libpolylibgmp_la_CPPFLAGS = -DGNUMP
 libpolylibgmp_la_LIBADD = @LTLIBOBJS@
 
 testlib_CPPFLAGS = $(libpolylib@BITS@_la_CPPFLAGS)
-example_CPPFLAGS = $(libpolylib@BITS@_la_CPPFLAGS)
 count_CPPFLAGS = $(libpolylib@BITS@_la_CPPFLAGS)
 c2p_CPPFLAGS = $(libpolylib@BITS@_la_CPPFLAGS)
 r2p_CPPFLAGS = $(libpolylib@BITS@_la_CPPFLAGS)
@@ -81,14 +80,15 @@ no_inst_programs_gmp=Zpolytestgmp$(EXEEXT) polytestgmp$(EXEEXT) verif_ehrhartgmp
 
 noinst_PROGRAMS = \
 	testlib \
-	example \
 	count \
 	@multi_noinst_programs@
 
+# build all BITS version of those programs (used in make check):
 multi_bin_programs_32=ehrhart_ranking32$(EXEEXT) ehrhart_union32$(EXEEXT) pp32$(EXEEXT) testehrhart32$(EXEEXT)
 multi_bin_programs_64=ehrhart_ranking64$(EXEEXT) ehrhart_union64$(EXEEXT) pp64$(EXEEXT) testehrhart64$(EXEEXT)
 multi_bin_programs_gmp=ehrhart_rankinggmp$(EXEEXT) ehrhart_uniongmp$(EXEEXT) ppgmp$(EXEEXT) testehrhartgmp$(EXEEXT)
 
+# only the largest BITS version of those programs is built and installed:
 bin_PROGRAMS = \
 	c2p \
 	r2p \
@@ -124,8 +124,6 @@ ehrhart_lower_bound_SOURCES =  $(poly_src)/ehrhart_lower_bound.c
 ehrhart_lower_bound_DEPENDENCIES = @polylib@
 testlib_SOURCES = $(poly_src)/testlib.c
 testlib_DEPENDENCIES = @polylib@
-example_SOURCES = $(poly_src)/example.c
-example_DEPENDENCIES = @polylib@
 count_SOURCES = source/count.c
 count_DEPENDENCIES = @polylib@
 Zpolytest32_CPPFLAGS = $(libpolylib32_la_CPPFLAGS)
@@ -215,9 +213,9 @@ dist-hook: document
 	rm -rf `find $(distdir)/doc -name CVS`
 
 clean-local:
+	rm -f polylib*.pc polylib*-uninstalled.sh
 
 distclean-local:
-	rm -f polylib*.pc polylib*-uninstalled.pc polylib*-uninstalled.sh polylib*.pc.in
 	rm -rf doc/codeDoc
 
 install-data-local:

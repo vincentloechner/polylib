@@ -1,0 +1,18 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libdir=@abs_builddir@/.libs
+datarootdir=@datarootdir@
+datadir=@datadir@
+sysconfdir=@sysconfdir@
+includedir=@abs_builddir@/include
+includedir2=@abs_srcdir@/include
+package=@PACKAGE@
+suffix=
+
+Name: polylib32
+Description: polylib32 Library
+Version: @PACKAGE_VERSION@
+Requires:
+Libs: -L${libdir} -lpolylib32 @PC_LDFLAGS@ @LIBS@
+Cflags: -I${includedir} -I${includedir2} @PC_CFLAGS@

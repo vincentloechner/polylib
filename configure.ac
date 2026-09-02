@@ -147,6 +147,10 @@ AC_ARG_ENABLE(longlongint-lib,
 	])
 
 dnl Check for GMP library
+AC_SUBST(PC_CFLAGS)
+AC_SUBST(PC_LDFLAGS)
+# those flags will be propagated to the .pc generated files
+
 AC_MSG_CHECKING(whether to use GMP)
 AC_ARG_WITH(libgmp,
         [  --with-libgmp@<:@=DIR@:>@     Build a GMP polylib using the GMP library located in DIR],
@@ -169,6 +173,7 @@ elif test "x$gmp_package" = "xnotuserdefined"; then
 		AC_CHECK_DECLS(mp_get_memory_functions,[],[
 			AC_LIBOBJ(mp_get_memory_functions)
 		],[#include <gmp.h>])
+		# libtype and the GMP variables will be defined below
 	fi
 else
 	# user choice: use gmp
@@ -178,8 +183,10 @@ else
 	    if test ! -d "$GMP_DIR"; then
 	    	AC_MSG_ERROR(Directory given for GMP Distribution is not a directory)
 	    fi
-	    CPPFLAGS="-I$GMP_DIR/include $CPPFLAGS"
-	    LDFLAGS="-L$GMP_DIR/lib $LDFLAGS"
+			PC_CFLAGS="-I$GMP_DIR/include"
+			PC_LDFLAGS="-L$GMP_DIR/lib"
+	    CFLAGS="$PC_CFLAGS $CFLAGS"
+	    LDFLAGS="$PC_LDFLAGS $LDFLAGS"
 	fi
 	AC_CHECK_HEADER(gmp.h,
 		[AC_CHECK_LIB(gmp,main,
@@ -195,7 +202,7 @@ else
 	fi
 
 	lib_type=gmp
-	BITS=`expr gmp`
+	BITS="gmp"
 	LIBS="-lgmp $LIBS"
 	polylibs="libpolylib$BITS.la $polylibs"
 	ALL_BITS="$BITS $ALL_BITS"
@@ -227,7 +234,7 @@ if test "X$lib_type" = "X"; then
 	if test "x$gmp_package" != "xno"; then
 		AC_MSG_RESULT([ Adding 'gmp' representation])
 		lib_type=gmp
-		BITS=`expr gmp`
+		BITS="gmp"
 		LIBS="-lgmp $LIBS"
 		polylibs="libpolylib$BITS.la $polylibs"
 		ALL_BITS="$ALL_BITS $BITS"
@@ -289,6 +296,9 @@ if test "X$PTHREAD_CC" = "X" ; then
 elif test "X$enable_threadsafe" = "Xno"; then
 	AC_MSG_NOTICE([Will NOT build a threadsafe library (as requested)])
 else
+	PC_CFLAGS="$PC_CFLAGS $PTHREAD_CFLAGS"
+	PC_LDFLAGS="$PC_LDFLAGS $PTHREAD_LIBS"
+
 	LIBS="$LIBS $PTHREAD_LIBS"
 	CFLAGS="$CFLAGS $PTHREAD_CFLAGS -DTHREAD_SAFE_POLYLIB"
 	CC="$PTHREAD_CC"
@@ -306,10 +316,13 @@ dnl Used with doxygen
 AC_SUBST(DOXYGEN)
 
 dnl We only create one .pc file at a time
-PACKAGE_NAME=polylib$BITS
-PACKAGE_LDFLAGS="$LDFLAGS"
-AX_CREATE_PKGCONFIG_INFO
+dnl PACKAGE_NAME=polylib$BITS
+dnl PACKAGE_LDFLAGS="$LDFLAGS"
+dnl AX_CREATE_PKGCONFIG_INFO
 
+for b in $ALL_BITS ; do
+	PKG_CONFIG_FILES="$PKG_CONFIG_FILES polylib$b.pc polylib$b-uninstalled.pc"
+done
 
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([
@@ -329,6 +342,7 @@ AC_CONFIG_FILES([
 	  Test/general/Makefile
 	  Test/pp/Makefile
 	  polylib.doxygen
+		$PKG_CONFIG_FILES
 	])
 AC_OUTPUT
 
@@ -336,7 +350,7 @@ AC_OUTPUT
 echo "---------------------------------------------------"
 echo "Polylib will be built with" $ALL_BITS "integer size(s)"
 echo "You can proceed with:"
-echo "make               :to build the libs and the executables"
-echo "make tests         :to test the library"
-echo "make install       :to install them (to $prefix)"
+echo "make        : to build the libs and the executables"
+echo "make check  : to test the library"
+echo "make install: to install them (to $prefix)"
 echo "---------------------------------------------------"

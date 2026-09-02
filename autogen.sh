@@ -13,4 +13,6 @@ fi
 # autoconf
 
 autoreconf -i
+
+echo "Autogen in cln/:"
 (cd cln; ./autogen.sh)
