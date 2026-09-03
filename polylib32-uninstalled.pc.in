@@ -11,8 +11,8 @@ package=@PACKAGE@
 suffix=
 
 Name: polylib32
-Description: polylib32 Library
+Description: polylib32 Library (local build)
 Version: @PACKAGE_VERSION@
 Requires:
-Libs: -L${libdir} -lpolylib32 @PC_LDFLAGS@ @LIBS@
+Libs: -L${libdir} -Wl,-rpath,${libdir} -lpolylib32 @PC_LDFLAGS@ @LIBS@
 Cflags: -I${includedir} -I${includedir2} @PC_CFLAGS@

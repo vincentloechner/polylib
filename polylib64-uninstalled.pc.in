@@ -11,8 +11,8 @@ package=@PACKAGE@
 suffix=
 
 Name: polylib64
-Description: polylib64 Library
+Description: polylib64 Library (local build)
 Version: @PACKAGE_VERSION@
 Requires:
-Libs: -L${libdir} -lpolylib64 @PC_LDFLAGS@ @LIBS@
+Libs: -L${libdir} -Wl,-rpath,${libdir} -lpolylib64 @PC_LDFLAGS@ @LIBS@
 Cflags: -I${includedir} -I${includedir2} @PC_CFLAGS@
