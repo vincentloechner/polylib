@@ -9,42 +9,50 @@ find_package(pybind11 CONFIG REQUIRED)
 pkg_check_modules(GMP REQUIRED IMPORTED_TARGET gmp)
 
 # ----------------------------------------------------------------------
-# find PolyLib using pkg-config (look for polylibgmp[-uninstalled].pc)
-#
+# find PolyLib using pkg-config
 # If POLYLIB_USE_UNINSTALLED is ON, look for polylibgmp-uninstalled.pc in
-# POLYLIB_DIR (defaut: ../build).
-# Else, look for polylibgmp.pc in POLYLIB_DIR and standard paths.
-# The user can also manually set PKG_CONFIG_PATH to search other directories.
+# POLYLIB_DIR, .., ../build and standard paths.
+# Else, look for polylibgmp.pc or polylibgmp-uninstalled.pc in POLYLIB_DIR
+# and standard paths.
 # ----------------------------------------------------------------------
 
 option(POLYLIB_USE_UNINSTALLED
-    "Use the uninstalled PolyLib build (pkg-config file polylibgmp-uninstalled.pc)"
+    "Force use of the uninstalled PolyLib build tree"
     OFF
 )
 set(POLYLIB_DIR
-    "${CMAKE_CURRENT_SOURCE_DIR}/../build"
+    ""
     CACHE PATH
-    "PolyLib source/build or installation directory"
+    "PolyLib build or installation directory"
 )
 
 if(POLYLIB_USE_UNINSTALLED)
     set(ENV{PKG_CONFIG_PATH}
-        "${POLYLIB_DIR}:$ENV{PKG_CONFIG_PATH}"
+        "${POLYLIB_DIR}:..:../build:$ENV{PKG_CONFIG_PATH}"
     )
     pkg_check_modules(POLYLIB REQUIRED IMPORTED_TARGET
         polylibgmp-uninstalled
     )
 else()
-    # TODO: add POLYLIB_DIR to the path if user-specified
-    pkg_check_modules(POLYLIB REQUIRED IMPORTED_TARGET
+    if(POLYLIB_DIR)
+        set(ENV{PKG_CONFIG_PATH}
+            "${POLYLIB_DIR}:$ENV{PKG_CONFIG_PATH}")
+    endif()
+    pkg_search_module(POLYLIB REQUIRED IMPORTED_TARGET
         polylibgmp
+        polylibgmp-uninstalled
     )
 endif()
+# tell the user which .pc file was found:
+pkg_get_variable(POLYLIB_PC_DIR ${POLYLIB_MODULE_NAME} pcfiledir)
+message(STATUS "Using POLYLIB via pkg-config module from: \
+${POLYLIB_PC_DIR}/${POLYLIB_MODULE_NAME}.pc")
 
 
-message(STATUS "PolyLib include dirs: ${POLYLIB_INCLUDE_DIRS}")
-message(STATUS "PolyLib libraries: ${POLYLIB_LIBRARIES}")
-message(STATUS "PolyLib libraries dirs: ${POLYLIB_LIBRARY_DIRS}")
+# DEBUG: (to be removed)
+message(STATUS "DEBUG: PolyLib include dirs: ${POLYLIB_INCLUDE_DIRS}")
+message(STATUS "DEBUG: PolyLib libraries: ${POLYLIB_LIBRARIES}")
+message(STATUS "DEBUG: PolyLib libraries dirs: ${POLYLIB_LIBRARY_DIRS}")
 
 
 # ----------------------------------------------------------------------
@@ -55,8 +63,8 @@ pybind11_add_module(_core
 )
 
 
-# make sure to use the given polylib include dir,
-# in case an older version of polylib is installed system-wide:
+# configure polylib explicitly: make sure to use the given polylib include
+# dir, in case an older version of polylib is installed system-wide
 target_include_directories(_core BEFORE PRIVATE
     ${POLYLIB_INCLUDE_DIRS}
 )

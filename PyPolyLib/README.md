@@ -74,7 +74,7 @@ python3 -m pip install pybind11 numpy pyvista scipy
 - using the local build polylib located in `../build` with:
 ```sh
 cmake -S . -B build/polylib-local \
-  -DPOLYLIB_ROOT=../build \
+  -DPOLYLIB_DIR=../build \
   -DPOLYLIB_USE_UNINSTALLED=ON
 cmake --build build/polylib-local
 ```
