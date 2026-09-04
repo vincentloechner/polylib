@@ -11,18 +11,17 @@ pkg_check_modules(GMP REQUIRED IMPORTED_TARGET gmp)
 # ----------------------------------------------------------------------
 # find PolyLib using pkg-config (look for polylibgmp[-uninstalled].pc)
 #
-# If POLYLIB_USE_UNINSTALLED is specified, look for the uninstalled lib
-# in POLYLIB_ROOT and in POLYLIB_ROOT/build
-# The user can manually set PKG_CONFIG_PATH to search other directories
-#
-# Otherwise, look for an installed PolyLib.
+# If POLYLIB_USE_UNINSTALLED is ON, look for polylibgmp-uninstalled.pc in
+# POLYLIB_DIR (defaut: ../build).
+# Else, look for polylibgmp.pc in POLYLIB_DIR and standard paths.
+# The user can also manually set PKG_CONFIG_PATH to search other directories.
 # ----------------------------------------------------------------------
 
 option(POLYLIB_USE_UNINSTALLED
-    "Use the uninstalled PolyLib build"
+    "Use the uninstalled PolyLib build (pkg-config file polylibgmp-uninstalled.pc)"
     OFF
 )
-set(POLYLIB_ROOT
+set(POLYLIB_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/../build"
     CACHE PATH
     "PolyLib source/build or installation directory"
@@ -30,12 +29,13 @@ set(POLYLIB_ROOT
 
 if(POLYLIB_USE_UNINSTALLED)
     set(ENV{PKG_CONFIG_PATH}
-        "${POLYLIB_ROOT}/build:${POLYLIB_ROOT}:$ENV{PKG_CONFIG_PATH}"
+        "${POLYLIB_DIR}:$ENV{PKG_CONFIG_PATH}"
     )
     pkg_check_modules(POLYLIB REQUIRED IMPORTED_TARGET
         polylibgmp-uninstalled
     )
 else()
+    # TODO: add POLYLIB_DIR to the path if user-specified
     pkg_check_modules(POLYLIB REQUIRED IMPORTED_TARGET
         polylibgmp
     )
