@@ -315,11 +315,12 @@ AC_SUBST(BITS)
 dnl Used with doxygen
 AC_SUBST(DOXYGEN)
 
-dnl We only create one .pc file at a time
-dnl PACKAGE_NAME=polylib$BITS
-dnl PACKAGE_LDFLAGS="$LDFLAGS"
-dnl AX_CREATE_PKGCONFIG_INFO
+dnl We just create one fake .pc file to initialize the pkg_config_* variables:
+PACKAGE_NAME=tmp_polylib$BITS
+PACKAGE_LDFLAGS="$LDFLAGS"
+AX_CREATE_PKGCONFIG_INFO
 
+dnl Now, add all pkg_config files to the list of files to build from .in:
 for b in $ALL_BITS ; do
 	PKG_CONFIG_FILES="$PKG_CONFIG_FILES polylib$b.pc polylib$b-uninstalled.pc"
 done

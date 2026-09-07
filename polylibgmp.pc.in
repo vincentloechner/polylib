@@ -10,7 +10,7 @@ package=@PACKAGE@
 suffix=
 
 Name: polylibgmp
-Description: polylibgmp Library
+Description: polylib gmp Library
 Version: @PACKAGE_VERSION@
 Requires:
 Libs: -L${libdir} -lpolylibgmp @PC_LDFLAGS@ @LIBS@

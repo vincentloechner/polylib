@@ -10,7 +10,7 @@ package=@PACKAGE@
 suffix=
 
 Name: polylib32
-Description: polylib32 Library
+Description: polylib 32-bits Library
 Version: @PACKAGE_VERSION@
 Requires:
 Libs: -L${libdir} -lpolylib32 @PC_LDFLAGS@ @LIBS@

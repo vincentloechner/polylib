@@ -10,7 +10,7 @@ package=@PACKAGE@
 suffix=
 
 Name: polylib64
-Description: polylib64 Library
+Description: polylib 64-bits Library
 Version: @PACKAGE_VERSION@
 Requires:
 Libs: -L${libdir} -lpolylib64 @PC_LDFLAGS@ @LIBS@
