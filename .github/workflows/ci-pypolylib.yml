@@ -42,6 +42,11 @@ jobs:
           python -m pip install build
           python -m build --wheel
 
+      - name: Check PyPolyLib installation
+        working-directory: PyPolyLib
+        run: |
+          test-venv/bin/python -c "import pypolylib; print(pypolylib.__file__)"
+
       - name: Install PyPolyLib
         working-directory: PyPolyLib
         run: |
