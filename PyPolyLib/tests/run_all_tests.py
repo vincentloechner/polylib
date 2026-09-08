@@ -31,7 +31,7 @@ failed = 0
 for f in files:
     print(f"{'='*15} {f} {'='*15}")
     try:
-        r = subprocess.run(["python3", f], timeout=timeout)
+        r = subprocess.run([sys.executable, f], timeout=timeout)
         if r.returncode != 0:
             failed += r.returncode
             print(f"{r.returncode} FAIL in {f}")
