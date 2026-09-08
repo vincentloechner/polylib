@@ -56,12 +56,12 @@ message(STATUS "DEBUG: PolyLib libraries dirs: ${POLYLIB_LIBRARY_DIRS}")
 
 
 # ----------------------------------------------------------------------
-# Python extension
+# Python extension build
 # ----------------------------------------------------------------------
+
 pybind11_add_module(_core
     src/_core.cpp
 )
-
 
 # configure polylib explicitly: make sure to use the given polylib include
 # dir, in case an older version of polylib is installed system-wide
@@ -81,22 +81,41 @@ target_link_libraries(_core PRIVATE
 #     PkgConfig::GMP
 # )
 
-# move to the right place
-set_target_properties(_core PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY
-        "${CMAKE_BINARY_DIR}/pypolylib"
+
+# ----------------------------------------------------------------------
+# Python package
+# ----------------------------------------------------------------------
+
+file(GLOB PYTHON_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/python/*.py"
 )
 
-# move the python sources:
-set(PYTHON_SOURCES
-    __init__.py
-    lbl.py
-    lbl_io.py
-    lbl_plot.py
+install(TARGETS _core
+    LIBRARY DESTINATION pypolylib
 )
-add_custom_target(pypolylib_python ALL
-COMMAND ${CMAKE_COMMAND} -E copy_directory
-"${CMAKE_CURRENT_SOURCE_DIR}/src/python"
-"${CMAKE_BINARY_DIR}/pypolylib"
+
+install(FILES
+    ${PYTHON_SOURCES}
+    DESTINATION pypolylib
 )
-add_dependencies(pypolylib_python _core)
+
+# this was done manually before:
+# # move to the right place
+# set_target_properties(_core PROPERTIES
+#     LIBRARY_OUTPUT_DIRECTORY
+#         "${CMAKE_BINARY_DIR}/pypolylib"
+# )
+
+# # move the python sources:
+# set(PYTHON_SOURCES
+#     __init__.py
+#     lbl.py
+#     lbl_io.py
+#     lbl_plot.py
+# )
+# add_custom_target(pypolylib_python ALL
+# COMMAND ${CMAKE_COMMAND} -E copy_directory
+# "${CMAKE_CURRENT_SOURCE_DIR}/src/python"
+# "${CMAKE_BINARY_DIR}/pypolylib"
+# )
+# add_dependencies(pypolylib_python _core)
