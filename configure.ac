@@ -38,7 +38,8 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AC_PREREQ([2.71])
 
-# libtool versioning info (this is not the package version!)
+# libtool versioning info
+# this is not the package version, defined above in AC_INIT!
 AC_SUBST(versioninfo)
 versioninfo=10:1:0
 

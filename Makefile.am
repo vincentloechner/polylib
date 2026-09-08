@@ -224,3 +224,13 @@ install-data-local:
 
 uninstall-local:
 	rm -f "$(DESTDIR)$(pkgconfig_libdir)/polylib*.pc"
+
+install-exec-hook:
+	@if test "x$(libdir)" = "x/usr/local/lib"; then \
+		echo ""; \
+		echo "PolyLib has been installed in /usr/local/lib."; \
+		echo "Under Linux, you may need to update the dynamic linker cache with:"; \
+		echo ""; \
+		echo "    sudo ldconfig"; \
+		echo ""; \
+	fi
