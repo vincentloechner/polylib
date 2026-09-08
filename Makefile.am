@@ -220,7 +220,7 @@ distclean-local:
 
 install-data-local:
 	@test -z "$(pkgconfig_libdir)" || $(mkdir_p) "$(DESTDIR)$(pkgconfig_libdir)"
-	$(INSTALL_DATA) $(pkgconfig_libfile) "$(DESTDIR)$(pkgconfig_libdir)/$(pkgconfig_libfile)"
+	$(INSTALL_DATA) @PKG_CONFIG_INST_FILES@ "$(DESTDIR)$(pkgconfig_libdir)"
 
 uninstall-local:
-	rm -f "$(DESTDIR)$(pkgconfig_libdir)/$(pkgconfig_libfile)"
+	rm -f "$(DESTDIR)$(pkgconfig_libdir)/polylib*.pc"

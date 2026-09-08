@@ -219,7 +219,7 @@ if test "X$lib_type" = "X"; then
 
 	if test "$ac_cv_sizeof_long_int" -gt "$ac_cv_sizeof_int"; then
 		bits=`expr $ac_cv_sizeof_long_int \* 8`
-		AC_MSG_RESULT([Adding 'long int' ($bits)representation])
+		AC_MSG_RESULT([ Adding 'long int' ($bits)representation])
 		lib_type=longint
 		polylibs="libpolylib$bits.la $polylibs"
 		ALL_BITS="$ALL_BITS $bits"
@@ -315,14 +315,20 @@ AC_SUBST(BITS)
 dnl Used with doxygen
 AC_SUBST(DOXYGEN)
 
-dnl We just create one fake .pc file to initialize the pkg_config_* variables:
-PACKAGE_NAME=tmp_polylib$BITS
-PACKAGE_LDFLAGS="$LDFLAGS"
-AX_CREATE_PKGCONFIG_INFO
+dnl took this out because AX_CREATE_PKGCONFIG_INFO can only make one .pc file
+dnl PACKAGE_NAME=tmp_polylib$BITS
+dnl PACKAGE_LDFLAGS="$LDFLAGS"
+dnl AX_CREATE_PKGCONFIG_INFO
 
-dnl Now, add all pkg_config files to the list of files to build from .in:
+AC_SUBST(pkgconfig_libdir)
+AC_SUBST(PKG_CONFIG_INST_FILES)
+
+dnl Configure all versions of useful pkg_config files:
+dnl an uninstalled and an installed variant of each version in ${ALL_BITS}
+pkgconfig_libdir='${libdir}/pkgconfig'
 for b in $ALL_BITS ; do
-	PKG_CONFIG_FILES="$PKG_CONFIG_FILES polylib$b.pc polylib$b-uninstalled.pc"
+	PKG_CONFIG_INST_FILES="$PKG_CONFIG_INST_FILES polylib$b.pc"
+	PKG_CONFIG_UNINST_FILES="$PKG_CONFIG_UNINST_FILES polylib$b-uninstalled.pc"
 done
 
 AC_CONFIG_HEADERS(config.h)
@@ -343,7 +349,8 @@ AC_CONFIG_FILES([
 	  Test/general/Makefile
 	  Test/pp/Makefile
 	  polylib.doxygen
-		$PKG_CONFIG_FILES
+		$PKG_CONFIG_INST_FILES
+		$PKG_CONFIG_UNINST_FILES
 	])
 AC_OUTPUT
 
