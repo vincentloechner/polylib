@@ -6,8 +6,6 @@ datarootdir=@datarootdir@
 datadir=@datadir@
 sysconfdir=@sysconfdir@
 includedir=@includedir@
-package=@PACKAGE@
-suffix=
 
 Name: polylib32
 Description: polylib 32-bits Library

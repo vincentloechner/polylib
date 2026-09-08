@@ -6,8 +6,6 @@ datarootdir=@datarootdir@
 datadir=@datadir@
 sysconfdir=@sysconfdir@
 includedir=@includedir@
-package=@PACKAGE@
-suffix=
 
 Name: polylibgmp
 Description: polylib gmp Library

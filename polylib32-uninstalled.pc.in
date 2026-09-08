@@ -7,12 +7,10 @@ datadir=${datarootdir}
 sysconfdir=${prefix}/etc
 includedir=${prefix}/include
 includedir_src=@abs_srcdir@/include
-package=@PACKAGE@
-suffix=
 
 Name: polylib32
-Description: polylib32 Library (local build)
+Description: polylib 32-bits Library (local build)
 Version: @PACKAGE_VERSION@
 Requires:
 Libs: -L${libdir} -Wl,-rpath,${libdir} -lpolylib32 @PC_LDFLAGS@ @LIBS@
-Cflags: -I${includedir} -I${includedir2} @PC_CFLAGS@
+Cflags: -I${includedir} -I${includedir_src} @PC_CFLAGS@

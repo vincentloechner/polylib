@@ -7,8 +7,6 @@ datadir=${datarootdir}
 sysconfdir=${prefix}/etc
 includedir=${prefix}/include
 includedir_src=@abs_srcdir@/include
-package=@PACKAGE@
-suffix=
 
 Name: polylibgmp
 Description: polylib gmp Library (local build)
