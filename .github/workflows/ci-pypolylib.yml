@@ -6,6 +6,10 @@ on:
 
 jobs:
   test:
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
     runs-on: ubuntu-latest
 
     steps:
@@ -31,10 +35,11 @@ jobs:
           sudo make install
           sudo ldconfig
 
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Build PyPolyLib wheel
         working-directory: PyPolyLib
