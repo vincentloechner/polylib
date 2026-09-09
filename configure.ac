@@ -30,7 +30,7 @@ dnl	Makefile in this directory.
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([polylib],[6.01])
+AC_INIT([polylib],[6.02])
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE([gnu])
 AC_CONFIG_SRCDIR(include/polylib/polylib.h.in)

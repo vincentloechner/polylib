@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pypolylib"
-version = "6.01"
+version = "6.02" # bind to polylib version for now
 description = "Python bindings for PolyLib"
 requires-python = ">=3.9"
 dependencies = [
