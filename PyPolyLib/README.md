@@ -65,13 +65,14 @@ try to plot an LBL when they are not installed).
         the *pyproject.toml* file:
       ```sh
       cd PyPolyLib
-      python -m pip install build
-      PKG_CONFIG_PATH=../build python -m build --wheel
-      ./polylib_venv/bin/pip install dist/*.whl
+      python3 -m venv polylib_venv && source ./polylib_venv/bin/activate
+      python3 -m pip install build
+      PKG_CONFIG_PATH=../build python3 -m build --wheel
+      python3 -m pip install dist/*.whl
       ```
       Test your build with:
       ```sh
-      ./polylib_venv/bin/python -c "import pypolylib; print(pypolylib.__file__)"
+      python3 -c "import pypolylib; print(pypolylib.__file__)"
       ```
   - Manual build
 
