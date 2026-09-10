@@ -29,14 +29,14 @@ files = sorted(script_dir.glob("test_*.py"), key=lambda f: f.name.lower())
 # run tests
 failed = 0
 for f in files:
-    print(f"{'='*15} {f} {'='*15}")
+    print(f"{'='*15} {f} {'='*15}", flush=True)
     try:
         r = subprocess.run([sys.executable, f], timeout=timeout)
         if r.returncode != 0:
             failed += r.returncode
-            print(f"{r.returncode} FAIL in {f}")
+            print(f"{r.returncode} FAIL in {f}", flush=True)
     except subprocess.TimeoutExpired:
-        print(f"\n\033[31mTIMEOUT in {f}\033[0m")
+        print(f"\n\033[31mTIMEOUT in {f}\033[0m", flush=True)
         failed += 1
 
 # final message
