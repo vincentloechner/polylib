@@ -33,6 +33,9 @@ if(POLYLIB_USE_UNINSTALLED)
     pkg_check_modules(POLYLIB REQUIRED IMPORTED_TARGET
         polylibgmp-uninstalled
     )
+    # need this on some MacOS or else the system directories will still come
+    # first, and if you have an old polylib installed it will fail...
+    set_property(TARGET PkgConfig::POLYLIB PROPERTY SYSTEM FALSE)
 else()
     if(POLYLIB_DIR)
         set(ENV{PKG_CONFIG_PATH}
@@ -46,46 +49,34 @@ endif()
 # tell the user which .pc file was found:
 pkg_get_variable(POLYLIB_PC_DIR ${POLYLIB_MODULE_NAME} pcfiledir)
 message(STATUS "Using POLYLIB via pkg-config module from: \
-${POLYLIB_PC_DIR}/${POLYLIB_MODULE_NAME}.pc")
-
+    ${POLYLIB_PC_DIR}/${POLYLIB_MODULE_NAME}.pc")
 
 # DEBUG: (to be removed)
-message(STATUS "DEBUG: PolyLib include dirs: ${POLYLIB_INCLUDE_DIRS}")
-message(STATUS "DEBUG: PolyLib libraries: ${POLYLIB_LIBRARIES}")
-message(STATUS "DEBUG: PolyLib libraries dirs: ${POLYLIB_LIBRARY_DIRS}")
+# message(STATUS "DEBUG: PolyLib include dirs: ${POLYLIB_INCLUDE_DIRS}")
+# message(STATUS "DEBUG: PolyLib libraries: ${POLYLIB_LIBRARIES}")
+# message(STATUS "DEBUG: PolyLib libraries dirs: ${POLYLIB_LIBRARY_DIRS}")
+# message(STATUS "DEBUG: PolyLib LDFLAGS: ${POLYLIB_LDFLAGS}")
 
 
 # ----------------------------------------------------------------------
 # Python extension build
 # ----------------------------------------------------------------------
-
 pybind11_add_module(_core
     src/_core.cpp
 )
 
-# configure polylib explicitly: make sure to use the given polylib include
-# dir, in case an older version of polylib is installed system-wide
+# make sure to use the uninstalled header files of polylib, if set:
 target_include_directories(_core BEFORE PRIVATE
-    ${POLYLIB_INCLUDE_DIRS}
-)
-target_link_directories(_core PRIVATE
-    ${POLYLIB_LIBRARY_DIRS}
-)
+    ${POLYLIB_INCLUDE_DIRS})
+
 target_link_libraries(_core PRIVATE
-    ${POLYLIB_LIBRARIES}
+    PkgConfig::POLYLIB
     PkgConfig::GMP
 )
-# instead of this (cmake uses the system directories first by default)
-# target_link_libraries(_core PRIVATE
-#     PkgConfig::POLYLIB
-#     PkgConfig::GMP
-# )
-
 
 # ----------------------------------------------------------------------
 # Python package
 # ----------------------------------------------------------------------
-
 file(GLOB PYTHON_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/python/*.py"
 )
@@ -98,24 +89,3 @@ install(FILES
     ${PYTHON_SOURCES}
     DESTINATION pypolylib
 )
-
-# this was done manually before:
-# # move to the right place
-# set_target_properties(_core PROPERTIES
-#     LIBRARY_OUTPUT_DIRECTORY
-#         "${CMAKE_BINARY_DIR}/pypolylib"
-# )
-
-# # move the python sources:
-# set(PYTHON_SOURCES
-#     __init__.py
-#     lbl.py
-#     lbl_io.py
-#     lbl_plot.py
-# )
-# add_custom_target(pypolylib_python ALL
-# COMMAND ${CMAKE_COMMAND} -E copy_directory
-# "${CMAKE_CURRENT_SOURCE_DIR}/src/python"
-# "${CMAKE_BINARY_DIR}/pypolylib"
-# )
-# add_dependencies(pypolylib_python _core)
