@@ -4788,15 +4788,19 @@ static Polyhedron *p_simplify_constraints(Polyhedron *P,
  * Reuse memory: destroy P and return a newly allocated Polyhedron
  * or just returns P in case no changes were made
  */
+// #define DEBUG_SIMPLIFY 1
 Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
-  // // DEBUG
-  // fprintf(stderr, "simplifying P = ");
-  // Polyhedron_Print(stderr, P_VALUE_FMT, P);
+  #ifdef DEBUG_SIMPLIFY
+  fprintf(stderr, "simplifying P = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, P);
+  #endif
 
   if(!P) return NULL;
   Polyhedron *Result = P;
   Polyhedron *prev = NULL, *Next;
   Matrix *tmp_matrix;
+  int dim = P->Dimension;
+
   if(POL_ISSET(MaxRays, POL_NO_DUAL)
     || POL_ISSET(MaxRays, POL_INTEGER)
     || MaxRays <= P->NbConstraints)
@@ -4860,9 +4864,16 @@ Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
     }
   }
 
-  // // DEBUG
-  // fprintf(stderr, "simplified Result = ");
-  // Polyhedron_Print(stderr, P_VALUE_FMT, Result);
+  // The Barvinok library (using POL_NO_DUAL) supposes that the returned
+  // domain is never NULL, it just has an empty head when that happens.
+  // Let's keep it this way.
+  if(POL_ISSET(MaxRays, POL_NO_DUAL) && Result == NULL) {
+    Result = Empty_Polyhedron(dim);
+  }
+  #ifdef DEBUG_SIMPLIFY
+  fprintf(stderr, "simplified Result = ");
+  Polyhedron_Print(stderr, P_VALUE_FMT, Result);
+  #endif
 
   Matrix_Free(tmp_matrix);
   return Result;
