@@ -50,10 +50,9 @@ a.plot()
 import math
 import gc
 
-import pypolylib_core as pl
-import lbl_io as io
-from lbl_plot import lbl_plot
-
+import pypolylib._core as pl
+import pypolylib.lbl_io as io
+from .lbl_plot import lbl_plot
 
 # ──────────────────────────────────────────────────────────────
 # Functions
@@ -334,7 +333,7 @@ class LBL:
         yield from _iter_single_lbl(node.Lat, poly, seen)
         poly = poly.next
       node = node.next
-  
+
   def __add__(self, other):
     """Union : a + b  ≡  a.union(b)"""
     return self.union(other)
@@ -467,7 +466,7 @@ class Transfo:
       Transfo: The inverse transformation
 
     Raises:
-      RuntimeError: If the matrix is not invertible
+      ValueError: If the matrix is not invertible
     """
     result = Transfo()
     result._mat = self._mat.inverse()

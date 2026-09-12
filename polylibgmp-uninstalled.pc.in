@@ -1,0 +1,16 @@
+prefix=@abs_builddir@
+exec_prefix=${prefix}
+bindir=${prefix}
+libdir=${prefix}/.libs
+datarootdir=${prefix}/share
+datadir=${datarootdir}
+sysconfdir=${prefix}/etc
+includedir=${prefix}/include
+includedir_src=@abs_srcdir@/include
+
+Name: polylibgmp
+Description: polylib gmp Library (local build)
+Version: @PACKAGE_VERSION@
+Requires:
+Libs: -L${libdir} -Wl,-rpath,${libdir} -lpolylibgmp @PC_LDFLAGS@ @LIBS@
+Cflags: -I${includedir} -I${includedir_src} @PC_CFLAGS@

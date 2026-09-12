@@ -9,6 +9,7 @@ xyz
 
 .deps/
 .libs/
+build/
 Makefile
 Makefile.in
 Test/Makefile
@@ -69,14 +70,6 @@ m4/ltsugar.m4
 m4/ltversion.m4
 m4/lt~obsolete.m4
 polylib.doxygen
-polylib64-uninstalled.pc
-polylib64-uninstalled.sh
-polylib64.pc
-polylib64.pc.in
-polylibgmp-uninstalled.pc
-polylibgmp-uninstalled.sh
-polylibgmp.pc
-polylibgmp.pc.in
 polytest64
 pp64
 r2p

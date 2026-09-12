@@ -16,11 +16,11 @@
 #endif
 
 #if ! defined(LINEAR_VALUE_IS_LONGLONG) \
-	&& ! defined(LINEAR_VALUE_IS_LONG) \
-	&& ! defined(LINEAR_VALUE_IS_INT) \
-	&& ! defined(LINEAR_VALUE_IS_CHARS) \
-        && ! defined(GNUMP) \
-        && ! defined(CLN)
+  && ! defined(LINEAR_VALUE_IS_LONG) \
+  && ! defined(LINEAR_VALUE_IS_INT) \
+  && ! defined(LINEAR_VALUE_IS_CHARS) \
+  && ! defined(GNUMP) \
+  && ! defined(CLN)
 #error Please #include polylib32.h or polylib64.h or polylibgmp.h (NOT polylib.h)
 #endif
 

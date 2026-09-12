@@ -30,7 +30,7 @@ dnl	Makefile in this directory.
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([polylib],[6.01])
+AC_INIT([polylib],[6.02])
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE([gnu])
 AC_CONFIG_SRCDIR(include/polylib/polylib.h.in)
@@ -38,7 +38,8 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AC_PREREQ([2.71])
 
-# libtool versioning info (this is not the package version!)
+# libtool versioning info
+# this is not the package version, defined above in AC_INIT!
 AC_SUBST(versioninfo)
 versioninfo=10:1:0
 
@@ -147,6 +148,10 @@ AC_ARG_ENABLE(longlongint-lib,
 	])
 
 dnl Check for GMP library
+AC_SUBST(PC_CFLAGS)
+AC_SUBST(PC_LDFLAGS)
+# those flags will be propagated to the .pc generated files
+
 AC_MSG_CHECKING(whether to use GMP)
 AC_ARG_WITH(libgmp,
         [  --with-libgmp@<:@=DIR@:>@     Build a GMP polylib using the GMP library located in DIR],
@@ -169,6 +174,7 @@ elif test "x$gmp_package" = "xnotuserdefined"; then
 		AC_CHECK_DECLS(mp_get_memory_functions,[],[
 			AC_LIBOBJ(mp_get_memory_functions)
 		],[#include <gmp.h>])
+		# libtype and the GMP variables will be defined below
 	fi
 else
 	# user choice: use gmp
@@ -178,8 +184,10 @@ else
 	    if test ! -d "$GMP_DIR"; then
 	    	AC_MSG_ERROR(Directory given for GMP Distribution is not a directory)
 	    fi
-	    CPPFLAGS="-I$GMP_DIR/include $CPPFLAGS"
-	    LDFLAGS="-L$GMP_DIR/lib $LDFLAGS"
+			PC_CFLAGS="-I$GMP_DIR/include"
+			PC_LDFLAGS="-L$GMP_DIR/lib"
+	    CFLAGS="$PC_CFLAGS $CFLAGS"
+	    LDFLAGS="$PC_LDFLAGS $LDFLAGS"
 	fi
 	AC_CHECK_HEADER(gmp.h,
 		[AC_CHECK_LIB(gmp,main,
@@ -195,7 +203,7 @@ else
 	fi
 
 	lib_type=gmp
-	BITS=`expr gmp`
+	BITS="gmp"
 	LIBS="-lgmp $LIBS"
 	polylibs="libpolylib$BITS.la $polylibs"
 	ALL_BITS="$BITS $ALL_BITS"
@@ -212,7 +220,7 @@ if test "X$lib_type" = "X"; then
 
 	if test "$ac_cv_sizeof_long_int" -gt "$ac_cv_sizeof_int"; then
 		bits=`expr $ac_cv_sizeof_long_int \* 8`
-		AC_MSG_RESULT([Adding 'long int' ($bits)representation])
+		AC_MSG_RESULT([ Adding 'long int' ($bits)representation])
 		lib_type=longint
 		polylibs="libpolylib$bits.la $polylibs"
 		ALL_BITS="$ALL_BITS $bits"
@@ -227,7 +235,7 @@ if test "X$lib_type" = "X"; then
 	if test "x$gmp_package" != "xno"; then
 		AC_MSG_RESULT([ Adding 'gmp' representation])
 		lib_type=gmp
-		BITS=`expr gmp`
+		BITS="gmp"
 		LIBS="-lgmp $LIBS"
 		polylibs="libpolylib$BITS.la $polylibs"
 		ALL_BITS="$ALL_BITS $BITS"
@@ -289,6 +297,9 @@ if test "X$PTHREAD_CC" = "X" ; then
 elif test "X$enable_threadsafe" = "Xno"; then
 	AC_MSG_NOTICE([Will NOT build a threadsafe library (as requested)])
 else
+	PC_CFLAGS="$PC_CFLAGS $PTHREAD_CFLAGS"
+	PC_LDFLAGS="$PC_LDFLAGS $PTHREAD_LIBS"
+
 	LIBS="$LIBS $PTHREAD_LIBS"
 	CFLAGS="$CFLAGS $PTHREAD_CFLAGS -DTHREAD_SAFE_POLYLIB"
 	CC="$PTHREAD_CC"
@@ -305,10 +316,21 @@ AC_SUBST(BITS)
 dnl Used with doxygen
 AC_SUBST(DOXYGEN)
 
-dnl Currently, we only create one .pc file
-dnl Creating one for each configured version is a bit complicated
-PACKAGE_NAME=polylib$BITS
-AX_CREATE_PKGCONFIG_INFO
+dnl took this out because AX_CREATE_PKGCONFIG_INFO can only make one .pc file
+dnl PACKAGE_NAME=tmp_polylib$BITS
+dnl PACKAGE_LDFLAGS="$LDFLAGS"
+dnl AX_CREATE_PKGCONFIG_INFO
+
+AC_SUBST(pkgconfig_libdir)
+AC_SUBST(PKG_CONFIG_INST_FILES)
+
+dnl Configure all versions of useful pkg_config files:
+dnl an uninstalled and an installed variant of each version in ${ALL_BITS}
+pkgconfig_libdir='${libdir}/pkgconfig'
+for b in $ALL_BITS ; do
+	PKG_CONFIG_INST_FILES="$PKG_CONFIG_INST_FILES polylib$b.pc"
+	PKG_CONFIG_UNINST_FILES="$PKG_CONFIG_UNINST_FILES polylib$b-uninstalled.pc"
+done
 
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([
@@ -328,6 +350,8 @@ AC_CONFIG_FILES([
 	  Test/general/Makefile
 	  Test/pp/Makefile
 	  polylib.doxygen
+		$PKG_CONFIG_INST_FILES
+		$PKG_CONFIG_UNINST_FILES
 	])
 AC_OUTPUT
 
@@ -335,7 +359,7 @@ AC_OUTPUT
 echo "---------------------------------------------------"
 echo "Polylib will be built with" $ALL_BITS "integer size(s)"
 echo "You can proceed with:"
-echo "make               :to build the libs and the executables"
-echo "make tests         :to test the library"
-echo "make install       :to install them (to $prefix)"
+echo "make        : to build the libs and the executables"
+echo "make check  : to test the library"
+echo "make install: to install them (to $prefix)"
 echo "---------------------------------------------------"

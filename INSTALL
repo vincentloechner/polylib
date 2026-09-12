@@ -1,27 +1,34 @@
 Basic installation procedure.
 
-You need the GNU tools : aclocal, autoconf, automake (some old versions do not work), libtool.
+You need the GNU autotools: aclocal, autoconf, automake, libtool.
 
-First, build your configure, ltmain.sh and Makefile scripts with autogen.sh
-Then, you can run the scripts 
+If cloning from the git you need to run:
 
-./configure [options]
+./autogen.sh
 
-make
+Then, you can run the following commands:
 
-make install
+mkdir build && cd build
+../configure [options]
+make -j 8
+make -j 8 check    # optional
+make -j 8 install  # optional (use sudo if necessary)
 
 
-
-The options for "configure" are given by 
-./configure --help
-
-Specific options to PolyLib are:
+The options for "configure" are given by: configure --help
+Options that are specific to PolyLib are:
   --enable-int-lib        Build an int library
   --enable-longint-lib    Build a long int library
   --enable-longlongint-lib Build a long long int library
   --enable-extra-suffix   Add bits size suffix to executables
-  --with-libgmp           DIR Location of the GMP Distribution
-  --with-doxygen          DIR Location of the Doxygen Distribution (http://www.doxygen.org)
-You may want to specify:
-  --prefix=/usr
+  --enable-threadsafe     threadsafe polylib (enabled by default if a threading library is found)
+  --with-libgmp[=DIR]     Build a GMP polylib using the GMP library located in DIR
+  --with-doxygen[=DIR]    Location of the Doxygen Distribution (http://www.doxygen.org)
+
+
+On MacOS, two options are often needed:
+1. to find gmp in the brew pkgconfig directory:
+    --with-libgmp=$(pkg-config gmp --variable=prefix)
+2. if using the library from the build tree directly (uninstalled), to find
+   back the libraries at runtime (rpath) you need to specify:
+    --libdir=$(pwd)/.libs

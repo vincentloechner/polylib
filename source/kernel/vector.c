@@ -485,7 +485,7 @@ int Vector_Equal(Value *Vec1, Value *Vec2, unsigned length) {
  * Set '*min' to the component of array 'p' with minimum non-zero absolute
  * value.
  * '*index' points to the component index that has the minimum value.
- * 
+ *
  * If no such value and index is found, Value 1 is set to min.
  */
 void Vector_Min_Not_Zero(Value *p, unsigned length, int *index, Value *min) {
@@ -824,17 +824,22 @@ static int cache_size = 0;
  *
  * USAGE: 'got' can be greater than 'want', when a cache block is reused
  */
+// #define CACHE_DEBUG 1
 Value *value_alloc(int want, int *got) {
   int i;
   Value *p;
 
-#ifdef THREAD_SAFE_POLYLIB
+  #ifdef THREAD_SAFE_POLYLIB
   assert(pthread_once(&once_cache, init_value_caches) == 0);
   cache_holder *cache;
   if (MAX_CACHE_SIZE > 0 && (cache = pthread_getspecific(cache_key)) == NULL)
     cache = allocate_local_cache();
-#endif // THREAD_SAFE_POLYLIB
+  #endif // THREAD_SAFE_POLYLIB
 
+  #ifdef CACHE_DEBUG
+  fprintf(stderr, "Enter Value_alloc.\n\twant = %d; cache_size = %d\n",
+    want, cache_size);
+  #endif
   if (MAX_CACHE_SIZE > 0 && cache_size) {
     int best = 0;
     for (i = 0; i < cache_size; ++i) {
@@ -844,18 +849,25 @@ Value *value_alloc(int want, int *got) {
         if (--cache_size != i)
           cache[i] = cache[cache_size];
         Vector_Set(p, 0, want);
+        #ifdef CACHE_DEBUG
+        fprintf(stderr, "Exit  Value_alloc. (reused) got = %d\n", *got);
+        #endif
         return p;
       }
       if (cache[i].size > cache[best].size)
         best = i;
     }
+    #ifdef CACHE_DEBUG
+    fprintf(stderr, "\tbest = %d\n", best);
+    #endif
 
     p = (Value *)realloc(cache[best].p, want * sizeof(Value));
     *got = cache[best].size;
     if (--cache_size != best)
       cache[best] = cache[cache_size];
     Vector_Set(p, 0, *got);
-  } else {
+  }
+  else {
     p = (Value *)malloc(want * sizeof(Value));
     *got = 0;
   }
@@ -866,6 +878,9 @@ Value *value_alloc(int want, int *got) {
   for (i = *got; i < want; ++i)
     value_init(p[i]);
   *got = want;
+  #ifdef CACHE_DEBUG
+  fprintf(stderr, "Exit  Value_alloc. got = %d\n", *got);
+  #endif
 
   return p;
 }

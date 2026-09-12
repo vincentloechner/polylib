@@ -1,0 +1,43 @@
+name: Build and test PolyLib, in all versions (32/64/gmp)
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  polylib-build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            libgmp-dev
+
+      - name: Prepare build
+        run: |
+          ./autogen.sh
+          mkdir build
+
+      - name: Build PolyLib
+        working-directory: build
+        run: |
+          ../configure
+          make -j$(nproc)
+
+      - name: Test PolyLib
+        working-directory: build
+        run: |
+          make -j$(nproc) check
+
+          # sudo make install
+          # sudo ldconfig
