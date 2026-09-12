@@ -4789,15 +4789,23 @@ static Polyhedron *p_simplify_constraints(Polyhedron *P,
  * or just returns P in case no changes were made
  */
 Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
+  // // DEBUG
+  // fprintf(stderr, "simplifying P = ");
+  // Polyhedron_Print(stderr, P_VALUE_FMT, P);
+
   if(!P) return NULL;
   Polyhedron *Result = P;
   Polyhedron *prev = NULL, *Next;
   Matrix *tmp_matrix;
-  if(MaxRays <= P->NbConstraints) MaxRays = 1 + P->NbConstraints;
-  tmp_matrix = Matrix_Alloc(MaxRays, P->Dimension + 2);
-  // //DEBUG
-  // fprintf(stderr, "simplifying D = ");
-  // Polyhedron_Print(stderr, P_VALUE_FMT, P);
+  if(POL_ISSET(MaxRays, POL_NO_DUAL)
+    || POL_ISSET(MaxRays, POL_INTEGER)
+    || MaxRays <= P->NbConstraints)
+  {
+    tmp_matrix = Matrix_Alloc(1 + P->NbConstraints, P->Dimension + 2);
+  }
+  else {
+    tmp_matrix = Matrix_Alloc(MaxRays, P->Dimension + 2);
+  }
 
   for (; P; P = Next) {
     Polyhedron *T;
@@ -4816,25 +4824,30 @@ Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
       redundant = 1;
     }
     else {
-      // T has been updated (it is now smaller than the original P)
-      // need to check if it is not included in another polyhedron of the
-      // whole domain (being updated) in which case it should not be added
-      for(Polyhedron *tmp = Result; tmp; tmp = tmp->next) {
-        if(tmp != P && PolyhedronIncludes(tmp, T)) {
-          redundant = 1;
-          break;
+      // When arriving here, T has been updated (it is now smaller than the
+      // original P): check if it is included in another polyhedron of the
+      // whole domain (being updated) in which case it is redundant.
+      // Do not perform this inclusion check if the dual is not computed
+      // (since the inclusion test needs the dual)
+      if(!POL_ISSET(MaxRays, POL_NO_DUAL)) {
+        for(Polyhedron *tmp = Result; tmp; tmp = tmp->next) {
+          if(tmp != P && PolyhedronIncludes(tmp, T)) {
+            redundant = 1;
+            break;
+          }
         }
       }
     }
 
-    Polyhedron_Free(P); // no longer need this one.
+    Polyhedron_Free(P); // no longer need the original one
 
     if(redundant) {
       // got an empty or redundant polyhedron, just free and do not link
       Polyhedron_Free(T);
-      // update link from prev, or Result (if this is the first one)
+      // update link from prev or Result (if this is the first one)
       if(prev) prev->next = Next;
       else     Result = Next;
+      // prev: no change
     }
     else // (T != P && !redundant)
     {
@@ -4847,7 +4860,7 @@ Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
     }
   }
 
-  // DEBUG
+  // // DEBUG
   // fprintf(stderr, "simplified Result = ");
   // Polyhedron_Print(stderr, P_VALUE_FMT, Result);
 
