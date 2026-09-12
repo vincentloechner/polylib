@@ -236,7 +236,9 @@ install-data-local:
 	$(INSTALL_DATA) @PKG_CONFIG_INST_FILES@ "$(DESTDIR)$(pkgconfig_libdir)"
 
 uninstall-local:
-	rm -f "$(DESTDIR)$(pkgconfig_libdir)/polylib*.pc"
+	@for f in @PKG_CONFIG_INST_FILES@; do \
+		rm -f "$(DESTDIR)$(pkgconfig_libdir)/$$f"; \
+	done
 
 install-exec-hook:
 	@if test "x$(libdir)" = "x/usr/local/lib"; then \
