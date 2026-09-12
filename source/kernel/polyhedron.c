@@ -4864,11 +4864,15 @@ Polyhedron *DomainConstraintSimplify(Polyhedron *P, unsigned MaxRays) {
     }
   }
 
-  // The Barvinok library (using POL_NO_DUAL) supposes that the returned
-  // domain is never NULL, it just has an empty head when that happens.
+  // The Barvinok library (wrongly) supposes that the returned
+  // domain is never NULL, it just has an empty head when it happens.
   // Let's keep it this way.
-  if(POL_ISSET(MaxRays, POL_NO_DUAL) && Result == NULL) {
-    Result = Empty_Polyhedron(dim);
+  // Barvinok usually sets POL_NO_DUAL, but not always :(
+  // if(POL_ISSET(MaxRays, POL_NO_DUAL))
+  {
+    if(Result == NULL) {
+      Result = Empty_Polyhedron(dim);
+    }
   }
   #ifdef DEBUG_SIMPLIFY
   fprintf(stderr, "simplified Result = ");
