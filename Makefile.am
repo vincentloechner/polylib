@@ -37,7 +37,20 @@ CFILES= \
 #	include/polylib/arithmetique.h \
 #	include/polylib/arithmetic_errors.h
 
-EXTRA_DIST = doc source/oldpolytest.c INSTALL COPYING m4/ax_pthread.m4 m4/ax_create_pkgconfig_info.m4
+EXTRA_DIST = \
+	doc \
+	source/oldpolytest.c \
+	INSTALL \
+	COPYING \
+	m4/ax_pthread.m4 \
+	m4/ax_create_pkgconfig_info.m4 \
+	polylib32-uninstalled.pc.in \
+	polylib32.pc.in \
+	polylib64-uninstalled.pc.in \
+	polylib64.pc.in \
+	polylibgmp-uninstalled.pc.in \
+	polylibgmp.pc.in
+
 
 lib_LTLIBRARIES = @polylibs@
 libpolylib32_la_LDFLAGS = -rpath $(libdir) -version-info @versioninfo@
