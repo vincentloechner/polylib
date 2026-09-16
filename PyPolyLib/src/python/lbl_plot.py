@@ -1,5 +1,5 @@
 """
-lbl_plot.py — Visualizing Z-polyhedra with matplotlib.
+lbl_plot.py — Visualizing LBLs with pyvista.
 Typical usage:
     from pypolylib import LBL
     a = LBL("{(i, j) | 1 <= i <= 10, 1 <= j <= 10}")
@@ -42,8 +42,11 @@ import colorsys
 
 try:
     import pyvista as pv
+    # if pyvista and numpy ok, this should be ok.
+    # from vtkmodules.vtkRenderingAnnotation import vtkAxesActor
 except ImportError:
     pv = _MissingModule("pyvista")
+from pypolylib.lbl_plot_nd_axes import Axes4D
 
 # # 2D -> not used anymore
 # import matplotlib.pyplot as plt
@@ -181,6 +184,17 @@ def lbl_plot(
             # this is a 2D plot in a 3D scene, disable z-axis:
             plotter.enable_2d_style()
             plotter.view_xy()
+        else:
+            # show axes in a widget
+            # axes = vtkAxesActor()
+            # plotter.add_orientation_widget(
+            #     axes,
+            #     viewport=(0.0, 0.0, 0.2, 0.2),
+            #     interactive=True,
+            # )
+            # vtk_orientation_widget = plotter.add_camera_orientation_widget()
+            axes4d = Axes4D(plotter)
+
 
         if show_grid == "custom":
             _show_grid(plotter)
