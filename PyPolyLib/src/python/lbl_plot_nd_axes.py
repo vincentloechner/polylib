@@ -14,19 +14,19 @@ from vtkmodules.vtkRenderingCore import (
 )
 
 
-class Axes4D:
+class AxesnD:
     """
-    Small interactive 4D coordinate frame displayed in a corner
+    Small interactive 4D (test) coordinate frame displayed in a corner
     of a PyVista render window.
 
     The four 4D basis vectors are projected onto a 2D plane:
 
-                  X
+                  i
                   ↑
-             Y ←──┼──→ Z
+             j ←──┼──→ k
                   │
                   ↓
-                  W
+                  l
     """
 
     def __init__(
@@ -34,16 +34,18 @@ class Axes4D:
         plotter,
         viewport=(0.02, 0.02, 0.22, 0.22),
     ):
+        print("Init Axes4D")
         self.plotter = plotter
         self.viewport = viewport
 
+        self.axis_names = ["i", "j", "k", "l"]
+
         # Projection of the 4D basis vectors onto the widget plane.
-        self.directions = {
-            "X": np.array([0.0, 1.0]),
-            "Y": np.array([-1.0, 0.0]),
-            "Z": np.array([1.0, 0.0]),
-            "W": np.array([0.0, -1.0]),
-        }
+        # Each column is the 2D projection of one 4D basis vector.
+        self.projection = np.array([
+            [ 0.0, -1.0,  1.0,  0.0],
+            [ 1.0,  0.0,  0.0, -1.0],
+        ])
 
         # Dedicated renderer.
         self.renderer = vtkRenderer()
@@ -52,21 +54,21 @@ class Axes4D:
 
         # Transparent background.
         self.renderer.SetBackgroundAlpha(0.0)
-        self.renderer.SetInteractive(1)
+        # self.renderer.SetInteractive(False)
+        self.renderer.SetInteractive(True)
 
         # Main renderer is layer 0, our renderer is layer 1.
         self.plotter.render_window.SetNumberOfLayers(2)
         self.plotter.render_window.AddRenderer(self.renderer)
 
         self.actors = {}
+        self.picker = vtkPropPicker()
 
         self._create_axes()
         self._setup_camera()
-        self._setup_picker()
 
         # Handle clicks:
         self.dragged_axis = None
-        self.last_mouse_position = None
         self.plotter.iren.add_observer(
             "LeftButtonPressEvent",
             self._on_left_button_press,
@@ -85,12 +87,19 @@ class Axes4D:
     # ------------------------------------------------------------------
 
     def _create_axes(self):
-        for name, direction in self.directions.items():
-            actor = self._create_axis(direction)
+        print(f"creating axes")
+        for i, name in enumerate(self.axis_names):
+            # direction = self.projection[:, i]
+            print(f"  {i}: {name}")
+
+            actor = self._create_axis()
+
             self.renderer.AddActor(actor)
             self.actors[name] = actor
 
-    def _create_axis(self, direction):
+            self._update_axis(i)
+
+    def _create_axis(self):
         arrow = vtkArrowSource()
 
         arrow.SetTipLength(0.20)
@@ -106,17 +115,6 @@ class Axes4D:
         actor = vtkActor()
         actor.SetMapper(mapper)
 
-        # vtkArrowSource points along +X.
-        #
-        # Rotate it in the widget plane so that +X becomes
-        # the desired 2D direction.
-        angle = np.degrees(
-            np.arctan2(direction[1], direction[0])
-        )
-
-        actor.RotateZ(angle)
-
-        # ArrowSource has length 1.
         actor.SetScale(0.75)
 
         return actor
@@ -124,7 +122,6 @@ class Axes4D:
     # ------------------------------------------------------------------
     # Camera
     # ------------------------------------------------------------------
-
     def _setup_camera(self):
         camera = self.renderer.GetActiveCamera()
 
@@ -139,15 +136,6 @@ class Axes4D:
     # ------------------------------------------------------------------
     # Picking
     # ------------------------------------------------------------------
-
-    def _setup_picker(self):
-        self.picker = vtkPropPicker()
-
-        self.plotter.iren.add_observer(
-            "LeftButtonPressEvent",
-            self._on_left_button_press,
-        )
-
     def _on_left_button_press(self, caller, event):
         x, y = caller.GetEventPosition()
 
@@ -168,7 +156,6 @@ class Axes4D:
         for name, actor in self.actors.items():
             if picked_actor == actor:
                 self.dragged_axis = name
-                self.last_mouse_position = (x, y)
 
                 print(f"Start dragging {name}")
                 break
@@ -179,36 +166,73 @@ class Axes4D:
 
         x, y = caller.GetEventPosition()
 
-        old_x, old_y = self.last_mouse_position
-
-        dx = x - old_x
-        dy = y - old_y
-
-        self.last_mouse_position = (x, y)
-
         self.axis_dragged(
             self.dragged_axis,
-            dx,
-            dy,
             x,
             y,
         )
+
+        self.plotter.render()
 
     def _on_left_button_release(self, caller, event):
         if self.dragged_axis is not None:
             print(f"Stop dragging {self.dragged_axis}")
 
         self.dragged_axis = None
-        self.last_mouse_position = None
 
     # ------------------------------------------------------------------
     # User action
     # ------------------------------------------------------------------
-    def axis_dragged(self, name, dx, dy, x, y):
-        print(
-            f"{name}: dx={dx}, dy={dy}, "
-            f"position=({x}, {y})"
-        )
+    def axis_dragged(self, name, x, y):
+        i = self.axis_names.index(name)
 
-    def axis_clicked(self, name):
-        print(f"Clicked on 4D axis: {name}")
+        width, height = self.plotter.render_window.GetSize()
+
+        xmin, ymin, xmax, ymax = self.viewport
+
+        # Position du centre du widget en pixels.
+        cx = 0.5 * (xmin + xmax) * width
+        cy = 0.5 * (ymin + ymax) * height
+
+        # Taille du widget.
+        widget_width = (xmax - xmin) * width
+        widget_height = (ymax - ymin) * height
+
+        # Position de la souris par rapport au centre,
+        # normalisée par la taille du widget.
+        vx = (x - cx) / widget_width * 2.0
+        vy = (cy - y) / widget_height * 2.0
+
+        # Limite éventuellement la longueur de l'axe.
+        v = np.array([vx, vy])
+
+        length = np.linalg.norm(v)
+
+        if length > 0.9:
+            v *= 0.9 / length
+
+        self.projection[:, i] = v
+
+        self._update_axis(i)
+
+    def _update_axis(self, i):
+        name = self.axis_names[i]
+        actor = self.actors[name]
+
+        v = self.projection[:, i]
+
+        length = np.linalg.norm(v)
+
+        if length < 1e-6:
+            actor.SetVisibility(False)
+            return
+
+        actor.SetVisibility(True)
+
+        angle = np.degrees(np.arctan2(v[1], v[0]))
+
+        actor.SetPosition(0.0, 0.0, 0.0)
+        actor.SetOrientation(0.0, 0.0, angle)
+        actor.SetScale(length)
+
+        self.renderer.ResetCameraClippingRange()

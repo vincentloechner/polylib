@@ -43,10 +43,9 @@ import colorsys
 try:
     import pyvista as pv
     # if pyvista and numpy ok, this should be ok.
-    # from vtkmodules.vtkRenderingAnnotation import vtkAxesActor
+    from pypolylib.lbl_plot_nd_axes import AxesnD
 except ImportError:
     pv = _MissingModule("pyvista")
-from pypolylib.lbl_plot_nd_axes import Axes4D
 
 # # 2D -> not used anymore
 # import matplotlib.pyplot as plt
@@ -172,6 +171,7 @@ def lbl_plot(
 
             p = p.next
         node = node.next
+    # done building the view
 
 
     # if subplot is True do not render anything yet: the next call will add
@@ -179,7 +179,6 @@ def lbl_plot(
     if not subplot:
         # this is the main part that will render all single LBLs
         _render_LBLs(plotter)
-
         if not plotter._3D:
             # this is a 2D plot in a 3D scene, disable z-axis:
             plotter.enable_2d_style()
@@ -193,7 +192,7 @@ def lbl_plot(
             #     interactive=True,
             # )
             # vtk_orientation_widget = plotter.add_camera_orientation_widget()
-            axes4d = Axes4D(plotter)
+            plotter._axesnD = AxesnD(plotter)
 
 
         if show_grid == "custom":
